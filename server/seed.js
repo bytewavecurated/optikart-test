@@ -955,8 +955,48 @@ export { seedDatabase };
 // Allow running standalone
 if (process.argv[1] && process.argv[1].includes('seed')) {
   (async () => {
-    await mongoose.connect(process.env.MONGODB_URI);
-    await seedDatabase();
-    process.exit(0);
+    try {
+      console.log('Connecting to MongoDB...');
+      console.log('URI:', process.env.MONGODB_URI?.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@') || 'Not set');
+      
+      await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 30000,
+        connectTimeoutMS: 30000,
+      });
+      
+      console.log('Connected to MongoDB');
+      await seedDatabase();
+      console.log('\n✅ Database seeded successfully!');
+      process.exit(0);
+    } catch (error) {
+      console.error('\n❌ Error connecting to MongoDB:\n');
+      
+      if (error.message.includes('IP') || error.message.includes('whitelist')) {
+        console.error('🔧 FIX: Your IP address is not whitelisted in MongoDB Atlas');
+        console.error('   1. Go to: https://cloud.mongodb.com/');
+        console.error('   2. Click "Network Access" in left sidebar');
+        console.error('   3. Click "Add IP Address"');
+        console.error('   4. Click "Allow Access from Anywhere" (0.0.0.0/0)');
+        console.error('   5. Click "Confirm"');
+        console.error('   6. Wait 1-2 minutes and try again\n');
+      } else if (error.message.includes('bad auth') || error.message.includes('Authentication')) {
+        console.error('🔧 FIX: Invalid MongoDB username or password');
+        console.error('   1. Check your MONGODB_URI in .env file');
+        console.error('   2. Go to MongoDB Atlas → Database Access');
+        console.error('   3. Reset your database user password');
+        console.error('   4. Update .env with new password\n');
+      } else if (error.message.includes('ENOTFOUND')) {
+        console.error('🔧 FIX: Cannot resolve MongoDB cluster address');
+        console.error('   1. Check your internet connection');
+        console.error('   2. Verify cluster name in MONGODB_URI');
+        console.error('   3. Try flushing DNS: ipconfig /flushdns (Windows)\n');
+      } else {
+        console.error('Error details:', error.message);
+        console.error('\n🔧 Check your MONGODB_URI in .env file');
+        console.error('   Format: mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/eyewear-platform\n');
+      }
+      
+      process.exit(1);
+    }
   })();
 }

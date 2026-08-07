@@ -141,12 +141,28 @@ let mongodInstance = null; // Keep reference to prevent garbage collection
 
 const startServer = async () => {
   try {
-    console.log('Starting in-memory MongoDB...');
-    mongodInstance = await MongoMemoryServer.create();
-    const uri = mongodInstance.getUri();
+    let mongoUri = process.env.MONGODB_URI;
     
-    await mongoose.connect(uri);
-    console.log('Connected to in-memory MongoDB');
+    // If no MONGODB_URI is set, use in-memory MongoDB
+    if (!mongoUri) {
+      console.log('No MONGODB_URI found in .env, starting in-memory MongoDB...');
+      mongodInstance = await MongoMemoryServer.create({
+        instance: {
+          port: 27017,
+          dbName: 'eyewear-platform'
+        }
+      });
+      mongoUri = mongodInstance.getUri();
+      console.log('In-memory MongoDB started');
+    } else {
+      console.log('Connecting to MongoDB Atlas...');
+    }
+    
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 30000,
+      connectTimeoutMS: 30000,
+    });
+    console.log('Connected to MongoDB');
     
     // Run seed script
     try {
@@ -162,6 +178,11 @@ const startServer = async () => {
     });
   } catch (err) {
     console.error('Startup error:', err);
+    console.error('\nTroubleshooting:');
+    console.error('1. Check your MONGODB_URI in .env file');
+    console.error('2. Make sure MongoDB Atlas IP whitelist includes your IP or 0.0.0.0/0');
+    console.error('3. Verify your MongoDB Atlas username and password');
+    console.error('4. Wait 1-2 minutes after updating IP whitelist');
     process.exit(1);
   }
 };
