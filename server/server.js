@@ -8,8 +8,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-import { MongoMemoryServer } from 'mongodb-memory-server';
-
 import authRoutes from './routes/auth.js';
 import adminAuthRoutes from './routes/adminAuth.js';
 import sellerRoutes from './routes/seller.js';
@@ -137,50 +135,43 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-let mongodInstance = null; // Keep reference to prevent garbage collection
 
 const startServer = async () => {
   try {
-    let mongoUri = process.env.MONGODB_URI;
+    const mongoUri = process.env.MONGODB_URI;
     
-    // If no MONGODB_URI is set, use in-memory MongoDB
     if (!mongoUri) {
-      console.log('No MONGODB_URI found in .env, starting in-memory MongoDB...');
-      mongodInstance = await MongoMemoryServer.create({
-        instance: {
-          port: 27017,
-          dbName: 'eyewear-platform'
-        }
-      });
-      mongoUri = mongodInstance.getUri();
-      console.log('In-memory MongoDB started');
-    } else {
-      console.log('Connecting to MongoDB Atlas...');
+      console.error('❌ ERROR: MONGODB_URI not found in .env file');
+      console.error('\n🔧 Please add your MongoDB Atlas connection string to server/.env:');
+      console.error('   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/eyewear-platform\n');
+      process.exit(1);
     }
+    
+    console.log('Connecting to MongoDB Atlas...');
     
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 30000,
       connectTimeoutMS: 30000,
     });
-    console.log('Connected to MongoDB');
+    console.log('✅ Connected to MongoDB');
     
     // Run seed script
     try {
       const { seedDatabase } = await import('./seed.js');
       await seedDatabase();
-      console.log('Database seeded successfully');
+      console.log('✅ Database seeded successfully');
     } catch (seedErr) {
-      console.log('Seed note:', seedErr.message);
+      console.log('ℹ️  Seed note:', seedErr.message);
     }
     
     httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   } catch (err) {
-    console.error('Startup error:', err);
-    console.error('\nTroubleshooting:');
-    console.error('1. Check your MONGODB_URI in .env file');
-    console.error('2. Make sure MongoDB Atlas IP whitelist includes your IP or 0.0.0.0/0');
+    console.error('❌ Startup error:', err.message);
+    console.error('\n🔧 Troubleshooting:');
+    console.error('1. Check your MONGODB_URI in server/.env file');
+    console.error('2. Make sure MongoDB Atlas IP whitelist includes 0.0.0.0/0');
     console.error('3. Verify your MongoDB Atlas username and password');
     console.error('4. Wait 1-2 minutes after updating IP whitelist');
     process.exit(1);
