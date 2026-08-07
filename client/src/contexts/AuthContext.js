@@ -270,7 +270,7 @@ export const AuthProvider = ({ children }) => {
         return { success: true, requiresOTP: true, email: data.email };
       }
       
-      // Old flow - direct token
+      // Direct login with token
       if (data.token) {
         const { token, admin: adminData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -296,7 +296,7 @@ export const AuthProvider = ({ children }) => {
   const verifyAdminLoginOTP = async (email, otp) => {
     try {
       const response = await api.post('/admin/auth/verify-otp', { email, otp });
-      const { token, user: adminData } = response.data;
+      const { token, admin: adminData } = response.data;
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem(ROLE_KEY, 'admin');
       localStorage.setItem(USER_KEY, JSON.stringify(adminData));

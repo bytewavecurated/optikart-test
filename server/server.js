@@ -42,6 +42,8 @@ const io = new Server(httpServer, {
   }
 });
 
+app.set('trust proxy', true);
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,

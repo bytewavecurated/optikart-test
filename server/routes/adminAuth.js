@@ -85,7 +85,7 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        user: admin.toJSON()
+        admin: admin.toJSON()
       });
     } else {
       // Generate OTP for login verification (production flow)
@@ -151,7 +151,7 @@ router.post('/verify-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      user: admin.toJSON()
+      admin: admin.toJSON()
     });
   } catch (error) {
     console.error('Admin verify OTP error:', error);

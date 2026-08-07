@@ -13,6 +13,7 @@ const SellerOrders = lazy(() => import('./pages/seller/SellerOrders'));
 const SellerAnalytics = lazy(() => import('./pages/seller/SellerAnalytics'));
 const SellerProfile = lazy(() => import('./pages/seller/SellerProfile'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const ManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
 const ManageSellers = lazy(() => import('./pages/admin/ManageSellers'));
@@ -107,18 +108,20 @@ function App() {
         <Route path="/seller/analytics" element={<SellerRoute><SellerAnalytics /></SellerRoute>} />
         <Route path="/seller/profile" element={<SellerRoute><SellerProfile /></SellerRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="/admin/users" element={<AdminRoute><ManageUsers /></AdminRoute>} />
-        <Route path="/admin/sellers" element={<AdminRoute><ManageSellers /></AdminRoute>} />
-        <Route path="/admin/orders" element={<AdminRoute><ManageOrders /></AdminRoute>} />
-        <Route path="/admin/subscriptions" element={<AdminRoute><Subscriptions /></AdminRoute>} />
-        <Route path="/admin/revenue" element={<AdminRoute><Revenue /></AdminRoute>} />
-        <Route path="/admin/staff" element={<AdminRoute><StaffManagement /></AdminRoute>} />
-        <Route path="/admin/coupons" element={<AdminRoute><Coupons /></AdminRoute>} />
-        <Route path="/admin/blogs" element={<AdminRoute><BlogManagement /></AdminRoute>} />
-        <Route path="/admin/delivery" element={<AdminRoute><DeliveryManagement /></AdminRoute>} />
-        <Route path="/admin/sale-events" element={<AdminRoute><SaleEvents /></AdminRoute>} />
-        <Route path="/admin/banners" element={<AdminRoute><BannerManagement /></AdminRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<ManageUsers />} />
+          <Route path="sellers" element={<ManageSellers />} />
+          <Route path="orders" element={<ManageOrders />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="revenue" element={<Revenue />} />
+          <Route path="staff" element={<StaffManagement />} />
+          <Route path="coupons" element={<Coupons />} />
+          <Route path="blogs" element={<BlogManagement />} />
+          <Route path="delivery" element={<DeliveryManagement />} />
+          <Route path="sale-events" element={<SaleEvents />} />
+          <Route path="banners" element={<BannerManagement />} />
+        </Route>
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />

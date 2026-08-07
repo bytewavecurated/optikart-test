@@ -54,14 +54,14 @@ const Home = () => {
           products.getRandom({ limit: 20 }),
         ]);
 
-        if (trendingRes.status === 'fulfilled') setTrendingProducts(trendingRes.value.data.data || []);
-        if (newArrivalsRes.status === 'fulfilled') setNewArrivals(newArrivalsRes.value.data.data || []);
-        if (bestSellersRes.status === 'fulfilled') setBestSellers(bestSellersRes.value.data.data || []);
-        if (dealsRes.status === 'fulfilled') setDealsProducts(dealsRes.value.data.data || []);
-        if (budgetRes.status === 'fulfilled') setBudgetBuys(budgetRes.value.data.data || []);
+        if (trendingRes.status === 'fulfilled') setTrendingProducts(trendingRes.value.data.products || []);
+        if (newArrivalsRes.status === 'fulfilled') setNewArrivals(newArrivalsRes.value.data.products || []);
+        if (bestSellersRes.status === 'fulfilled') setBestSellers(bestSellersRes.value.data.products || []);
+        if (dealsRes.status === 'fulfilled') setDealsProducts(dealsRes.value.data.products || []);
+        if (budgetRes.status === 'fulfilled') setBudgetBuys(budgetRes.value.data.products || []);
 
         if (randomRes.status === 'fulfilled') {
-          const allRandom = randomRes.value.data.data || [];
+          const allRandom = randomRes.value.data.products || [];
           const shuffled = shuffleArray(allRandom);
           setTopPicks(shuffled.slice(0, 10));
           setJustForYou(shuffleArray(allRandom).slice(0, 10));
@@ -133,13 +133,13 @@ const Home = () => {
           const personalizedResults = await Promise.allSettled(personalizedFetches);
           
           if (personalizedResults[0]?.status === 'fulfilled') {
-            setPersonalizedProducts1(personalizedResults[0].value.data.data || []);
+            setPersonalizedProducts1(personalizedResults[0].value.data.products || []);
           }
           if (personalizedResults[1]?.status === 'fulfilled') {
-            setPersonalizedProducts2(personalizedResults[1].value.data.data || []);
+            setPersonalizedProducts2(personalizedResults[1].value.data.products || []);
           }
           if (personalizedResults[2]?.status === 'fulfilled') {
-            setPersonalizedProducts3(personalizedResults[2].value.data.data || []);
+            setPersonalizedProducts3(personalizedResults[2].value.data.products || []);
           }
         } else {
           // No user behavior data, show random products
@@ -150,13 +150,13 @@ const Home = () => {
           ]);
           
           if (fallbackResults[0]?.status === 'fulfilled') {
-            setPersonalizedProducts1(fallbackResults[0].value.data.data || []);
+            setPersonalizedProducts1(fallbackResults[0].value.data.products || []);
           }
           if (fallbackResults[1]?.status === 'fulfilled') {
-            setPersonalizedProducts2(fallbackResults[1].value.data.data || []);
+            setPersonalizedProducts2(fallbackResults[1].value.data.products || []);
           }
           if (fallbackResults[2]?.status === 'fulfilled') {
-            setPersonalizedProducts3(fallbackResults[2].value.data.data || []);
+            setPersonalizedProducts3(fallbackResults[2].value.data.products || []);
           }
         }
       } catch (err) {
