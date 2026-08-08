@@ -6,9 +6,20 @@ const bannerSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  imageUrl: {
-    type: String,
-    required: true
+  // Device-specific images
+  images: {
+    desktop: {
+      url: { type: String, required: true },
+      aspectRatio: { type: String, default: '1:1' } // Square for desktop
+    },
+    tablet: {
+      url: { type: String, required: true },
+      aspectRatio: { type: String, default: '16:9' } // Horizontal banner for tablet
+    },
+    mobile: {
+      url: { type: String, required: true },
+      aspectRatio: { type: String, default: '9:16' } // Vertical banner for mobile
+    }
   },
   linkUrl: {
     type: String,

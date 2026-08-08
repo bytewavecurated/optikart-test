@@ -62,7 +62,13 @@ const userSchema = new mongoose.Schema({
   loginTokenExpiry: { type: Date },
   failedLoginAttempts: { type: Number, default: 0 },
   lockUntil: { type: Date },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  isBanned: { type: Boolean, default: false },
+  isShadowBanned: { type: Boolean, default: false },
+  banReason: { type: String, default: '' },
+  bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  bannedAt: { type: Date },
+  userId: { type: String, unique: true, sparse: true }
 }, {
   timestamps: true
 });
@@ -71,6 +77,14 @@ userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+userSchema.pre('save', function(next) {
+  if (!this.userId) {
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    this.userId = `USR-${random}`;
+  }
   next();
 });
 

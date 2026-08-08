@@ -557,4 +557,58 @@ router.get('/pickups', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+// Ban/Unban User
+router.put('/users/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { isBanned, isShadowBanned, banReason } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        isBanned: isBanned !== undefined ? isBanned : undefined,
+        isShadowBanned: isShadowBanned !== undefined ? isShadowBanned : undefined,
+        banReason: banReason || '',
+        bannedBy: req.user.id,
+        bannedAt: isBanned || isShadowBanned ? new Date() : null
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, message: 'User ban status updated', user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Ban/Unban Seller
+router.put('/sellers/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { isBanned, isShadowBanned, banReason } = req.body;
+    
+    const seller = await Seller.findByIdAndUpdate(
+      req.params.id,
+      {
+        isBanned: isBanned !== undefined ? isBanned : undefined,
+        isShadowBanned: isShadowBanned !== undefined ? isShadowBanned : undefined,
+        banReason: banReason || '',
+        bannedBy: req.user.id,
+        bannedAt: isBanned || isShadowBanned ? new Date() : null
+      },
+      { new: true }
+    );
+
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+
+    res.json({ success: true, message: 'Seller ban status updated', seller });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 export default router;

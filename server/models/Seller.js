@@ -78,11 +78,12 @@ const sellerSchema = new mongoose.Schema({
   avgDeliveryTime: { type: Number, default: 0 },
   performanceScore: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
-  sellerId: { 
-    type: String, 
-    unique: true, 
-    sparse: true 
-  }
+  isBanned: { type: Boolean, default: false },
+  isShadowBanned: { type: Boolean, default: false },
+  banReason: { type: String, default: '' },
+  bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  bannedAt: { type: Date },
+  sellerId: { type: String, unique: true, sparse: true }
 }, {
   timestamps: true
 });

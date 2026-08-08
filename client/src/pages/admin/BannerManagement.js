@@ -12,7 +12,11 @@ const BannerManagement = () => {
   const [editingBanner, setEditingBanner] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
-    imageUrl: '',
+    images: {
+      desktop: { url: '', aspectRatio: '1:1' },
+      tablet: { url: '', aspectRatio: '16:9' },
+      mobile: { url: '', aspectRatio: '9:16' }
+    },
     linkUrl: '',
     order: 0,
     isActive: true,
@@ -37,8 +41,8 @@ const BannerManagement = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.imageUrl || !formData.linkUrl) {
-      toast.error('Please fill all required fields');
+    if (!formData.title || !formData.images.desktop.url || !formData.linkUrl) {
+      toast.error('Please fill all required fields (title, desktop image, and link URL)');
       return;
     }
 
@@ -52,7 +56,17 @@ const BannerManagement = () => {
       }
       setShowForm(false);
       setEditingBanner(null);
-      setFormData({ title: '', imageUrl: '', linkUrl: '', order: 0, isActive: true });
+      setFormData({
+        title: '',
+        images: {
+          desktop: { url: '', aspectRatio: '1:1' },
+          tablet: { url: '', aspectRatio: '16:9' },
+          mobile: { url: '', aspectRatio: '9:16' }
+        },
+        linkUrl: '',
+        order: 0,
+        isActive: true,
+      });
       fetchBanners();
     } catch (error) {
       toast.error('Failed to save banner');
@@ -64,7 +78,11 @@ const BannerManagement = () => {
     setEditingBanner(banner);
     setFormData({
       title: banner.title,
-      imageUrl: banner.imageUrl,
+      images: banner.images || {
+        desktop: { url: '', aspectRatio: '1:1' },
+        tablet: { url: '', aspectRatio: '16:9' },
+        mobile: { url: '', aspectRatio: '9:16' }
+      },
       linkUrl: banner.linkUrl,
       order: banner.order,
       isActive: banner.isActive,
@@ -106,7 +124,17 @@ const BannerManagement = () => {
             onClick={() => {
               setShowForm(true);
               setEditingBanner(null);
-              setFormData({ title: '', imageUrl: '', linkUrl: '', order: 0, isActive: true });
+              setFormData({
+                title: '',
+                images: {
+                  desktop: { url: '', aspectRatio: '1:1' },
+                  tablet: { url: '', aspectRatio: '16:9' },
+                  mobile: { url: '', aspectRatio: '9:16' }
+                },
+                linkUrl: '',
+                order: 0,
+                isActive: true,
+              });
             }}
             className="btn btn-primary"
             style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -131,15 +159,6 @@ const BannerManagement = () => {
                 />
               </div>
               <div className="input-group">
-                <label>Image URL *</label>
-                <input
-                  className="input"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              <div className="input-group">
                 <label>Link URL *</label>
                 <input
                   className="input"
@@ -148,6 +167,49 @@ const BannerManagement = () => {
                   placeholder="/sale/summer or https://example.com"
                 />
               </div>
+              
+              {/* Desktop Image */}
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label>Desktop Image URL * (Square 1:1)</label>
+                <input
+                  className="input"
+                  value={formData.images.desktop.url}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    images: { ...formData.images, desktop: { ...formData.images.desktop, url: e.target.value } }
+                  })}
+                  placeholder="https://example.com/desktop-image.jpg"
+                />
+              </div>
+              
+              {/* Tablet Image */}
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label>Tablet Image URL (Horizontal 16:9)</label>
+                <input
+                  className="input"
+                  value={formData.images.tablet.url}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    images: { ...formData.images, tablet: { ...formData.images.tablet, url: e.target.value } }
+                  })}
+                  placeholder="https://example.com/tablet-image.jpg"
+                />
+              </div>
+              
+              {/* Mobile Image */}
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label>Mobile Image URL (Vertical 9:16)</label>
+                <input
+                  className="input"
+                  value={formData.images.mobile.url}
+                  onChange={(e) => setFormData({ 
+                    ...formData, 
+                    images: { ...formData.images, mobile: { ...formData.images.mobile, url: e.target.value } }
+                  })}
+                  placeholder="https://example.com/mobile-image.jpg"
+                />
+              </div>
+              
               <div className="input-group">
                 <label>Order (Display Priority)</label>
                 <input
@@ -158,8 +220,8 @@ const BannerManagement = () => {
                   placeholder="0"
                 />
               </div>
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <div className="input-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '24px' }}>
                   <input
                     type="checkbox"
                     checked={formData.isActive}
@@ -169,16 +231,46 @@ const BannerManagement = () => {
                   Active (Show on homepage)
                 </label>
               </div>
-              {formData.imageUrl && (
+              
+              {/* Image Previews */}
+              {formData.images.desktop.url && (
                 <div style={{ gridColumn: 'span 2' }}>
-                  <label>Preview:</label>
+                  <label>Desktop Preview:</label>
                   <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px' }}
+                    src={formData.images.desktop.url}
+                    alt="Desktop Preview"
+                    style={{ width: '200px', height: '200px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px', border: '2px solid #e0e0e0' }}
                     onError={(e) => {
                       e.target.style.display = 'none';
-                      toast.error('Invalid image URL');
+                      toast.error('Invalid desktop image URL');
+                    }}
+                  />
+                </div>
+              )}
+              {formData.images.tablet.url && (
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label>Tablet Preview:</label>
+                  <img
+                    src={formData.images.tablet.url}
+                    alt="Tablet Preview"
+                    style={{ width: '320px', height: '180px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px', border: '2px solid #e0e0e0' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      toast.error('Invalid tablet image URL');
+                    }}
+                  />
+                </div>
+              )}
+              {formData.images.mobile.url && (
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label>Mobile Preview:</label>
+                  <img
+                    src={formData.images.mobile.url}
+                    alt="Mobile Preview"
+                    style={{ width: '180px', height: '320px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px', border: '2px solid #e0e0e0' }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      toast.error('Invalid mobile image URL');
                     }}
                   />
                 </div>
@@ -214,39 +306,75 @@ const BannerManagement = () => {
         ) : (
           <div style={{ display: 'grid', gap: '16px' }}>
             {bannerList.map((banner) => (
-              <div key={banner._id} className="card" style={{ padding: '16px', display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <img
-                  src={banner.imageUrl}
-                  alt={banner.title}
-                  style={{ width: '200px', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
-                  onError={(e) => {
-                    e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="100"%3E%3Crect fill="%23ddd" width="200" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>{banner.title}</h3>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                    <FiLink size={12} style={{ marginRight: '4px' }} />
-                    {banner.linkUrl}
-                  </p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-light)' }}>
-                    Order: {banner.order} | Status: {banner.isActive ? 'Active' : 'Inactive'}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => handleToggleActive(banner)}
-                    className="btn btn-outline btn-sm"
-                    title={banner.isActive ? 'Deactivate' : 'Activate'}
-                  >
-                    {banner.isActive ? <FiToggleRight size={18} /> : <FiToggleLeft size={18} />}
-                  </button>
-                  <button onClick={() => handleEdit(banner)} className="btn btn-outline btn-sm">
-                    <FiEdit2 size={16} />
-                  </button>
-                  <button onClick={() => handleDelete(banner._id)} className="btn btn-danger btn-sm">
-                    <FiTrash2 size={16} />
-                  </button>
+              <div key={banner._id} className="card" style={{ padding: '16px' }}>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                  {/* Desktop Image */}
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '11px', color: '#666', marginBottom: '4px', fontWeight: 600 }}>Desktop</p>
+                    <img
+                      src={banner.images?.desktop?.url || banner.imageUrl}
+                      alt={`${banner.title} - Desktop`}
+                      style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e0e0e0' }}
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Tablet Image */}
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '11px', color: '#666', marginBottom: '4px', fontWeight: 600 }}>Tablet</p>
+                    <img
+                      src={banner.images?.tablet?.url || banner.imageUrl}
+                      alt={`${banner.title} - Tablet`}
+                      style={{ width: '120px', height: '68px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e0e0e0' }}
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="68"%3E%3Crect fill="%23ddd" width="120" height="68"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Mobile Image */}
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '11px', color: '#666', marginBottom: '4px', fontWeight: 600 }}>Mobile</p>
+                    <img
+                      src={banner.images?.mobile?.url || banner.imageUrl}
+                      alt={`${banner.title} - Mobile`}
+                      style={{ width: '56px', height: '100px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #e0e0e0' }}
+                      onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="56" height="100"%3E%3Crect fill="%23ddd" width="56" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Banner Info */}
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>{banner.title}</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      <FiLink size={12} style={{ marginRight: '4px' }} />
+                      {banner.linkUrl}
+                    </p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-light)' }}>
+                      Order: {banner.order} | Status: {banner.isActive ? 'Active' : 'Inactive'}
+                    </p>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => handleToggleActive(banner)}
+                      className="btn btn-outline btn-sm"
+                      title={banner.isActive ? 'Deactivate' : 'Activate'}
+                    >
+                      {banner.isActive ? <FiToggleRight size={18} /> : <FiToggleLeft size={18} />}
+                    </button>
+                    <button onClick={() => handleEdit(banner)} className="btn btn-outline btn-sm">
+                      <FiEdit2 size={16} />
+                    </button>
+                    <button onClick={() => handleDelete(banner._id)} className="btn btn-danger btn-sm">
+                      <FiTrash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

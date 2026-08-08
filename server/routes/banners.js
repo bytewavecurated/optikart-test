@@ -27,11 +27,15 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
 // Create banner (admin)
 router.post('/', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { title, imageUrl, linkUrl, order, isActive } = req.body;
+    const { title, images, linkUrl, order, isActive } = req.body;
     
     const banner = new Banner({
       title,
-      imageUrl,
+      images: {
+        desktop: images?.desktop || { url: '', aspectRatio: '1:1' },
+        tablet: images?.tablet || { url: '', aspectRatio: '16:9' },
+        mobile: images?.mobile || { url: '', aspectRatio: '9:16' }
+      },
       linkUrl,
       order: order || 0,
       isActive: isActive !== undefined ? isActive : true,
@@ -48,11 +52,21 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
 // Update banner (admin)
 router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { title, imageUrl, linkUrl, order, isActive } = req.body;
+    const { title, images, linkUrl, order, isActive } = req.body;
+    
+    const updateData = { title, linkUrl, order, isActive };
+    
+    if (images) {
+      updateData.images = {
+        desktop: images.desktop || { url: '', aspectRatio: '1:1' },
+        tablet: images.tablet || { url: '', aspectRatio: '16:9' },
+        mobile: images.mobile || { url: '', aspectRatio: '9:16' }
+      };
+    }
     
     const banner = await Banner.findByIdAndUpdate(
       req.params.id,
-      { title, imageUrl, linkUrl, order, isActive },
+      updateData,
       { new: true, runValidators: true }
     );
 

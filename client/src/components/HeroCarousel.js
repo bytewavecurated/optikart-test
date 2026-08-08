@@ -43,6 +43,7 @@ const styles = {
   track: {
     display: 'flex',
     transition: 'transform 0.5s ease-in-out',
+    gap: '12px',
   },
   slide: {
     position: 'relative',
@@ -80,17 +81,30 @@ const styles = {
   dotsContainer: {
     display: 'flex',
     justifyContent: 'center',
-    gap: '10px',
+    gap: '8px',
     padding: '16px 0',
+    alignItems: 'center',
   },
-  dot: {
-    width: '12px',
-    height: '12px',
-    borderRadius: '50%',
+  lineIndicator: {
+    height: '4px',
+    borderRadius: '2px',
     border: 'none',
     cursor: 'pointer',
-    transition: 'all 0.3s',
-    background: '#ccc',
+    transition: 'all 0.3s ease',
+    background: '#e0e0e0',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  lineIndicatorActive: {
+    background: '#2874f0',
+  },
+  lineProgress: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    background: '#2874f0',
+    transition: 'width 0.3s ease',
   },
 };
 
@@ -122,6 +136,19 @@ export default function HeroCarousel() {
     };
     fetchBanners();
   }, []);
+
+  // Get appropriate image URL based on device
+  const getImageUrl = (banner) => {
+    if (windowWidth < 768 && banner.images?.mobile?.url) {
+      return banner.images.mobile.url;
+    } else if (windowWidth < 1024 && banner.images?.tablet?.url) {
+      return banner.images.tablet.url;
+    } else if (banner.images?.desktop?.url) {
+      return banner.images.desktop.url;
+    }
+    // Fallback to old imageUrl for backward compatibility
+    return banner.imageUrl || banner.images?.desktop?.url || '';
+  };
 
   // Determine how many cards to show based on screen size
   const getCardsToShow = () => {
@@ -178,7 +205,7 @@ export default function HeroCarousel() {
               style={{ ...styles.slide, width: `${slideWidth}%` }}
             >
               <img
-                src={banner.imageUrl}
+                src={getImageUrl(banner)}
                 alt={banner.title}
                 style={styles.image}
                 className="hero-slide-image"
@@ -209,23 +236,35 @@ export default function HeroCarousel() {
         )}
       </div>
 
-      {/* Dots below the carousel */}
+      {/* Line indicators below the carousel */}
       {bannerList.length > cardsToShow && (
         <div style={styles.dotsContainer}>
-          {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-            <button
-              key={i}
-              style={{
-                ...styles.dot,
-                background: i === currentIndex ? '#2874f0' : '#ccc',
-                transform: i === currentIndex ? 'scale(1.3)' : 'scale(1)',
-                boxShadow: i === currentIndex ? '0 2px 8px rgba(40,116,240,0.4)' : 'none',
-              }}
-              onClick={() => setCurrentIndex(i)}
-              aria-label={`Slide ${i + 1}`}
-              className="carousel-dot"
-            />
-          ))}
+          {Array.from({ length: maxIndex + 1 }).map((_, i) => {
+            const isActive = i === currentIndex;
+            const progress = isActive ? 100 : 0;
+            
+            return (
+              <button
+                key={i}
+                onClick={() => setCurrentIndex(i)}
+                aria-label={`Slide ${i + 1}`}
+                style={{
+                  ...styles.lineIndicator,
+                  width: isActive ? '60px' : '30px',
+                  ...(isActive ? styles.lineIndicatorActive : {}),
+                }}
+              >
+                {isActive && (
+                  <div 
+                    style={{
+                      ...styles.lineProgress,
+                      width: `${progress}%`,
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -243,18 +282,6 @@ export default function HeroCarousel() {
         .carousel-arrow:hover {
           background: rgba(255, 255, 255, 0.4) !important;
           transform: translateY(-50%) scale(1.1) !important;
-        }
-        .carousel-dot {
-          animation: dotPulse 2s infinite;
-        }
-        .carousel-dot:nth-child(1) { animation-delay: 0s; }
-        .carousel-dot:nth-child(2) { animation-delay: 0.2s; }
-        .carousel-dot:nth-child(3) { animation-delay: 0.4s; }
-        .carousel-dot:nth-child(4) { animation-delay: 0.6s; }
-        .carousel-dot:nth-child(5) { animation-delay: 0.8s; }
-        @keyframes dotPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
         }
       `}</style>
     </>
