@@ -26,6 +26,8 @@ const BlogManagement = lazy(() => import('./pages/admin/BlogManagement'));
 const DeliveryManagement = lazy(() => import('./pages/admin/DeliveryManagement'));
 const SaleEvents = lazy(() => import('./pages/admin/SaleEvents'));
 const BannerManagement = lazy(() => import('./pages/admin/BannerManagement'));
+const UserDetailView = lazy(() => import('./pages/admin/UserDetailView'));
+const SellerDetailView = lazy(() => import('./pages/admin/SellerDetailView'));
 const ProductDetails = lazy(() => import('./pages/ProductDetails'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
@@ -111,7 +113,9 @@ function App() {
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<ManageUsers />} />
+          <Route path="users/:id" element={<UserDetailView />} />
           <Route path="sellers" element={<ManageSellers />} />
+          <Route path="sellers/:id" element={<SellerDetailView />} />
           <Route path="orders" element={<ManageOrders />} />
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="revenue" element={<Revenue />} />

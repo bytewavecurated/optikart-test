@@ -611,4 +611,65 @@ router.put('/sellers/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+// Get user by ID
+router.get('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get user orders
+router.get('/users/:id/orders', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.params.id })
+      .sort({ createdAt: -1 })
+      .populate('seller', 'storeName');
+    res.json({ success: true, data: orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get seller by ID
+router.get('/sellers/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const seller = await Seller.findById(req.params.id).select('-password');
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found' });
+    }
+    res.json({ success: true, data: seller });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get seller products
+router.get('/sellers/:id/products', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const products = await Product.find({ seller: req.params.id })
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: products });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get seller orders
+router.get('/sellers/:id/orders', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const orders = await Order.find({ seller: req.params.id })
+      .sort({ createdAt: -1 })
+      .populate('user', 'name email');
+    res.json({ success: true, data: orders });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 export default router;

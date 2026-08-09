@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FiSearch, FiTrash2 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiSearch, FiTrash2, FiEye } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 
 const ManageUsers = () => {
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -55,17 +57,42 @@ const ManageUsers = () => {
             <>
               <div className="card">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['User', 'Email', 'Phone', 'Joined', 'Actions'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                  <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['User', 'Email', 'Phone', 'Joined', 'Status', 'Actions'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
                   <tbody>
                     {users.length === 0 ? (
-                      <tr><td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)', fontSize: '14px' }}>No users found</td></tr>
+                      <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)', fontSize: '14px' }}>No users found</td></tr>
                     ) : users.map((user) => (
                       <tr key={user._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '12px 16px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600 }}>{(user.name || 'U')[0].toUpperCase()}</div><span style={{ fontSize: '14px', fontWeight: 500 }}>{user.name}</span></div></td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600 }}>
+                              {(user.name || 'U')[0].toUpperCase()}
+                            </div>
+                            <span style={{ fontSize: '14px', fontWeight: 500 }}>{user.name}</span>
+                          </div>
+                        </td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>{user.email}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px' }}>{user.phone || '-'}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{new Date(user.createdAt).toLocaleDateString()}</td>
-                        <td style={{ padding: '12px 16px' }}><button onClick={() => handleDelete(user._id)} className="btn btn-danger btn-sm"><FiTrash2 size={12} /></button></td>
+                        <td style={{ padding: '12px 16px' }}>
+                          {user.isBanned ? (
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#ffebee', color: '#c62828' }}>Banned</span>
+                          ) : user.isShadowBanned ? (
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#fff3e0', color: '#e65100' }}>Shadow Banned</span>
+                          ) : (
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#e8f5e9', color: '#2e7d32' }}>Active</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => navigate(`/admin/users/${user._id}`)} className="btn btn-outline btn-sm" title="View Details">
+                              <FiEye size={12} />
+                            </button>
+                            <button onClick={() => handleDelete(user._id)} className="btn btn-danger btn-sm" title="Delete User">
+                              <FiTrash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

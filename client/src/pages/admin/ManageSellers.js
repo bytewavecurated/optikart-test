@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { FiSearch, FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { FiSearch, FiCheck, FiX, FiTrash2, FiEye } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 
 const ManageSellers = () => {
+  const navigate = useNavigate();
   const [sellers, setSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -66,22 +68,39 @@ const ManageSellers = () => {
             <>
               <div className="card">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Business', 'Email', 'Phone', 'Seller ID', 'Status', 'Actions'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                  <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Business', 'Email', 'Phone', 'Seller ID', 'Verification', 'Status', 'Actions'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
                   <tbody>
                     {sellers.length === 0 ? (
-                      <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)', fontSize: '14px' }}>No sellers found</td></tr>
+                      <tr><td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)', fontSize: '14px' }}>No sellers found</td></tr>
                     ) : sellers.map((seller) => (
                       <tr key={seller._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '12px 16px' }}><div style={{ fontSize: '14px', fontWeight: 500 }}>{seller.businessName}</div><div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{seller.ownerName}</div></td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 500 }}>{seller.businessName}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{seller.ownerName}</div>
+                        </td>
                         <td style={{ padding: '12px 16px', fontSize: '13px' }}>{seller.email}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px' }}>{seller.phone}</td>
                         <td style={{ padding: '12px 16px', fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{seller.sellerId || '-'}</td>
-                        <td style={{ padding: '12px 16px' }}><span className={`badge ${seller.status === 'verified' ? 'badge-success' : seller.status === 'rejected' ? 'badge-danger' : 'badge-warning'}`} style={{ textTransform: 'capitalize' }}>{seller.status}</span></td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span className={`badge ${seller.status === 'verified' ? 'badge-success' : seller.status === 'rejected' ? 'badge-danger' : 'badge-warning'}`} style={{ textTransform: 'capitalize' }}>{seller.status}</span>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          {seller.isBanned ? (
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#ffebee', color: '#c62828' }}>Banned</span>
+                          ) : seller.isShadowBanned ? (
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#fff3e0', color: '#e65100' }}>Shadow Banned</span>
+                          ) : (
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#e8f5e9', color: '#2e7d32' }}>Active</span>
+                          )}
+                        </td>
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ display: 'flex', gap: '6px' }}>
-                            {seller.status !== 'verified' && <button onClick={() => handleVerify(seller._id, 'verified')} className="btn btn-success btn-sm"><FiCheck size={12} /></button>}
-                            {seller.status !== 'rejected' && <button onClick={() => handleVerify(seller._id, 'rejected')} className="btn btn-danger btn-sm"><FiX size={12} /></button>}
-                            <button onClick={() => handleDelete(seller._id)} className="btn btn-outline btn-sm"><FiTrash2 size={12} /></button>
+                            <button onClick={() => navigate(`/admin/sellers/${seller._id}`)} className="btn btn-outline btn-sm" title="View Details">
+                              <FiEye size={12} />
+                            </button>
+                            {seller.status !== 'verified' && <button onClick={() => handleVerify(seller._id, 'verified')} className="btn btn-success btn-sm" title="Verify Seller"><FiCheck size={12} /></button>}
+                            {seller.status !== 'rejected' && <button onClick={() => handleVerify(seller._id, 'rejected')} className="btn btn-danger btn-sm" title="Reject Seller"><FiX size={12} /></button>}
+                            <button onClick={() => handleDelete(seller._id)} className="btn btn-outline btn-sm" title="Delete Seller"><FiTrash2 size={12} /></button>
                           </div>
                         </td>
                       </tr>
