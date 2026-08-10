@@ -19,7 +19,10 @@ const ProductDetails = () => {
   const [otherBrandProducts, setOtherBrandProducts] = useState([]);
   const [brandCards, setBrandCards] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
+  const [currentImages, setCurrentImages] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showAllReviews, setShowAllReviews] = useState(false);
@@ -44,9 +47,22 @@ const ProductDetails = () => {
           addBrowsingHistory(prod);
         }
         
+        // Initialize selected variants
+        if (prod?.colors?.length > 0) {
+          setSelectedColor(prod.colors[0]);
+          setCurrentImages(prod.colors[0].images?.length > 0 ? prod.colors[0].images : prod.images || []);
+        } else {
+          setCurrentImages(prod?.images || []);
+        }
+        
+        if (prod?.sizes?.length > 0) {
+          setSelectedSize(prod.sizes[0]);
+        }
+        
         if (prod?.variants?.length > 0) {
           setSelectedVariant(prod.variants[0]);
         }
+        
         try {
           const relatedRes = await api.get(`/products/${id}/related`);
           const data = relatedRes.data.data || relatedRes.data;
@@ -73,15 +89,47 @@ const ProductDetails = () => {
     window.scrollTo(0, 0);
   }, [id, isAuthenticated]);
 
+  // Update images when color changes
+  useEffect(() => {
+    if (selectedColor && product) {
+      const colorImages = selectedColor.images?.length > 0 ? selectedColor.images : product.images || [];
+      setCurrentImages(colorImages);
+    }
+  }, [selectedColor, product]);
+
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart(product, selectedVariant, quantity);
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to cart');
+      return;
+    }
+    
+    const cartItem = {
+      ...product,
+      selectedColor: selectedColor ? { name: selectedColor.name, hexCode: selectedColor.hexCode } : null,
+      selectedSize: selectedSize,
+      selectedVariant: selectedVariant
+    };
+    
+    addToCart(cartItem, selectedVariant, quantity);
     toast.success('Added to cart!');
   };
 
   const handleBuyNow = () => {
     if (!product) return;
-    addToCart(product, selectedVariant, quantity);
+    if (!isAuthenticated) {
+      toast.error('Please login to purchase items');
+      return;
+    }
+    
+    const cartItem = {
+      ...product,
+      selectedColor: selectedColor ? { name: selectedColor.name, hexCode: selectedColor.hexCode } : null,
+      selectedSize: selectedSize,
+      selectedVariant: selectedVariant
+    };
+    
+    addToCart(cartItem, selectedVariant, quantity);
     toast.success('Added to cart!');
     window.location.href = '/checkout';
   };
@@ -159,7 +207,7 @@ const ProductDetails = () => {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const images = product.images?.length > 0 ? product.images : ['/placeholder-glasses.png'];
+  const images = currentImages?.length > 0 ? currentImages : (product?.images?.length > 0 ? product.images : ['/placeholder-glasses.png']);
   const seller = product.seller;
   const sellerSince = seller?.createdAt ? new Date(seller.createdAt).getFullYear() : null;
   const maskedGST = seller?.gstNumber ? `****${seller.gstNumber.slice(-4)}` : null;
@@ -264,6 +312,76 @@ const ProductDetails = () => {
                 </div>
               )}
 
+              {/* Color Selection */}
+              {product.colors?.length > 0 && (
+                <div className="card" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
+                    Color: <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{selectedColor?.name || 'Select a color'}</span>
+                  </h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                    {product.colors.map((color, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedColor(color)}
+                        style={{
+                          padding: '8px 16px',
+                          border: `2px solid ${selectedColor?._id === color._id ? 'var(--primary)' : 'var(--border)'}`,
+                          borderRadius: '4px',
+                          background: selectedColor?._id === color._id ? 'var(--primary-light)' : '#fff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background: color.hexCode || '#ccc',
+                            border: '1px solid var(--border)',
+                          }}
+                        />
+                        <span style={{ fontSize: '13px', fontWeight: 500 }}>{color.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Size Selection */}
+              {product.sizes?.length > 0 && (
+                <div className="card" style={{ padding: '20px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
+                    Size: <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{selectedSize || 'Select a size'}</span>
+                  </h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {product.sizes.map((size, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedSize(size)}
+                        style={{
+                          padding: '8px 16px',
+                          border: `2px solid ${selectedSize === size ? 'var(--primary)' : 'var(--border)'}`,
+                          borderRadius: '4px',
+                          background: selectedSize === size ? 'var(--primary-light)' : '#fff',
+                          color: selectedSize === size ? 'var(--primary)' : 'var(--text-primary)',
+                          fontWeight: 500,
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Variant Selection (for powered glasses) */}
               {product.variants?.length > 0 && (
                 <div className="card" style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Select Variant</h3>

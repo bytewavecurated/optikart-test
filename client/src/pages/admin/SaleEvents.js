@@ -35,9 +35,12 @@ const SaleEvents = () => {
   const fetchEvents = async () => {
     try {
       const res = await saleEvents.getAll();
-      setEvents(res.data.data || res.data || []);
+      // Handle different response structures
+      const eventData = res.data?.events || res.data?.data || res.data || [];
+      setEvents(Array.isArray(eventData) ? eventData : []);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to fetch sale events:', err);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
