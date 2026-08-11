@@ -365,6 +365,63 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const staffLogin = async (email, password) => {
+    try {
+      const response = await api.post('/staff/auth/login', { email, password });
+      const data = response.data;
+      
+      // Check if OTP is required
+      if (data.requiresOTP) {
+        return { success: true, requiresOTP: true, email: data.email };
+      }
+      
+      // Direct login with token
+      if (data.token) {
+        const { token, staff: staffData } = data;
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(ROLE_KEY, 'staff');
+        localStorage.setItem(USER_KEY, JSON.stringify(staffData));
+        setSessionExpiry('staff');
+        setStaff(staffData);
+        setIsAuthenticated(true);
+        connectSocket(token);
+        toast.success('Staff login successful!');
+        return { success: true, token, staff: staffData };
+      }
+      
+      return { success: false, message: 'Unexpected response from server' };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Staff login failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const verifyStaffLoginOTP = async (email, otp) => {
+    try {
+      const response = await api.post('/staff/auth/verify-otp', { email, otp });
+      const { token, staff: staffData } = response.data;
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(ROLE_KEY, 'staff');
+      localStorage.setItem(USER_KEY, JSON.stringify(staffData));
+      setSessionExpiry('staff');
+      setStaff(staffData);
+      setIsAuthenticated(true);
+      connectSocket(token);
+      return { success: true, staff: staffData };
+    } catch (error) {
+      const message = error.response?.data?.message || 'OTP verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const staffLogout = useCallback(() => {
+    api.post('/staff/auth/logout').catch(() => {});
+    clearAllState();
+    toast.success('Logged out successfully');
+  }, [clearAllState]);
+
   const value = {
     user,
     seller,
@@ -382,6 +439,9 @@ export const AuthProvider = ({ children }) => {
     sellerLogout,
     adminLogin,
     verifyAdminLoginOTP,
+    staffLogin,
+    verifyStaffLoginOTP,
+    staffLogout,
     sendOTP,
     verifyOTP,
     updateProfile,

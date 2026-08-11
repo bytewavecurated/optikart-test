@@ -28,6 +28,8 @@ const SaleEvents = lazy(() => import('./pages/admin/SaleEvents'));
 const BannerManagement = lazy(() => import('./pages/admin/BannerManagement'));
 const UserDetailView = lazy(() => import('./pages/admin/UserDetailView'));
 const SellerDetailView = lazy(() => import('./pages/admin/SellerDetailView'));
+const StaffLogin = lazy(() => import('./pages/staff/StaffLogin'));
+const StaffLayout = lazy(() => import('./pages/staff/StaffLayout'));
 const ProductDetails = lazy(() => import('./pages/ProductDetails'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
@@ -71,7 +73,7 @@ const LoadingFallback = () => (
 );
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, seller, admin } = useAuth();
+  const { isAuthenticated, user, seller, admin, staff } = useAuth();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -81,6 +83,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     if (allowedRoles.includes('user') && user) return children;
     if (allowedRoles.includes('seller') && seller) return children;
     if (allowedRoles.includes('admin') && admin) return children;
+    if (allowedRoles.includes('staff') && staff) return children;
     return <Navigate to="/login" replace />;
   }
 
@@ -93,6 +96,10 @@ const SellerRoute = ({ children }) => (
 
 const AdminRoute = ({ children }) => (
   <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
+);
+
+const StaffRoute = ({ children }) => (
+  <ProtectedRoute allowedRoles={['staff']}>{children}</ProtectedRoute>
 );
 
 function App() {
@@ -125,6 +132,18 @@ function App() {
           <Route path="delivery" element={<DeliveryManagement />} />
           <Route path="sale-events" element={<SaleEvents />} />
           <Route path="banners" element={<BannerManagement />} />
+        </Route>
+        <Route path="/staff/login" element={<StaffLogin />} />
+        <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>
+          <Route index element={<div>Staff Dashboard - Coming Soon</div>} />
+          <Route path="blogs" element={<div>Blog Management - Coming Soon</div>} />
+          <Route path="blogs/manage" element={<div>Manage Blogs - Coming Soon</div>} />
+          <Route path="support" element={<div>Support Dashboard - Coming Soon</div>} />
+          <Route path="support/tickets" element={<div>Support Tickets - Coming Soon</div>} />
+          <Route path="products" element={<div>Product Management - Coming Soon</div>} />
+          <Route path="products/manage" element={<div>Manage Products - Coming Soon</div>} />
+          <Route path="orders" element={<div>Order Management - Coming Soon</div>} />
+          <Route path="orders/manage" element={<div>Manage Orders - Coming Soon</div>} />
         </Route>
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />

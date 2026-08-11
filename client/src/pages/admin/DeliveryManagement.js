@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTruck, FiPackage } from 'react-icons/fi';
+import { FiTruck, FiPackage, FiSearch } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -11,6 +11,7 @@ const DeliveryManagement = () => {
   const [pickups, setPickups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('deliveries');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const fetch = async () => {
@@ -24,25 +25,62 @@ const DeliveryManagement = () => {
     fetch();
   }, []);
 
+  // Filter function for search
+  const filterBySearch = (items, searchFields) => {
+    if (!searchQuery.trim()) return items;
+    const query = searchQuery.toLowerCase();
+    return items.filter(item => 
+      searchFields.some(field => {
+        const value = item[field];
+        if (!value) return false;
+        if (typeof value === 'string') return value.toLowerCase().includes(query);
+        if (typeof value === 'object') {
+          // Handle nested objects like address, customer, seller
+          return Object.values(value).some(val => 
+            val && typeof val === 'string' && val.toLowerCase().includes(query)
+          );
+        }
+        return false;
+      })
+    );
+  };
+
+  const filteredDeliveries = filterBySearch(deliveries, ['orderId', 'customerName', 'status']);
+  const filteredPickups = filterBySearch(pickups, ['orderId', 'seller.businessName', 'status']);
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Delivery Management</h1>
+          
+          {/* Search Bar */}
+          <div style={{ position: 'relative', maxWidth: '500px', marginBottom: '20px' }}>
+            <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+            <input 
+              type="text"
+              placeholder="Search by order ID, customer name, seller name, or status..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input"
+              style={{ paddingLeft: '38px', width: '100%' }}
+            />
+          </div>
+
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-            <button onClick={() => setTab('deliveries')} style={{ padding: '8px 20px', borderRadius: '4px', fontSize: '14px', fontWeight: 500, background: tab === 'deliveries' ? 'var(--primary)' : '#fff', color: tab === 'deliveries' ? '#fff' : 'var(--text-secondary)', border: `1px solid ${tab === 'deliveries' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiTruck size={14} /> Deliveries ({deliveries.length})</button>
-            <button onClick={() => setTab('pickups')} style={{ padding: '8px 20px', borderRadius: '4px', fontSize: '14px', fontWeight: 500, background: tab === 'pickups' ? 'var(--primary)' : '#fff', color: tab === 'pickups' ? '#fff' : 'var(--text-secondary)', border: `1px solid ${tab === 'pickups' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiPackage size={14} /> Pickups ({pickups.length})</button>
+            <button onClick={() => setTab('deliveries')} style={{ padding: '8px 20px', borderRadius: '4px', fontSize: '14px', fontWeight: 500, background: tab === 'deliveries' ? 'var(--primary)' : '#fff', color: tab === 'deliveries' ? '#fff' : 'var(--text-secondary)', border: `1px solid ${tab === 'deliveries' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiTruck size={14} /> Deliveries ({filteredDeliveries.length})</button>
+            <button onClick={() => setTab('pickups')} style={{ padding: '8px 20px', borderRadius: '4px', fontSize: '14px', fontWeight: 500, background: tab === 'pickups' ? 'var(--primary)' : '#fff', color: tab === 'pickups' ? '#fff' : 'var(--text-secondary)', border: `1px solid ${tab === 'pickups' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiPackage size={14} /> Pickups ({filteredPickups.length})</button>
           </div>
 
           {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : (
             <div className="card">
               {tab === 'deliveries' ? (
-                deliveries.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>No deliveries</div> : (
+                filteredDeliveries.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>{searchQuery ? 'No deliveries match your search' : 'No deliveries'}</div> : (
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Order', 'Customer', 'Address', 'Status', 'Updated'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {deliveries.map((d, idx) => (
+                      {filteredDeliveries.map((d, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
                           <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>#{d.orderId?.slice(-8).toUpperCase() || '-'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{d.customerName || '-'}</td>
@@ -55,11 +93,11 @@ const DeliveryManagement = () => {
                   </table>
                 )
               ) : (
-                pickups.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>No pickups scheduled</div> : (
+                filteredPickups.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>{searchQuery ? 'No pickups match your search' : 'No pickups scheduled'}</div> : (
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Order', 'Seller', 'Pickup Date', 'Status', 'Address'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
                     <tbody>
-                      {pickups.map((p, idx) => (
+                      {filteredPickups.map((p, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
                           <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>#{p.orderId?.slice(-8).toUpperCase() || '-'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.seller?.businessName || '-'}</td>
