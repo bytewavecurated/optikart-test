@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FiHeart, FiShoppingCart, FiStar } from 'react-icons/fi';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiHeart, FiShoppingCart, FiStar, FiColumns } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import toast from 'react-hot-toast';
 
 const styles = {
   card: {
@@ -144,19 +147,39 @@ const styles = {
     transform: 'translateY(0)',
     opacity: 1,
   },
+  compareBtn: {
+    position: 'absolute',
+    top: '8px',
+    left: '8px',
+    background: '#fff',
+    border: '1px solid #e0e0e0',
+    borderRadius: '50%',
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    zIndex: 2,
+  },
 };
 
 export default function ProductCard({ product }) {
   const [hovered, setHovered] = useState(false);
   const [wishlisted, setWishlisted] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   if (!product) return null;
 
   const {
-    id,
+    _id,
+    id = _id,
     brand = 'Unknown Brand',
     title = 'Eyewear Product',
-    image = 'https://via.placeholder.com/200x200/f1f3f6/999?text=👓',
+    image = product.images?.[0] || 'https://via.placeholder.com/200x200/f1f3f6/999?text=👓',
     price = 999,
     originalPrice = 1999,
     rating = 4.2,
@@ -167,9 +190,62 @@ export default function ProductCard({ product }) {
     ? Math.round(((originalPrice - price) / originalPrice) * 100)
     : 0;
 
+  const handleWishlistClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to wishlist');
+      navigate('/login');
+      return;
+    }
+    
+    setWishlisted(!wishlisted);
+    toast.success(wishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+  };
+
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+    
+    addToCart(product);
+  };
+
+  const handleCompare = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Get current compare list from localStorage
+    const compareList = JSON.parse(localStorage.getItem('optikart_compare') || '[]');
+    
+    // Check if product already in compare list
+    if (compareList.find(p => p._id === (id || _id))) {
+      toast.error('Product already in comparison');
+      return;
+    }
+    
+    // Check if compare list is full
+    if (compareList.length >= 4) {
+      toast.error('Maximum 4 products can be compared');
+      return;
+    }
+    
+    // Add product to compare list
+    compareList.push({ _id: id || _id, name: title, brand, image, price });
+    localStorage.setItem('optikart_compare', JSON.stringify(compareList));
+    
+    toast.success('Added to comparison');
+  };
+
   return (
     <Link
-      to={`/product/${id}`}
+      to={`/product/${id || _id}`}
       style={{
         ...styles.card,
         ...(hovered ? styles.cardHover : {}),
@@ -182,15 +258,19 @@ export default function ProductCard({ product }) {
       <div style={styles.imageWrap}>
         <img src={image} alt={title} style={styles.image} loading="lazy" />
         <button
+          style={styles.compareBtn}
+          onClick={handleCompare}
+          aria-label="Compare product"
+          title="Add to comparison"
+        >
+          <FiColumns size={16} color="#666" />
+        </button>
+        <button
           style={{
             ...styles.wishlistBtn,
             color: wishlisted ? '#ff4747' : '#999',
           }}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setWishlisted(!wishlisted);
-          }}
+          onClick={handleWishlistClick}
           aria-label="Add to wishlist"
         >
           <FiHeart size={16} fill={wishlisted ? '#ff4747' : 'none'} />
@@ -224,10 +304,7 @@ export default function ProductCard({ product }) {
           ...styles.addToCart,
           ...(hovered ? styles.addToCartVisible : {}),
         }}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
+        onClick={handleAddToCart}
       >
         <FiShoppingCart /> Add to Cart
       </button>

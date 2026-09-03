@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useUserBehavior } from './UserBehaviorContext';
+import { useAuth } from './AuthContext';
+import toast from 'react-hot-toast';
 
 const CartContext = createContext(null);
 
@@ -10,6 +12,7 @@ const DELIVERY_CHARGE_PER_ITEM = 16;
 
 export const CartProvider = ({ children }) => {
   const { updateCartItems } = useUserBehavior();
+  const { isAuthenticated } = useAuth();
   
   const [items, setItems] = useState(() => {
     try {
@@ -44,6 +47,11 @@ export const CartProvider = ({ children }) => {
   }, [coupon]);
 
   const addToCart = useCallback((product, selectedVariant = null, quantity = 1) => {
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to cart');
+      return false;
+    }
+
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
         (item) =>
@@ -66,6 +74,7 @@ export const CartProvider = ({ children }) => {
       }
 
       if (prevItems.length >= MAX_ITEMS) {
+        toast.error('Cart is full (max 20 items)');
         return prevItems;
       }
 
@@ -76,9 +85,11 @@ export const CartProvider = ({ children }) => {
         addedAt: new Date().toISOString(),
       };
 
+      toast.success('Added to cart!');
       return [...prevItems, newItem];
     });
-  }, []);
+    return true;
+  }, [isAuthenticated]);
 
   const removeFromCart = useCallback((index) => {
     setItems((prevItems) => prevItems.filter((_, i) => i !== index));
