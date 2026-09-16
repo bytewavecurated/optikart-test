@@ -76,7 +76,12 @@ const productSchema = new mongoose.Schema({
   saleEventId: { type: mongoose.Schema.Types.ObjectId, ref: 'SaleEvent' },
   originalDiscountedPrice: { type: Number },
   gender: { type: String, enum: ['men', 'women', 'unisex', 'kids'], default: 'unisex' },
-  frameSize: { type: String, enum: ['small', 'medium', 'large', 'extra-large'], default: 'medium' }
+  frameSize: { type: String, enum: ['small', 'medium', 'large', 'extra-large'], default: 'medium' },
+  // Commission fields - 3% platform commission
+  commissionPercentage: { type: Number, default: 3, min: 0, max: 100 },
+  isSponsored: { type: Boolean, default: false },
+  sponsoredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller' },
+  sponsoredAt: { type: Date }
 }, {
   timestamps: true
 });

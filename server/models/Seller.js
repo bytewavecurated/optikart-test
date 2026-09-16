@@ -59,7 +59,7 @@ const sellerSchema = new mongoose.Schema({
   subscriptionStatus: {
     type: String,
     enum: ['active', 'expired', 'cancelled'],
-    default: 'cancelled'
+    default: 'active' // Changed to active - no subscription required
   },
   subscriptionExpiry: { type: Date },
   razorpaySubscriptionId: { type: String },

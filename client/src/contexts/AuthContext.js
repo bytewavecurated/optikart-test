@@ -71,15 +71,15 @@ export const AuthProvider = ({ children }) => {
       let response;
       if (role === 'seller') {
         response = await api.get('/seller/me');
-        setSeller(response.data.data);
-        setStaff(response.data.data);
+        setSeller(response.data.seller);
+        setStaff(response.data.seller);
       } else if (role === 'admin') {
         response = await api.get('/admin/me');
-        setAdmin(response.data.data);
-        setStaff(response.data.data);
+        setAdmin(response.data.admin || response.data.user);
+        setStaff(response.data.admin || response.data.user);
       } else {
         response = await api.get('/auth/me');
-        setUser(response.data.data);
+        setUser(response.data.user);
       }
       setIsAuthenticated(true);
       connectSocket(token);
@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
         return { success: true, requiresOTP: true, email: data.email, sellerId: data.sellerId };
       }
       
-      // Old flow - direct token
+      // Direct token response - handle both response structures
       if (data.token) {
         const { token, seller: sellerData } = data;
         localStorage.setItem(TOKEN_KEY, token);

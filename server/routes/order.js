@@ -106,6 +106,12 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
 
       const sellerTotal = sellerSubtotal + sellerDeliveryCharge + sellerPlatformFee - sellerCouponDiscount;
 
+      // Calculate commission (3% of subtotal after discounts)
+      const commissionPercentage = 3;
+      const commissionBase = sellerSubtotal - sellerCouponDiscount;
+      const commissionAmount = Math.round(commissionBase * (commissionPercentage / 100));
+      const sellerPayoutAmount = commissionBase - commissionAmount;
+
       const order = new Order({
         user: userId,
         seller: sellerId,
@@ -120,7 +126,12 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         orderStatus: 'pending',
         couponApplied: couponCode ? couponCode.toUpperCase() : undefined,
         couponDiscount: sellerCouponDiscount,
-        prescription
+        prescription,
+        // Commission tracking
+        commissionPercentage,
+        commissionAmount,
+        sellerPayoutAmount,
+        commissionPaid: false
       });
 
       await order.save();

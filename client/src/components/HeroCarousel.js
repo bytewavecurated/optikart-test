@@ -22,12 +22,6 @@ const DEFAULT_BANNERS = [
     imageUrl: 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=1200&h=400&fit=crop',
     linkUrl: '/category/blue-cut',
   },
-  {
-    _id: 'default-4',
-    title: 'Virtual Try-On',
-    imageUrl: 'https://images.unsplash.com/photo-1508296695146-257a814070b4?w=1200&h=400&fit=crop',
-    linkUrl: '/virtual-try-on',
-  },
 ];
 
 const styles = {
@@ -53,7 +47,7 @@ const styles = {
   },
   image: {
     width: '100%',
-    height: '400px',
+    height: '300px',
     objectFit: 'cover',
     display: 'block',
   },
@@ -269,6 +263,11 @@ export default function HeroCarousel() {
       )}
 
       <style>{`
+        @media (max-width: 1024px) {
+          .hero-slide-image { 
+            height: 250px !important; 
+          }
+        }
         @media (max-width: 768px) {
           .hero-slide-image { 
             height: 200px !important; 
@@ -276,7 +275,7 @@ export default function HeroCarousel() {
         }
         @media (max-width: 480px) {
           .hero-slide-image { 
-            height: 150px !important; 
+            height: 180px !important; 
           }
         }
         .carousel-arrow:hover {

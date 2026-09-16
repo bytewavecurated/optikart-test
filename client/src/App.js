@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import AIChatbot from './components/AIChatbot';
 
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
@@ -74,9 +75,20 @@ const LoadingFallback = () => (
 );
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, seller, admin, staff } = useAuth();
+  const { isAuthenticated, user, seller, admin, staff, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingFallback />;
+  }
 
   if (!isAuthenticated) {
+    // Determine redirect based on current path
+    const currentPath = window.location.pathname;
+    if (currentPath.startsWith('/seller')) {
+      return <Navigate to="/seller/login" replace />;
+    } else if (currentPath.startsWith('/admin')) {
+      return <Navigate to="/admin/login" replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
@@ -85,6 +97,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     if (allowedRoles.includes('seller') && seller) return children;
     if (allowedRoles.includes('admin') && admin) return children;
     if (allowedRoles.includes('staff') && staff) return children;
+    
+    // Redirect based on role
+    const currentPath = window.location.pathname;
+    if (currentPath.startsWith('/seller')) {
+      return <Navigate to="/seller/login" replace />;
+    } else if (currentPath.startsWith('/admin')) {
+      return <Navigate to="/admin/login" replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
@@ -185,6 +205,7 @@ function App() {
         <Route path="/sitemap" element={<Sitemap />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <AIChatbot />
     </Suspense>
   );
 }

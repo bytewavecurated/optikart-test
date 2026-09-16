@@ -9,6 +9,8 @@ import BrandSection from '../components/BrandSection';
 import ContactLensBrandSection from '../components/ContactLensBrandSection';
 import ProductCard from '../components/ProductCard';
 import LoadMore from '../components/LoadMore';
+import SmartChoice from '../components/SmartChoice';
+import GenderSelection from '../components/GenderSelection';
 import { products } from '../services/api';
 import { useUserBehavior } from '../contexts/UserBehaviorContext';
 
@@ -248,6 +250,7 @@ const Home = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <HeroCarousel />
+        <GenderSelection />
 
         <div className="container" style={{ marginTop: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '24px' }}>
@@ -394,6 +397,8 @@ const Home = () => {
               />
             )}
           </section>
+
+          <SmartChoice />
 
           {/* Personalized Section 1 - Based on user behavior */}
           {personalizedProducts1.length > 0 && (

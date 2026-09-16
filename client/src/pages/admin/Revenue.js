@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiDollarSign, FiTrendingUp, FiShoppingBag } from 'react-icons/fi';
+import { FiDollarSign, FiTrendingUp, FiShoppingBag, FiCalendar } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -8,14 +8,30 @@ const Revenue = () => {
   const [revenue, setRevenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('30d');
+  const [customDateRange, setCustomDateRange] = useState({ from: '', to: '' });
+  const [useCustomDate, setUseCustomDate] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
-      try { const res = await adminApi.getRevenue({ period }); setRevenue(res.data.data); } catch (err) { console.error(err); }
-      finally { setLoading(false); }
+      try { 
+        const params = useCustomDate 
+          ? { from: customDateRange.from, to: customDateRange.to }
+          : { period };
+        const res = await adminApi.getRevenue(params); 
+        setRevenue(res.data.data); 
+      } catch (err) { 
+        console.error(err); 
+      } finally { 
+        setLoading(false); 
+      }
     };
     fetch();
-  }, [period]);
+  }, [period, customDateRange, useCustomDate]);
+
+  const handleCustomDateChange = (field, value) => {
+    setCustomDateRange(prev => ({ ...prev, [field]: value }));
+    setUseCustomDate(true);
+  };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -24,9 +40,29 @@ const Revenue = () => {
         <div className="container page-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Revenue</h1>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* Custom Date Range Picker */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: '20px', background: useCustomDate ? 'var(--primary-light)' : '#fff' }}>
+                <FiCalendar size={14} style={{ color: useCustomDate ? 'var(--primary)' : 'var(--text-light)' }} />
+                <input
+                  type="date"
+                  value={customDateRange.from}
+                  onChange={(e) => handleCustomDateChange('from', e.target.value)}
+                  style={{ border: 'none', fontSize: '13px', padding: '2px 4px', outline: 'none', background: 'transparent' }}
+                  placeholder="From"
+                />
+                <span style={{ color: 'var(--text-light)', fontSize: '12px' }}>to</span>
+                <input
+                  type="date"
+                  value={customDateRange.to}
+                  onChange={(e) => handleCustomDateChange('to', e.target.value)}
+                  style={{ border: 'none', fontSize: '13px', padding: '2px 4px', outline: 'none', background: 'transparent' }}
+                  placeholder="To"
+                />
+              </div>
+              {/* Period Buttons */}
               {[{ label: '7 Days', value: '7d' }, { label: '30 Days', value: '30d' }, { label: '90 Days', value: '90d' }, { label: '1 Year', value: '1y' }].map((p) => (
-                <button key={p.value} onClick={() => setPeriod(p.value)} style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px', border: `1px solid ${period === p.value ? 'var(--primary)' : 'var(--border)'}`, background: period === p.value ? 'var(--primary)' : '#fff', color: period === p.value ? '#fff' : 'var(--text-secondary)', cursor: 'pointer' }}>{p.label}</button>
+                <button key={p.value} onClick={() => { setPeriod(p.value); setUseCustomDate(false); }} style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px', border: `1px solid ${!useCustomDate && period === p.value ? 'var(--primary)' : 'var(--border)'}`, background: !useCustomDate && period === p.value ? 'var(--primary)' : '#fff', color: !useCustomDate && period === p.value ? '#fff' : 'var(--text-secondary)', cursor: 'pointer' }}>{p.label}</button>
               ))}
             </div>
           </div>

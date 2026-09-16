@@ -70,7 +70,13 @@ const orderSchema = new mongoose.Schema({
   returnReason: { type: String },
   prescription: prescriptionSchema,
   couponApplied: { type: String },
-  couponDiscount: { type: Number, default: 0 }
+  couponDiscount: { type: Number, default: 0 },
+  // Commission tracking
+  commissionPercentage: { type: Number, default: 3 },
+  commissionAmount: { type: Number, default: 0 },
+  sellerPayoutAmount: { type: Number, default: 0 },
+  commissionPaid: { type: Boolean, default: false },
+  commissionPaidAt: { type: Date }
 }, {
   timestamps: true
 });
