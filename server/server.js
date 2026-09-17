@@ -24,6 +24,9 @@ import notificationRoutes from './routes/notification.js';
 import shiprocketRoutes from './routes/shiprocket.js';
 import saleEventRoutes from './routes/saleEvent.js';
 import bannerRoutes from './routes/banners.js';
+import executiveRoutes from './routes/executive.js';
+import manufacturerRoutes from './routes/manufacturer.js';
+import manufacturerSellerRoutes from './routes/manufacturerSeller.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -81,6 +84,9 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/shiprocket', shiprocketRoutes);
 app.use('/api/sale-events', saleEventRoutes);
 app.use('/api/banners', bannerRoutes);
+app.use('/api/executive', executiveRoutes);
+app.use('/api/manufacturer', manufacturerRoutes);
+app.use('/api/manufacturer-seller', manufacturerSellerRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

@@ -81,7 +81,14 @@ const productSchema = new mongoose.Schema({
   commissionPercentage: { type: Number, default: 3, min: 0, max: 100 },
   isSponsored: { type: Boolean, default: false },
   sponsoredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller' },
-  sponsoredAt: { type: Date }
+  sponsoredAt: { type: Date },
+  // Manufacturer fields
+  manufacturer: { type: mongoose.Schema.Types.ObjectId, ref: 'Manufacturer' },
+  isManufacturerProduct: { type: Boolean, default: false },
+  isDiscontinued: { type: Boolean, default: false },
+  discontinuedAt: { type: Date },
+  discontinuedBy: { type: mongoose.Schema.Types.ObjectId },
+  manufacturerSellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'ManufacturerSeller' }
 }, {
   timestamps: true
 });

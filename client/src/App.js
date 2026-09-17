@@ -67,6 +67,12 @@ const Security = lazy(() => import('./pages/Security'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Sitemap = lazy(() => import('./pages/Sitemap'));
 const EPRCompliance = lazy(() => import('./pages/EPRCompliance'));
+const ExecutiveLogin = lazy(() => import('./pages/executive/ExecutiveLogin'));
+const ExecutiveDashboard = lazy(() => import('./pages/executive/ExecutiveDashboard'));
+const ManufacturerLogin = lazy(() => import('./pages/manufacturer/ManufacturerLogin'));
+const ManufacturerDashboard = lazy(() => import('./pages/manufacturer/ManufacturerDashboard'));
+const ManufacturerSellerLogin = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerLogin'));
+const ManufacturerSellerDashboard = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerDashboard'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -202,6 +208,12 @@ function App() {
         <Route path="/policy/security" element={<Security />} />
         <Route path="/policy/privacy" element={<PrivacyPolicy />} />
         <Route path="/policy/epr" element={<EPRCompliance />} />
+        <Route path="/executive/login" element={<ExecutiveLogin />} />
+        <Route path="/executive/dashboard" element={<ExecutiveDashboard />} />
+        <Route path="/manufacturer/login" element={<ManufacturerLogin />} />
+        <Route path="/manufacturer/dashboard" element={<ManufacturerDashboard />} />
+        <Route path="/manufacturer-seller/login" element={<ManufacturerSellerLogin />} />
+        <Route path="/manufacturer-seller/dashboard" element={<ManufacturerSellerDashboard />} />
         <Route path="/sitemap" element={<Sitemap />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

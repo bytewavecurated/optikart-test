@@ -5,6 +5,9 @@ import Seller from './models/Seller.js';
 import Product from './models/Product.js';
 import Coupon from './models/Coupon.js';
 import HelpArticle from './models/HelpArticle.js';
+import Executive from './models/Executive.js';
+import Manufacturer from './models/Manufacturer.js';
+import ManufacturerSeller from './models/ManufacturerSeller.js';
 import Blog from './models/Blog.js';
 
 dotenv.config();
@@ -17,6 +20,9 @@ const seedDatabase = async () => {
     await Coupon.deleteMany({});
     await HelpArticle.deleteMany({});
     await Blog.deleteMany({});
+    await Executive.deleteMany({});
+    await Manufacturer.deleteMany({});
+    await ManufacturerSeller.deleteMany({});
     console.log('Cleared existing data');
 
     const admin = await User.create({
@@ -146,6 +152,68 @@ const seedDatabase = async () => {
       }
     ]);
     console.log(`${sellers.length} sellers created`);
+
+    // Create test executive
+    const executive = await Executive.create({
+      name: "Delivery Executive",
+      email: "executive.delivery@optikart.com",
+      password: "Executive123@",
+      phone: "9876543220",
+      department: "delivery",
+      permissions: [{ module: "delivery", actions: ["view", "create", "edit", "delete"] }],
+      isActive: true,
+      createdBy: admin._id
+    });
+    console.log("Executive created:", executive.email);
+
+    // Create test manufacturer
+    const manufacturer = await Manufacturer.create({
+      name: "Ray-Ban Admin",
+      email: "rayban.manufacturer@optikart.com",
+      password: "Manufacturer123@",
+      phone: "9876543221",
+      companyName: "Ray-Ban Manufacturing",
+      gstNumber: "29AABCU9603R1ZM",
+      panNumber: "AABCU9603R",
+      address: {
+        street: "123 Manufacturing St",
+        city: "Mumbai",
+        state: "Maharashtra",
+        pincode: "400001"
+      },
+      brands: ["Ray-Ban"],
+      isActive: true,
+      createdBy: admin._id
+    });
+    console.log("Manufacturer created:", manufacturer.email);
+
+    // Create test manufacturer seller
+    const manufacturerSeller = await ManufacturerSeller.create({
+      name: "Ray-Ban Retailer",
+      email: "rayban.retailer1@optikart.com",
+      password: "Retailer123@",
+      phone: "9876543222",
+      storeName: "Ray-Ban Retail Store 1",
+      storeAddress: {
+        street: "456 Retail St",
+        city: "Mumbai",
+        state: "Maharashtra",
+        pincode: "400002"
+      },
+      manufacturerCode: "RB-RET-001",
+      manufacturer: manufacturer._id,
+      gstNumber: "27AABCU9604R1ZK",
+      panNumber: "AABCU9604R",
+      bankDetails: {
+        accountNumber: "1234567890",
+        ifscCode: "SBIN0001234",
+        bankName: "State Bank of India",
+        branchName: "Mumbai Main"
+      },
+      isActive: true,
+      createdBy: manufacturer._id
+    });
+    console.log("Manufacturer seller created:", manufacturerSeller.email);
 
     const products = await Product.create([
       {
@@ -940,6 +1008,9 @@ const seedDatabase = async () => {
     console.log(`${blogs.length} blog posts created`);
 
     console.log('\n=== Seed completed successfully! ===');
+    console.log('Executive login: executive.delivery@optikart.com / Executive123@');
+    console.log('Manufacturer login: rayban.manufacturer@optikart.com / Manufacturer123@');
+    console.log('Manufacturer seller login: rayban.retailer1@optikart.com / Retailer123@');
     console.log('Admin login: samedayopticians@gmail.com / Sameday123@');
     console.log('Test user logins: testuser@optikart.com / Test123@, demo@optikart.com / Demo123@');
     console.log('Seller logins: opticalworld@gmail.com, visioncare@gmail.com, lensstudio@gmail.com, eyefashion@gmail.com / Seller123@');

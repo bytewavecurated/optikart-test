@@ -9,6 +9,9 @@ import Coupon from '../models/Coupon.js';
 import StaffRole from '../models/StaffRole.js';
 import Notification from '../models/Notification.js';
 import { verifyToken, verifyAdmin, verifyStaff } from '../middleware/auth.js';
+import Executive from '../models/Executive.js';
+import Manufacturer from '../models/Manufacturer.js';
+import ManufacturerSeller from '../models/ManufacturerSeller.js';
 
 const router = express.Router();
 
@@ -673,3 +676,272 @@ router.get('/sellers/:id/orders', verifyToken, verifyAdmin, async (req, res) => 
 });
 
 export default router;
+
+// ==================== EXECUTIVE MANAGEMENT ====================
+
+// Get all executives
+router.get('/executives', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { search, department } = req.query;
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { executiveId: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (department) {
+      query.department = department;
+    }
+
+    const executives = await Executive.find(query).select('-password').sort({ createdAt: -1 });
+    res.json({ success: true, data: executives });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Create executive
+router.post('/executives', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { name, email, password, phone, department, permissions } = req.body;
+
+    const existingExecutive = await Executive.findOne({ email });
+    if (existingExecutive) {
+      return res.status(400).json({ success: false, message: 'Email already registered.' });
+    }
+
+    const executive = new Executive({
+      name,
+      email,
+      password,
+      phone,
+      department,
+      permissions: permissions || [],
+      createdBy: req.user.id
+    });
+
+    await executive.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Executive created successfully.',
+      executive: executive.toJSON()
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Update executive
+router.put('/executives/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { name, phone, department, permissions, isActive } = req.body;
+
+    const executive = await Executive.findByIdAndUpdate(
+      req.params.id,
+      { name, phone, department, permissions, isActive },
+      { new: true }
+    ).select('-password');
+
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    res.json({ success: true, message: 'Executive updated successfully.', executive });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Delete executive
+router.delete('/executives/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const executive = await Executive.findByIdAndDelete(req.params.id);
+
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    res.json({ success: true, message: 'Executive deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Ban/Unban executive
+router.put('/executives/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { isBanned, banReason } = req.body;
+    
+    const executive = await Executive.findByIdAndUpdate(
+      req.params.id,
+      {
+        isBanned: isBanned !== undefined ? isBanned : undefined,
+        banReason: banReason || '',
+        bannedBy: req.user.id,
+        bannedAt: isBanned ? new Date() : null
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    res.json({ success: true, message: 'Executive ban status updated.', executive });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// ==================== MANUFACTURER MANAGEMENT ====================
+
+// Get all manufacturers
+router.get('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { search } = req.query;
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { companyName: { $regex: search, $options: 'i' } },
+        { manufacturerId: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const manufacturers = await Manufacturer.find(query).select('-password').sort({ createdAt: -1 });
+    res.json({ success: true, data: manufacturers });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Create manufacturer
+router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { name, email, password, phone, companyName, gstNumber, panNumber, address, brands } = req.body;
+
+    const existingManufacturer = await Manufacturer.findOne({ email });
+    if (existingManufacturer) {
+      return res.status(400).json({ success: false, message: 'Email already registered.' });
+    }
+
+    const manufacturer = new Manufacturer({
+      name,
+      email,
+      password,
+      phone,
+      companyName,
+      gstNumber,
+      panNumber,
+      address,
+      brands: brands || [],
+      createdBy: req.user.id
+    });
+
+    await manufacturer.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Manufacturer created successfully.',
+      manufacturer: manufacturer.toJSON()
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Update manufacturer
+router.put('/manufacturers/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { name, phone, companyName, address, brands, isActive } = req.body;
+
+    const manufacturer = await Manufacturer.findByIdAndUpdate(
+      req.params.id,
+      { name, phone, companyName, address, brands, isActive },
+      { new: true }
+    ).select('-password');
+
+    if (!manufacturer) {
+      return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
+    }
+
+    res.json({ success: true, message: 'Manufacturer updated successfully.', manufacturer });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Delete manufacturer
+router.delete('/manufacturers/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const manufacturer = await Manufacturer.findByIdAndDelete(req.params.id);
+
+    if (!manufacturer) {
+      return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
+    }
+
+    // Optionally delete all products by this manufacturer
+    await Product.deleteMany({ manufacturer: req.params.id });
+
+    res.json({ success: true, message: 'Manufacturer deleted successfully.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Ban/Unban manufacturer
+router.put('/manufacturers/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { isBanned, banReason } = req.body;
+    
+    const manufacturer = await Manufacturer.findByIdAndUpdate(
+      req.params.id,
+      {
+        isBanned: isBanned !== undefined ? isBanned : undefined,
+        banReason: banReason || '',
+        bannedBy: req.user.id,
+        bannedAt: isBanned ? new Date() : null
+      },
+      { new: true }
+    ).select('-password');
+
+    if (!manufacturer) {
+      return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
+    }
+
+    res.json({ success: true, message: 'Manufacturer ban status updated.', manufacturer });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get manufacturer products
+router.get('/manufacturers/:id/products', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const products = await Product.find({ manufacturer: req.params.id })
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: products });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get manufacturer sellers
+router.get('/manufacturers/:id/sellers', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const sellers = await ManufacturerSeller.find({ manufacturer: req.params.id })
+      .select('-password')
+      .sort({ createdAt: -1 });
+    res.json({ success: true, data: sellers });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+

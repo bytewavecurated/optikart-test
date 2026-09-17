@@ -14,6 +14,9 @@ const SESSION_DURATION = {
   user: 30 * 24 * 60 * 60 * 1000,
   seller: 24 * 60 * 60 * 1000,
   admin: 24 * 60 * 60 * 1000,
+  executive: 24 * 60 * 60 * 1000,
+  manufacturer: 24 * 60 * 60 * 1000,
+  manufacturerSeller: 24 * 60 * 60 * 1000,
 };
 
 export const AuthProvider = ({ children }) => {
@@ -21,6 +24,9 @@ export const AuthProvider = ({ children }) => {
   const [seller, setSeller] = useState(null);
   const [admin, setAdmin] = useState(null);
   const [staff, setStaff] = useState(null);
+  const [executive, setExecutive] = useState(null);
+  const [manufacturer, setManufacturer] = useState(null);
+  const [manufacturerSeller, setManufacturerSeller] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +35,9 @@ export const AuthProvider = ({ children }) => {
     setSeller(null);
     setAdmin(null);
     setStaff(null);
+    setExecutive(null);
+    setManufacturer(null);
+    setManufacturerSeller(null);
     setIsAuthenticated(false);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
@@ -72,11 +81,18 @@ export const AuthProvider = ({ children }) => {
       if (role === 'seller') {
         response = await api.get('/seller/me');
         setSeller(response.data.seller);
-        setStaff(response.data.seller);
       } else if (role === 'admin') {
         response = await api.get('/admin/me');
         setAdmin(response.data.admin || response.data.user);
-        setStaff(response.data.admin || response.data.user);
+      } else if (role === 'executive') {
+        response = await api.get('/executive/me');
+        setExecutive(response.data.executive);
+      } else if (role === 'manufacturer') {
+        response = await api.get('/manufacturer/me');
+        setManufacturer(response.data.manufacturer);
+      } else if (role === 'manufacturerSeller') {
+        response = await api.get('/manufacturer-seller/me');
+        setManufacturerSeller(response.data.seller);
       } else {
         response = await api.get('/auth/me');
         setUser(response.data.user);
@@ -99,7 +115,8 @@ export const AuthProvider = ({ children }) => {
       if (isAuthenticated) {
         checkSessionExpiry();
       }
-    }, 60 * 1000);
+    }, 60000);
+
     return () => clearInterval(interval);
   }, [isAuthenticated, checkSessionExpiry]);
 
@@ -108,12 +125,10 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/auth/login', { email, password });
       const data = response.data;
       
-      // Check if OTP is required
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email };
       }
       
-      // If no OTP required (shouldn't happen with new flow, but keeping for backwards compatibility)
       if (data.token) {
         const { token, user: userData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -185,12 +200,10 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/seller/login', { email, password });
       const data = response.data;
       
-      // Check if OTP is required (new flow)
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email, sellerId: data.sellerId };
       }
       
-      // Direct token response - handle both response structures
       if (data.token) {
         const { token, seller: sellerData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -198,7 +211,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem(USER_KEY, JSON.stringify(sellerData));
         setSessionExpiry('seller');
         setSeller(sellerData);
-        setStaff(sellerData);
         setIsAuthenticated(true);
         connectSocket(token);
         toast.success('Seller login successful!');
@@ -222,7 +234,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(USER_KEY, JSON.stringify(sellerData));
       setSessionExpiry('seller');
       setSeller(sellerData);
-      setStaff(sellerData);
       setIsAuthenticated(true);
       connectSocket(token);
       return { success: true };
@@ -233,31 +244,10 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const sellerRegister = async (sellerData) => {
-    try {
-      const response = await api.post('/seller/register', sellerData);
-      const { token, seller: newSeller } = response.data.data;
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(ROLE_KEY, 'seller');
-      localStorage.setItem(USER_KEY, JSON.stringify(newSeller));
-      setSessionExpiry('seller');
-      setSeller(newSeller);
-      setStaff(newSeller);
-      setIsAuthenticated(true);
-      connectSocket(token);
-      toast.success('Seller registration successful!');
-      return { success: true };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Seller registration failed';
-      toast.error(message);
-      return { success: false, message };
-    }
-  };
-
   const sellerLogout = useCallback(() => {
     api.post('/seller/logout').catch(() => {});
     clearAllState();
-    toast.success('Seller logged out successfully');
+    toast.success('Logged out successfully');
   }, [clearAllState]);
 
   const adminLogin = async (email, password) => {
@@ -265,12 +255,10 @@ export const AuthProvider = ({ children }) => {
       const response = await api.post('/admin/auth/login', { email, password });
       const data = response.data;
       
-      // Check if OTP is required (new flow)
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email };
       }
       
-      // Direct login with token
       if (data.token) {
         const { token, admin: adminData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -278,7 +266,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem(USER_KEY, JSON.stringify(adminData));
         setSessionExpiry('admin');
         setAdmin(adminData);
-        setStaff(adminData);
         setIsAuthenticated(true);
         connectSocket(token);
         toast.success('Admin login successful!');
@@ -302,7 +289,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(USER_KEY, JSON.stringify(adminData));
       setSessionExpiry('admin');
       setAdmin(adminData);
-      setStaff(adminData);
       setIsAuthenticated(true);
       connectSocket(token);
       return { success: true };
@@ -313,102 +299,54 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const sendOTP = async (phone) => {
+  const adminLogout = useCallback(() => {
+    api.post('/admin/auth/logout').catch(() => {});
+    clearAllState();
+    toast.success('Logged out successfully');
+  }, [clearAllState]);
+
+  const executiveLogin = async (email, password) => {
     try {
-      await api.post('/auth/send-otp', { phone });
-      toast.success('OTP sent successfully!');
-      return { success: true };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to send OTP';
-      toast.error(message);
-      return { success: false, message };
-    }
-  };
-
-  const verifyOTP = async (phone, otp) => {
-    try {
-      const response = await api.post('/auth/verify-otp', { phone, otp });
-      toast.success('Phone verified successfully!');
-      return { success: true, data: response.data.data };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Invalid OTP';
-      toast.error(message);
-      return { success: false, message };
-    }
-  };
-
-  const updateProfile = async (profileData) => {
-    try {
-      const role = localStorage.getItem(ROLE_KEY);
-      let endpoint = '/auth/profile';
-      if (role === 'seller') endpoint = '/seller/profile';
-      if (role === 'admin') endpoint = '/admin/profile';
-
-      const response = await api.put(endpoint, profileData);
-      const updatedUser = response.data.data;
-
-      if (role === 'seller') {
-        setSeller(updatedUser);
-      } else if (role === 'admin') {
-        setAdmin(updatedUser);
-      } else {
-        setUser(updatedUser);
-      }
-
-      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
-      toast.success('Profile updated successfully!');
-      return { success: true };
-    } catch (error) {
-      const message = error.response?.data?.message || 'Failed to update profile';
-      toast.error(message);
-      return { success: false, message };
-    }
-  };
-
-  const staffLogin = async (email, password) => {
-    try {
-      const response = await api.post('/staff/auth/login', { email, password });
+      const response = await api.post('/executive/login', { email, password });
       const data = response.data;
       
-      // Check if OTP is required
       if (data.requiresOTP) {
-        return { success: true, requiresOTP: true, email: data.email };
+        return { success: true, requiresOTP: true, email: data.email, executiveId: data.executiveId };
       }
       
-      // Direct login with token
       if (data.token) {
-        const { token, staff: staffData } = data;
+        const { token, executive: executiveData } = data;
         localStorage.setItem(TOKEN_KEY, token);
-        localStorage.setItem(ROLE_KEY, 'staff');
-        localStorage.setItem(USER_KEY, JSON.stringify(staffData));
-        setSessionExpiry('staff');
-        setStaff(staffData);
+        localStorage.setItem(ROLE_KEY, 'executive');
+        localStorage.setItem(USER_KEY, JSON.stringify(executiveData));
+        setSessionExpiry('executive');
+        setExecutive(executiveData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Staff login successful!');
-        return { success: true, token, staff: staffData };
+        toast.success('Executive login successful!');
+        return { success: true, token, executive: executiveData };
       }
       
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
-      const message = error.response?.data?.message || 'Staff login failed';
+      const message = error.response?.data?.message || 'Executive login failed';
       toast.error(message);
       return { success: false, message };
     }
   };
 
-  const verifyStaffLoginOTP = async (email, otp) => {
+  const verifyExecutiveLoginOTP = async (executiveId, otp) => {
     try {
-      const response = await api.post('/staff/auth/verify-otp', { email, otp });
-      const { token, staff: staffData } = response.data;
+      const response = await api.post('/executive/verify-login-otp', { executiveId, otp });
+      const { token, executive: executiveData } = response.data;
       localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(ROLE_KEY, 'staff');
-      localStorage.setItem(USER_KEY, JSON.stringify(staffData));
-      setSessionExpiry('staff');
-      setStaff(staffData);
+      localStorage.setItem(ROLE_KEY, 'executive');
+      localStorage.setItem(USER_KEY, JSON.stringify(executiveData));
+      setSessionExpiry('executive');
+      setExecutive(executiveData);
       setIsAuthenticated(true);
       connectSocket(token);
-      return { success: true, staff: staffData };
+      return { success: true, executive: executiveData };
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
       toast.error(message);
@@ -416,8 +354,118 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const staffLogout = useCallback(() => {
-    api.post('/staff/auth/logout').catch(() => {});
+  const executiveLogout = useCallback(() => {
+    api.post('/executive/logout').catch(() => {});
+    clearAllState();
+    toast.success('Logged out successfully');
+  }, [clearAllState]);
+
+  const manufacturerLogin = async (email, password) => {
+    try {
+      const response = await api.post('/manufacturer/login', { email, password });
+      const data = response.data;
+      
+      if (data.requiresOTP) {
+        return { success: true, requiresOTP: true, email: data.email, manufacturerId: data.manufacturerId };
+      }
+      
+      if (data.token) {
+        const { token, manufacturer: manufacturerData } = data;
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(ROLE_KEY, 'manufacturer');
+        localStorage.setItem(USER_KEY, JSON.stringify(manufacturerData));
+        setSessionExpiry('manufacturer');
+        setManufacturer(manufacturerData);
+        setIsAuthenticated(true);
+        connectSocket(token);
+        toast.success('Manufacturer login successful!');
+        return { success: true, token, manufacturer: manufacturerData };
+      }
+      
+      return { success: false, message: 'Unexpected response from server' };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Manufacturer login failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const verifyManufacturerLoginOTP = async (manufacturerId, otp) => {
+    try {
+      const response = await api.post('/manufacturer/verify-login-otp', { manufacturerId, otp });
+      const { token, manufacturer: manufacturerData } = response.data;
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(ROLE_KEY, 'manufacturer');
+      localStorage.setItem(USER_KEY, JSON.stringify(manufacturerData));
+      setSessionExpiry('manufacturer');
+      setManufacturer(manufacturerData);
+      setIsAuthenticated(true);
+      connectSocket(token);
+      return { success: true, manufacturer: manufacturerData };
+    } catch (error) {
+      const message = error.response?.data?.message || 'OTP verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const manufacturerLogout = useCallback(() => {
+    api.post('/manufacturer/logout').catch(() => {});
+    clearAllState();
+    toast.success('Logged out successfully');
+  }, [clearAllState]);
+
+  const manufacturerSellerLogin = async (email, password) => {
+    try {
+      const response = await api.post('/manufacturer-seller/login', { email, password });
+      const data = response.data;
+      
+      if (data.requiresOTP) {
+        return { success: true, requiresOTP: true, email: data.email, sellerId: data.sellerId };
+      }
+      
+      if (data.token) {
+        const { token, seller: sellerData } = data;
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(ROLE_KEY, 'manufacturerSeller');
+        localStorage.setItem(USER_KEY, JSON.stringify(sellerData));
+        setSessionExpiry('manufacturerSeller');
+        setManufacturerSeller(sellerData);
+        setIsAuthenticated(true);
+        connectSocket(token);
+        toast.success('Manufacturer seller login successful!');
+        return { success: true, token, seller: sellerData };
+      }
+      
+      return { success: false, message: 'Unexpected response from server' };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Manufacturer seller login failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const verifyManufacturerSellerLoginOTP = async (sellerId, otp) => {
+    try {
+      const response = await api.post('/manufacturer-seller/verify-login-otp', { sellerId, otp });
+      const { token, seller: sellerData } = response.data;
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(ROLE_KEY, 'manufacturerSeller');
+      localStorage.setItem(USER_KEY, JSON.stringify(sellerData));
+      setSessionExpiry('manufacturerSeller');
+      setManufacturerSeller(sellerData);
+      setIsAuthenticated(true);
+      connectSocket(token);
+      return { success: true, seller: sellerData };
+    } catch (error) {
+      const message = error.response?.data?.message || 'OTP verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const manufacturerSellerLogout = useCallback(() => {
+    api.post('/manufacturer-seller/logout').catch(() => {});
     clearAllState();
     toast.success('Logged out successfully');
   }, [clearAllState]);
@@ -427,6 +475,9 @@ export const AuthProvider = ({ children }) => {
     seller,
     admin,
     staff,
+    executive,
+    manufacturer,
+    manufacturerSeller,
     isAuthenticated,
     loading,
     login,
@@ -435,16 +486,19 @@ export const AuthProvider = ({ children }) => {
     logout,
     sellerLogin,
     verifySellerLoginOTP,
-    sellerRegister,
     sellerLogout,
     adminLogin,
     verifyAdminLoginOTP,
-    staffLogin,
-    verifyStaffLoginOTP,
-    staffLogout,
-    sendOTP,
-    verifyOTP,
-    updateProfile,
+    adminLogout,
+    executiveLogin,
+    verifyExecutiveLoginOTP,
+    executiveLogout,
+    manufacturerLogin,
+    verifyManufacturerLoginOTP,
+    manufacturerLogout,
+    manufacturerSellerLogin,
+    verifyManufacturerSellerLoginOTP,
+    manufacturerSellerLogout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
