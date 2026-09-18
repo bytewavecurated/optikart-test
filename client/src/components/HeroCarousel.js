@@ -147,8 +147,7 @@ export default function HeroCarousel() {
   // Determine how many cards to show based on screen size
   const getCardsToShow = () => {
     if (windowWidth < 768) return 1;
-    if (windowWidth < 1024) return 2;
-    return 3;
+    return 2; // Show 2 images on tablet and desktop
   };
 
   const cardsToShow = getCardsToShow();

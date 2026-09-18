@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = useCallback(async () => {
     const token = localStorage.getItem(TOKEN_KEY);
     const role = localStorage.getItem(ROLE_KEY);
+    const userData = localStorage.getItem(USER_KEY);
 
     if (!token || !role) {
       setLoading(false);
@@ -77,6 +78,29 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      // First, try to load user data from localStorage
+      if (userData) {
+        const parsedData = JSON.parse(userData);
+        if (role === 'seller') {
+          setSeller(parsedData);
+        } else if (role === 'admin') {
+          setAdmin(parsedData);
+        } else if (role === 'executive') {
+          setExecutive(parsedData);
+        } else if (role === 'manufacturer') {
+          setManufacturer(parsedData);
+        } else if (role === 'manufacturerSeller') {
+          setManufacturerSeller(parsedData);
+        } else {
+          setUser(parsedData);
+        }
+        setIsAuthenticated(true);
+        connectSocket(token);
+        setLoading(false);
+        return;
+      }
+
+      // If no data in localStorage, fetch from API
       let response;
       if (role === 'seller') {
         response = await api.get('/seller/me');
@@ -100,7 +124,11 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       connectSocket(token);
     } catch (error) {
-      clearAllState();
+      console.error('Initialize auth error:', error);
+      // Don't clear state if we have data in localStorage
+      if (!userData) {
+        clearAllState();
+      }
     } finally {
       setLoading(false);
     }
