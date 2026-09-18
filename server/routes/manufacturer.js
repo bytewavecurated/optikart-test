@@ -73,23 +73,42 @@ router.post('/login', async (req, res) => {
     manufacturer.failedLoginAttempts = 0;
     manufacturer.lockUntil = null;
 
-    const loginOtp = otpGenerator.generate('6789', { 
-      upperCaseAlphabets: false, 
-      specialChars: false, 
-      lowerCaseAlphabets: false 
-    });
+    // Check if this is a test credential - bypass OTP for testing
+    const testManufacturerEmails = ['rayban.manufacturer@optikart.com'];
+    const isTestCredential = testManufacturerEmails.includes(email);
 
-    manufacturer.loginOtp = loginOtp;
-    manufacturer.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-    await manufacturer.save();
+    if (isTestCredential) {
+      // Direct login for test credentials
+      const token = generateManufacturerToken(manufacturer._id);
+      manufacturer.loginTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      manufacturer.lastLoginAt = new Date();
+      await manufacturer.save();
 
-    await sendOTP(email, loginOtp, 'login');
+      res.json({
+        success: true,
+        message: 'Login successful.',
+        token,
+        manufacturer: manufacturer.toJSON()
+      });
+    } else {
+      const loginOtp = otpGenerator.generate('6789', { 
+        upperCaseAlphabets: false, 
+        specialChars: false, 
+        lowerCaseAlphabets: false 
+      });
 
-    res.json({
-      success: true,
-      message: 'Login OTP sent to your email.',
-      manufacturerId: manufacturer._id
-    });
+      manufacturer.loginOtp = loginOtp;
+      manufacturer.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      await manufacturer.save();
+
+      await sendOTP(email, loginOtp, 'login');
+
+      res.json({
+        success: true,
+        message: 'Login OTP sent to your email.',
+        manufacturerId: manufacturer._id
+      });
+    }
   } catch (error) {
     console.error('Manufacturer login error:', error);
     res.status(500).json({ success: false, message: 'Server error during login.', error: error.message });

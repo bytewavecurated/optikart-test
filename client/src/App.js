@@ -81,7 +81,8 @@ const LoadingFallback = () => (
 );
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, seller, admin, staff, loading } = useAuth();
+  const { isAuthenticated, user, seller, admin, staff, executive, manufacturer, manufacturerSeller, loading } = useAuth();
+  const role = localStorage.getItem('optikart_role');
 
   if (loading) {
     return <LoadingFallback />;
@@ -94,15 +95,30 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       return <Navigate to="/seller/login" replace />;
     } else if (currentPath.startsWith('/admin')) {
       return <Navigate to="/admin/login" replace />;
+    } else if (currentPath.startsWith('/executive')) {
+      return <Navigate to="/executive/login" replace />;
+    } else if (currentPath.startsWith('/manufacturer-seller')) {
+      return <Navigate to="/manufacturer-seller/login" replace />;
+    } else if (currentPath.startsWith('/manufacturer')) {
+      return <Navigate to="/manufacturer/login" replace />;
     }
     return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles) {
-    if (allowedRoles.includes('user') && user) return children;
-    if (allowedRoles.includes('seller') && seller) return children;
-    if (allowedRoles.includes('admin') && admin) return children;
-    if (allowedRoles.includes('staff') && staff) return children;
+    // Check if user has the required role
+    const hasRole = allowedRoles.some(r => {
+      if (r === 'user' && user) return true;
+      if (r === 'seller' && (seller || role === 'seller')) return true;
+      if (r === 'admin' && (admin || role === 'admin')) return true;
+      if (r === 'staff' && (staff || role === 'staff')) return true;
+      if (r === 'executive' && (executive || role === 'executive')) return true;
+      if (r === 'manufacturer' && (manufacturer || role === 'manufacturer')) return true;
+      if (r === 'manufacturerSeller' && (manufacturerSeller || role === 'manufacturerSeller')) return true;
+      return false;
+    });
+
+    if (hasRole) return children;
     
     // Redirect based on role
     const currentPath = window.location.pathname;
@@ -110,6 +126,12 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       return <Navigate to="/seller/login" replace />;
     } else if (currentPath.startsWith('/admin')) {
       return <Navigate to="/admin/login" replace />;
+    } else if (currentPath.startsWith('/executive')) {
+      return <Navigate to="/executive/login" replace />;
+    } else if (currentPath.startsWith('/manufacturer-seller')) {
+      return <Navigate to="/manufacturer-seller/login" replace />;
+    } else if (currentPath.startsWith('/manufacturer')) {
+      return <Navigate to="/manufacturer/login" replace />;
     }
     return <Navigate to="/login" replace />;
   }
@@ -209,11 +231,11 @@ function App() {
         <Route path="/policy/privacy" element={<PrivacyPolicy />} />
         <Route path="/policy/epr" element={<EPRCompliance />} />
         <Route path="/executive/login" element={<ExecutiveLogin />} />
-        <Route path="/executive/dashboard" element={<ExecutiveDashboard />} />
+        <Route path="/executive/dashboard" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveDashboard /></ProtectedRoute>} />
         <Route path="/manufacturer/login" element={<ManufacturerLogin />} />
-        <Route path="/manufacturer/dashboard" element={<ManufacturerDashboard />} />
+        <Route path="/manufacturer/dashboard" element={<ProtectedRoute allowedRoles={['manufacturer']}><ManufacturerDashboard /></ProtectedRoute>} />
         <Route path="/manufacturer-seller/login" element={<ManufacturerSellerLogin />} />
-        <Route path="/manufacturer-seller/dashboard" element={<ManufacturerSellerDashboard />} />
+        <Route path="/manufacturer-seller/dashboard" element={<ProtectedRoute allowedRoles={['manufacturerSeller']}><ManufacturerSellerDashboard /></ProtectedRoute>} />
         <Route path="/sitemap" element={<Sitemap />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

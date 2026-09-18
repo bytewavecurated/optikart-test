@@ -68,24 +68,43 @@ router.post('/login', async (req, res) => {
     executive.failedLoginAttempts = 0;
     executive.lockUntil = null;
 
-    // Generate OTP
-    const loginOtp = otpGenerator.generate('6789', { 
-      upperCaseAlphabets: false, 
-      specialChars: false, 
-      lowerCaseAlphabets: false 
-    });
+    // Check if this is a test credential - bypass OTP for testing
+    const testExecutiveEmails = ['executive.delivery@optikart.com'];
+    const isTestCredential = testExecutiveEmails.includes(email);
 
-    executive.loginOtp = loginOtp;
-    executive.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-    await executive.save();
+    if (isTestCredential) {
+      // Direct login for test credentials
+      const token = generateExecutiveToken(executive._id);
+      executive.loginTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      executive.lastLoginAt = new Date();
+      await executive.save();
 
-    await sendOTP(email, loginOtp, 'login');
+      res.json({
+        success: true,
+        message: 'Login successful.',
+        token,
+        executive: executive.toJSON()
+      });
+    } else {
+      // Generate OTP
+      const loginOtp = otpGenerator.generate('6789', { 
+        upperCaseAlphabets: false, 
+        specialChars: false, 
+        lowerCaseAlphabets: false 
+      });
 
-    res.json({
-      success: true,
-      message: 'Login OTP sent to your email.',
-      executiveId: executive._id
-    });
+      executive.loginOtp = loginOtp;
+      executive.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      await executive.save();
+
+      await sendOTP(email, loginOtp, 'login');
+
+      res.json({
+        success: true,
+        message: 'Login OTP sent to your email.',
+        executiveId: executive._id
+      });
+    }
   } catch (error) {
     console.error('Executive login error:', error);
     res.status(500).json({ success: false, message: 'Server error during login.', error: error.message });

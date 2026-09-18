@@ -9,7 +9,10 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
+  validate: {
+    trustProxy: false
+  }
 });
 
 export const apiLimiter = rateLimit({
@@ -20,7 +23,10 @@ export const apiLimiter = rateLimit({
     message: 'Too many requests. Please try again after 15 minutes.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  validate: {
+    trustProxy: false
+  }
 });
 
 export const otpLimiter = rateLimit({
@@ -31,7 +37,10 @@ export const otpLimiter = rateLimit({
     message: 'Too many OTP requests. Please try again after 5 minutes.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  validate: {
+    trustProxy: false
+  }
 });
 
 export const paymentLimiter = rateLimit({
@@ -42,5 +51,8 @@ export const paymentLimiter = rateLimit({
     message: 'Too many payment requests. Please try again after a minute.'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  validate: {
+    trustProxy: false
+  }
 });
