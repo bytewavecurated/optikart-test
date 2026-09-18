@@ -32,7 +32,7 @@ const ManufacturerLogin = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
       <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px', padding: '40px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px', color: '#212121' }}>Manufacturer Login</h1>
         <p style={{ color: '#757575', marginBottom: '32px' }}>Access your manufacturer dashboard</p>
@@ -81,7 +81,7 @@ const ManufacturerLogin = () => {
             style={{
               width: '100%',
               padding: '14px',
-              background: loading ? '#9e9e9e' : '#f5576c',
+              background: loading ? '#9e9e9e' : '#667eea',
               color: '#fff',
               border: 'none',
               borderRadius: '8px',
@@ -95,7 +95,7 @@ const ManufacturerLogin = () => {
           </button>
 
           <div style={{ textAlign: 'center' }}>
-            <Link to="/" style={{ color: '#f5576c', fontSize: '14px', textDecoration: 'none' }}>
+            <Link to="/" style={{ color: '#667eea', fontSize: '14px', textDecoration: 'none' }}>
               Back to Home
             </Link>
           </div>

@@ -11,6 +11,36 @@ const ManufacturerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddSeller, setShowAddSeller] = useState(false);
+  const [showBulkSellerUpload, setShowBulkSellerUpload] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    title: '',
+    description: '',
+    price: '',
+    category: 'sunglasses',
+    brand: '',
+    images: [''],
+    colors: [],
+    sizes: [],
+    stock: 0,
+    gender: 'unisex',
+    frameSize: 'medium'
+  });
+  const [newSeller, setNewSeller] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    storeName: '',
+    storeAddress: { street: '', city: '', state: '', pincode: '' },
+    manufacturerCode: '',
+    gstNumber: '',
+    panNumber: '',
+    bankDetails: {
+      accountNumber: '',
+      ifscCode: '',
+      bankName: '',
+      branchName: ''
+    }
+  });
   const { manufacturer, manufacturerLogout } = useAuth();
   const navigate = useNavigate();
 
@@ -86,6 +116,87 @@ const ManufacturerDashboard = () => {
         toast.error(`Validation errors: ${error.response.data.errors.join(', ')}`);
       } else {
         toast.error('Failed to upload products');
+      }
+    }
+  };
+
+  const handleAddProduct = async () => {
+    try {
+      const productData = {
+        ...newProduct,
+        price: parseFloat(newProduct.price),
+        stock: parseInt(newProduct.stock),
+        images: newProduct.images.filter(img => img.trim() !== '')
+      };
+      
+      await api.post('/manufacturer/products', productData);
+      toast.success('Product added successfully');
+      setShowAddProduct(false);
+      setNewProduct({
+        title: '',
+        description: '',
+        price: '',
+        category: 'sunglasses',
+        brand: '',
+        images: [''],
+        colors: [],
+        sizes: [],
+        stock: 0,
+        gender: 'unisex',
+        frameSize: 'medium'
+      });
+      fetchProducts();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add product');
+    }
+  };
+
+  const handleAddSeller = async () => {
+    try {
+      await api.post('/manufacturer/sellers', newSeller);
+      toast.success('Seller added successfully. Credentials sent to their email.');
+      setShowAddSeller(false);
+      setNewSeller({
+        name: '',
+        email: '',
+        phone: '',
+        storeName: '',
+        storeAddress: { street: '', city: '', state: '', pincode: '' },
+        manufacturerCode: '',
+        gstNumber: '',
+        panNumber: '',
+        bankDetails: {
+          accountNumber: '',
+          ifscCode: '',
+          bankName: '',
+          branchName: ''
+        }
+      });
+      fetchSellers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add seller');
+    }
+  };
+
+  const handleBulkSellerUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await api.post('/manufacturer/sellers/bulk-upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success(response.data.message);
+      setShowBulkSellerUpload(false);
+      fetchSellers();
+    } catch (error) {
+      if (error.response?.data?.errors) {
+        toast.error(`Validation errors: ${error.response.data.errors.join(', ')}`);
+      } else {
+        toast.error('Failed to upload sellers');
       }
     }
   };
@@ -257,12 +368,20 @@ const ManufacturerDashboard = () => {
         <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: '#212121' }}>Your Sellers</h2>
-            <button
-              onClick={() => setShowAddSeller(true)}
-              style={{ padding: '10px 20px', background: '#f5576c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-            >
-              <FiPlus /> Add Seller
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setShowBulkSellerUpload(true)}
+                style={{ padding: '10px 20px', background: '#4caf50', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <FiUpload /> Bulk Upload
+              </button>
+              <button
+                onClick={() => setShowAddSeller(true)}
+                style={{ padding: '10px 20px', background: '#f5576c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <FiPlus /> Add Seller
+              </button>
+            </div>
           </div>
 
           {sellers.length === 0 ? (
@@ -304,6 +423,424 @@ const ManufacturerDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Add Product Modal */}
+      {showAddProduct && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>Add New Product</h2>
+            
+            <div style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Product Title *</label>
+                <input
+                  type="text"
+                  value={newProduct.title}
+                  onChange={(e) => setNewProduct({...newProduct, title: e.target.value})}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  placeholder="Enter product title"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Description *</label>
+                <textarea
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px', minHeight: '100px' }}
+                  placeholder="Enter product description"
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Price *</label>
+                  <input
+                    type="number"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="₹0.00"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Stock *</label>
+                  <input
+                    type="number"
+                    value={newProduct.stock}
+                    onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Category *</label>
+                  <select
+                    value={newProduct.category}
+                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  >
+                    <option value="sunglasses">Sunglasses</option>
+                    <option value="eyeglasses">Eyeglasses</option>
+                    <option value="contactlenses">Contact Lenses</option>
+                    <option value="readingglasses">Reading Glasses</option>
+                    <option value="sportseyewear">Sports Eyewear</option>
+                    <option value="kids">Kids</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Brand *</label>
+                  <input
+                    type="text"
+                    value={newProduct.brand}
+                    onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Brand name"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Gender</label>
+                  <select
+                    value={newProduct.gender}
+                    onChange={(e) => setNewProduct({...newProduct, gender: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  >
+                    <option value="men">Men</option>
+                    <option value="women">Women</option>
+                    <option value="unisex">Unisex</option>
+                    <option value="kids">Kids</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Frame Size</label>
+                  <select
+                    value={newProduct.frameSize}
+                    onChange={(e) => setNewProduct({...newProduct, frameSize: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                    <option value="extra-large">Extra Large</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Image URLs (one per line)</label>
+                <textarea
+                  value={newProduct.images.join('\n')}
+                  onChange={(e) => setNewProduct({...newProduct, images: e.target.value.split('\n')})}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px', minHeight: '80px' }}
+                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Colors (comma separated)</label>
+                <input
+                  type="text"
+                  value={newProduct.colors.join(', ')}
+                  onChange={(e) => setNewProduct({...newProduct, colors: e.target.value.split(',').map(c => c.trim())})}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  placeholder="Black, Brown, Gold"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Sizes (comma separated)</label>
+                <input
+                  type="text"
+                  value={newProduct.sizes.join(', ')}
+                  onChange={(e) => setNewProduct({...newProduct, sizes: e.target.value.split(',').map(s => s.trim())})}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  placeholder="Small, Medium, Large"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button
+                onClick={handleAddProduct}
+                style={{ flex: 1, padding: '12px', background: '#f5576c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              >
+                Add Product
+              </button>
+              <button
+                onClick={() => setShowAddProduct(false)}
+                style={{ flex: 1, padding: '12px', background: '#e0e0e0', color: '#212121', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Seller Modal */}
+      {showAddSeller && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>Add New Seller</h2>
+            
+            <div style={{ display: 'grid', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Seller Name *</label>
+                  <input
+                    type="text"
+                    value={newSeller.name}
+                    onChange={(e) => setNewSeller({...newSeller, name: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Full name"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Email *</label>
+                  <input
+                    type="email"
+                    value={newSeller.email}
+                    onChange={(e) => setNewSeller({...newSeller, email: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="seller@email.com"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Phone *</label>
+                  <input
+                    type="tel"
+                    value={newSeller.phone}
+                    onChange={(e) => setNewSeller({...newSeller, phone: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="+91 9876543210"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Store Name *</label>
+                  <input
+                    type="text"
+                    value={newSeller.storeName}
+                    onChange={(e) => setNewSeller({...newSeller, storeName: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Store name"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Manufacturer Code *</label>
+                <input
+                  type="text"
+                  value={newSeller.manufacturerCode}
+                  onChange={(e) => setNewSeller({...newSeller, manufacturerCode: e.target.value})}
+                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  placeholder="Unique code from manufacturer"
+                />
+              </div>
+
+              <h3 style={{ fontSize: '16px', fontWeight: '600', marginTop: '16px' }}>Store Address</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Street</label>
+                  <input
+                    type="text"
+                    value={newSeller.storeAddress.street}
+                    onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, street: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Street address"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>City</label>
+                  <input
+                    type="text"
+                    value={newSeller.storeAddress.city}
+                    onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, city: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="City"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>State</label>
+                  <input
+                    type="text"
+                    value={newSeller.storeAddress.state}
+                    onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, state: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="State"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Pincode</label>
+                  <input
+                    type="text"
+                    value={newSeller.storeAddress.pincode}
+                    onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, pincode: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Pincode"
+                  />
+                </div>
+              </div>
+
+              <h3 style={{ fontSize: '16px', fontWeight: '600', marginTop: '16px' }}>Tax Details</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>GST Number *</label>
+                  <input
+                    type="text"
+                    value={newSeller.gstNumber}
+                    onChange={(e) => setNewSeller({...newSeller, gstNumber: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="GST number"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>PAN Number *</label>
+                  <input
+                    type="text"
+                    value={newSeller.panNumber}
+                    onChange={(e) => setNewSeller({...newSeller, panNumber: e.target.value})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="PAN number"
+                  />
+                </div>
+              </div>
+
+              <h3 style={{ fontSize: '16px', fontWeight: '600', marginTop: '16px' }}>Bank Details</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Account Number *</label>
+                  <input
+                    type="text"
+                    value={newSeller.bankDetails.accountNumber}
+                    onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, accountNumber: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Account number"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>IFSC Code *</label>
+                  <input
+                    type="text"
+                    value={newSeller.bankDetails.ifscCode}
+                    onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, ifscCode: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="IFSC code"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Bank Name *</label>
+                  <input
+                    type="text"
+                    value={newSeller.bankDetails.bankName}
+                    onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, bankName: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Bank name"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Branch Name *</label>
+                  <input
+                    type="text"
+                    value={newSeller.bankDetails.branchName}
+                    onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, branchName: e.target.value}})}
+                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    placeholder="Branch name"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+              <button
+                onClick={handleAddSeller}
+                style={{ flex: 1, padding: '12px', background: '#f5576c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              >
+                Add Seller
+              </button>
+              <button
+                onClick={() => setShowAddSeller(false)}
+                style={{ flex: 1, padding: '12px', background: '#e0e0e0', color: '#212121', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Seller Upload Modal */}
+      {showBulkSellerUpload && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', maxWidth: '600px', width: '90%' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>Bulk Upload Sellers</h2>
+            
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{ fontSize: '14px', color: '#757575', marginBottom: '16px' }}>
+                Upload an Excel/CSV file with the following columns:
+              </p>
+              <ul style={{ fontSize: '13px', color: '#424242', lineHeight: '1.8', paddingLeft: '20px' }}>
+                <li>name - Seller's full name</li>
+                <li>email - Seller's email address</li>
+                <li>phone - Phone number</li>
+                <li>storeName - Store name</li>
+                <li>manufacturerCode - Unique code from manufacturer</li>
+                <li>gstNumber - GST number</li>
+                <li>panNumber - PAN number</li>
+                <li>accountNumber - Bank account number</li>
+                <li>ifscCode - Bank IFSC code</li>
+                <li>bankName - Bank name</li>
+                <li>branchName - Branch name</li>
+                <li>street, city, state, pincode - Store address (optional)</li>
+              </ul>
+              <p style={{ fontSize: '13px', color: '#f5576c', marginTop: '16px', fontWeight: '500' }}>
+                Note: Password will be auto-generated and sent to each seller's email.
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', padding: '40px', border: '2px dashed #e0e0e0', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleBulkSellerUpload}
+                  style={{ display: 'none' }}
+                />
+                <FiUpload size={48} style={{ color: '#757575', marginBottom: '12px' }} />
+                <p style={{ fontSize: '14px', color: '#757575', margin: 0 }}>Click to upload Excel/CSV file</p>
+              </label>
+            </div>
+
+            <button
+              onClick={() => setShowBulkSellerUpload(false)}
+              style={{ width: '100%', padding: '12px', background: '#e0e0e0', color: '#212121', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>
         {`
