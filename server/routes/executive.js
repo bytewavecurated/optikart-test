@@ -2,6 +2,10 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import Executive from '../models/Executive.js';
+import ExecutiveStaff from '../models/ExecutiveStaff.js';
+import User from '../models/User.js';
+import Seller from '../models/Seller.js';
+import Order from '../models/Order.js';
 import { verifyToken, verifyAdmin } from '../middleware/auth.js';
 import { sendOTP } from '../services/email.js';
 
@@ -173,6 +177,205 @@ router.get('/me', async (req, res) => {
     });
   } catch (error) {
     console.error('Get executive profile error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get Executive Dashboard Stats
+router.get('/dashboard', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No token provided.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const executive = await Executive.findById(decoded.id);
+    
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    let stats = {};
+
+    switch (executive.department) {
+      case 'users':
+        stats.totalUsers = await User.countDocuments();
+        stats.activeUsers = await User.countDocuments({ isActive: true });
+        break;
+      case 'sellers':
+        stats.totalSellers = await Seller.countDocuments();
+        stats.pendingSellers = await Seller.countDocuments({ isVerified: false });
+        break;
+      case 'orders':
+        stats.totalOrders = await Order.countDocuments();
+        stats.pendingOrders = await Order.countDocuments({ orderStatus: 'pending' });
+        break;
+      case 'delivery':
+        stats.totalDeliveries = await Order.countDocuments();
+        stats.deliveredOrders = await Order.countDocuments({ orderStatus: 'delivered' });
+        break;
+      default:
+        stats = {};
+    }
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get Executive Staff
+router.get('/staff', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No token provided.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const executive = await Executive.findById(decoded.id);
+    
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    const { department } = req.query;
+    const query = department ? { department } : {};
+    
+    const staff = await ExecutiveStaff.find(query).select('-password');
+    
+    res.json({
+      success: true,
+      data: staff
+    });
+  } catch (error) {
+    console.error('Get staff error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Add Executive Staff
+router.post('/staff', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No token provided.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const executive = await Executive.findById(decoded.id);
+    
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    const { name, email, password, role, department } = req.body;
+
+    const existingStaff = await ExecutiveStaff.findOne({ email });
+    if (existingStaff) {
+      return res.status(400).json({ success: false, message: 'Email already registered.' });
+    }
+
+    const staff = new ExecutiveStaff({
+      name,
+      email,
+      password,
+      role,
+      department: department || executive.department,
+      createdBy: executive._id
+    });
+
+    await staff.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Staff added successfully.',
+      data: staff.toJSON()
+    });
+  } catch (error) {
+    console.error('Add staff error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Delete Executive Staff
+router.delete('/staff/:id', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No token provided.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const executive = await Executive.findById(decoded.id);
+    
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    const staff = await ExecutiveStaff.findById(req.params.id);
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff not found.' });
+    }
+
+    await ExecutiveStaff.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Staff deleted successfully.'
+    });
+  } catch (error) {
+    console.error('Delete staff error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Get Department Data
+router.get('/department-data', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'No token provided.' });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const executive = await Executive.findById(decoded.id);
+    
+    if (!executive) {
+      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    }
+
+    const { department } = req.query;
+    let data = [];
+
+    switch (department) {
+      case 'users':
+        data = await User.find().select('-password').limit(100);
+        break;
+      case 'sellers':
+        data = await Seller.find().select('-password').limit(100);
+        break;
+      case 'orders':
+        data = await Order.find().populate('user', 'name email').populate('seller', 'storeName').limit(100);
+        break;
+      case 'delivery':
+        data = await Order.find().populate('user', 'name email').populate('seller', 'storeName').limit(100);
+        break;
+      default:
+        data = [];
+    }
+
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    console.error('Get department data error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
