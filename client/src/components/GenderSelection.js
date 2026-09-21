@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiArrowRight } from 'react-icons/fi';
+import { FiUser, FiArrowRight, FiEye, FiSun, FiDroplet, FiMonitor } from 'react-icons/fi';
 
 const GenderSelection = () => {
   const [selectedGender, setSelectedGender] = useState(null);
@@ -28,10 +28,10 @@ const GenderSelection = () => {
   ];
 
   const categories = [
-    { id: 'eyeglasses', name: 'Eyeglasses', icon: '👓' },
-    { id: 'sunglasses', name: 'Sunglasses', icon: '🕶️' },
-    { id: 'contactlenses', name: 'Contact Lenses', icon: '👁️' },
-    { id: 'computer-glasses', name: 'Computer Glasses', icon: '💻' }
+    { id: 'eyeglasses', name: 'Eyeglasses', icon: <FiEye size={32} /> },
+    { id: 'sunglasses', name: 'Sunglasses', icon: <FiSun size={32} /> },
+    { id: 'contactlenses', name: 'Contact Lenses', icon: <FiDroplet size={32} /> },
+    { id: 'computer-glasses', name: 'Computer Glasses', icon: <FiMonitor size={32} /> }
   ];
 
   const handleGenderSelect = (genderId) => {

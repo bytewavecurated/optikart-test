@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import { FiChevronRight } from 'react-icons/fi';
 
 const CATEGORIES = [
-  { name: 'Sunglasses', image: 'https://via.placeholder.com/120x120/2874f0/fff?text=🕶️', link: '/category/sunglasses', color: '#2874f0' },
-  { name: 'Eyeglasses', image: 'https://via.placeholder.com/120x120/ff9f00/fff?text=👓', link: '/category/eyeglasses', color: '#ff9f00' },
-  { name: 'Contact Lenses', image: 'https://via.placeholder.com/120x120/388e3c/fff?text=👁️', link: '/category/contact-lenses', color: '#388e3c' },
-  { name: 'Sports', image: 'https://via.placeholder.com/120x120/e43f5a/fff?text=🏃', link: '/category/sports', color: '#e43f5a' },
-  { name: 'Kids', image: 'https://via.placeholder.com/120x120/6c63ff/fff?text=🧒', link: '/category/kids', color: '#6c63ff' },
-  { name: 'Reading', image: 'https://via.placeholder.com/120x120/00897b/fff?text=📖', link: '/category/reading', color: '#00897b' },
-  { name: 'Computer', image: 'https://via.placeholder.com/120x120/9c27b0/fff?text=💻', link: '/category/computer', color: '#9c27b0' },
-  { name: 'Safety', image: 'https://via.placeholder.com/120x120/ff5722/fff?text=🛡️', link: '/category/safety', color: '#ff5722' },
+  { name: 'Sunglasses', image: 'https://via.placeholder.com/120x120/2874f0/fff?text=Sun', link: '/category/sunglasses', color: '#2874f0' },
+  { name: 'Eyeglasses', image: 'https://via.placeholder.com/120x120/ff9f00/fff?text=Eye', link: '/category/eyeglasses', color: '#ff9f00' },
+  { name: 'Contact Lenses', image: 'https://via.placeholder.com/120x120/388e3c/fff?text=CL', link: '/category/contact-lenses', color: '#388e3c' },
+  { name: 'Sports', image: 'https://via.placeholder.com/120x120/e43f5a/fff?text=Sport', link: '/category/sports', color: '#e43f5a' },
+  { name: 'Kids', image: 'https://via.placeholder.com/120x120/6c63ff/fff?text=Kids', link: '/category/kids', color: '#6c63ff' },
+  { name: 'Reading', image: 'https://via.placeholder.com/120x120/00897b/fff?text=Read', link: '/category/reading', color: '#00897b' },
+  { name: 'Computer', image: 'https://via.placeholder.com/120x120/9c27b0/fff?text=PC', link: '/category/computer', color: '#9c27b0' },
+  { name: 'Safety', image: 'https://via.placeholder.com/120x120/ff5722/fff?text=Safe', link: '/category/safety', color: '#ff5722' },
 ];
 
 const styles = {

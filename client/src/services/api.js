@@ -174,6 +174,20 @@ export const admin = {
   getSellerPayouts: (params) => api.get('/admin/seller-payouts', { params }),
   getDelivery: (params) => api.get('/admin/delivery', { params }),
   getPickups: (params) => api.get('/admin/pickups', { params }),
+  // Executives
+  getExecutives: () => api.get('/admin/executives'),
+  createExecutive: (data) => api.post('/admin/executives', data),
+  updateExecutive: (id, data) => api.put(`/admin/executives/${id}`, data),
+  deleteExecutive: (id) => api.delete(`/admin/executives/${id}`),
+  banExecutive: (id, data) => api.put(`/admin/executives/${id}/ban`, data),
+  // Manufacturers
+  getManufacturers: () => api.get('/admin/manufacturers'),
+  createManufacturer: (data) => api.post('/admin/manufacturers', data),
+  updateManufacturer: (id, data) => api.put(`/admin/manufacturers/${id}`, data),
+  deleteManufacturer: (id) => api.delete(`/admin/manufacturers/${id}`),
+  banManufacturer: (id, data) => api.put(`/admin/manufacturers/${id}/ban`, data),
+  getManufacturerProducts: (id) => api.get(`/admin/manufacturers/${id}/products`),
+  getManufacturerSellers: (id) => api.get(`/admin/manufacturers/${id}/sellers`),
 };
 
 export const notifications = {

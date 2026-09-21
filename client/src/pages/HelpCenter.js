@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiHelpCircle, FiChevronRight, FiSearch } from 'react-icons/fi';
+import { FiHelpCircle, FiChevronRight, FiSearch, FiPackage, FiRefreshCw, FiCreditCard, FiUser, FiEye, FiShoppingBag } from 'react-icons/fi';
 import { help } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const HELP_CATEGORIES = [
-  { id: 'orders', title: 'Orders & Shipping', desc: 'Track orders, delivery status, shipping info', icon: '📦' },
-  { id: 'returns', title: 'Returns & Refunds', desc: 'Return policy, refund status, exchanges', icon: '🔄' },
-  { id: 'payments', title: 'Payments', desc: 'Payment methods, failed payments, invoices', icon: '💳' },
-  { id: 'account', title: 'Account & Profile', desc: 'Login, password, profile settings', icon: '👤' },
-  { id: 'prescription', title: 'Prescription & Lenses', desc: 'Upload prescription, lens types, power details', icon: '👁️' },
-  { id: 'products', title: 'Products', desc: 'Product info, sizing, brand guides', icon: '👓' },
+  { id: 'orders', title: 'Orders & Shipping', desc: 'Track orders, delivery status, shipping info', icon: <FiPackage size={24} /> },
+  { id: 'returns', title: 'Returns & Refunds', desc: 'Return policy, refund status, exchanges', icon: <FiRefreshCw size={24} /> },
+  { id: 'payments', title: 'Payments', desc: 'Payment methods, failed payments, invoices', icon: <FiCreditCard size={24} /> },
+  { id: 'account', title: 'Account & Profile', desc: 'Login, password, profile settings', icon: <FiUser size={24} /> },
+  { id: 'prescription', title: 'Prescription & Lenses', desc: 'Upload prescription, lens types, power details', icon: <FiEye size={24} /> },
+  { id: 'products', title: 'Products', desc: 'Product info, sizing, brand guides', icon: <FiShoppingBag size={24} /> },
 ];
 
 const HelpCenter = () => {

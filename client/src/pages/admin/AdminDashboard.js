@@ -33,6 +33,8 @@ const AdminDashboard = () => {
   const quickLinks = [
     { label: 'Manage Users', path: '/admin/users', icon: <FiUsers />, color: '#2874f0' },
     { label: 'Manage Sellers', path: '/admin/sellers', icon: <FiShoppingBag />, color: '#ff9f00' },
+    { label: 'Manage Executives', path: '/admin/executives', icon: <FiSettings />, color: '#9c27b0' },
+    { label: 'Manage Manufacturers', path: '/admin/manufacturers', icon: <FiPackage />, color: '#00bcd4' },
     { label: 'View Orders', path: '/admin/orders', icon: <FiPackage />, color: '#26a541' },
     { label: 'Revenue Analytics', path: '/admin/revenue', icon: <FiDollarSign />, color: '#ff6161' },
     { label: 'Subscriptions', path: '/admin/subscriptions', icon: <FiTrendingUp />, color: '#7c4dff' },

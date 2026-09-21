@@ -179,7 +179,7 @@ export default function ProductCard({ product }) {
     id = _id,
     brand = 'Unknown Brand',
     title = 'Eyewear Product',
-    image = product.images?.[0] || 'https://via.placeholder.com/200x200/f1f3f6/999?text=👓',
+    image = product.images?.[0] || 'https://via.placeholder.com/200x200/f1f3f6/999?text=Eyewear',
     price = 999,
     originalPrice = 1999,
     rating = 4.2,

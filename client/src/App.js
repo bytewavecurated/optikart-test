@@ -67,6 +67,8 @@ const Security = lazy(() => import('./pages/Security'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const Sitemap = lazy(() => import('./pages/Sitemap'));
 const EPRCompliance = lazy(() => import('./pages/EPRCompliance'));
+const ManageExecutives = lazy(() => import('./pages/admin/ManageExecutives'));
+const ManageManufacturers = lazy(() => import('./pages/admin/ManageManufacturers'));
 const ExecutiveLogin = lazy(() => import('./pages/executive/ExecutiveLogin'));
 const ExecutiveDashboard = lazy(() => import('./pages/executive/ExecutiveDashboard'));
 const ManufacturerLogin = lazy(() => import('./pages/manufacturer/ManufacturerLogin'));
@@ -181,6 +183,8 @@ function App() {
           <Route path="delivery" element={<DeliveryManagement />} />
           <Route path="sale-events" element={<SaleEvents />} />
           <Route path="banners" element={<BannerManagement />} />
+          <Route path="executives" element={<ManageExecutives />} />
+          <Route path="manufacturers" element={<ManageManufacturers />} />
         </Route>
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>

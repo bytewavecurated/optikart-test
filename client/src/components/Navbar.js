@@ -2,21 +2,22 @@ import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FiSearch, FiShoppingCart, FiUser, FiChevronDown, FiMenu, FiX,
-  FiHeart, FiBell, FiPackage, FiHelpCircle, FiLogOut, FiChevronRight
+  FiHeart, FiBell, FiPackage, FiHelpCircle, FiLogOut, FiChevronRight,
+  FiSun, FiEye, FiDroplet, FiBookOpen, FiActivity, FiSmile, FiTag, FiCamera
 } from 'react-icons/fi';
 
 const AuthContext = React.createContext(null);
 const CartContext = React.createContext({ items: [] });
 
 const CATEGORIES = [
-  { name: 'Sunglasses', link: '/category/sunglasses', icon: '🕶️' },
-  { name: 'Eyeglasses', link: '/category/eyeglasses', icon: '👓' },
-  { name: 'Contact Lenses', link: '/category/contact-lenses', icon: '👁️' },
-  { name: 'Reading Glasses', link: '/category/reading-glasses', icon: '📖' },
-  { name: 'Sports Eyewear', link: '/category/sports', icon: '🏃' },
-  { name: 'Kids', link: '/category/kids', icon: '🧒' },
-  { name: 'Brands', link: '/brands', icon: '🏷️' },
-  { name: 'Virtual Try-On', link: '/virtual-try-on', icon: '📸' },
+  { name: 'Sunglasses', link: '/category/sunglasses', icon: <FiSun size={16} /> },
+  { name: 'Eyeglasses', link: '/category/eyeglasses', icon: <FiEye size={16} /> },
+  { name: 'Contact Lenses', link: '/category/contact-lenses', icon: <FiDroplet size={16} /> },
+  { name: 'Reading Glasses', link: '/category/reading-glasses', icon: <FiBookOpen size={16} /> },
+  { name: 'Sports Eyewear', link: '/category/sports', icon: <FiActivity size={16} /> },
+  { name: 'Kids', link: '/category/kids', icon: <FiSmile size={16} /> },
+  { name: 'Brands', link: '/brands', icon: <FiTag size={16} /> },
+  { name: 'Virtual Try-On', link: '/virtual-try-on', icon: <FiCamera size={16} /> },
 ];
 
 const styles = {
