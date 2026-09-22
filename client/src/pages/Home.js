@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiTruck, FiShield, FiRefreshCw, FiHeadphones, FiArrowRight, FiTag, FiPercent, FiGift, FiEye, FiAward } from 'react-icons/fi';
+import { FiTruck, FiShield, FiRefreshCw, FiHeadphones, FiArrowRight, FiTag, FiPercent, FiGift, FiEye, FiAward, FiStar } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import HeroCarousel from '../components/HeroCarousel';
@@ -12,9 +12,8 @@ import LoadMore from '../components/LoadMore';
 import SmartChoice from '../components/SmartChoice';
 import GenderSelection from '../components/GenderSelection';
 import { products } from '../services/api';
-import { useUserBehavior } from '../contexts/UserBehaviorContext';
 
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 8;
 
 const Home = () => {
   const [trendingProducts, setTrendingProducts] = useState([]);
@@ -24,25 +23,12 @@ const Home = () => {
   const [topPicks, setTopPicks] = useState([]);
   const [budgetBuys, setBudgetBuys] = useState([]);
   const [justForYou, setJustForYou] = useState([]);
-  const [personalizedProducts1, setPersonalizedProducts1] = useState([]);
-  const [personalizedProducts2, setPersonalizedProducts2] = useState([]);
-  const [personalizedProducts3, setPersonalizedProducts3] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { searchHistory, browsingHistory, wishlist, cartItems } = useUserBehavior();
 
   const [dealsVisible, setDealsVisible] = useState(ITEMS_PER_PAGE);
   const [topPicksVisible, setTopPicksVisible] = useState(ITEMS_PER_PAGE);
   const [budgetVisible, setBudgetVisible] = useState(ITEMS_PER_PAGE);
-  const [justForYouVisible, setJustForYouVisible] = useState(6);
-
-  const shuffleArray = (arr) => {
-    const shuffled = [...arr];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
+  const [justForYouVisible, setJustForYouVisible] = useState(ITEMS_PER_PAGE);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,102 +50,9 @@ const Home = () => {
 
         if (randomRes.status === 'fulfilled') {
           const allRandom = randomRes.value.data.products || [];
-          const shuffled = shuffleArray(allRandom);
+          const shuffled = [...allRandom].sort(() => Math.random() - 0.5);
           setTopPicks(shuffled.slice(0, 10));
-          setJustForYou(shuffleArray(allRandom).slice(0, 10));
-        }
-
-        // Fetch personalized products based on user behavior
-        const userCategories = new Set();
-        const userBrands = new Set();
-        
-        // Extract categories and brands from browsing history
-        browsingHistory.forEach(product => {
-          if (product.category) userCategories.add(product.category);
-          if (product.brand) userBrands.add(product.brand);
-        });
-
-        // Extract from wishlist
-        wishlist.forEach(product => {
-          if (product.category) userCategories.add(product.category);
-          if (product.brand) userBrands.add(product.brand);
-        });
-
-        // Extract from cart
-        cartItems.forEach(item => {
-          if (item.product?.category) userCategories.add(item.product.category);
-          if (item.product?.brand) userBrands.add(item.product.brand);
-        });
-
-        // Extract from search history (simple keyword matching)
-        searchHistory.forEach(query => {
-          const lowerQuery = query.toLowerCase();
-          if (lowerQuery.includes('sunglass')) userCategories.add('sunglasses');
-          if (lowerQuery.includes('eyeglass') || lowerQuery.includes('glasses')) userCategories.add('eyeglasses');
-          if (lowerQuery.includes('contact')) userCategories.add('contactlenses');
-          if (lowerQuery.includes('ray-ban') || lowerQuery.includes('rayban')) userBrands.add('Ray-Ban');
-          if (lowerQuery.includes('fastrack')) userBrands.add('Fastrack');
-          if (lowerQuery.includes('lenskart')) userBrands.add('Lenskart Air');
-        });
-
-        // Fetch personalized products
-        if (userCategories.size > 0 || userBrands.size > 0) {
-          const personalizedFetches = [];
-          
-          // Based on categories
-          if (userCategories.size > 0) {
-            const categoryArray = Array.from(userCategories);
-            personalizedFetches.push(
-              products.getAll({ category: categoryArray[0], limit: 8, sort: 'rating' })
-            );
-            if (categoryArray.length > 1) {
-              personalizedFetches.push(
-                products.getAll({ category: categoryArray[1], limit: 8, sort: 'popularity' })
-              );
-            }
-          }
-
-          // Based on brands
-          if (userBrands.size > 0) {
-            const brandArray = Array.from(userBrands);
-            personalizedFetches.push(
-              products.getAll({ brand: brandArray[0], limit: 8, sort: 'newest' })
-            );
-          }
-
-          // Fallback to random if not enough personalized data
-          if (personalizedFetches.length < 3) {
-            personalizedFetches.push(products.getRandom({ limit: 8 }));
-          }
-
-          const personalizedResults = await Promise.allSettled(personalizedFetches);
-          
-          if (personalizedResults[0]?.status === 'fulfilled') {
-            setPersonalizedProducts1(personalizedResults[0].value.data.products || []);
-          }
-          if (personalizedResults[1]?.status === 'fulfilled') {
-            setPersonalizedProducts2(personalizedResults[1].value.data.products || []);
-          }
-          if (personalizedResults[2]?.status === 'fulfilled') {
-            setPersonalizedProducts3(personalizedResults[2].value.data.products || []);
-          }
-        } else {
-          // No user behavior data, show random products
-          const fallbackResults = await Promise.allSettled([
-            products.getRandom({ limit: 8 }),
-            products.getRandom({ limit: 8 }),
-            products.getRandom({ limit: 8 })
-          ]);
-          
-          if (fallbackResults[0]?.status === 'fulfilled') {
-            setPersonalizedProducts1(fallbackResults[0].value.data.products || []);
-          }
-          if (fallbackResults[1]?.status === 'fulfilled') {
-            setPersonalizedProducts2(fallbackResults[1].value.data.products || []);
-          }
-          if (fallbackResults[2]?.status === 'fulfilled') {
-            setPersonalizedProducts3(fallbackResults[2].value.data.products || []);
-          }
+          setJustForYou([...allRandom].sort(() => Math.random() - 0.5).slice(0, 10));
         }
       } catch (err) {
         console.error('Failed to load products:', err);
@@ -174,47 +67,47 @@ const Home = () => {
     { 
       title: 'Flat 50% Off', 
       subtitle: 'On premium sunglasses', 
-      color: '#1a237e', // Deep navy blue
-      icon: <FiPercent size={48} />,
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      icon: <FiPercent size={32} />,
       link: '/category/sunglasses' 
     },
     { 
       title: 'Buy 1 Get 1', 
       subtitle: 'Selected eyeglasses', 
-      color: '#0d47a1', // Strong blue
-      icon: <FiGift size={48} />,
+      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      icon: <FiGift size={32} />,
       link: '/category/eyeglasses' 
     },
     { 
       title: 'Starting ₹299', 
       subtitle: 'Contact lenses', 
-      color: '#1565c0', // Medium blue
-      icon: <FiEye size={48} />,
+      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      icon: <FiEye size={32} />,
       link: '/category/contact-lenses' 
     },
     { 
       title: 'Extra ₹200 Off', 
       subtitle: 'Use code: EYE200', 
-      color: '#1976d2', // Bright blue
-      icon: <FiAward size={48} />,
+      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      icon: <FiAward size={32} />,
       link: '/coupons' 
     },
   ];
 
   const features = [
-    { icon: <FiTruck size={24} />, title: 'Free Delivery', desc: 'On orders above ₹999' },
-    { icon: <FiShield size={24} />, title: '100% Genuine', desc: 'Authentic products only' },
-    { icon: <FiRefreshCw size={24} />, title: 'Easy Returns', desc: '7-day return policy' },
-    { icon: <FiHeadphones size={24} />, title: '24/7 Support', desc: 'Dedicated help center' },
+    { icon: <FiTruck size={28} />, title: 'Free Delivery', desc: 'On orders above ₹999', color: '#667eea' },
+    { icon: <FiShield size={28} />, title: '100% Genuine', desc: 'Authentic products only', color: '#f5576c' },
+    { icon: <FiRefreshCw size={28} />, title: 'Easy Returns', desc: '7-day return policy', color: '#4facfe' },
+    { icon: <FiHeadphones size={28} />, title: '24/7 Support', desc: 'Dedicated help center', color: '#43e97b' },
   ];
 
-  const renderSkeletons = (count = 5) =>
+  const renderSkeletons = (count = 8) =>
     Array.from({ length: count }).map((_, i) => (
-      <div key={i} className="card" style={{ height: '280px' }}>
-        <div className="skeleton" style={{ height: '200px', width: '100%' }} />
-        <div style={{ padding: '12px' }}>
-          <div className="skeleton" style={{ height: '14px', width: '80%', marginBottom: '8px' }} />
-          <div className="skeleton" style={{ height: '14px', width: '50%' }} />
+      <div key={i} className="product-skeleton" style={{ height: '320px', borderRadius: '12px', background: '#f5f5f5' }}>
+        <div className="skeleton" style={{ height: '240px', width: '100%', borderRadius: '12px 12px 0 0' }} />
+        <div style={{ padding: '16px' }}>
+          <div className="skeleton" style={{ height: '16px', width: '80%', marginBottom: '8px', borderRadius: '4px' }} />
+          <div className="skeleton" style={{ height: '14px', width: '50%', borderRadius: '4px' }} />
         </div>
       </div>
     ));
@@ -226,88 +119,111 @@ const Home = () => {
           <ProductCard key={product._id} product={product} />
         ));
 
-  const sectionHeaderStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '16px',
-  };
-
-  const sectionTitleStyle = {
-    fontSize: '22px',
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-  };
-
-  const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-    gap: '16px',
-  };
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8f9fa' }}>
       <Header />
       <main style={{ flex: 1 }}>
         <HeroCarousel />
         <GenderSelection />
 
-        <div className="container" style={{ marginTop: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <div className="container" style={{ marginTop: '24px', maxWidth: '1400px' }}>
+          {/* Offers Section - Modern Gradient Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '40px' }}>
             {offers.map((offer, idx) => (
               <Link 
                 key={idx} 
                 to={offer.link} 
-                className="offer-card"
+                className="modern-offer-card"
                 style={{ 
-                  background: offer.color, 
-                  borderRadius: '8px', 
-                  padding: '24px', 
+                  background: offer.gradient, 
+                  borderRadius: '16px', 
+                  padding: '28px', 
                   color: '#fff', 
-                  transition: 'all 0.3s ease',
                   textDecoration: 'none',
-                  cursor: 'pointer',
                   position: 'relative',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '12px'
+                  gap: '12px',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
                 }}
               >
                 <div style={{ 
-                  opacity: 0.2, 
                   position: 'absolute', 
-                  right: '16px', 
-                  top: '16px',
-                  fontSize: '64px'
+                  right: '-20px', 
+                  top: '-20px',
+                  opacity: 0.15,
+                  transform: 'rotate(15deg)'
                 }}>
                   {offer.icon}
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px', zIndex: 1 }}>{offer.title}</div>
-                <div style={{ fontSize: '14px', opacity: 0.95, zIndex: 1 }}>{offer.subtitle}</div>
+                <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1.2 }}>{offer.title}</div>
+                <div style={{ fontSize: '14px', opacity: 0.95, fontWeight: 500 }}>{offer.subtitle}</div>
+                <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  Shop Now <FiArrowRight size={14} />
+                </div>
               </Link>
             ))}
           </div>
 
-          <section style={{ marginBottom: '32px' }}>
-            <div style={sectionHeaderStyle}>
-              <h2 style={sectionTitleStyle}>Trending Now</h2>
-              <Link to="/search?sort=popularity" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontSize: '14px', fontWeight: 500 }}>
-                View All <FiArrowRight />
+          {/* Trending Now Section */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                  Trending Now
+                </h2>
+                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Most popular products this week</p>
+              </div>
+              <Link to="/search?sort=popularity" className="view-all-btn" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                color: '#667eea', 
+                fontSize: '14px', 
+                fontWeight: 600,
+                textDecoration: 'none',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                background: '#f0f4ff',
+                transition: 'all 0.3s ease'
+              }}>
+                View All <FiArrowRight size={16} />
               </Link>
             </div>
-            <div style={gridStyle}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {renderProductGrid(trendingProducts, trendingProducts.length)}
             </div>
           </section>
 
           <CategorySection />
 
-          <section style={{ marginBottom: '32px' }}>
-            <div style={sectionHeaderStyle}>
-              <h2 style={{ ...sectionTitleStyle, display: 'flex', alignItems: 'center', gap: '8px' }}><FiTag color="var(--secondary)" /> Deals of the Day</h2>
+          {/* Deals of the Day Section */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '12px', 
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff'
+                }}>
+                  <FiTag size={24} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                    Deals of the Day
+                  </h2>
+                  <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Exclusive offers just for you</p>
+                </div>
+              </div>
             </div>
-            <div style={gridStyle}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {renderProductGrid(dealsProducts, dealsVisible)}
             </div>
             {!loading && dealsProducts.length > 0 && (
@@ -319,27 +235,64 @@ const Home = () => {
             )}
           </section>
 
-          <section style={{ marginBottom: '32px' }}>
-            <div style={sectionHeaderStyle}>
-              <h2 style={sectionTitleStyle}>New Arrivals</h2>
-              <Link to="/search?sort=newest" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontSize: '14px', fontWeight: 500 }}>
-                View All <FiArrowRight />
+          {/* New Arrivals Section */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                  New Arrivals
+                </h2>
+                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Fresh styles just landed</p>
+              </div>
+              <Link to="/search?sort=newest" className="view-all-btn" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                color: '#667eea', 
+                fontSize: '14px', 
+                fontWeight: 600,
+                textDecoration: 'none',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                background: '#f0f4ff',
+                transition: 'all 0.3s ease'
+              }}>
+                View All <FiArrowRight size={16} />
               </Link>
             </div>
-            <div style={gridStyle}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {renderProductGrid(newArrivals, newArrivals.length)}
             </div>
           </section>
 
           <BrandSection />
-
           <ContactLensBrandSection />
 
-          <section style={{ marginBottom: '32px' }}>
-            <div style={sectionHeaderStyle}>
-              <h2 style={sectionTitleStyle}>Top Picks For You</h2>
+          {/* Top Picks Section */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '12px', 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff'
+                }}>
+                  <FiStar size={24} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                    Top Picks For You
+                  </h2>
+                  <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Handpicked based on your preferences</p>
+                </div>
+              </div>
             </div>
-            <div style={gridStyle}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {renderProductGrid(topPicks, topPicksVisible)}
             </div>
             {!loading && topPicks.length > 0 && (
@@ -351,26 +304,63 @@ const Home = () => {
             )}
           </section>
 
-          <section style={{ marginBottom: '32px' }}>
-            <div style={sectionHeaderStyle}>
-              <h2 style={sectionTitleStyle}>Best Sellers</h2>
-              <Link to="/search?sort=rating" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontSize: '14px', fontWeight: 500 }}>
-                View All <FiArrowRight />
+          {/* Best Sellers Section */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                  Best Sellers
+                </h2>
+                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Customer favorites</p>
+              </div>
+              <Link to="/search?sort=rating" className="view-all-btn" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                color: '#667eea', 
+                fontSize: '14px', 
+                fontWeight: 600,
+                textDecoration: 'none',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                background: '#f0f4ff',
+                transition: 'all 0.3s ease'
+              }}>
+                View All <FiArrowRight size={16} />
               </Link>
             </div>
-            <div style={gridStyle}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {renderProductGrid(bestSellers, bestSellers.length)}
             </div>
           </section>
 
-          <section style={{ marginBottom: '32px' }}>
-            <div style={sectionHeaderStyle}>
-              <h2 style={{ ...sectionTitleStyle, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ background: 'var(--secondary)', color: '#fff', fontSize: '12px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px' }}>₹</span>
-                Budget Buys Under ₹999
-              </h2>
+          {/* Budget Buys Section */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '12px', 
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: '20px',
+                  fontWeight: 800
+                }}>
+                  ₹
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                    Budget Buys Under ₹999
+                  </h2>
+                  <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Quality eyewear at affordable prices</p>
+                </div>
+              </div>
             </div>
-            <div style={gridStyle}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {renderProductGrid(budgetBuys, budgetVisible)}
             </div>
             {!loading && budgetBuys.length > 0 && (
@@ -382,11 +372,17 @@ const Home = () => {
             )}
           </section>
 
-          <section style={{ marginBottom: '32px' }}>
-            <div style={sectionHeaderStyle}>
-              <h2 style={sectionTitleStyle}>Just For You</h2>
+          {/* Just For You Section */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                  Just For You
+                </h2>
+                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Personalized recommendations</p>
+              </div>
             </div>
-            <div style={gridStyle}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {renderProductGrid(justForYou, justForYouVisible)}
             </div>
             {!loading && justForYou.length > 0 && (
@@ -400,84 +396,74 @@ const Home = () => {
 
           <SmartChoice />
 
-          {/* Personalized Section 1 - Based on user behavior */}
-          {personalizedProducts1.length > 0 && (
-            <section style={{ marginBottom: '32px' }}>
-              <div style={sectionHeaderStyle}>
-                <h2 style={sectionTitleStyle}>Curated For Your Style</h2>
-                <Link to="/search" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontSize: '14px', fontWeight: 500 }}>
-                  Explore More <FiArrowRight />
-                </Link>
-              </div>
-              <div style={gridStyle}>
-                {personalizedProducts1.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Personalized Section 2 - Based on user behavior */}
-          {personalizedProducts2.length > 0 && (
-            <section style={{ marginBottom: '32px' }}>
-              <div style={sectionHeaderStyle}>
-                <h2 style={sectionTitleStyle}>Trending In Your Feed</h2>
-                <Link to="/search" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontSize: '14px', fontWeight: 500 }}>
-                  View All <FiArrowRight />
-                </Link>
-              </div>
-              <div style={gridStyle}>
-                {personalizedProducts2.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Personalized Section 3 - Based on user behavior */}
-          {personalizedProducts3.length > 0 && (
-            <section style={{ marginBottom: '32px' }}>
-              <div style={sectionHeaderStyle}>
-                <h2 style={sectionTitleStyle}>Handpicked Selection</h2>
-                <Link to="/search" style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--primary)', fontSize: '14px', fontWeight: 500 }}>
-                  Discover More <FiArrowRight />
-                </Link>
-              </div>
-              <div style={gridStyle}>
-                {personalizedProducts3.map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          <section style={{ background: 'var(--bg-white)', borderRadius: '8px', padding: '24px', marginBottom: '32px', boxShadow: 'var(--shadow)' }}>
-            <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '24px', textAlign: 'center' }}>
-              {features.map((feature, idx) => (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ color: 'var(--primary)', background: 'var(--primary-light)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {feature.icon}
+          {/* Features Section - Modern Design */}
+          <section style={{ marginBottom: '48px' }}>
+            <div style={{ 
+              background: '#fff', 
+              borderRadius: '16px', 
+              padding: '40px', 
+              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px' }}>
+                {features.map((feature, idx) => (
+                  <div key={idx} style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    gap: '12px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ 
+                      color: '#fff',
+                      background: feature.color,
+                      width: '64px', 
+                      height: '64px', 
+                      borderRadius: '16px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      boxShadow: `0 4px 12px ${feature.color}40`
+                    }}>
+                      {feature.icon}
+                    </div>
+                    <h4 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#212121' }}>{feature.title}</h4>
+                    <p style={{ fontSize: '13px', color: '#757575', margin: 0, lineHeight: 1.5 }}>{feature.desc}</p>
                   </div>
-                  <h4 style={{ fontSize: '14px', fontWeight: 600 }}>{feature.title}</h4>
-                  <p style={{ fontSize: '12px', color: 'var(--text-light)' }}>{feature.desc}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
         </div>
       </main>
       <Footer />
       <style>{`
-        .offer-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        .modern-offer-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 32px rgba(0,0,0,0.15);
         }
-        .offer-card:active {
-          transform: translateY(-2px);
+        .view-all-btn:hover {
+          background: #667eea !important;
+          color: #fff !important;
         }
-        @media (min-width: 768px) and (max-width: 1024px) {
-          .features-grid {
-            grid-template-columns: repeat(4, 1fr) !important;
+        .product-skeleton {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        .skeleton {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: loading 1.5s ease-in-out infinite;
+        }
+        @keyframes loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        @media (max-width: 768px) {
+          .container {
+            padding: 0 16px !important;
           }
         }
       `}</style>
