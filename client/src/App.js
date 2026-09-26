@@ -85,12 +85,20 @@ const LoadingFallback = () => (
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, seller, admin, staff, executive, manufacturer, manufacturerSeller, loading } = useAuth();
   const role = localStorage.getItem('optikart_role');
+  const token = localStorage.getItem('optikart_token');
 
+  // Wait for auth initialization to complete
   if (loading) {
     return <LoadingFallback />;
   }
 
-  if (!isAuthenticated) {
+  // Check if user has valid token in localStorage
+  const hasValidToken = token && role;
+
+  // Check authentication - either from state or localStorage
+  const isAuth = isAuthenticated || hasValidToken;
+
+  if (!isAuth) {
     // Determine redirect based on current path
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/seller')) {
@@ -110,7 +118,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   if (allowedRoles) {
     // Check if user has the required role
     const hasRole = allowedRoles.some(r => {
-      if (r === 'user' && user) return true;
+      if (r === 'user' && (user || role === 'user')) return true;
       if (r === 'seller' && (seller || role === 'seller')) return true;
       if (r === 'admin' && (admin || role === 'admin')) return true;
       if (r === 'staff' && (staff || role === 'staff')) return true;
