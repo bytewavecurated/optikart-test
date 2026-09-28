@@ -27,6 +27,9 @@ import bannerRoutes from './routes/banners.js';
 import executiveRoutes from './routes/executive.js';
 import manufacturerRoutes from './routes/manufacturer.js';
 import manufacturerSellerRoutes from './routes/manufacturerSeller.js';
+import chatbotRoutes from './routes/chatbot.js';
+import faceDetectionRoutes from './routes/faceDetection.js';
+import speechRecognitionRoutes from './routes/speechRecognition.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -87,6 +90,9 @@ app.use('/api/banners', bannerRoutes);
 app.use('/api/executive', executiveRoutes);
 app.use('/api/manufacturer', manufacturerRoutes);
 app.use('/api/manufacturer-seller', manufacturerSellerRoutes);
+app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/face-detection', faceDetectionRoutes);
+app.use('/api/speech', speechRecognitionRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

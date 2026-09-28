@@ -75,6 +75,7 @@ const ManufacturerLogin = lazy(() => import('./pages/manufacturer/ManufacturerLo
 const ManufacturerDashboard = lazy(() => import('./pages/manufacturer/ManufacturerDashboard'));
 const ManufacturerSellerLogin = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerLogin'));
 const ManufacturerSellerDashboard = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerDashboard'));
+const FaceShapeGuide = lazy(() => import('./pages/FaceShapeGuide'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -230,6 +231,7 @@ function App() {
         <Route path="/help/:category" element={<HelpCategory />} />
         <Route path="/prescription" element={<UploadPrescription />} />
         <Route path="/virtual-tryon" element={<VirtualTryOn />} />
+        <Route path="/face-shape-guide" element={<FaceShapeGuide />} />
         <Route path="/compare" element={<ProductCompare />} />
         <Route path="/coupons" element={<AvailableCoupons />} />
         <Route path="/brands/:brand" element={<BrandPage />} />

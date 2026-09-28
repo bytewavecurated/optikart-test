@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiX, FiTrendingUp, FiClock, FiChevronRight } from 'react-icons/fi';
+import { FiSearch, FiX, FiTrendingUp, FiClock, FiChevronRight, FiMic, FiCamera } from 'react-icons/fi';
+import toast from 'react-hot-toast';
 
 const TRENDING = [
   'Ray-Ban Aviator',
@@ -144,9 +145,15 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
     } catch { return []; }
   });
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const navigate = useNavigate();
   const wrapperRef = useRef(null);
   const debounceRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -210,6 +217,148 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
 
   const showDropdown = focused && (query || recentSearches.length > 0);
 
+  // Voice search functionality
+  const startVoiceSearch = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('Voice search is not supported in your browser');
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = false;
+    recognitionRef.current.interimResults = false;
+    recognitionRef.current.lang = 'en-US';
+
+    recognitionRef.current.onstart = () => {
+      setIsListening(true);
+      toast.success('Listening...');
+    };
+
+    recognitionRef.current.onresult = async (event) => {
+      const transcript = event.results[0][0].transcript;
+      setIsListening(false);
+      
+      // Try to process with backend speech recognition
+      try {
+        const response = await fetch('http://localhost:5000/api/speech/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: transcript })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data.searchQuery) {
+            setQuery(data.data.searchQuery);
+            navigate(`/search?q=${encodeURIComponent(data.data.searchQuery)}`);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Speech API error:', error);
+      }
+      
+      // Fallback to direct search
+      setQuery(transcript);
+      navigate(`/search?q=${encodeURIComponent(transcript)}`);
+    };
+
+    recognitionRef.current.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      toast.error('Voice search failed. Please try again.');
+    };
+
+    recognitionRef.current.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current.start();
+  };
+
+  const stopVoiceSearch = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+
+  // Camera search functionality
+  const startCameraSearch = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 640, height: 480, facingMode: 'user' } 
+      });
+      
+      streamRef.current = mediaStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        setIsCapturing(true);
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast.error('Unable to access camera. Please check permissions.');
+    }
+  };
+
+  const captureAndAnalyze = async () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      const context = canvas.getContext('2d');
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      canvas.toBlob(async (blob) => {
+        try {
+          const formData = new FormData();
+          formData.append('image', blob);
+
+          const response = await fetch('http://localhost:5000/api/face-detection/detect', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            stopCameraSearch();
+            navigate(`/face-shape-guide?result=${encodeURIComponent(JSON.stringify(data.data))}`);
+          } else {
+            toast.error(data.message || 'Failed to analyze face');
+          }
+        } catch (error) {
+          console.error('Face detection error:', error);
+          toast.error('Failed to analyze face. Please try again.');
+        }
+      }, 'image/jpeg', 0.9);
+    }
+  };
+
+  const stopCameraSearch = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setIsCapturing(false);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   return (
     <div style={STYLES.wrapper} ref={wrapperRef}>
       <form onSubmit={handleSubmit} style={STYLES.form}>
@@ -223,18 +372,130 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
           style={{
             ...STYLES.input,
             ...(focused ? STYLES.inputFocused : {}),
+            paddingRight: '100px' // Make room for buttons
           }}
         />
         {query && (
           <button
             type="button"
-            style={STYLES.clearBtn}
+            style={{...STYLES.clearBtn, right: '70px'}}
             onClick={() => { setQuery(''); setFocused(true); }}
           >
             <FiX />
           </button>
         )}
+        
+        {/* Voice Search Button */}
+        <button
+          type="button"
+          onClick={isListening ? stopVoiceSearch : startVoiceSearch}
+          disabled={isCapturing}
+          style={{
+            position: 'absolute',
+            right: '40px',
+            background: isListening ? '#f44336' : 'none',
+            border: 'none',
+            color: isListening ? '#fff' : '#2874f0',
+            cursor: isCapturing ? 'not-allowed' : 'pointer',
+            fontSize: '18px',
+            padding: '8px',
+            borderRadius: '50%',
+            transition: 'all 0.2s',
+            opacity: isCapturing ? 0.5 : 1
+          }}
+          title={isListening ? 'Stop listening' : 'Voice search'}
+        >
+          <FiMic />
+        </button>
+        
+        {/* Camera Search Button */}
+        <button
+          type="button"
+          onClick={startCameraSearch}
+          disabled={isListening}
+          style={{
+            position: 'absolute',
+            right: '10px',
+            background: 'none',
+            border: 'none',
+            color: '#2874f0',
+            cursor: isListening ? 'not-allowed' : 'pointer',
+            fontSize: '18px',
+            padding: '8px',
+            borderRadius: '50%',
+            transition: 'all 0.2s',
+            opacity: isListening ? 0.5 : 1
+          }}
+          title="Face shape analysis"
+        >
+          <FiCamera />
+        </button>
       </form>
+
+      {/* Camera Modal */}
+      {isCapturing && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: '20px'
+        }}>
+          <div style={{ position: 'relative' }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              style={{
+                width: '640px',
+                maxWidth: '90vw',
+                borderRadius: '12px',
+                transform: 'scaleX(-1)'
+              }}
+            />
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={captureAndAnalyze}
+              style={{
+                padding: '12px 32px',
+                background: '#667eea',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 600
+              }}
+            >
+              Capture & Analyze
+            </button>
+            <button
+              onClick={stopCameraSearch}
+              style={{
+                padding: '12px 32px',
+                background: '#f44336',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 600
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {showDropdown && (
         <div style={STYLES.dropdown}>
