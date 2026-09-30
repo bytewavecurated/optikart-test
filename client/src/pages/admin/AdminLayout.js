@@ -22,6 +22,7 @@ const AdminLayout = () => {
     { label: 'Manufacturers', path: '/admin/manufacturers', icon: <FiPackage /> },
     { label: 'Orders', path: '/admin/orders', icon: <FiPackage /> },
     { label: 'Revenue', path: '/admin/revenue', icon: <FiDollarSign /> },
+    { label: 'Commissions', path: '/admin/commissions', icon: <FiTrendingUp /> },
     { label: 'Subscriptions', path: '/admin/subscriptions', icon: <FiTrendingUp /> },
     { label: 'Sale Events', path: '/admin/sale-events', icon: <FiActivity /> },
     { label: 'Banners', path: '/admin/banners', icon: <FiImage /> },

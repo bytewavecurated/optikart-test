@@ -945,3 +945,23 @@ router.get('/manufacturers/:id/sellers', verifyToken, verifyAdmin, async (req, r
   }
 });
 
+// Get commissions data
+router.get('/commissions', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const commissions = await Order.find({ 
+      paymentStatus: 'completed',
+      orderStatus: { $ne: 'cancelled' }
+    })
+    .populate('seller', 'storeName name email')
+    .populate('user', 'name email')
+    .sort({ createdAt: -1 })
+    .select('orderNumber seller subtotal commissionPercentage commissionAmount sellerPayoutAmount commissionPaid commissionPaidAt createdAt');
+
+    res.json({ success: true, data: commissions });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+export default router;
+

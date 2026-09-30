@@ -188,6 +188,8 @@ export const admin = {
   banManufacturer: (id, data) => api.put(`/admin/manufacturers/${id}/ban`, data),
   getManufacturerProducts: (id) => api.get(`/admin/manufacturers/${id}/products`),
   getManufacturerSellers: (id) => api.get(`/admin/manufacturers/${id}/sellers`),
+  // Commissions
+  getCommissions: () => api.get('/admin/commissions'),
 };
 
 export const notifications = {

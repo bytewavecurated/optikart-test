@@ -107,7 +107,7 @@ const GenderSelection = () => {
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    background: `linear-gradient(to top, ${gender.color}, transparent)`,
+                    background: `linear-gradient(to top, ${gender.color}dd, transparent)`,
                     padding: '40px 20px 20px'
                   }}>
                     <h3 style={{ 
@@ -117,7 +117,8 @@ const GenderSelection = () => {
                       color: '#fff',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: '8px',
+                      textShadow: '0 2px 4px rgba(0,0,0,0.3)'
                     }}>
                       <FiUser size={24} />
                       {gender.name}
