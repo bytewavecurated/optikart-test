@@ -17,6 +17,7 @@ const ManufacturerDashboard = () => {
     description: '',
     price: '',
     category: 'sunglasses',
+    kidsType: '',
     brand: '',
     images: [''],
     colors: [],
@@ -129,6 +130,12 @@ const ManufacturerDashboard = () => {
         images: newProduct.images.filter(img => img.trim() !== '')
       };
       
+      // If category is kids, set the actual category based on kidsType
+      if (newProduct.category === 'kids' && newProduct.kidsType) {
+        productData.category = newProduct.kidsType;
+        productData.gender = 'kids';
+      }
+      
       await api.post('/manufacturer/products', productData);
       toast.success('Product added successfully');
       setShowAddProduct(false);
@@ -137,6 +144,7 @@ const ManufacturerDashboard = () => {
         description: '',
         price: '',
         category: 'sunglasses',
+        kidsType: '',
         brand: '',
         images: [''],
         colors: [],
@@ -481,7 +489,7 @@ const ManufacturerDashboard = () => {
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Category *</label>
                   <select
                     value={newProduct.category}
-                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
+                    onChange={(e) => setNewProduct({...newProduct, category: e.target.value, kidsType: e.target.value === 'kids' ? '' : undefined})}
                     style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
                   >
                     <option value="sunglasses">Sunglasses</option>
@@ -504,6 +512,44 @@ const ManufacturerDashboard = () => {
                   />
                 </div>
               </div>
+
+              {newProduct.category === 'kids' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Kids Product Type *</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setNewProduct({...newProduct, kidsType: 'eyeglasses'})}
+                      style={{
+                        padding: '12px',
+                        border: newProduct.kidsType === 'eyeglasses' ? '2px solid #2874f0' : '1px solid #e0e0e0',
+                        borderRadius: '6px',
+                        background: newProduct.kidsType === 'eyeglasses' ? '#e8f0fe' : '#fff',
+                        cursor: 'pointer',
+                        fontWeight: newProduct.kidsType === 'eyeglasses' ? '600' : '400',
+                        color: newProduct.kidsType === 'eyeglasses' ? '#2874f0' : '#212121'
+                      }}
+                    >
+                      👓 Eyeglasses
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewProduct({...newProduct, kidsType: 'sunglasses'})}
+                      style={{
+                        padding: '12px',
+                        border: newProduct.kidsType === 'sunglasses' ? '2px solid #2874f0' : '1px solid #e0e0e0',
+                        borderRadius: '6px',
+                        background: newProduct.kidsType === 'sunglasses' ? '#e8f0fe' : '#fff',
+                        cursor: 'pointer',
+                        fontWeight: newProduct.kidsType === 'sunglasses' ? '600' : '400',
+                        color: newProduct.kidsType === 'sunglasses' ? '#2874f0' : '#212121'
+                      }}
+                    >
+                      🕶️ Sunglasses
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>

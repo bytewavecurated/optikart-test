@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiSearch, FiTrash2, FiEye, FiShield, FiEyeOff } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -41,6 +41,23 @@ const ManageUsers = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this user?')) return;
     try { await adminApi.deleteUser(id); toast.success('User deleted'); fetchUsers(search, page); } catch (err) { toast.error('Failed'); }
+  };
+
+  const handleBan = async (id, banType) => {
+    const action = banType === 'ban' ? 'ban' : 'shadow ban';
+    if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
+    
+    try {
+      await adminApi.banUser(id, { 
+        isBanned: banType === 'ban',
+        isShadowBanned: banType === 'shadow',
+        banReason: banType !== 'unban' ? 'Banned by admin' : ''
+      });
+      toast.success(`User ${action}ned successfully`);
+      fetchUsers(search, page);
+    } catch (err) {
+      toast.error('Failed to update user status');
+    }
   };
 
   return (
@@ -88,6 +105,21 @@ const ManageUsers = () => {
                             <button onClick={() => navigate(`/admin/users/${user._id}`)} className="btn btn-outline btn-sm" title="View Details">
                               <FiEye size={12} />
                             </button>
+                            {!user.isBanned && !user.isShadowBanned && (
+                              <>
+                                <button onClick={() => handleBan(user._id, 'shadow')} className="btn btn-outline btn-sm" title="Shadow Ban" style={{ color: '#e65100', borderColor: '#e65100' }}>
+                                  <FiEyeOff size={12} />
+                                </button>
+                                <button onClick={() => handleBan(user._id, 'ban')} className="btn btn-danger btn-sm" title="Ban User">
+                                  <FiShield size={12} />
+                                </button>
+                              </>
+                            )}
+                            {(user.isBanned || user.isShadowBanned) && (
+                              <button onClick={() => handleBan(user._id, 'unban')} className="btn btn-outline btn-sm" title="Unban User" style={{ color: '#2e7d32', borderColor: '#2e7d32' }}>
+                                <FiEye size={12} />
+                              </button>
+                            )}
                             <button onClick={() => handleDelete(user._id)} className="btn btn-danger btn-sm" title="Delete User">
                               <FiTrash2 size={12} />
                             </button>

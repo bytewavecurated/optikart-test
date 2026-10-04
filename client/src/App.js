@@ -70,6 +70,7 @@ const EPRCompliance = lazy(() => import('./pages/EPRCompliance'));
 const ManageExecutives = lazy(() => import('./pages/admin/ManageExecutives'));
 const ManageManufacturers = lazy(() => import('./pages/admin/ManageManufacturers'));
 const Commissions = lazy(() => import('./pages/admin/Commissions'));
+const ChatbotManagement = lazy(() => import('./pages/admin/ChatbotManagement'));
 const ExecutiveLogin = lazy(() => import('./pages/executive/ExecutiveLogin'));
 const ExecutiveDashboard = lazy(() => import('./pages/executive/ExecutiveDashboard'));
 const ManufacturerLogin = lazy(() => import('./pages/manufacturer/ManufacturerLogin'));
@@ -196,6 +197,7 @@ function App() {
           <Route path="executives" element={<ManageExecutives />} />
           <Route path="manufacturers" element={<ManageManufacturers />} />
           <Route path="commissions" element={<Commissions />} />
+          <Route path="chatbot" element={<ChatbotManagement />} />
         </Route>
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>

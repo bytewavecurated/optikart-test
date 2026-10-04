@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiUsers, FiShoppingBag, FiPackage, FiDollarSign, FiTrendingUp, FiTruck, FiTag, FiFileText, FiSettings, FiActivity, FiImage, FiLogOut, FiMenu, FiX, FiShield } from 'react-icons/fi';
+import { FiHome, FiUsers, FiShoppingBag, FiPackage, FiDollarSign, FiTrendingUp, FiTruck, FiTag, FiFileText, FiSettings, FiActivity, FiImage, FiLogOut, FiMenu, FiX, FiShield, FiMessageCircle } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AdminLayout = () => {
@@ -28,6 +28,7 @@ const AdminLayout = () => {
     { label: 'Banners', path: '/admin/banners', icon: <FiImage /> },
     { label: 'Coupons', path: '/admin/coupons', icon: <FiTag /> },
     { label: 'Blogs', path: '/admin/blogs', icon: <FiFileText /> },
+    { label: 'Chatbot', path: '/admin/chatbot', icon: <FiMessageCircle /> },
     { label: 'Staff', path: '/admin/staff', icon: <FiSettings /> },
     { label: 'Delivery', path: '/admin/delivery', icon: <FiTruck /> },
   ];

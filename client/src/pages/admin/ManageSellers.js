@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiCheck, FiX, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiSearch, FiCheck, FiX, FiTrash2, FiEye, FiShield, FiEyeOff } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -47,6 +47,23 @@ const ManageSellers = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this seller?')) return;
     try { await adminApi.deleteSeller(id); toast.success('Seller deleted'); fetchSellers(search, filter, page); } catch (err) { toast.error('Failed'); }
+  };
+
+  const handleBan = async (id, banType) => {
+    const action = banType === 'ban' ? 'ban' : 'shadow ban';
+    if (!window.confirm(`Are you sure you want to ${action} this seller?`)) return;
+    
+    try {
+      await adminApi.banSeller(id, { 
+        isBanned: banType === 'ban',
+        isShadowBanned: banType === 'shadow',
+        banReason: banType !== 'unban' ? 'Banned by admin' : ''
+      });
+      toast.success(`Seller ${action}ned successfully`);
+      fetchSellers(search, filter, page);
+    } catch (err) {
+      toast.error('Failed to update seller status');
+    }
   };
 
   return (
@@ -100,6 +117,21 @@ const ManageSellers = () => {
                             </button>
                             {seller.status !== 'verified' && <button onClick={() => handleVerify(seller._id, 'verified')} className="btn btn-success btn-sm" title="Verify Seller"><FiCheck size={12} /></button>}
                             {seller.status !== 'rejected' && <button onClick={() => handleVerify(seller._id, 'rejected')} className="btn btn-danger btn-sm" title="Reject Seller"><FiX size={12} /></button>}
+                            {!seller.isBanned && !seller.isShadowBanned && (
+                              <>
+                                <button onClick={() => handleBan(seller._id, 'shadow')} className="btn btn-outline btn-sm" title="Shadow Ban" style={{ color: '#e65100', borderColor: '#e65100' }}>
+                                  <FiEyeOff size={12} />
+                                </button>
+                                <button onClick={() => handleBan(seller._id, 'ban')} className="btn btn-danger btn-sm" title="Ban Seller">
+                                  <FiShield size={12} />
+                                </button>
+                              </>
+                            )}
+                            {(seller.isBanned || seller.isShadowBanned) && (
+                              <button onClick={() => handleBan(seller._id, 'unban')} className="btn btn-outline btn-sm" title="Unban Seller" style={{ color: '#2e7d32', borderColor: '#2e7d32' }}>
+                                <FiEye size={12} />
+                              </button>
+                            )}
                             <button onClick={() => handleDelete(seller._id)} className="btn btn-outline btn-sm" title="Delete Seller"><FiTrash2 size={12} /></button>
                           </div>
                         </td>

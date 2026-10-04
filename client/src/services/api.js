@@ -215,4 +215,11 @@ export const banners = {
   delete: (id) => api.delete(`/banners/${id}`),
 };
 
+export const chatbot = {
+  sendMessage: (message, context) => api.post('/chatbot/message', { message, context }),
+  getKnowledgeBase: () => api.get('/chatbot/knowledge'),
+  updateKnowledgeBase: (data) => api.put('/chatbot/knowledge', data),
+  getSuggestions: (context) => api.post('/chatbot/suggestions', { context }),
+};
+
 export default api;
