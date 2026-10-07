@@ -48,11 +48,20 @@ router.get('/', optionalAuth, async (req, res) => {
     else if (sort === 'popularity') sortOption = { viewCount: -1 };
     else if (sort === 'discount') sortOption = { discountedPrice: 1 };
 
-    const products = await Product.find(query)
+    // Get sponsored products first (only 1 per search)
+    const sponsoredProducts = await Product.find({ ...query, isSponsored: true })
+      .populate('seller', 'storeName storeLogo rating sellerId createdAt')
+      .limit(1);
+
+    // Get regular products
+    const regularProducts = await Product.find({ ...query, isSponsored: { $ne: true } })
       .populate('seller', 'storeName storeLogo rating sellerId createdAt')
       .sort(sortOption)
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
+
+    // Combine: sponsored first, then regular
+    const products = [...sponsoredProducts, ...regularProducts];
 
     const total = await Product.countDocuments(query);
 

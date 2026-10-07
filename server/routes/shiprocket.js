@@ -190,6 +190,7 @@ router.post('/webhook', express.json(), async (req, res) => {
           case 'ORDER_DELIVERED':
             order.orderStatus = 'delivered';
             order.deliveryDate = new Date();
+            order.deliveredAt = new Date();
             break;
           case 'ORDER_CANCELLED':
             order.orderStatus = 'cancelled';

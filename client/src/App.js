@@ -13,6 +13,7 @@ const SellerProducts = lazy(() => import('./pages/seller/SellerProducts'));
 const SellerOrders = lazy(() => import('./pages/seller/SellerOrders'));
 const SellerAnalytics = lazy(() => import('./pages/seller/SellerAnalytics'));
 const SellerProfile = lazy(() => import('./pages/seller/SellerProfile'));
+const SellerPayouts = lazy(() => import('./pages/seller/SellerPayouts'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -178,6 +179,7 @@ function App() {
         <Route path="/seller/orders" element={<SellerRoute><SellerOrders /></SellerRoute>} />
         <Route path="/seller/analytics" element={<SellerRoute><SellerAnalytics /></SellerRoute>} />
         <Route path="/seller/profile" element={<SellerRoute><SellerProfile /></SellerRoute>} />
+        <Route path="/seller/payouts" element={<SellerRoute><SellerPayouts /></SellerRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />

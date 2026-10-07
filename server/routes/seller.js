@@ -546,4 +546,74 @@ router.delete('/products/:id/offer', verifySeller, async (req, res) => {
   }
 });
 
+// Inventory Alerts
+import { 
+  getSellerAlerts, 
+  markAlertAsRead, 
+  markAllAlertsAsRead, 
+  getUnreadAlertCount,
+  checkInventoryLevels 
+} from '../services/inventoryAlert.js';
+
+router.get('/inventory-alerts', verifySeller, async (req, res) => {
+  try {
+    const alerts = await getSellerAlerts(req.seller._id, 50);
+    res.json({ success: true, alerts });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+router.get('/inventory-alerts/unread-count', verifySeller, async (req, res) => {
+  try {
+    const count = await getUnreadAlertCount(req.seller._id);
+    res.json({ success: true, count });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+router.put('/inventory-alerts/:id/read', verifySeller, async (req, res) => {
+  try {
+    const alert = await markAlertAsRead(req.params.id);
+    if (!alert) {
+      return res.status(404).json({ success: false, message: 'Alert not found.' });
+    }
+    res.json({ success: true, alert });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+router.put('/inventory-alerts/read-all', verifySeller, async (req, res) => {
+  try {
+    await markAllAlertsAsRead(req.seller._id);
+    res.json({ success: true, message: 'All alerts marked as read.' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+router.post('/inventory-alerts/check', verifySeller, async (req, res) => {
+  try {
+    const alerts = await checkInventoryLevels(req.seller._id);
+    res.json({ success: true, alerts, count: alerts.length });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+// Seller Payouts
+import { getSellerPayoutHistory } from '../services/sellerPayout.js';
+
+router.get('/payouts/history', verifySeller, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+    const payouts = await getSellerPayoutHistory(req.seller._id, limit);
+    res.json({ success: true, data: payouts });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 export default router;

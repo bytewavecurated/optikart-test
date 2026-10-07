@@ -111,4 +111,61 @@ export const fetchPayment = async (paymentId) => {
   }
 };
 
+/**
+ * Transfer funds to seller's bank account
+ * Note: This requires RazorpayX integration for actual fund transfers
+ * For now, this is a mock implementation that simulates the transfer
+ * 
+ * To enable real transfers:
+ * 1. Sign up for RazorpayX (https://razorpay.com/x/)
+ * 2. Get RazorpayX API keys
+ * 3. Replace this mock with actual RazorpayX API calls
+ */
+export const transferFunds = async ({ amount, accountNumber, ifscCode, name, notes }) => {
+  try {
+    // Check if RazorpayX is configured
+    if (!process.env.RAZORPAYX_KEY_ID || !process.env.RAZORPAYX_KEY_SECRET) {
+      // Mock transfer for development/testing
+      console.log('Mock fund transfer:', { amount, accountNumber, ifscCode, name, notes });
+      
+      // Simulate transfer delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Simulate success (90% success rate for testing)
+      const isSuccess = Math.random() > 0.1;
+      
+      if (isSuccess) {
+        return {
+          success: true,
+          id: `tr_mock_${Date.now()}`,
+          amount: amount,
+          status: 'processed',
+          mode: 'imps',
+          message: 'Mock transfer successful'
+        };
+      } else {
+        throw new Error('Mock transfer failed - insufficient funds');
+      }
+    }
+
+    // Real RazorpayX transfer (when configured)
+    // This would use the RazorpayX API
+    // For now, return mock response
+    console.warn('RazorpayX transfer not yet implemented. Using mock transfer.');
+    
+    return {
+      success: true,
+      id: `tr_mock_${Date.now()}`,
+      amount: amount,
+      status: 'processed',
+      mode: 'neft',
+      message: 'Transfer initiated (mock)'
+    };
+    
+  } catch (error) {
+    console.error('Error transferring funds:', error);
+    throw error;
+  }
+};
+
 export default razorpay;

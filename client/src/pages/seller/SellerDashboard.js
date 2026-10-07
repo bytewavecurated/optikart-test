@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPackage, FiShoppingBag, FiDollarSign, FiTrendingUp, FiPlus, FiBell } from 'react-icons/fi';
+import { FiPackage, FiShoppingBag, FiDollarSign, FiTrendingUp, FiPlus, FiBell, FiCreditCard } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { seller as sellerApi, notifications } from '../../services/api';
 import { onNewOrder, offNewOrder } from '../../services/socket';
@@ -60,6 +60,7 @@ const SellerDashboard = () => {
               <p style={{ fontSize: '14px', color: 'var(--text-light)' }}>Here's what's happening with your store</p>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
+              <Link to="/seller/payouts" className="btn btn-outline"><FiCreditCard /> Payouts</Link>
               <Link to="/seller/products" className="btn btn-primary"><FiPlus /> Add Product</Link>
             </div>
           </div>

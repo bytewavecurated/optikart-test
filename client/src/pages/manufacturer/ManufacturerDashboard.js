@@ -12,6 +12,7 @@ const ManufacturerDashboard = () => {
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddSeller, setShowAddSeller] = useState(false);
   const [showBulkSellerUpload, setShowBulkSellerUpload] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [newProduct, setNewProduct] = useState({
     title: '',
     description: '',
@@ -44,6 +45,41 @@ const ManufacturerDashboard = () => {
   });
   const { manufacturer, manufacturerLogout } = useAuth();
   const navigate = useNavigate();
+
+  // Track unsaved changes
+  useEffect(() => {
+    const isProductFormDirty = Object.keys(newProduct).some(key => {
+      if (key === 'images') return newProduct.images.some(img => img !== '');
+      if (key === 'colors' || key === 'sizes') return newProduct[key].length > 0;
+      if (key === 'stock') return newProduct[key] !== 0;
+      if (key === 'category') return newProduct[key] !== 'sunglasses';
+      if (key === 'gender') return newProduct[key] !== 'unisex';
+      if (key === 'frameSize') return newProduct[key] !== 'medium';
+      return newProduct[key] !== '';
+    });
+
+    const isSellerFormDirty = Object.keys(newSeller).some(key => {
+      if (key === 'storeAddress') return Object.values(newSeller.storeAddress).some(val => val !== '');
+      if (key === 'bankDetails') return Object.values(newSeller.bankDetails).some(val => val !== '');
+      return newSeller[key] !== '';
+    });
+
+    setHasUnsavedChanges(isProductFormDirty || isSellerFormDirty);
+  }, [newProduct, newSeller]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     fetchProducts();

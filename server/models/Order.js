@@ -76,7 +76,10 @@ const orderSchema = new mongoose.Schema({
   commissionAmount: { type: Number, default: 0 },
   sellerPayoutAmount: { type: Number, default: 0 },
   commissionPaid: { type: Boolean, default: false },
-  commissionPaidAt: { type: Date }
+  commissionPaidAt: { type: Date },
+  // Payout tracking
+  payoutProcessed: { type: Boolean, default: false },
+  deliveredAt: { type: Date }
 }, {
   timestamps: true
 });
