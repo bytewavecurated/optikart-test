@@ -182,6 +182,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
       res.json({
         success: true,
         message: 'Login OTP sent to your email.',
+        requiresOTP: true,
         sellerId: seller._id
       });
     }

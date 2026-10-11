@@ -1,277 +1,255 @@
-# OptiKart - Eyewear E-commerce Platform
+# OptiKart - Professional Eyewear E-Commerce Platform
 
-A full-stack, multi-vendor eyewear e-commerce platform built with React, Node.js, Express, and MongoDB. Features Flipkart-like design with comprehensive seller management, user authentication, and admin controls.
+A full-featured, multi-vendor eyewear e-commerce platform built with React, Node.js, Express, and MongoDB.
 
-## 🚀 Features
+## 🎯 Overview
 
-### For Customers
-- Browse products by category (Sunglasses, Eyeglasses, Contact Lenses, etc.)
-- Advanced product filtering (price, brand, frame shape, size, gender, lens type)
-- Product search with auto-suggestions
-- Shopping cart with 20-item limit
-- Wishlist functionality
-- Prescription upload (PDF/Image)
-- Virtual try-on feature
-- Product ratings and reviews
-- Order tracking
-- Multiple payment options (Razorpay integration)
+OptiKart is a comprehensive e-commerce solution for eyewear products featuring:
+- Multi-vendor marketplace (sellers, manufacturers, executives)
+- AI-powered chatbot and face detection
+- Voice and camera search capabilities
+- Virtual try-on with AR
+- Prescription management
+- Automated commission and payout system
+- Advanced analytics and reporting
 
-### For Sellers
-- Seller registration with KYC verification (GST, Aadhar, PAN)
-- Product management (add, edit, delete)
-- Order management and fulfillment
-- Sales analytics dashboard
-- Offer and discount management
-- Performance metrics tracking
-- Subscription management (₹500 + 18% GST/month)
+## 🚀 Quick Start
 
-### For Admin
-- Complete platform oversight
-- User and seller management
-- Role-based staff access control
-- Sale event management (platform-wide discounts)
-- Banner management
-- Coupon/discount system
-- Blog CMS
-- Help & Support ticket system
-- Revenue tracking and analytics
+### Prerequisites
+- Node.js v18+ and npm
+- MongoDB (local or Atlas)
+- Git
 
-### Security Features
-- OTP-based authentication for all user types
-- Account lockout after failed attempts
-  - Users: 3 attempts, 3-minute lockout
-  - Sellers: 3 attempts, 3-minute lockout
-  - Admin: 2 attempts, 5-minute lockout
-- JWT token-based sessions
-- Role-based access control
-- Data isolation between users/sellers
+### Installation
 
-## 🛠️ Tech Stack
-
-### Frontend
-- React 18
-- React Router v6
-- Context API (State Management)
-- Framer Motion (Animations)
-- React Icons
-- Axios (HTTP Client)
-- Socket.io Client (Real-time)
-
-### Backend
-- Node.js
-- Express.js
-- MongoDB with Mongoose
-- JWT Authentication
-- Socket.io (Real-time notifications)
-- Nodemailer (Email service)
-- Multer (File uploads)
-
-### Integrations
-- Razorpay (Payment Gateway)
-- Shiprocket (Shipping & Delivery)
-- Cloudinary (Image Storage)
-- SMTP (Email notifications)
-
-## 📋 Prerequisites
-
-Before you begin, ensure you have:
-
-- **Node.js** (v14 or higher) - [Download](https://nodejs.org/)
-- **MongoDB** (v4.4 or higher) - [Download](https://www.mongodb.com/try/download/community)
-  - OR use MongoDB Atlas (cloud) - [Sign up](https://www.mongodb.com/cloud/atlas)
-- **npm** or **yarn** package manager
-- **Git** - [Download](https://git-scm.com/)
-
-### Optional (for full functionality)
-- Razorpay account - [Sign up](https://razorpay.com/)
-- Shiprocket account - [Sign up](https://www.shiprocket.in/)
-- Cloudinary account - [Sign up](https://cloudinary.com/)
-- Gmail account with App Password (for OTP emails)
-
-## 🚀 Installation & Setup
-
-### 1. Clone the Repository
-
+1. **Clone the repository**
 ```bash
 git clone https://github.com/bytewavecurated/optikart-test.git
 cd optikart-test
 ```
 
-### 2. Install Dependencies
-
+2. **Install dependencies**
 ```bash
-# Install backend dependencies
+# Backend
 cd server
 npm install
 
-# Install frontend dependencies
+# Frontend
 cd ../client
 npm install
 ```
 
-### 3. Configure Environment Variables
+3. **Configure environment variables**
 
-**Important**: You need to create a `.env` file in the `server` directory with your configuration.
-
-```bash
-cd server
-cp .env.example .env
-```
-
-Edit the `.env` file and add your credentials:
-
+Create `server/.env` file:
 ```env
 # Server
 PORT=5000
+NODE_ENV=development
 
 # Database
-MONGODB_URI=mongodb://localhost:27017/eyewear-platform
+MONGODB_URI=mongodb://localhost:27017/optikart
 
-# JWT Secret (generate a strong random string)
+# JWT
 JWT_SECRET=your_super_secret_jwt_key_here
 
 # Frontend URL
 FRONTEND_URL=http://localhost:3000
 
-# Admin Email
-ADMIN_EMAIL=admin@example.com
-
-# Email (SMTP) - For OTP emails
+# Email (SMTP)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_app_password_here
+SMTP_PASS=your_app_password
 
-# Razorpay Payment Gateway
+# Payment Gateway
 RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+RAZORPAYX_KEY_ID=your_razorpayx_key
+RAZORPAYX_KEY_SECRET=your_razorpayx_secret
 
-# Shiprocket Shipping
+# Shipping
 SHIPROCKET_EMAIL=your_shiprocket_email
 SHIPROCKET_PASSWORD=your_shiprocket_password
 SHIPROCKET_API_KEY=your_shiprocket_api_key
 
-# Cloudinary (Image Storage)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+# Image Storage
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_key
+CLOUDINARY_API_SECRET=your_cloudinary_secret
+
+# AI Services
+OPENAI_API_KEY=your_openai_key
+
+# Face Detection (choose one)
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_REGION=us-east-1
+# OR
+GOOGLE_VISION_API_KEY=your_google_vision_key
+# OR
+AZURE_FACE_API_KEY=your_azure_face_key
+AZURE_FACE_ENDPOINT=your_azure_endpoint
+
+# Speech Recognition
+GOOGLE_SPEECH_API_KEY=your_google_speech_key
 ```
 
-📖 **Detailed setup guide**: See [ENV_SETUP.md](./ENV_SETUP.md) for complete instructions on obtaining and configuring each variable.
-
-### 4. Seed the Database (Optional)
-
-To populate the database with sample data:
-
+4. **Seed the database** (creates test data)
 ```bash
 cd server
 node seed.js
 ```
 
-This creates:
-- Admin user
-- Test sellers
-- Sample products
-- Sample categories
-- Help articles
-
-### 5. Start the Application
-
-**Terminal 1 - Backend Server**:
+5. **Start the application**
 ```bash
+# Terminal 1 - Backend
 cd server
 node server.js
-```
 
-Server will run on `http://localhost:5000`
-
-**Terminal 2 - Frontend Server**:
-```bash
+# Terminal 2 - Frontend
 cd client
 npm start
 ```
 
-Frontend will run on `http://localhost:3000`
+6. **Access the application**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
 
 ## 🔐 Test Credentials
 
-After running the seed script, use these credentials to test:
+### Admin
+- **Email**: admin@optikart.com
+- **Password**: Admin123@
 
-### Admin Login
-- **Email**: `samedayopticians@gmail.com`
-- **Password**: `Sameday123@`
-- **URL**: http://localhost:3000/admin/login
+### Seller
+- **Email**: seller1@optikart.com
+- **Password**: Seller123@
 
-### Test Users
-- **Email**: `testuser@optikart.com`
-- **Password**: `Test123@`
+### Executive
+- **Email**: executive@optikart.com
+- **Password**: Executive123@
 
-- **Email**: `demo@optikart.com`
-- **Password**: `Demo123@`
+### Manufacturer
+- **Email**: manufacturer@optikart.com
+- **Password**: Manufacturer123@
 
-### Test Sellers
-- **Email**: `opticalworld@gmail.com`
-- **Password**: `Seller123@`
-
-- **Email**: `visioncare@gmail.com`
-- **Password**: `Seller123@`
-
-- **Email**: `lensstudio@gmail.com`
-- **Password**: `Seller123@`
-
-- **Email**: `eyefashion@gmail.com`
-- **Password**: `Seller123@`
-
-**Note**: Test credentials bypass OTP for easy testing. Remove this bypass before production deployment.
+### User
+- **Email**: user@optikart.com
+- **Password**: User123@
 
 ## 📁 Project Structure
 
 ```
-optikart-test/
+optikart/
 ├── client/                 # React frontend
-│   ├── public/
 │   ├── src/
 │   │   ├── components/    # Reusable components
-│   │   ├── contexts/      # Context providers
+│   │   ├── contexts/      # Context providers (Auth, Cart, etc.)
 │   │   ├── pages/         # Page components
+│   │   │   ├── admin/     # Admin panel pages
+│   │   │   ├── seller/    # Seller dashboard pages
+│   │   │   ├── executive/ # Executive panel pages
+│   │   │   ├── manufacturer/ # Manufacturer pages
+│   │   │   └── ...        # Other pages
 │   │   ├── services/      # API services
-│   │   ├── App.js
-│   │   └── index.js
+│   │   └── App.js         # Main app component
 │   └── package.json
 │
-├── server/                 # Node.js backend
+├── server/                # Node.js backend
 │   ├── middleware/        # Auth, validation, rate limiting
 │   ├── models/           # MongoDB models
 │   ├── routes/           # API routes
-│   ├── services/         # Email, payment, shipping services
-│   ├── .env              # Environment variables (not in git)
-│   ├── .env.example      # Environment template
+│   ├── services/         # Business logic (email, payment, etc.)
 │   ├── seed.js           # Database seeder
 │   ├── server.js         # Entry point
 │   └── package.json
 │
-├── ENV_SETUP.md           # Detailed environment setup guide
-├── README.md             # This file
-└── .gitignore
+└── README.md             # This file
 ```
 
-## 🌐 API Endpoints
+## 🎨 Design System
+
+### Color Palette
+- **Primary**: `#0A2540` - Dark navy for headers and navigation
+- **Action**: `#007791` - Teal for CTAs, links, and active states
+- **Accent**: `#C49A6C` - Gold for premium highlights
+- **Neutral**: `#333333` - Dark gray for body text
+- **Background**: `#FFFFFF` - White for clean interface
+
+### Typography
+- **Font Family**: Inter
+- **Header**: Inter Bold, 36pt/48pt
+- **Subheader**: Inter Medium, 20pt/28pt
+- **Body**: Inter Regular, 16pt/24pt
+
+## ✨ Features
+
+### User Features
+- Browse products by category, brand, gender
+- Advanced search with filters
+- Voice search (Web Speech API)
+- Camera search with face shape detection
+- Virtual try-on with AR
+- Prescription upload and management
+- Shopping cart and wishlist
+- Order tracking
+- Product comparison
+- Coupon system
+- Blog and help center
+
+### Seller Features
+- Seller dashboard with analytics
+- Product management (add, edit, delete)
+- Order management
+- Inventory alerts (low stock notifications)
+- Offer and discount management
+- Payout history and tracking
+- Performance metrics
+
+### Manufacturer Features
+- Brand-wise product management
+- Seller management
+- Bulk upload via spreadsheet
+- Discontinued products handling
+- Kids product type selection
+
+### Executive Features
+- Department-specific access
+- Staff management
+- Search and filter functionality
+- Department data management
+
+### Admin Features
+- Complete platform oversight
+- User and seller management
+- Executive and manufacturer management
+- Order and revenue tracking
+- Commission management (3%)
+- Chatbot knowledge base
+- Sale events and banners
+- Staff management
+- Delivery tracking
+
+## 🔌 API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - User login (with OTP)
-- `POST /api/auth/verify-login-otp` - Verify login OTP
+- `POST /api/auth/register` - Register user
+- `POST /api/auth/login` - User login
+- `POST /api/auth/verify-otp` - Verify OTP
 - `GET /api/auth/me` - Get current user
 
 ### Sellers
 - `POST /api/seller/register` - Register seller
-- `POST /api/seller/login` - Seller login (with OTP)
+- `POST /api/seller/login` - Seller login
 - `GET /api/seller/me` - Get seller profile
 - `POST /api/seller/products` - Add product
 - `GET /api/seller/orders` - Get seller orders
+- `GET /api/seller/inventory-alerts` - Get inventory alerts
+- `GET /api/seller/payouts/history` - Get payout history
 
 ### Products
-- `GET /api/products` - Get all products (with filters)
+- `GET /api/products` - Get all products
 - `GET /api/products/:id` - Get product details
 - `GET /api/products/filters` - Get filter options
 - `GET /api/products/:id/related` - Get related products
@@ -285,167 +263,167 @@ optikart-test/
 - `GET /api/admin/dashboard` - Admin dashboard stats
 - `GET /api/admin/users` - Manage users
 - `GET /api/admin/sellers` - Manage sellers
-- `POST /api/admin/sale-events` - Create sale event
+- `GET /api/admin/executives` - Manage executives
+- `GET /api/admin/manufacturers` - Manage manufacturers
+- `GET /api/admin/commissions` - Track commissions
+- `POST /api/payouts/calculate` - Calculate seller payout
+- `POST /api/payouts/process` - Process payouts
 
-📖 **Full API documentation**: See API routes in `server/routes/`
+### AI Services
+- `POST /api/chatbot/message` - Chat with AI
+- `POST /api/face-detection/detect` - Detect face shape
+- `POST /api/speech/search` - Voice search
+
+## 🛠️ Tech Stack
+
+### Frontend
+- React 18
+- React Router v6
+- Context API (state management)
+- Axios (HTTP client)
+- React Icons
+- Framer Motion (animations)
+
+### Backend
+- Node.js
+- Express.js
+- MongoDB with Mongoose
+- JWT authentication
+- Socket.io (real-time)
+- Nodemailer (email)
+- Multer (file uploads)
+
+### Integrations
+- Razorpay (payments)
+- Shiprocket (shipping)
+- Cloudinary (image storage)
+- OpenAI (chatbot)
+- AWS Rekognition / Google Vision / Azure Face (face detection)
+- Google Speech API (voice recognition)
 
 ## 🔒 Security Features
 
-### Authentication
-- OTP-based login for all user types
-- JWT token sessions with expiry
-  - Users: 30 days
-  - Sellers: 24 hours
-  - Admin: 7 days
-
-### Account Lockout
-- **Users**: 3 failed attempts → 3-minute lockout
-- **Sellers**: 3 failed attempts → 3-minute lockout
-- **Admin**: 2 failed attempts → 5-minute lockout
-
-### Data Protection
-- Password hashing with bcrypt
+- JWT-based authentication
+- OTP verification for login
+- Account lockout after failed attempts
 - Role-based access control
 - Data isolation between users/sellers
-- Input validation and sanitization
-- Rate limiting on authentication endpoints
+- Rate limiting on API endpoints
+- Password hashing with bcrypt
+- CORS configuration
+- Input validation
+
+## 📊 Database Models
+
+### Core Models
+- **User** - Customer accounts
+- **Seller** - Seller accounts with KYC
+- **Product** - Product listings
+- **Order** - Order records
+- **Cart** - Shopping cart
+- **Wishlist** - User wishlists
+
+### Extended Models
+- **Executive** - Executive accounts
+- **Manufacturer** - Manufacturer accounts
+- **ManufacturerSeller** - Manufacturer's sellers
+- **InventoryAlert** - Low stock alerts
+- **SellerPayout** - Payout records
+- **Commission** - Commission tracking
+- **Banner** - Homepage banners
+- **Blog** - Blog posts
+- **Coupon** - Discount coupons
+- **HelpArticle** - Help center content
 
 ## 🚢 Deployment
 
-### Backend Deployment (Heroku/Railway/Render)
-
-1. Set environment variables in your hosting platform
-2. Use MongoDB Atlas for database
-3. Deploy the `server` directory
-
-### Frontend Deployment (Vercel/Netlify)
-
-1. Build the React app:
-   ```bash
-   cd client
-   npm run build
-   ```
-2. Deploy the `client/build` directory
-3. Set environment variable: `REACT_APP_API_URL=your_backend_url`
-
 ### Environment Variables for Production
+Update `.env` with production values:
+- Use MongoDB Atlas for database
+- Configure production Razorpay keys
+- Set up Cloudinary for images
+- Enable HTTPS
+- Configure production email service
 
-Update your `.env` file:
-```env
-NODE_ENV=production
-FRONTEND_URL=https://yourdomain.com
-MONGODB_URI=mongodb+srv://...
-# ... other production credentials
-```
-
-📖 **Complete deployment guide**: See [ENV_SETUP.md](./ENV_SETUP.md)
-
-## 🧪 Testing the Application
-
-### 1. Test User Flow
-1. Register/Login as user
-2. Browse products
-3. Add to cart
-4. Upload prescription (optional)
-5. Checkout with Razorpay
-
-### 2. Test Seller Flow
-1. Login as seller
-2. Add new products
-3. Manage orders
-4. View analytics
-5. Create offers
-
-### 3. Test Admin Flow
-1. Login as admin
-2. View dashboard
-3. Manage users/sellers
-4. Create sale events
-5. Manage banners
-6. View revenue
-
-## 🐛 Troubleshooting
-
-### MongoDB Connection Error
-```
-Error: connect ECONNREFUSED 127.0.0.1:27017
-```
-**Solution**: Start MongoDB service or use MongoDB Atlas
-
-### Port Already in Use
-```
-Error: listen EADDRINUSE: address already in use :::5000
-```
-**Solution**: Change PORT in `.env` or kill the process using port 5000
-
-### OTP Email Not Sending
-**Solution**: 
-- Check SMTP credentials in `.env`
-- For Gmail, use App Password (not regular password)
-- Enable 2FA on Gmail account
-
-### CORS Error
-**Solution**: 
-- Check FRONTEND_URL in `.env`
-- Ensure it matches your frontend URL exactly
-
-📖 **More troubleshooting**: See [ENV_SETUP.md](./ENV_SETUP.md)
-
-## 📝 Scripts
-
+### Build for Production
 ```bash
-# Backend
-cd server
-npm start          # Start server
-npm run dev        # Start with nodemon (development)
-node seed.js       # Seed database
-
 # Frontend
 cd client
-npm start          # Start development server
-npm run build      # Build for production
-npm test           # Run tests
+npm run build
+
+# Backend
+cd server
+NODE_ENV=production node server.js
 ```
+
+### Recommended Hosting
+- **Frontend**: Vercel, Netlify, or AWS S3 + CloudFront
+- **Backend**: Heroku, Railway, AWS EC2, or DigitalOcean
+- **Database**: MongoDB Atlas
+- **Images**: Cloudinary or AWS S3
+
+## 📝 Important Notes
+
+### Test Credentials
+Test credentials are included in `seed.js` for development. **Remove them before production deployment** for security.
+
+### File Uploads
+The application uses Cloudinary for image storage in production. Local file storage is only for development.
+
+### AI Services
+- Chatbot falls back to knowledge base if OpenAI API key not configured
+- Face detection falls back to simulation if no API configured
+- Voice search uses browser's Web Speech API (no API key needed)
+
+### Payment Processing
+- Razorpay is configured for payments
+- Seller payouts use RazorpayX for bank transfers
+- Mock transfer function included for testing
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+This is a production-ready application. For modifications:
+1. Create a feature branch
+2. Make your changes
+3. Test thoroughly
+4. Submit a pull request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is proprietary software.
 
-## 👥 Authors
+## 🆘 Support
 
-- **bytewavecurated** - [GitHub](https://github.com/bytewavecurated)
+For issues or questions:
+- Check the documentation in this README
+- Review API endpoints above
+- Check environment variable configuration
+- Review error logs in console
 
-## 🙏 Acknowledgments
+## 🎯 Roadmap
 
-- Design inspiration from Flipkart
-- Icons from React Icons
-- UI components built with custom CSS
+### Completed
+- ✅ Multi-vendor marketplace
+- ✅ AI chatbot and face detection
+- ✅ Voice and camera search
+- ✅ Virtual try-on
+- ✅ Prescription management
+- ✅ Commission and payout system
+- ✅ Inventory alerts
+- ✅ Admin panel with all features
+- ✅ Executive and manufacturer panels
+- ✅ Advanced analytics
+- ✅ Security hardening
 
-## 📞 Support
-
-For support and questions:
-- Open an issue on GitHub
-- Email: admin@optikart.com
-
-## 🗺️ Roadmap
-
-- [ ] Mobile app (React Native)
-- [ ] Advanced analytics dashboard
-- [ ] Multi-language support
-- [ ] Dark mode
-- [ ] Advanced search with Elasticsearch
-- [ ] Push notifications
-- [ ] Seller verification badges
-- [ ] Product comparison feature
+### Future Enhancements
+- Real AR face tracking (requires specialized library)
+- Firebase/OneSignal push notifications
+- Multi-language support
+- Advanced loyalty program
+- Mobile app (React Native)
 
 ---
 
-**Made with ❤️ for the eyewear industry**
+**Version**: 8.0.0  
+**Last Updated**: October 2026  
+**Status**: Production Ready ✅

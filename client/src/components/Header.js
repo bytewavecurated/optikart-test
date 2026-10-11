@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMenu, FiX, FiChevronDown } from 'react-icons/fi';
+import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMenu, FiX, FiChevronDown, FiCamera, FiMic } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -68,9 +68,9 @@ const Header = () => {
       <div className="container" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '16px' }}>
         {/* Logo */}
         <Link to="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 'fit-content' }}>
-          <span style={{ color: 'var(--secondary)', fontSize: '20px', fontWeight: 700, letterSpacing: '-0.5px' }}>OptiKart</span>
-          <span style={{ color: '#999', fontSize: '10px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '2px' }}>
-            Explore <span style={{ color: 'var(--secondary)' }}>Plus</span> <span style={{ fontSize: '8px' }}>✦</span>
+          <span style={{ color: '#fff', fontSize: '20px', fontWeight: 700, letterSpacing: '-0.5px' }}>OptiKart</span>
+          <span style={{ color: 'var(--accent)', fontSize: '10px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '2px' }}>
+            Explore <span style={{ color: 'var(--accent)' }}>Plus</span>
           </span>
         </Link>
 
@@ -83,7 +83,7 @@ const Header = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '10px 16px 10px 40px',
+              padding: '10px 80px 10px 40px',
               borderRadius: '4px',
               border: 'none',
               fontSize: '14px',
@@ -91,7 +91,63 @@ const Header = () => {
               color: 'var(--text-primary)',
             }}
           />
-          <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)', fontSize: '18px' }} />
+          <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--action)', fontSize: '18px' }} />
+          <div style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/face-shape-guide')}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-light)',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--action)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-light)'}
+              title="Face Shape Guide"
+            >
+              <FiCamera size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                  const recognition = new SpeechRecognition();
+                  recognition.lang = 'en-US';
+                  recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    setSearchQuery(transcript);
+                    navigate(`/search?q=${encodeURIComponent(transcript)}`);
+                  };
+                  recognition.start();
+                } else {
+                  alert('Voice search is not supported in your browser');
+                }
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-light)',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--action)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-light)'}
+              title="Voice Search"
+            >
+              <FiMic size={18} />
+            </button>
+          </div>
         </form>
 
         {/* Desktop Nav */}
