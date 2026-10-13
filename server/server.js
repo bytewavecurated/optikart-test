@@ -31,6 +31,17 @@ import chatbotRoutes from './routes/chatbot.js';
 import faceDetectionRoutes from './routes/faceDetection.js';
 import speechRecognitionRoutes from './routes/speechRecognition.js';
 import payoutRoutes from './routes/payouts.js';
+import inventoryRoutes from './routes/inventory.js';
+import returnRoutes from './routes/returns.js';
+import notificationsRoutes from './routes/notifications.js';
+import wishlistAlertsRoutes from './routes/wishlistAlerts.js';
+import productComparisonRoutes from './routes/productComparison.js';
+import sellerPerformanceRoutes from './routes/sellerPerformance.js';
+import prescriptionVerificationRoutes from './routes/prescriptionVerification.js';
+import orderRoutingRoutes from './routes/orderRouting.js';
+import lensConfigurationRoutes from './routes/lensConfiguration.js';
+import deliveryPartnerRoutes from './routes/deliveryPartner.js';
+import productVerificationRoutes from './routes/productVerification.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -95,6 +106,19 @@ app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/face-detection', faceDetectionRoutes);
 app.use('/api/speech', speechRecognitionRoutes);
 app.use('/api/payouts', payoutRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/returns', returnRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/wishlist-alerts', wishlistAlertsRoutes);
+app.use('/api/comparison', productComparisonRoutes);
+app.use('/api/seller-performance', sellerPerformanceRoutes);
+app.use('/api/prescription-verification', prescriptionVerificationRoutes);
+app.use('/api/order-routing', orderRoutingRoutes);
+app.use('/api/lens-configuration', lensConfigurationRoutes);
+app.use('/api/delivery-partner', deliveryPartnerRoutes);
+app.use('/api/product-verification', productVerificationRoutes);
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/returns', returnRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

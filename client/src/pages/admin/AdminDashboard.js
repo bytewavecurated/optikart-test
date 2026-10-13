@@ -37,7 +37,6 @@ const AdminDashboard = () => {
     { label: 'Manage Manufacturers', path: '/admin/manufacturers', icon: <FiPackage />, color: '#00bcd4', desc: 'Manage manufacturer accounts' },
     { label: 'View Orders', path: '/admin/orders', icon: <FiPackage />, color: '#26a541', desc: 'Track all orders' },
     { label: 'Revenue Analytics', path: '/admin/revenue', icon: <FiBarChart2 />, color: '#ff6161', desc: 'Financial insights' },
-    { label: 'Subscriptions', path: '/admin/subscriptions', icon: <FiTrendingUp />, color: '#7c4dff', desc: 'Manage subscriptions' },
     { label: 'Sale Events', path: '/admin/sale-events', icon: <FiActivity />, color: '#e91e63', desc: 'Create sales events' },
     { label: 'Banners', path: '/admin/banners', icon: <FiImage />, color: '#00bcd4', desc: 'Manage homepage banners' },
     { label: 'Coupons', path: '/admin/coupons', icon: <FiTag />, color: '#ff5722', desc: 'Create discount codes' },

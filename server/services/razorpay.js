@@ -51,48 +51,7 @@ export const verifyOrder = (orderId, paymentId, signature) => {
   }
 };
 
-export const createSubscription = async (planId, customerEmail, totalAmount = 590) => {
-  try {
-    const subscription = await razorpay.subscriptions.create({
-      plan_id: planId,
-      customer_notify: 1,
-      total_count: 12,
-      quantity: 1,
-      notes: {
-        email: customerEmail,
-        amount: totalAmount
-      }
-    });
 
-    return {
-      success: true,
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      planId: subscription.plan_id,
-      quantity: subscription.quantity
-    };
-  } catch (error) {
-    console.error('Error creating Razorpay subscription:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-export const verifySubscription = async (subscriptionId) => {
-  try {
-    const subscription = await razorpay.subscriptions.fetch(subscriptionId);
-    return {
-      success: true,
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      planId: subscription.plan_id,
-      currentStart: subscription.current_start,
-      currentEnd: subscription.current_end
-    };
-  } catch (error) {
-    console.error('Error verifying Razorpay subscription:', error);
-    return { success: false, error: error.message };
-  }
-};
 
 export const fetchPayment = async (paymentId) => {
   try {

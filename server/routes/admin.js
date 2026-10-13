@@ -242,35 +242,6 @@ router.get('/orders', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
-router.get('/subscriptions', verifyToken, verifyAdmin, async (req, res) => {
-  try {
-    const { page = 1, limit = 20, status } = req.query;
-    const query = {};
-    if (status) query.status = status;
-
-    const subscriptions = await Subscription.find(query)
-      .populate('seller', 'storeName name email')
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
-
-    const total = await Subscription.countDocuments(query);
-
-    res.json({
-      success: true,
-      subscriptions,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
-    });
-  } catch (error) {
-    console.error('Get subscriptions error:', error);
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
-  }
-});
 
 router.get('/revenue', verifyToken, verifyAdmin, async (req, res) => {
   try {

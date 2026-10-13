@@ -20,7 +20,6 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const ManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
 const ManageSellers = lazy(() => import('./pages/admin/ManageSellers'));
 const ManageOrders = lazy(() => import('./pages/admin/ManageOrders'));
-const Subscriptions = lazy(() => import('./pages/admin/Subscriptions'));
 const Revenue = lazy(() => import('./pages/admin/Revenue'));
 const StaffManagement = lazy(() => import('./pages/admin/StaffManagement'));
 const Coupons = lazy(() => import('./pages/admin/Coupons'));
@@ -188,7 +187,6 @@ function App() {
           <Route path="sellers" element={<ManageSellers />} />
           <Route path="sellers/:id" element={<SellerDetailView />} />
           <Route path="orders" element={<ManageOrders />} />
-          <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="revenue" element={<Revenue />} />
           <Route path="staff" element={<StaffManagement />} />
           <Route path="coupons" element={<Coupons />} />

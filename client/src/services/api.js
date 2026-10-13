@@ -114,8 +114,6 @@ export const cart = {
 export const payment = {
   createOrder: (data) => api.post('/payment/create-order', data),
   verify: (data) => api.post('/payment/verify', data),
-  createSubscription: (data) => api.post('/payment/create-subscription', data),
-  verifySubscription: (data) => api.post('/payment/verify-subscription', data),
 };
 
 export const wishlist = {
@@ -161,7 +159,6 @@ export const admin = {
   deleteSeller: (id) => api.delete(`/admin/sellers/${id}`),
   banSeller: (id, data) => api.put(`/admin/sellers/${id}/ban`, data),
   getOrders: (params) => api.get('/admin/orders', { params }),
-  getSubscriptions: (params) => api.get('/admin/subscriptions', { params }),
   getRevenue: (params) => api.get('/admin/revenue', { params }),
   createStaff: (data) => api.post('/admin/staff', data),
   getStaff: () => api.get('/admin/staff'),

@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import StaffRole from '../models/StaffRole.js';
+import DeliveryPartner from '../models/DeliveryPartner.js';
+import Manufacturer from '../models/Manufacturer.js';
 
 export const verifyToken = async (req, res, next) => {
   try {
@@ -136,5 +138,73 @@ export const optionalAuth = async (req, res, next) => {
     next();
   } catch (error) {
     next();
+  }
+};
+
+export const verifyDeliveryPartner = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const partner = await DeliveryPartner.findById(decoded.id || decoded.partnerId);
+    if (!partner) {
+      return res.status(401).json({ success: false, message: 'Invalid token. Delivery partner not found.' });
+    }
+
+    if (!partner.isActive) {
+      return res.status(403).json({ success: false, message: 'Delivery partner account has been deactivated.' });
+    }
+
+    if (partner.isBanned) {
+      return res.status(403).json({ success: false, message: 'Delivery partner account has been banned.' });
+    }
+
+    req.partner = partner;
+    req.user = { id: partner._id, role: 'deliveryPartner', name: partner.name, email: partner.email };
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Token has expired.' });
+    }
+    return res.status(401).json({ success: false, message: 'Invalid delivery partner token.' });
+  }
+};
+
+export const verifyManufacturer = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const manufacturer = await Manufacturer.findById(decoded.id || decoded.manufacturerId);
+    if (!manufacturer) {
+      return res.status(401).json({ success: false, message: 'Invalid token. Manufacturer not found.' });
+    }
+
+    if (!manufacturer.isActive) {
+      return res.status(403).json({ success: false, message: 'Manufacturer account has been deactivated.' });
+    }
+
+    if (manufacturer.isBanned) {
+      return res.status(403).json({ success: false, message: 'Manufacturer account has been banned.' });
+    }
+
+    req.manufacturer = manufacturer;
+    req.user = { id: manufacturer._id, role: 'manufacturer', name: manufacturer.name, email: manufacturer.email };
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Token has expired.' });
+    }
+    return res.status(401).json({ success: false, message: 'Invalid manufacturer token.' });
   }
 };

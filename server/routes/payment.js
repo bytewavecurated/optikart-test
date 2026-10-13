@@ -1,10 +1,8 @@
 import express from 'express';
 import Order from '../models/Order.js';
-import Subscription from '../models/Subscription.js';
 import Seller from '../models/Seller.js';
 import { verifyToken, verifySeller } from '../middleware/auth.js';
 import { paymentLimiter } from '../middleware/rateLimiter.js';
-import { createOrder, verifyOrder, createSubscription, verifySubscription } from '../services/razorpay.js';
 
 const router = express.Router();
 
@@ -81,7 +79,6 @@ router.post('/verify', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/subscription/create', verifySeller, paymentLimiter, async (req, res) => {
   try {
     const sellerId = req.seller._id;
     const totalAmount = 590;
@@ -89,7 +86,6 @@ router.post('/subscription/create', verifySeller, paymentLimiter, async (req, re
     const razorpayOrder = await createOrder(totalAmount, 'INR', `seller_sub_${sellerId}_${Date.now()}`);
 
     if (!razorpayOrder.success) {
-      return res.status(500).json({ success: false, message: 'Failed to create subscription order.', error: razorpayOrder.error });
     }
 
     res.json({
@@ -100,12 +96,10 @@ router.post('/subscription/create', verifySeller, paymentLimiter, async (req, re
       key: process.env.RAZORPAY_KEY_ID
     });
   } catch (error) {
-    console.error('Create subscription error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 
-router.post('/subscription/verify', verifySeller, async (req, res) => {
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
     const sellerId = req.seller._id;
@@ -120,21 +114,16 @@ router.post('/subscription/verify', verifySeller, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment verification failed.' });
     }
 
-    const existingSubscription = await Subscription.findOne({
       seller: sellerId,
       status: 'active'
     });
 
-    if (existingSubscription) {
-      existingSubscription.status = 'cancelled';
-      await existingSubscription.save();
     }
 
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setFullYear(endDate.getFullYear() + 1);
 
-    const subscription = new Subscription({
       seller: sellerId,
       amount: 500,
       gstAmount: 90,
@@ -151,21 +140,14 @@ router.post('/subscription/verify', verifySeller, async (req, res) => {
       }]
     });
 
-    await subscription.save();
 
     await Seller.findByIdAndUpdate(sellerId, {
-      subscriptionStatus: 'active',
-      subscriptionExpiry: endDate,
-      razorpaySubscriptionId: razorpayPaymentId
     });
 
     res.json({
       success: true,
-      message: 'Subscription activated successfully.',
-      subscription
     });
   } catch (error) {
-    console.error('Verify subscription error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
@@ -195,11 +177,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
       case 'payment.failed':
         console.log('Payment failed:', payload.payment?.entity?.id);
         break;
-      case 'subscription.activated':
-        console.log('Subscription activated:', payload.subscription?.entity?.id);
         break;
-      case 'subscription.cancelled':
-        console.log('Subscription cancelled:', payload.subscription?.entity?.id);
         break;
       default:
         console.log('Unhandled webhook event:', event);

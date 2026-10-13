@@ -56,12 +56,6 @@ const sellerSchema = new mongoose.Schema({
   isVerified: { type: Boolean, default: false },
   verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   verifiedAt: { type: Date },
-  subscriptionStatus: {
-    type: String,
-    enum: ['active', 'expired', 'cancelled'],
-    default: 'active' // Changed to active - no subscription required
-  },
-  subscriptionExpiry: { type: Date },
   razorpaySubscriptionId: { type: String },
   isOnline: { type: Boolean, default: false },
   lastLoginAt: { type: Date },

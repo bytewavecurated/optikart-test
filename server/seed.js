@@ -75,8 +75,6 @@ const seedDatabase = async () => {
         isVerified: true,
         verifiedBy: admin._id,
         verifiedAt: new Date(),
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         rating: 4.5,
         totalSales: 150
       },
@@ -99,8 +97,6 @@ const seedDatabase = async () => {
         isVerified: true,
         verifiedBy: admin._id,
         verifiedAt: new Date(),
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         rating: 4.2,
         totalSales: 200
       },
@@ -123,8 +119,6 @@ const seedDatabase = async () => {
         isVerified: true,
         verifiedBy: admin._id,
         verifiedAt: new Date(),
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         rating: 4.7,
         totalSales: 100
       },
@@ -145,8 +139,6 @@ const seedDatabase = async () => {
         storeName: 'Eye Fashion',
         storeDescription: 'Trendy sunglasses and fashion eyewear',
         isVerified: false,
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
         rating: 0,
         totalSales: 0
       }
@@ -935,11 +927,8 @@ const seedDatabase = async () => {
       },
       {
         title: 'Subscription plans',
-        content: 'Monthly subscription of ₹590 (including GST) gives you access to sell on the platform. Auto-renewal available.',
-        category: 'seller_subscription',
         forRole: 'seller',
         faq: true,
-        question: 'What are the subscription charges?',
         answer: '₹590/month (₹500 + ₹90 GST) with auto-renewal.'
       },
       {

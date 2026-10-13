@@ -6,7 +6,6 @@ const helpArticleSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['seller_general', 'seller_orders', 'seller_subscription', 'seller_shipping', 'user_orders', 'user_account', 'user_returns', 'user_prescription']
   },
   forRole: {
     type: String,

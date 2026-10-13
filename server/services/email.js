@@ -129,13 +129,10 @@ export const sendSubscriptionReminder = async (email, seller) => {
         </div>
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
           <h2 style="color: #333;">Hi ${seller.name},</h2>
-          <p style="color: #666;">Your seller subscription is expiring soon. Please renew to continue selling on our platform.</p>
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p style="color: #666;"><strong>Store:</strong> ${seller.storeName}</p>
-            <p style="color: #666;"><strong>Expiry Date:</strong> ${seller.subscriptionExpiry}</p>
             <p style="color: #666;"><strong>Renewal Amount:</strong> ₹590 (including GST)</p>
           </div>
-          <p style="color: #666;">Login to your seller dashboard to renew your subscription.</p>
         </div>
       </div>
     `
@@ -145,7 +142,6 @@ export const sendSubscriptionReminder = async (email, seller) => {
     const info = await transporter.sendMail(mailOptions);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending subscription reminder:', error);
     return { success: false, error: error.message };
   }
 };
@@ -177,6 +173,230 @@ export const sendPasswordReset = async (email, otp) => {
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending password reset email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendShippingUpdate = async (email, order) => {
+  const mailOptions = {
+    from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Shipping Update - Order ${order.orderNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #007791 0%, #00a8c8 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">Your Order is on its Way!</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333;">Shipping Confirmation</h2>
+          <p style="color: #666;">Great news! Your order <strong>${order.orderNumber}</strong> has been shipped.</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">Tracking Information</h3>
+            <p style="color: #666;"><strong>Tracking Number:</strong> ${order.trackingNumber || 'N/A'}</p>
+            <p style="color: #666;"><strong>Courier:</strong> ${order.courier || 'Standard Shipping'}</p>
+            <p style="color: #666;"><strong>Estimated Delivery:</strong> ${order.estimatedDelivery || '3-5 business days'}</p>
+            ${order.trackingUrl ? `<p style="color: #666;"><a href="${order.trackingUrl}" style="color: #007791;">Track Your Package</a></p>` : ''}
+          </div>
+          <p style="color: #666;">You'll receive another email when your order is delivered.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending shipping update:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendDeliveryConfirmation = async (email, order) => {
+  const mailOptions = {
+    from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Order Delivered - ${order.orderNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #26a541 0%, #4caf50 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">Order Delivered!</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333;">Your Order Has Arrived</h2>
+          <p style="color: #666;">Your order <strong>${order.orderNumber}</strong> has been successfully delivered.</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">What's Next?</h3>
+            <ul style="color: #666; line-height: 1.8;">
+              <li>Check your items carefully</li>
+              <li>Leave a review to help other customers</li>
+              <li>Need help? Contact our support team</li>
+            </ul>
+          </div>
+          <p style="color: #666;">Thank you for shopping with us!</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending delivery confirmation:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendSellerOrderNotification = async (email, order, seller) => {
+  const mailOptions = {
+    from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `New Order Received - ${order.orderNumber}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #C49A6C 0%, #d4af37 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">New Order Alert</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333;">Hi ${seller.name},</h2>
+          <p style="color: #666;">You have received a new order for your store <strong>${seller.storeName}</strong>.</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">Order Details</h3>
+            <p style="color: #666;"><strong>Order Number:</strong> ${order.orderNumber}</p>
+            <p style="color: #666;"><strong>Customer:</strong> ${order.customerName}</p>
+            <p style="color: #666;"><strong>Items:</strong> ${order.items.length}</p>
+            <p style="color: #666;"><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
+            <p style="color: #666;"><strong>Order Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
+          </div>
+          <p style="color: #666;">Please process this order as soon as possible.</p>
+          <p style="color: #666;">Login to your seller dashboard to view full details.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending seller order notification:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendLowStockAlert = async (email, product, seller) => {
+  const mailOptions = {
+    from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Low Stock Alert - ${product.title}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #ff9f00 0%, #ff6161 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">Low Stock Alert</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333;">Hi ${seller.name},</h2>
+          <p style="color: #666;">This is a reminder that the following product is running low on stock:</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">${product.title}</h3>
+            <p style="color: #666;"><strong>Current Stock:</strong> ${product.stock} units</p>
+            <p style="color: #666;"><strong>SKU:</strong> ${product.sku || 'N/A'}</p>
+            <p style="color: #666;"><strong>Price:</strong> ₹${product.price}</p>
+          </div>
+          <p style="color: #666;">Please restock this item soon to avoid missing sales.</p>
+          <p style="color: #666;">Login to your seller dashboard to update inventory.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending low stock alert:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendWishlistPriceDropAlert = async (email, product, user, oldPrice, newPrice) => {
+  const discount = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
+  
+  const mailOptions = {
+    from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Price Drop Alert - ${product.title}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #C49A6C 0%, #d4af37 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">Price Drop Alert!</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333;">Hi ${user.name},</h2>
+          <p style="color: #666;">Great news! An item in your wishlist has dropped in price.</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">${product.title}</h3>
+            <p style="color: #666;"><strong>Brand:</strong> ${product.brand}</p>
+            <p style="color: #666;"><strong>Old Price:</strong> <span style="text-decoration: line-through;">₹${oldPrice}</span></p>
+            <p style="color: #666;"><strong>New Price:</strong> <span style="color: #26a541; font-size: 20px; font-weight: bold;">₹${newPrice}</span></p>
+            <p style="color: #26a541; font-weight: bold;">You save ${discount}%!</p>
+          </div>
+          <p style="color: #666;">Don't miss out! Visit your wishlist to purchase now.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending wishlist price drop alert:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const sendReturnConfirmation = async (email, returnRequest) => {
+  const mailOptions = {
+    from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: `Return Request Confirmed - ${returnRequest.returnId}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #007791 0%, #00a8c8 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">Return Request Confirmed</h1>
+        </div>
+        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333;">Your Return Has Been Initiated</h2>
+          <p style="color: #666;">We've received your return request and it's being processed.</p>
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #333; margin-top: 0;">Return Details</h3>
+            <p style="color: #666;"><strong>Return ID:</strong> ${returnRequest.returnId}</p>
+            <p style="color: #666;"><strong>Order Number:</strong> ${returnRequest.orderNumber}</p>
+            <p style="color: #666;"><strong>Reason:</strong> ${returnRequest.reason}</p>
+            <p style="color: #666;"><strong>Status:</strong> ${returnRequest.status}</p>
+          </div>
+          <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="color: #26a541; margin-top: 0;">Next Steps</h4>
+            <ol style="color: #666; line-height: 1.8;">
+              <li>Pack the item securely in original packaging</li>
+              <li>Attach the return label (if provided)</li>
+              <li>Drop off at the nearest courier location</li>
+              <li>We'll process your refund within 5-7 business days</li>
+            </ol>
+          </div>
+          <p style="color: #666;">Questions? Contact our support team.</p>
+        </div>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending return confirmation:', error);
     return { success: false, error: error.message };
   }
 };

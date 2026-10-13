@@ -43,9 +43,23 @@ const productSchema = new mongoose.Schema({
   colors: [colorSchema],
   sizes: [String],
   materials: [String],
-  frameType: { type: String },
-  frameShape: { type: String },
+  frameType: { 
+    type: String,
+    enum: ['full-rim', 'half-rim', 'rimless']
+  },
+  frameShape: { 
+    type: String,
+    enum: ['rectangle', 'cateye', 'oval', 'aviator', 'geometric', 'round', 'square', 'wayfarer', 'cat-eye']
+  },
   frameColor: { type: String },
+  frameMaterial: {
+    type: String,
+    enum: ['acetate', 'metal', 'polycarbonate', 'stainless-steel', 'tr90', 'titanium', 'plastic', 'wood']
+  },
+  frameWeight: { type: Number }, // in grams
+  frameWidth: { type: Number }, // in mm
+  modelNumber: { type: String },
+  productCode: { type: String },
   lensType: {
     type: String,
     enum: ['nonpowered', 'powered', 'photochromic', 'polarized', 'bluCut']
