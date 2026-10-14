@@ -6,6 +6,18 @@ const colorSchema = new mongoose.Schema({
   images: [String]
 });
 
+const variantSchema = new mongoose.Schema({
+  color: { type: String },
+  size: { type: String },
+  gender: { type: String, enum: ['men', 'women', 'unisex', 'kids'] },
+  price: { type: Number, min: 0 },
+  originalPrice: { type: Number, min: 0 },
+  stock: { type: Number, default: 0, min: 0 },
+  sku: { type: String },
+  images: [String],
+  isActive: { type: Boolean, default: true }
+});
+
 const poweredOptionSchema = new mongoose.Schema({
   power: { type: Number },
   cyl: { type: Number },
@@ -42,6 +54,7 @@ const productSchema = new mongoose.Schema({
   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true },
   colors: [colorSchema],
   sizes: [String],
+  variants: [variantSchema],
   materials: [String],
   frameType: { 
     type: String,

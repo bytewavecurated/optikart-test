@@ -74,6 +74,16 @@ export const seller = {
   subscribe: (plan) => api.post('/seller/subscribe', { plan }),
   setOffer: (productId, data) => api.put(`/seller/products/${productId}/offer`, data),
   removeOffer: (productId) => api.delete(`/seller/products/${productId}/offer`),
+  // Inventory management
+  getInventory: (params) => api.get('/seller/inventory', { params }),
+  addVariant: (productId, data) => api.post(`/seller/inventory/${productId}/variants`, data),
+  updateVariant: (productId, variantId, data) => api.put(`/seller/inventory/${productId}/variants/${variantId}`, data),
+  deleteVariant: (productId, variantId) => api.delete(`/seller/inventory/${productId}/variants/${variantId}`),
+  bulkUpdateVariants: (updates) => api.post('/seller/inventory/bulk-variants', { updates }),
+  // Returns management
+  getReturns: (params) => api.get('/seller/returns', { params }),
+  approveReturn: (returnId, data) => api.post(`/seller/returns/${returnId}/approve`, data),
+  rejectReturn: (returnId, data) => api.post(`/seller/returns/${returnId}/reject`, data),
 };
 
 export const products = {
@@ -217,6 +227,39 @@ export const chatbot = {
   getKnowledgeBase: () => api.get('/chatbot/knowledge'),
   updateKnowledgeBase: (data) => api.put('/chatbot/knowledge', data),
   getSuggestions: (context) => api.post('/chatbot/suggestions', { context }),
+};
+
+export const deliveryPartner = {
+  login: (email, password) => api.post('/delivery-partner/login', { email, password }),
+  verifyOTP: (partnerId, otp) => api.post('/delivery-partner/verify-login-otp', { partnerId, otp }),
+  getMe: () => api.get('/delivery-partner/me'),
+  updateLocation: (latitude, longitude) => api.post('/delivery-partner/location', { latitude, longitude }),
+  completeDelivery: (orderId) => api.post(`/delivery-partner/complete/${orderId}`),
+  withdraw: (amount) => api.post('/delivery-partner/withdraw', { amount }),
+};
+
+export const lensConfiguration = {
+  create: (data) => api.post('/lens-configuration', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  getByProduct: (productId) => api.get(`/lens-configuration/${productId}`),
+  update: (id, data) => api.put(`/lens-configuration/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  delete: (id) => api.delete(`/lens-configuration/${id}`),
+  getPricing: () => api.get('/lens-configuration/pricing/info'),
+};
+
+export const returns = {
+  create: (data) => api.post('/returns', data),
+  getUserReturns: () => api.get('/returns/user'),
+  getSellerReturns: () => api.get('/returns/seller'),
+  getAll: (params) => api.get('/returns', { params }),
+  approve: (id, data) => api.post(`/returns/${id}/approve`, data),
+  reject: (id, data) => api.post(`/returns/${id}/reject`, data),
+  markPickedUp: (id) => api.post(`/returns/${id}/picked-up`),
+  markReceived: (id) => api.post(`/returns/${id}/received`),
+  processRefund: (id) => api.post(`/returns/${id}/refund`),
 };
 
 export default api;

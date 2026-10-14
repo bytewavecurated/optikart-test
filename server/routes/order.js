@@ -140,6 +140,21 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
 
     for (const { product, quantity } of productDetails) {
       product.stock -= quantity;
+      
+      // Also deduct from variant stock if variant info is available
+      const orderItem = items.find(i => i.product === product._id.toString());
+      if (orderItem && orderItem.variant && product.variants && product.variants.length > 0) {
+        const variantIndex = product.variants.findIndex(v => {
+          const colorMatch = !orderItem.variant.color || v.color === orderItem.variant.color;
+          const sizeMatch = !orderItem.variant.size || v.size === orderItem.variant.size;
+          return colorMatch && sizeMatch;
+        });
+        
+        if (variantIndex !== -1) {
+          product.variants[variantIndex].stock = Math.max(0, (product.variants[variantIndex].stock || 0) - quantity);
+        }
+      }
+      
       await product.save();
     }
 

@@ -617,4 +617,315 @@ router.get('/payouts/history', verifySeller, async (req, res) => {
   }
 });
 
+// ===========================================
+// VARIANT-LEVEL INVENTORY MANAGEMENT
+// ===========================================
+
+/**
+ * GET /api/seller/inventory
+ * Get all products with variant-level stock details
+ */
+router.get('/inventory', verifySeller, async (req, res) => {
+  try {
+    const sellerId = req.seller._id;
+    const { category, stockFilter, search } = req.query;
+
+    const query = { seller: sellerId };
+    if (category) query.category = category;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { brand: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    let products = await Product.find(query).sort({ createdAt: -1 });
+
+    // Apply stock filters
+    if (stockFilter === 'in') {
+      products = products.filter(p => p.stock > 10);
+    } else if (stockFilter === 'low') {
+      products = products.filter(p => p.stock > 0 && p.stock <= 10);
+    } else if (stockFilter === 'out') {
+      products = products.filter(p => !p.stock || p.stock === 0);
+    }
+
+    // Calculate variant-level totals
+    const inventoryData = products.map(product => {
+      const variantStock = (product.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0);
+      const totalVariants = (product.variants || []).length;
+      const activeVariants = (product.variants || []).filter(v => v.isActive).length;
+      const lowStockVariants = (product.variants || []).filter(v => v.stock > 0 && v.stock <= 5).length;
+      const outOfStockVariants = (product.variants || []).filter(v => !v.stock || v.stock === 0).length;
+
+      return {
+        ...product.toObject(),
+        variantStock,
+        totalVariants,
+        activeVariants,
+        lowStockVariants,
+        outOfStockVariants
+      };
+    });
+
+    res.json({
+      success: true,
+      data: inventoryData,
+      summary: {
+        totalProducts: inventoryData.length,
+        totalStock: inventoryData.reduce((sum, p) => sum + (p.stock || 0), 0),
+        lowStockProducts: inventoryData.filter(p => p.stock > 0 && p.stock <= 10).length,
+        outOfStockProducts: inventoryData.filter(p => !p.stock || p.stock === 0).length
+      }
+    });
+  } catch (error) {
+    console.error('Get seller inventory error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * POST /api/seller/inventory/:productId/variants
+ * Add a new variant to a product
+ */
+router.post('/inventory/:productId/variants', verifySeller, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const sellerId = req.seller._id;
+    const { color, size, gender, price, originalPrice, stock, sku, images } = req.body;
+
+    const product = await Product.findOne({ _id: productId, seller: sellerId });
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found or not owned by you.' });
+    }
+
+    // Check for duplicate variant
+    const existingVariant = product.variants.find(v =>
+      v.color === color && v.size === size && v.gender === gender
+    );
+    if (existingVariant) {
+      return res.status(400).json({ success: false, message: 'Variant with same color, size, and gender already exists.' });
+    }
+
+    const newVariant = {
+      color: color || '',
+      size: size || '',
+      gender: gender || 'unisex',
+      price: price || product.price,
+      originalPrice: originalPrice || price || product.price,
+      stock: stock || 0,
+      sku: sku || `${product.modelNumber || product._id}-${color || 'X'}-${size || 'X'}-${gender || 'U'}`,
+      images: images || [],
+      isActive: true
+    };
+
+    product.variants.push(newVariant);
+
+    // Recalculate total stock from variants
+    const totalVariantStock = product.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    if (totalVariantStock > 0) {
+      product.stock = totalVariantStock;
+    }
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: 'Variant added successfully',
+      data: product
+    });
+  } catch (error) {
+    console.error('Add variant error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * PUT /api/seller/inventory/:productId/variants/:variantId
+ * Update a specific variant
+ */
+router.put('/inventory/:productId/variants/:variantId', verifySeller, async (req, res) => {
+  try {
+    const { productId, variantId } = req.params;
+    const sellerId = req.seller._id;
+    const updateData = req.body;
+
+    const product = await Product.findOne({ _id: productId, seller: sellerId });
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found or not owned by you.' });
+    }
+
+    const variantIndex = product.variants.findIndex(v => v._id.toString() === variantId);
+    if (variantIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Variant not found.' });
+    }
+
+    // Update variant fields
+    const allowedFields = ['color', 'size', 'gender', 'price', 'originalPrice', 'stock', 'sku', 'images', 'isActive'];
+    for (const field of allowedFields) {
+      if (updateData[field] !== undefined) {
+        product.variants[variantIndex][field] = updateData[field];
+      }
+    }
+
+    // Recalculate total stock from variants
+    const totalVariantStock = product.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    product.stock = totalVariantStock;
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: 'Variant updated successfully',
+      data: product
+    });
+  } catch (error) {
+    console.error('Update variant error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/seller/inventory/:productId/variants/:variantId
+ * Remove a variant from a product
+ */
+router.delete('/inventory/:productId/variants/:variantId', verifySeller, async (req, res) => {
+  try {
+    const { productId, variantId } = req.params;
+    const sellerId = req.seller._id;
+
+    const product = await Product.findOne({ _id: productId, seller: sellerId });
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found or not owned by you.' });
+    }
+
+    const variantIndex = product.variants.findIndex(v => v._id.toString() === variantId);
+    if (variantIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Variant not found.' });
+    }
+
+    product.variants.splice(variantIndex, 1);
+
+    // Recalculate total stock
+    const totalVariantStock = product.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    product.stock = totalVariantStock;
+
+    await product.save();
+
+    res.json({
+      success: true,
+      message: 'Variant removed successfully',
+      data: product
+    });
+  } catch (error) {
+    console.error('Delete variant error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * POST /api/seller/inventory/bulk-variants
+ * Bulk update variant stock levels
+ */
+router.post('/inventory/bulk-variants', verifySeller, async (req, res) => {
+  try {
+    const sellerId = req.seller._id;
+    const { updates } = req.body;
+
+    if (!updates || !Array.isArray(updates)) {
+      return res.status(400).json({ success: false, message: 'Updates array is required.' });
+    }
+
+    const results = [];
+    for (const update of updates) {
+      const { productId, variantId, stock, price } = update;
+
+      const product = await Product.findOne({ _id: productId, seller: sellerId });
+      if (!product) {
+        results.push({ productId, variantId, success: false, message: 'Product not found' });
+        continue;
+      }
+
+      const variantIndex = product.variants.findIndex(v => v._id.toString() === variantId);
+      if (variantIndex === -1) {
+        results.push({ productId, variantId, success: false, message: 'Variant not found' });
+        continue;
+      }
+
+      if (stock !== undefined) product.variants[variantIndex].stock = stock;
+      if (price !== undefined) product.variants[variantIndex].price = price;
+
+      // Recalculate total stock
+      const totalVariantStock = product.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+      product.stock = totalVariantStock;
+
+      await product.save();
+      results.push({ productId, variantId, success: true, newStock: product.variants[variantIndex].stock });
+    }
+
+    res.json({
+      success: true,
+      message: 'Bulk update completed',
+      data: results
+    });
+  } catch (error) {
+    console.error('Bulk variant update error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * GET /api/seller/returns
+ * Get seller's return requests
+ */
+router.get('/returns', verifySeller, async (req, res) => {
+  try {
+    const { getSellerReturns } = await import('../services/returns.js');
+    const result = await getSellerReturns(req.seller._id);
+    if (result.success) {
+      res.json({ success: true, data: result.returns });
+    } else {
+      res.status(400).json({ success: false, message: result.error });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * POST /api/seller/returns/:id/approve
+ * Seller approves a return
+ */
+router.post('/returns/:id/approve', verifySeller, async (req, res) => {
+  try {
+    const { approveReturnRequest } = await import('../services/returns.js');
+    const result = await approveReturnRequest(req.params.id, req.body.adminNotes || '');
+    if (result.success) {
+      res.json({ success: true, message: 'Return approved', data: result.returnRequest });
+    } else {
+      res.status(400).json({ success: false, message: result.error });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * POST /api/seller/returns/:id/reject
+ * Seller rejects a return
+ */
+router.post('/returns/:id/reject', verifySeller, async (req, res) => {
+  try {
+    const { rejectReturnRequest } = await import('../services/returns.js');
+    const result = await rejectReturnRequest(req.params.id, req.body.reason || '');
+    if (result.success) {
+      res.json({ success: true, message: 'Return rejected', data: result.returnRequest });
+    } else {
+      res.status(400).json({ success: false, message: result.error });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 export default router;

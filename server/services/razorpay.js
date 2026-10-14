@@ -71,6 +71,42 @@ export const fetchPayment = async (paymentId) => {
 };
 
 /**
+ * Process a refund for a payment
+ */
+export const processRefund = async ({ paymentId, amount, speed = 'optimum', notes = {} }) => {
+  try {
+    if (!process.env.RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID === 'your_razorpay_key_id_here') {
+      // Mock refund for development/testing
+      console.log('Mock refund:', { paymentId, amount, speed, notes });
+      return {
+        success: true,
+        refundId: `rf_mock_${Date.now()}`,
+        amount: amount,
+        status: 'processed',
+        message: 'Mock refund processed'
+      };
+    }
+
+    const refund = await razorpay.payments.refund(paymentId, {
+      amount,
+      speed,
+      notes
+    });
+
+    return {
+      success: true,
+      refundId: refund.id,
+      amount: refund.amount,
+      status: refund.status,
+      message: 'Refund processed successfully'
+    };
+  } catch (error) {
+    console.error('Error processing refund:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Transfer funds to seller's bank account
  * Note: This requires RazorpayX integration for actual fund transfers
  * For now, this is a mock implementation that simulates the transfer

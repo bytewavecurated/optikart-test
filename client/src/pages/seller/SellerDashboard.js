@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPackage, FiShoppingBag, FiDollarSign, FiTrendingUp, FiPlus, FiBell, FiCreditCard } from 'react-icons/fi';
+import { FiPackage, FiShoppingBag, FiDollarSign, FiTrendingUp, FiPlus, FiBell, FiCreditCard, FiBox, FiRefreshCw } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { seller as sellerApi, notifications } from '../../services/api';
 import { onNewOrder, offNewOrder } from '../../services/socket';
@@ -59,7 +59,9 @@ const SellerDashboard = () => {
               <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Welcome, {sellerData?.businessName || 'Seller'}</h1>
               <p style={{ fontSize: '14px', color: 'var(--text-light)' }}>Here's what's happening with your store</p>
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <Link to="/seller/inventory" className="btn btn-outline"><FiBox /> Inventory</Link>
+              <Link to="/seller/returns" className="btn btn-outline"><FiRefreshCw /> Returns</Link>
               <Link to="/seller/payouts" className="btn btn-outline"><FiCreditCard /> Payouts</Link>
               <Link to="/seller/products" className="btn btn-primary"><FiPlus /> Add Product</Link>
             </div>

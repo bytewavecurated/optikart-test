@@ -17,7 +17,7 @@ const CATEGORIES = [
   { name: 'Sports Eyewear', link: '/category/sports', icon: <FiActivity size={16} /> },
   { name: 'Kids', link: '/category/kids', icon: <FiSmile size={16} /> },
   { name: 'Brands', link: '/brands', icon: <FiTag size={16} /> },
-  { name: 'Virtual Try-On', link: '/virtual-try-on', icon: <FiCamera size={16} /> },
+  { name: 'Virtual Try-On', link: '/virtual-tryon', icon: <FiCamera size={16} /> },
 ];
 
 const styles = {

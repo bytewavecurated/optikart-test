@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiTag, FiX, FiFilter } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiTag, FiX, FiFilter, FiLayers } from 'react-icons/fi';
 import { products as productsApi, seller as sellerApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -16,7 +16,10 @@ const SellerProducts = () => {
   const [stockFilter, setStockFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [formData, setFormData] = useState({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '' });
+  const [formData, setFormData] = useState({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium' });
+  const [variants, setVariants] = useState([]);
+  const [showVariantForm, setShowVariantForm] = useState(false);
+  const [variantForm, setVariantForm] = useState({ color: '', size: '', gender: 'unisex', price: '', stock: '', sku: '' });
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerProduct, setOfferProduct] = useState(null);
   const [offerData, setOfferData] = useState({ type: 'none', percentage: '' });
@@ -35,24 +38,38 @@ const SellerProducts = () => {
   const handleSave = async () => {
     if (!formData.name || !formData.price || !formData.brand) { toast.error('Fill required fields'); return; }
     try {
+      const payload = { ...formData, variants };
       if (editingProduct) {
-        await productsApi.update(editingProduct._id, formData);
+        await productsApi.update(editingProduct._id, payload);
         toast.success('Product updated');
       } else {
-        await productsApi.create(formData);
+        await productsApi.create(payload);
         toast.success('Product created');
       }
       setShowForm(false);
       setEditingProduct(null);
-      setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '' });
+      setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium' });
+      setVariants([]);
       fetchProducts();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to save'); }
   };
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    setFormData({ name: product.name, brand: product.brand, category: product.category, price: product.price, originalPrice: product.originalPrice || '', description: product.description || '', stock: product.stock || '' });
+    setFormData({ name: product.name || product.title, brand: product.brand, category: product.category, price: product.price, originalPrice: product.originalPrice || '', description: product.description || '', stock: product.stock || '', gender: product.gender || 'unisex', frameSize: product.frameSize || 'medium' });
+    setVariants(product.variants || []);
     setShowForm(true);
+  };
+
+  const addVariant = () => {
+    if (!variantForm.color && !variantForm.size) { toast.error('Add at least color or size'); return; }
+    setVariants([...variants, { ...variantForm, price: variantForm.price || formData.price, isActive: true }]);
+    setVariantForm({ color: '', size: '', gender: 'unisex', price: '', stock: '', sku: '' });
+    setShowVariantForm(false);
+  };
+
+  const removeVariant = (index) => {
+    setVariants(variants.filter((_, i) => i !== index));
   };
 
   const handleDelete = async (id) => {
@@ -185,7 +202,7 @@ const SellerProducts = () => {
         <div className="container page-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>My Products ({filtered.length})</h1>
-            <button onClick={() => { setShowForm(true); setEditingProduct(null); setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '' }); }} className="btn btn-primary"><FiPlus /> Add Product</button>
+            <button onClick={() => { setShowForm(true); setEditingProduct(null); setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium' }); setVariants([]); }} className="btn btn-primary"><FiPlus /> Add Product</button>
           </div>
 
           <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
@@ -230,11 +247,57 @@ const SellerProducts = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="input-group"><label>Product Name *</label><input className="input" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
                 <div className="input-group"><label>Brand *</label><input className="input" value={formData.brand} onChange={(e) => setFormData({ ...formData, brand: e.target.value })} /></div>
-                <div className="input-group"><label>Category</label><select className="input" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}><option value="sunglasses">Sunglasses</option><option value="eyeglasses">Eyeglasses</option><option value="contact-lenses">Contact Lenses</option><option value="computer-glasses">Computer Glasses</option><option value="sports-eyewear">Sports Eyewear</option></select></div>
+                <div className="input-group"><label>Category</label><select className="input" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}><option value="sunglasses">Sunglasses</option><option value="eyeglasses">Eyeglasses</option><option value="contactlenses">Contact Lenses</option><option value="readingglasses">Reading Glasses</option><option value="sportseyewear">Sports Eyewear</option><option value="kids">Kids</option></select></div>
+                <div className="input-group"><label>Gender</label><select className="input" value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })}><option value="men">Men</option><option value="women">Women</option><option value="unisex">Unisex</option><option value="kids">Kids</option></select></div>
                 <div className="input-group"><label>Price *</label><input className="input" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} /></div>
                 <div className="input-group"><label>Original Price</label><input className="input" type="number" value={formData.originalPrice} onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })} /></div>
-                <div className="input-group"><label>Stock</label><input className="input" type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} /></div>
+                <div className="input-group"><label>Frame Size</label><select className="input" value={formData.frameSize} onChange={(e) => setFormData({ ...formData, frameSize: e.target.value })}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option><option value="extra-large">Extra Large</option></select></div>
+                <div className="input-group"><label>Base Stock</label><input className="input" type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} /></div>
                 <div className="input-group" style={{ gridColumn: 'span 2' }}><label>Description</label><textarea className="input" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
+              </div>
+
+              {/* Variants Section */}
+              <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}><FiLayers size={14} /> Variants (Color/Size/Gender)</h4>
+                  <button type="button" onClick={() => setShowVariantForm(!showVariantForm)} className="btn btn-outline btn-sm"><FiPlus size={12} /> Add Variant</button>
+                </div>
+
+                {showVariantForm && (
+                  <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '8px', alignItems: 'end' }}>
+                      <div className="input-group" style={{ marginBottom: 0 }}><label style={{ fontSize: '11px' }}>Color</label><input className="input" style={{ fontSize: '12px' }} placeholder="Black" value={variantForm.color} onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })} /></div>
+                      <div className="input-group" style={{ marginBottom: 0 }}><label style={{ fontSize: '11px' }}>Size</label><input className="input" style={{ fontSize: '12px' }} placeholder="Medium" value={variantForm.size} onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })} /></div>
+                      <div className="input-group" style={{ marginBottom: 0 }}><label style={{ fontSize: '11px' }}>Gender</label><select className="input" style={{ fontSize: '12px' }} value={variantForm.gender} onChange={(e) => setVariantForm({ ...variantForm, gender: e.target.value })}><option value="men">Men</option><option value="women">Women</option><option value="unisex">Unisex</option><option value="kids">Kids</option></select></div>
+                      <div className="input-group" style={{ marginBottom: 0 }}><label style={{ fontSize: '11px' }}>Price</label><input className="input" style={{ fontSize: '12px' }} type="number" placeholder={formData.price || '0'} value={variantForm.price} onChange={(e) => setVariantForm({ ...variantForm, price: e.target.value })} /></div>
+                      <div className="input-group" style={{ marginBottom: 0 }}><label style={{ fontSize: '11px' }}>Stock</label><input className="input" style={{ fontSize: '12px' }} type="number" placeholder="0" value={variantForm.stock} onChange={(e) => setVariantForm({ ...variantForm, stock: e.target.value })} /></div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                      <button type="button" onClick={addVariant} className="btn btn-primary btn-sm">Add</button>
+                      <button type="button" onClick={() => setShowVariantForm(false)} className="btn btn-outline btn-sm">Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                {variants.length > 0 && (
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>{['Color', 'Size', 'Gender', 'Price', 'Stock', ''].map(h => <th key={h} style={{ padding: '8px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                      <tbody>
+                        {variants.map((v, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                            <td style={{ padding: '8px' }}>{v.color || '—'}</td>
+                            <td style={{ padding: '8px' }}>{v.size || '—'}</td>
+                            <td style={{ padding: '8px', textTransform: 'capitalize' }}>{v.gender || 'unisex'}</td>
+                            <td style={{ padding: '8px' }}>₹{v.price || formData.price}</td>
+                            <td style={{ padding: '8px' }}>{v.stock || 0}</td>
+                            <td style={{ padding: '8px' }}><button type="button" onClick={() => removeVariant(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}><FiTrash2 size={14} /></button></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button onClick={handleSave} className="btn btn-primary">{editingProduct ? 'Update' : 'Create'}</button>

@@ -401,4 +401,25 @@ export const sendReturnConfirmation = async (email, returnRequest) => {
   }
 };
 
+/**
+ * Send a generic email
+ */
+export const sendEmail = async ({ to, subject, text, html }) => {
+  try {
+    const mailOptions = {
+      from: `"OptiKart" <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      text: text || '',
+      html: html || `<p>${text || subject}</p>`
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default transporter;

@@ -78,6 +78,11 @@ const ManufacturerDashboard = lazy(() => import('./pages/manufacturer/Manufactur
 const ManufacturerSellerLogin = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerLogin'));
 const ManufacturerSellerDashboard = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerDashboard'));
 const FaceShapeGuide = lazy(() => import('./pages/FaceShapeGuide'));
+const SellerInventory = lazy(() => import('./pages/seller/SellerInventory'));
+const SellerReturns = lazy(() => import('./pages/seller/SellerReturns'));
+const DeliveryPartnerLogin = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerLogin'));
+const DeliveryPartnerDashboard = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerDashboard'));
+const LensConfiguration = lazy(() => import('./pages/LensConfiguration'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -86,7 +91,7 @@ const LoadingFallback = () => (
 );
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, seller, admin, staff, executive, manufacturer, manufacturerSeller, loading } = useAuth();
+  const { isAuthenticated, user, seller, admin, staff, executive, manufacturer, manufacturerSeller, deliveryPartner, loading } = useAuth();
   const role = localStorage.getItem('optikart_role');
   const token = localStorage.getItem('optikart_token');
 
@@ -114,6 +119,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       return <Navigate to="/manufacturer-seller/login" replace />;
     } else if (currentPath.startsWith('/manufacturer')) {
       return <Navigate to="/manufacturer/login" replace />;
+    } else if (currentPath.startsWith('/delivery-partner')) {
+      return <Navigate to="/delivery-partner/login" replace />;
     }
     return <Navigate to="/login" replace />;
   }
@@ -128,6 +135,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       if (r === 'executive' && (executive || role === 'executive')) return true;
       if (r === 'manufacturer' && (manufacturer || role === 'manufacturer')) return true;
       if (r === 'manufacturerSeller' && (manufacturerSeller || role === 'manufacturerSeller')) return true;
+      if (r === 'deliveryPartner' && (deliveryPartner || role === 'deliveryPartner')) return true;
       return false;
     });
 
@@ -145,6 +153,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       return <Navigate to="/manufacturer-seller/login" replace />;
     } else if (currentPath.startsWith('/manufacturer')) {
       return <Navigate to="/manufacturer/login" replace />;
+    } else if (currentPath.startsWith('/delivery-partner')) {
+      return <Navigate to="/delivery-partner/login" replace />;
     }
     return <Navigate to="/login" replace />;
   }
@@ -179,6 +189,8 @@ function App() {
         <Route path="/seller/analytics" element={<SellerRoute><SellerAnalytics /></SellerRoute>} />
         <Route path="/seller/profile" element={<SellerRoute><SellerProfile /></SellerRoute>} />
         <Route path="/seller/payouts" element={<SellerRoute><SellerPayouts /></SellerRoute>} />
+        <Route path="/seller/inventory" element={<SellerRoute><SellerInventory /></SellerRoute>} />
+        <Route path="/seller/returns" element={<SellerRoute><SellerReturns /></SellerRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />
@@ -236,6 +248,9 @@ function App() {
         <Route path="/prescription" element={<UploadPrescription />} />
         <Route path="/virtual-tryon" element={<VirtualTryOn />} />
         <Route path="/face-shape-guide" element={<FaceShapeGuide />} />
+        <Route path="/lens-configuration/:productId" element={<LensConfiguration />} />
+        <Route path="/delivery-partner/login" element={<DeliveryPartnerLogin />} />
+        <Route path="/delivery-partner/dashboard" element={<ProtectedRoute allowedRoles={['deliveryPartner']}><DeliveryPartnerDashboard /></ProtectedRoute>} />
         <Route path="/compare" element={<ProductCompare />} />
         <Route path="/coupons" element={<AvailableCoupons />} />
         <Route path="/brands/:brand" element={<BrandPage />} />

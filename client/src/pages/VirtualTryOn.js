@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FiCamera, FiDownload, FiRefreshCw, FiX, FiCheck } from 'react-icons/fi';
-import { products } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+import { products } from '../services/api';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 
 const VirtualTryOn = () => {

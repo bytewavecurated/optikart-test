@@ -17,6 +17,7 @@ const SESSION_DURATION = {
   executive: 24 * 60 * 60 * 1000,
   manufacturer: 24 * 60 * 60 * 1000,
   manufacturerSeller: 24 * 60 * 60 * 1000,
+  deliveryPartner: 24 * 60 * 60 * 1000,
 };
 
 export const AuthProvider = ({ children }) => {
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
   const [executive, setExecutive] = useState(null);
   const [manufacturer, setManufacturer] = useState(null);
   const [manufacturerSeller, setManufacturerSeller] = useState(null);
+  const [deliveryPartner, setDeliveryPartner] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +40,7 @@ export const AuthProvider = ({ children }) => {
     setExecutive(null);
     setManufacturer(null);
     setManufacturerSeller(null);
+    setDeliveryPartner(null);
     setIsAuthenticated(false);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
@@ -91,6 +94,8 @@ export const AuthProvider = ({ children }) => {
           setManufacturer(parsedData);
         } else if (role === 'manufacturerSeller') {
           setManufacturerSeller(parsedData);
+        } else if (role === 'deliveryPartner') {
+          setDeliveryPartner(parsedData);
         } else {
           setUser(parsedData);
         }
@@ -506,6 +511,7 @@ export const AuthProvider = ({ children }) => {
     executive,
     manufacturer,
     manufacturerSeller,
+    deliveryPartner,
     isAuthenticated,
     loading,
     login,
