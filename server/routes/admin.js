@@ -646,8 +646,6 @@ router.get('/sellers/:id/orders', verifyToken, verifyAdmin, async (req, res) => 
   }
 });
 
-export default router;
-
 // ==================== EXECUTIVE MANAGEMENT ====================
 
 // Get all executives

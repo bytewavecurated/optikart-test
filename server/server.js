@@ -108,6 +108,15 @@ app.use('/api/speech', speechRecognitionRoutes);
 app.use('/api/payouts', payoutRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/returns', returnRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/wishlist-alerts', wishlistAlertsRoutes);
+app.use('/api/comparison', productComparisonRoutes);
+app.use('/api/seller-performance', sellerPerformanceRoutes);
+app.use('/api/prescription-verification', prescriptionVerificationRoutes);
+app.use('/api/order-routing', orderRoutingRoutes);
+app.use('/api/lens-configuration', lensConfigurationRoutes);
+app.use('/api/delivery-partner', deliveryPartnerRoutes);
+app.use('/api/product-verification', productVerificationRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

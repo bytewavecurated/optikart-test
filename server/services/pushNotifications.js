@@ -252,6 +252,21 @@ export const deleteNotification = async (notificationId, userId) => {
   }
 };
 
+/**
+ * Send wishlist price drop alert notification
+ */
+export const sendWishlistPriceDropAlert = async (userId, productId, productName, oldPrice, newPrice) => {
+  const drop = oldPrice - newPrice;
+  const dropPercent = Math.round((drop / oldPrice) * 100);
+  return sendPushNotification(
+    userId,
+    'Price Drop Alert!',
+    `${productName} dropped by ${dropPercent}% — now ₹${newPrice} (was ₹${oldPrice})`,
+    'price_drop',
+    { productId, oldPrice, newPrice }
+  );
+};
+
 export default {
   sendPushNotification,
   sendOrderUpdateNotification,

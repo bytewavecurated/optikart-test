@@ -1,11 +1,17 @@
 import express from 'express';
 import Order from '../models/Order.js';
 import Seller from '../models/Seller.js';
+import Subscription from '../models/Subscription.js';
 import { verifyToken, verifySeller } from '../middleware/auth.js';
 import { paymentLimiter } from '../middleware/rateLimiter.js';
+import { createOrder, verifyOrder } from '../services/razorpay.js';
 
 const router = express.Router();
 
+/**
+ * POST /api/payment/create-order
+ * Create a Razorpay order for user payments
+ */
 router.post('/create-order', verifyToken, paymentLimiter, async (req, res) => {
   try {
     const { amount, receipt } = req.body;
@@ -33,6 +39,10 @@ router.post('/create-order', verifyToken, paymentLimiter, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/payment/verify
+ * Verify Razorpay payment and update order status
+ */
 router.post('/verify', verifyToken, async (req, res) => {
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId } = req.body;
@@ -79,6 +89,11 @@ router.post('/verify', verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/payment/subscribe
+ * Create Razorpay order for seller subscription (₹590 = ₹500 + ₹90 GST)
+ */
+router.post('/subscribe', verifyToken, verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
     const totalAmount = 590;
@@ -86,6 +101,7 @@ router.post('/verify', verifyToken, async (req, res) => {
     const razorpayOrder = await createOrder(totalAmount, 'INR', `seller_sub_${sellerId}_${Date.now()}`);
 
     if (!razorpayOrder.success) {
+      return res.status(500).json({ success: false, message: 'Failed to create subscription order.', error: razorpayOrder.error });
     }
 
     res.json({
@@ -96,10 +112,16 @@ router.post('/verify', verifyToken, async (req, res) => {
       key: process.env.RAZORPAY_KEY_ID
     });
   } catch (error) {
+    console.error('Create subscription order error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 
+/**
+ * POST /api/payment/verify-subscription
+ * Verify Razorpay payment and activate seller subscription
+ */
+router.post('/verify-subscription', verifyToken, verifySeller, async (req, res) => {
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
     const sellerId = req.seller._id;
@@ -114,44 +136,54 @@ router.post('/verify', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment verification failed.' });
     }
 
+    // Check if an active subscription already exists
+    const existingSubscription = await Subscription.findOne({
       seller: sellerId,
       status: 'active'
     });
 
+    if (existingSubscription) {
+      return res.status(400).json({ success: false, message: 'You already have an active subscription.' });
     }
 
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setFullYear(endDate.getFullYear() + 1);
 
+    // Create subscription record
+    await Subscription.create({
       seller: sellerId,
+      plan: 'basic',
       amount: 500,
       gstAmount: 90,
       totalAmount: 590,
+      razorpayOrderId,
       razorpayPaymentId,
       status: 'active',
       startDate,
-      endDate,
-      paymentHistory: [{
-        date: new Date(),
-        amount: 590,
-        razorpayPaymentId,
-        status: 'success'
-      }]
+      endDate
     });
 
-
+    // Mark seller as verified
     await Seller.findByIdAndUpdate(sellerId, {
+      isVerified: true,
+      verifiedAt: new Date()
     });
 
     res.json({
       success: true,
+      message: 'Subscription activated successfully.'
     });
   } catch (error) {
+    console.error('Verify subscription error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 
+/**
+ * POST /api/payment/webhook
+ * Razorpay webhook handler
+ */
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
     const secret = process.env.RAZORPAY_KEY_SECRET;
@@ -176,8 +208,6 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
         break;
       case 'payment.failed':
         console.log('Payment failed:', payload.payment?.entity?.id);
-        break;
-        break;
         break;
       default:
         console.log('Unhandled webhook event:', event);
