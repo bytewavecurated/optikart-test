@@ -58,11 +58,11 @@ const productSchema = new mongoose.Schema({
   materials: [String],
   frameType: { 
     type: String,
-    enum: ['full-rim', 'half-rim', 'rimless']
+    enum: ['full-rim', 'half-rim', 'rimless', 'Full Rim', 'Half Rim', 'Rimless']
   },
   frameShape: { 
     type: String,
-    enum: ['rectangle', 'cateye', 'oval', 'aviator', 'geometric', 'round', 'square', 'wayfarer', 'cat-eye']
+    enum: ['rectangle', 'cateye', 'oval', 'aviator', 'geometric', 'round', 'square', 'wayfarer', 'cat-eye', 'Rectangle', 'Cat Eye', 'Oval', 'Aviator', 'Round', 'Wayfarer', 'Browline', 'Oversized', 'Wraparound']
   },
   frameColor: { type: String },
   frameMaterial: {

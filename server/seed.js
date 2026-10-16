@@ -479,8 +479,6 @@ const seedDatabase = async () => {
         colors: [{ name: 'Clear', hexCode: '#FFFFFF' }],
         sizes: ['Daily 30-pack'],
         materials: ['Etafilcon A'],
-        frameType: 'N/A',
-        frameShape: 'N/A',
         lensType: 'nonpowered',
         hasLenses: true,
         poweredOptions: [
@@ -509,7 +507,6 @@ const seedDatabase = async () => {
         colors: [{ name: 'Clear', hexCode: '#FFFFFF' }],
         sizes: ['Monthly 6-pack'],
         materials: ['Hilafilcon B'],
-        frameType: 'N/A',
         lensType: 'nonpowered',
         hasLenses: true,
         stock: 150,
