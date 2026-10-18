@@ -296,7 +296,7 @@ router.put('/:id', verifySeller, async (req, res) => {
       'brand', 'colors', 'sizes', 'materials', 'frameType', 'frameShape',
       'frameColor', 'lensType', 'hasLenses', 'poweredOptions', 'stock',
       'isActive', 'tags', 'features', 'dimensions', 'weight', 'warranty', 'returnPolicy',
-      'gender', 'frameSize'
+      'gender', 'frameSize', 'isReturnable', 'isExchangeable'
     ];
 
     allowedUpdates.forEach(field => {

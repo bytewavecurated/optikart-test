@@ -16,7 +16,7 @@ const SellerProducts = () => {
   const [stockFilter, setStockFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [formData, setFormData] = useState({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium' });
+  const [formData, setFormData] = useState({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true });
   const [variants, setVariants] = useState([]);
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [variantForm, setVariantForm] = useState({ color: '', size: '', gender: 'unisex', price: '', stock: '', sku: '' });
@@ -48,7 +48,7 @@ const SellerProducts = () => {
       }
       setShowForm(false);
       setEditingProduct(null);
-      setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium' });
+      setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true });
       setVariants([]);
       fetchProducts();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to save'); }
@@ -56,7 +56,19 @@ const SellerProducts = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    setFormData({ name: product.name || product.title, brand: product.brand, category: product.category, price: product.price, originalPrice: product.originalPrice || '', description: product.description || '', stock: product.stock || '', gender: product.gender || 'unisex', frameSize: product.frameSize || 'medium' });
+    setFormData({ 
+      name: product.name || product.title, 
+      brand: product.brand, 
+      category: product.category, 
+      price: product.price, 
+      originalPrice: product.originalPrice || '', 
+      description: product.description || '', 
+      stock: product.stock || '', 
+      gender: product.gender || 'unisex', 
+      frameSize: product.frameSize || 'medium',
+      isReturnable: product.isReturnable !== false,
+      isExchangeable: product.isExchangeable !== false
+    });
     setVariants(product.variants || []);
     setShowForm(true);
   };
@@ -202,7 +214,7 @@ const SellerProducts = () => {
         <div className="container page-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>My Products ({filtered.length})</h1>
-            <button onClick={() => { setShowForm(true); setEditingProduct(null); setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium' }); setVariants([]); }} className="btn btn-primary"><FiPlus /> Add Product</button>
+            <button onClick={() => { setShowForm(true); setEditingProduct(null); setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true }); setVariants([]); }} className="btn btn-primary"><FiPlus /> Add Product</button>
           </div>
 
           <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
@@ -254,6 +266,83 @@ const SellerProducts = () => {
                 <div className="input-group"><label>Frame Size</label><select className="input" value={formData.frameSize} onChange={(e) => setFormData({ ...formData, frameSize: e.target.value })}><option value="small">Small</option><option value="medium">Medium</option><option value="large">Large</option><option value="extra-large">Extra Large</option></select></div>
                 <div className="input-group"><label>Base Stock</label><input className="input" type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} /></div>
                 <div className="input-group" style={{ gridColumn: 'span 2' }}><label>Description</label><textarea className="input" rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
+              </div>
+
+              {/* Return & Exchange Policy */}
+              <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Return & Exchange Policy</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600 }}>Allow Returns</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>Customers can return this product</div>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '26px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formData.isReturnable} 
+                        onChange={(e) => setFormData({ ...formData, isReturnable: e.target.checked })}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: formData.isReturnable ? 'var(--success)' : '#ccc',
+                        borderRadius: '26px',
+                        transition: '0.3s',
+                      }}>
+                        <span style={{
+                          position: 'absolute',
+                          height: '20px',
+                          width: '20px',
+                          left: formData.isReturnable ? '24px' : '3px',
+                          bottom: '3px',
+                          backgroundColor: 'white',
+                          borderRadius: '50%',
+                          transition: '0.3s',
+                        }} />
+                      </span>
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600 }}>Allow Exchanges</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>Customers can exchange this product</div>
+                    </div>
+                    <label style={{ position: 'relative', display: 'inline-block', width: '48px', height: '26px', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={formData.isExchangeable} 
+                        onChange={(e) => setFormData({ ...formData, isExchangeable: e.target.checked })}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: formData.isExchangeable ? 'var(--success)' : '#ccc',
+                        borderRadius: '26px',
+                        transition: '0.3s',
+                      }}>
+                        <span style={{
+                          position: 'absolute',
+                          height: '20px',
+                          width: '20px',
+                          left: formData.isExchangeable ? '24px' : '3px',
+                          bottom: '3px',
+                          backgroundColor: 'white',
+                          borderRadius: '50%',
+                          transition: '0.3s',
+                        }} />
+                      </span>
+                    </label>
+                  </div>
+                </div>
               </div>
 
               {/* Variants Section */}

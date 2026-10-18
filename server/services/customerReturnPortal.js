@@ -72,6 +72,19 @@ export const checkReturnEligibility = async (orderId, userId) => {
       };
     }
 
+    // Check if any items are returnable
+    const returnableItems = order.items.filter(item => {
+      return item.product.isReturnable !== false; // Default to true if not set
+    });
+
+    if (returnableItems.length === 0) {
+      return {
+        success: false,
+        message: 'No items in this order are eligible for return',
+        eligible: false
+      };
+    }
+
     return {
       success: true,
       eligible: true,
@@ -79,11 +92,13 @@ export const checkReturnEligibility = async (orderId, userId) => {
       daysSinceDelivery,
       returnWindowDays: RETURN_WINDOW_DAYS,
       daysRemaining: RETURN_WINDOW_DAYS - daysSinceDelivery,
-      items: order.items.map(item => ({
+      items: returnableItems.map(item => ({
         product: item.product,
         quantity: item.quantity,
         price: item.price,
-        variant: item.variant
+        variant: item.variant,
+        isReturnable: item.product.isReturnable !== false,
+        isExchangeable: item.product.isExchangeable !== false
       }))
     };
   } catch (error) {
@@ -123,6 +138,14 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
         return {
           success: false,
           message: `Product ${item.productId} not found in order`
+        };
+      }
+
+      // Check if product is returnable
+      if (orderItem.product.isReturnable === false) {
+        return {
+          success: false,
+          message: `Product "${orderItem.product.title}" is not eligible for return`
         };
       }
 

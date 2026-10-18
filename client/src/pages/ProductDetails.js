@@ -441,10 +441,19 @@ const ProductDetails = () => {
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>100% Genuine</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                    <FiRefreshCw size={20} style={{ color: 'var(--primary)' }} />
-                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>7-Day Return</span>
+                    <FiRefreshCw size={20} style={{ color: product.isReturnable !== false ? 'var(--primary)' : 'var(--text-light)' }} />
+                    <span style={{ fontSize: '11px', color: product.isReturnable !== false ? 'var(--text-secondary)' : 'var(--text-light)' }}>
+                      {product.isReturnable !== false ? '7-Day Return' : 'No Returns'}
+                    </span>
                   </div>
                 </div>
+                {product.isExchangeable !== false && (
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', textAlign: 'center' }}>
+                    <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 500 }}>
+                      ✓ Exchange Available
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

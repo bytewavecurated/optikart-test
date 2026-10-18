@@ -115,7 +115,10 @@ const productSchema = new mongoose.Schema({
   isDiscontinued: { type: Boolean, default: false },
   discontinuedAt: { type: Date },
   discontinuedBy: { type: mongoose.Schema.Types.ObjectId },
-  manufacturerSellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'ManufacturerSeller' }
+  manufacturerSellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'ManufacturerSeller' },
+  // Return and exchange policy
+  isReturnable: { type: Boolean, default: true },
+  isExchangeable: { type: Boolean, default: true }
 }, {
   timestamps: true
 });
