@@ -69,7 +69,8 @@ router.post('/complete/:reservationId', verifyToken, async (req, res) => {
       });
     }
 
-    const result = await completeReservation(reservationId, orderId);
+    const io = req.app.get('io');
+    const result = await completeReservation(reservationId, orderId, io);
 
     if (result.success) {
       res.json({
@@ -191,7 +192,8 @@ router.post('/bulk-update', verifyToken, verifySeller, async (req, res) => {
       }
     }
 
-    const result = await bulkUpdateStock(updates);
+    const io = req.app.get('io');
+    const result = await bulkUpdateStock(updates, io);
 
     if (result.success) {
       res.json({

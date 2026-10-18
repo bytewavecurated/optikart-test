@@ -84,6 +84,10 @@ export const seller = {
   getReturns: (params) => api.get('/seller/returns', { params }),
   approveReturn: (returnId, data) => api.post(`/seller/returns/${returnId}/approve`, data),
   rejectReturn: (returnId, data) => api.post(`/seller/returns/${returnId}/reject`, data),
+  // Analytics
+  getInventoryAnalytics: (params) => api.get('/inventory-analytics/seller', { params }),
+  getInventoryHealth: () => api.get('/inventory-analytics/seller/health'),
+  getReturnAnalytics: (params) => api.get('/return-analytics/seller', { params }),
 };
 
 export const products = {
@@ -197,6 +201,8 @@ export const admin = {
   getManufacturerSellers: (id) => api.get(`/admin/manufacturers/${id}/sellers`),
   // Commissions
   getCommissions: () => api.get('/admin/commissions'),
+  // Return Analytics
+  getReturnAnalytics: (params) => api.get('/return-analytics/admin', { params }),
 };
 
 export const notifications = {
@@ -236,6 +242,9 @@ export const deliveryPartner = {
   updateLocation: (latitude, longitude) => api.post('/delivery-partner/location', { latitude, longitude }),
   completeDelivery: (orderId) => api.post(`/delivery-partner/complete/${orderId}`),
   withdraw: (amount) => api.post('/delivery-partner/withdraw', { amount }),
+  // Route optimization
+  optimizeRoute: () => api.get('/delivery-route/optimize'),
+  getRouteUpdates: (lat, lon) => api.get('/delivery-route/updates', { params: { lat, lon } }),
 };
 
 export const lensConfiguration = {
@@ -260,6 +269,13 @@ export const returns = {
   markPickedUp: (id) => api.post(`/returns/${id}/picked-up`),
   markReceived: (id) => api.post(`/returns/${id}/received`),
   processRefund: (id) => api.post(`/returns/${id}/refund`),
+  // Customer return portal
+  checkEligibility: (orderId) => api.get(`/customer-returns/eligibility/${orderId}`),
+  uploadImages: (returnId, formData) => api.post(`/customer-returns/${returnId}/images`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  getMyReturns: (params) => api.get('/customer-returns/my-returns', { params }),
+  cancelReturn: (returnId) => api.post(`/customer-returns/${returnId}/cancel`),
 };
 
 export default api;

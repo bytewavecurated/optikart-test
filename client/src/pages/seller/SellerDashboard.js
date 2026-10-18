@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPackage, FiShoppingBag, FiDollarSign, FiTrendingUp, FiPlus, FiBell, FiCreditCard, FiBox, FiRefreshCw } from 'react-icons/fi';
+import { FiPackage, FiShoppingBag, FiDollarSign, FiTrendingUp, FiPlus, FiBell, FiCreditCard, FiBox, FiRefreshCw, FiBarChart2 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { seller as sellerApi, notifications } from '../../services/api';
 import { onNewOrder, offNewOrder } from '../../services/socket';
@@ -62,6 +62,8 @@ const SellerDashboard = () => {
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <Link to="/seller/inventory" className="btn btn-outline"><FiBox /> Inventory</Link>
               <Link to="/seller/returns" className="btn btn-outline"><FiRefreshCw /> Returns</Link>
+              <Link to="/seller/inventory-analytics" className="btn btn-outline"><FiBarChart2 /> Inventory Analytics</Link>
+              <Link to="/seller/return-analytics" className="btn btn-outline"><FiBarChart2 /> Return Analytics</Link>
               <Link to="/seller/payouts" className="btn btn-outline"><FiCreditCard /> Payouts</Link>
               <Link to="/seller/products" className="btn btn-primary"><FiPlus /> Add Product</Link>
             </div>

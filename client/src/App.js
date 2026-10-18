@@ -83,6 +83,11 @@ const SellerReturns = lazy(() => import('./pages/seller/SellerReturns'));
 const DeliveryPartnerLogin = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerLogin'));
 const DeliveryPartnerDashboard = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerDashboard'));
 const LensConfiguration = lazy(() => import('./pages/LensConfiguration'));
+const SellerInventoryAnalytics = lazy(() => import('./pages/seller/SellerInventoryAnalytics'));
+const SellerReturnAnalytics = lazy(() => import('./pages/seller/SellerReturnAnalytics'));
+const AdminReturnAnalytics = lazy(() => import('./pages/admin/AdminReturnAnalytics'));
+const DeliveryRouteOptimization = lazy(() => import('./pages/deliveryPartner/DeliveryRouteOptimization'));
+const CustomerReturnPortal = lazy(() => import('./pages/CustomerReturnPortal'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
@@ -191,6 +196,8 @@ function App() {
         <Route path="/seller/payouts" element={<SellerRoute><SellerPayouts /></SellerRoute>} />
         <Route path="/seller/inventory" element={<SellerRoute><SellerInventory /></SellerRoute>} />
         <Route path="/seller/returns" element={<SellerRoute><SellerReturns /></SellerRoute>} />
+        <Route path="/seller/inventory-analytics" element={<SellerRoute><SellerInventoryAnalytics /></SellerRoute>} />
+        <Route path="/seller/return-analytics" element={<SellerRoute><SellerReturnAnalytics /></SellerRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />
@@ -210,6 +217,7 @@ function App() {
           <Route path="manufacturers" element={<ManageManufacturers />} />
           <Route path="commissions" element={<Commissions />} />
           <Route path="chatbot" element={<ChatbotManagement />} />
+          <Route path="return-analytics" element={<AdminReturnAnalytics />} />
         </Route>
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>
@@ -251,6 +259,8 @@ function App() {
         <Route path="/lens-configuration/:productId" element={<LensConfiguration />} />
         <Route path="/delivery-partner/login" element={<DeliveryPartnerLogin />} />
         <Route path="/delivery-partner/dashboard" element={<ProtectedRoute allowedRoles={['deliveryPartner']}><DeliveryPartnerDashboard /></ProtectedRoute>} />
+        <Route path="/delivery-partner/route-optimization" element={<ProtectedRoute allowedRoles={['deliveryPartner']}><DeliveryRouteOptimization /></ProtectedRoute>} />
+        <Route path="/orders/:orderId/return" element={<ProtectedRoute><CustomerReturnPortal /></ProtectedRoute>} />
         <Route path="/compare" element={<ProductCompare />} />
         <Route path="/coupons" element={<AvailableCoupons />} />
         <Route path="/brands/:brand" element={<BrandPage />} />

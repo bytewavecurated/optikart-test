@@ -2,6 +2,7 @@ import StockReservation from '../models/StockReservation.js';
 import Product from '../models/Product.js';
 import { sendLowStockAlert } from './email.js';
 import Seller from '../models/Seller.js';
+import { checkStockLevels } from './websocket.js';
 
 const RESERVATION_DURATION_MINUTES = 15; // 15 minutes reservation time
 
@@ -64,7 +65,7 @@ export const getReservedStock = async (productId) => {
 /**
  * Complete a reservation (convert to order)
  */
-export const completeReservation = async (reservationId, orderId) => {
+export const completeReservation = async (reservationId, orderId, io = null) => {
   try {
     const reservation = await StockReservation.findById(reservationId);
     
@@ -76,6 +77,10 @@ export const completeReservation = async (reservationId, orderId) => {
     reservation.status = 'completed';
     reservation.orderId = orderId;
     await reservation.save();
+
+    // Get product before stock change
+    const productBefore = await Product.findById(reservation.product);
+    const previousStock = productBefore.stock;
 
     // Deduct stock from product
     await Product.findByIdAndUpdate(reservation.product, {
@@ -89,6 +94,11 @@ export const completeReservation = async (reservationId, orderId) => {
       if (seller) {
         await sendLowStockAlert(seller.email, product, seller);
       }
+    }
+
+    // Emit WebSocket alert if io is provided
+    if (io) {
+      await checkStockLevels(io, product, previousStock);
     }
 
     return {
@@ -158,12 +168,16 @@ export const getUserReservations = async (userId) => {
 /**
  * Bulk update stock for multiple products
  */
-export const bulkUpdateStock = async (updates) => {
+export const bulkUpdateStock = async (updates, io = null) => {
   try {
     const results = [];
     
     for (const update of updates) {
       const { productId, newStock } = update;
+      
+      // Get product before stock change
+      const productBefore = await Product.findById(productId);
+      const previousStock = productBefore ? productBefore.stock : 0;
       
       const product = await Product.findByIdAndUpdate(
         productId,
@@ -184,6 +198,11 @@ export const bulkUpdateStock = async (updates) => {
           if (seller) {
             await sendLowStockAlert(seller.email, product, seller);
           }
+        }
+
+        // Emit WebSocket alert if io is provided
+        if (io) {
+          await checkStockLevels(io, product, previousStock);
         }
       } else {
         results.push({

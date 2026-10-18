@@ -4,7 +4,7 @@ import { deliveryPartner as deliveryApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw } from 'react-icons/fi';
+import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation } from 'react-icons/fi';
 
 const DeliveryPartnerDashboard = () => {
   const [partner, setPartner] = useState(null);
@@ -231,6 +231,32 @@ const DeliveryPartnerDashboard = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Route Optimization Button */}
+        <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '28px', textAlign: 'center' }}>
+          <FiNavigation size={32} color="var(--primary)" style={{ marginBottom: '12px' }} />
+          <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Optimize Your Delivery Route</h3>
+          <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--text-secondary, #757575)' }}>Get AI-powered route suggestions for efficient deliveries</p>
+          <button
+            onClick={() => navigate('/delivery-partner/route-optimization')}
+            className="btn btn-primary"
+            style={{
+              padding: '12px 32px',
+              background: 'var(--primary)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <FiNavigation size={16} /> Optimize Route
+          </button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }} className="delivery-dashboard-grid">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiPackage, FiTruck, FiCheck, FiX, FiMapPin, FiCreditCard } from 'react-icons/fi';
 import { orders } from '../services/api';
 import Header from '../components/Header';
@@ -11,6 +11,7 @@ const STATUS_COLORS = { pending: '#ff9f00', confirmed: '#2874f0', shipped: '#287
 
 const OrderDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelReason, setCancelReason] = useState('');
@@ -111,7 +112,7 @@ const OrderDetail = () => {
 
               {(order.status === 'delivered' || order.status === 'confirmed') && !showCancel && (
                 <div className="card" style={{ padding: '16px 20px' }}>
-                  {order.status === 'delivered' && <button className="btn btn-outline btn-sm" onClick={() => toast.success('Return request submitted')}>Return / Exchange</button>}
+                  {order.status === 'delivered' && <button className="btn btn-outline btn-sm" onClick={() => navigate(`/orders/${id}/return`)}>Return / Exchange</button>}
                   {order.status === 'confirmed' && (
                     <button className="btn btn-danger btn-sm" onClick={() => setShowCancel(true)}>Cancel Order</button>
                   )}

@@ -42,6 +42,10 @@ import orderRoutingRoutes from './routes/orderRouting.js';
 import lensConfigurationRoutes from './routes/lensConfiguration.js';
 import deliveryPartnerRoutes from './routes/deliveryPartner.js';
 import productVerificationRoutes from './routes/productVerification.js';
+import inventoryAnalyticsRoutes from './routes/inventoryAnalytics.js';
+import returnAnalyticsRoutes from './routes/returnAnalytics.js';
+import deliveryRouteRoutes from './routes/deliveryRoute.js';
+import customerReturnsRoutes from './routes/customerReturns.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -117,6 +121,10 @@ app.use('/api/order-routing', orderRoutingRoutes);
 app.use('/api/lens-configuration', lensConfigurationRoutes);
 app.use('/api/delivery-partner', deliveryPartnerRoutes);
 app.use('/api/product-verification', productVerificationRoutes);
+app.use('/api/inventory-analytics', inventoryAnalyticsRoutes);
+app.use('/api/return-analytics', returnAnalyticsRoutes);
+app.use('/api/delivery-route', deliveryRouteRoutes);
+app.use('/api/customer-returns', customerReturnsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({
