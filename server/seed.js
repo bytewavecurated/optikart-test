@@ -1,3 +1,6 @@
+import dns from 'node:dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import User from './models/User.js';
@@ -924,6 +927,7 @@ const seedDatabase = async () => {
       },
       {
         title: 'Subscription plans',
+        category: 'seller_general',
         forRole: 'seller',
         faq: true,
         answer: '₹590/month (₹500 + ₹90 GST) with auto-renewal.'
