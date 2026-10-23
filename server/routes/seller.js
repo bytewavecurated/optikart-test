@@ -282,32 +282,6 @@ router.put('/update-profile', verifySeller, async (req, res) => {
   }
 });
 
-router.post('/subscribe', verifySeller, async (req, res) => {
-  try {
-    const sellerId = req.seller._id;
-
-    const amount = 500;
-    const gstAmount = 90;
-    const totalAmount = 590;
-
-    const razorpayOrder = await createRazorpayOrder(totalAmount, 'INR', `seller_sub_${sellerId}_${Date.now()}`);
-
-    if (!razorpayOrder.success) {
-      return res.status(500).json({ success: false, message: 'Failed to create payment order.', error: razorpayOrder.error });
-    }
-
-    res.json({
-      success: true,
-      orderId: razorpayOrder.orderId,
-      amount: totalAmount * 100,
-      currency: 'INR',
-      key: process.env.RAZORPAY_KEY_ID
-    });
-  } catch (error) {
-    console.error('Subscribe error:', error);
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
-  }
-});
 
 router.get('/orders', verifySeller, async (req, res) => {
   try {

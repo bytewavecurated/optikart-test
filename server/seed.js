@@ -79,7 +79,16 @@ const seedDatabase = async () => {
         verifiedBy: admin._id,
         verifiedAt: new Date(),
         rating: 4.5,
-        totalSales: 150
+        totalSales: 150,
+        location: { type: 'Point', coordinates: [72.8777, 19.076] },
+        address: {
+          street: 'Linking Road, Bandra West',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400050',
+          country: 'India'
+        },
+        serviceRadius: 10
       },
       {
         name: 'Priya Sharma',
@@ -101,7 +110,16 @@ const seedDatabase = async () => {
         verifiedBy: admin._id,
         verifiedAt: new Date(),
         rating: 4.2,
-        totalSales: 200
+        totalSales: 200,
+        location: { type: 'Point', coordinates: [77.209, 28.6139] },
+        address: {
+          street: 'Connaught Place',
+          city: 'New Delhi',
+          state: 'Delhi',
+          pincode: '110001',
+          country: 'India'
+        },
+        serviceRadius: 10
       },
       {
         name: 'Amit Patel',
@@ -123,7 +141,16 @@ const seedDatabase = async () => {
         verifiedBy: admin._id,
         verifiedAt: new Date(),
         rating: 4.7,
-        totalSales: 100
+        totalSales: 100,
+        location: { type: 'Point', coordinates: [72.5877, 23.0225] },
+        address: {
+          street: 'CG Road, Navrangpura',
+          city: 'Ahmedabad',
+          state: 'Gujarat',
+          pincode: '380009',
+          country: 'India'
+        },
+        serviceRadius: 10
       },
       {
         name: 'Sneha Reddy',
@@ -143,7 +170,16 @@ const seedDatabase = async () => {
         storeDescription: 'Trendy sunglasses and fashion eyewear',
         isVerified: false,
         rating: 0,
-        totalSales: 0
+        totalSales: 0,
+        location: { type: 'Point', coordinates: [77.5946, 12.9716] },
+        address: {
+          street: 'Brigade Road',
+          city: 'Bangalore',
+          state: 'Karnataka',
+          pincode: '560025',
+          country: 'India'
+        },
+        serviceRadius: 10
       }
     ]);
     console.log(`${sellers.length} sellers created`);

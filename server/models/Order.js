@@ -75,8 +75,22 @@ const orderSchema = new mongoose.Schema({
   commissionPercentage: { type: Number, default: 3 },
   commissionAmount: { type: Number, default: 0 },
   sellerPayoutAmount: { type: Number, default: 0 },
+  netAmountToSeller: { type: Number, default: 0 },
   commissionPaid: { type: Boolean, default: false },
   commissionPaidAt: { type: Date },
+  commissionRecorded: { type: Boolean, default: false },
+  commissionRecordedAt: { type: Date },
+  // Order assignment tracking
+  assignmentStatus: { 
+    type: String, 
+    enum: ['pending', 'pending_acceptance', 'accepted', 'rejected', 'admin_required', 'assigned'], 
+    default: 'pending' 
+  },
+  assignmentDeadline: { type: Date },
+  assignedAt: { type: Date },
+  acceptedAt: { type: Date },
+  assignmentDistance: { type: Number }, // in km
+  assignmentNotes: { type: String, default: '' },
   // Payout tracking
   payoutProcessed: { type: Boolean, default: false },
   deliveredAt: { type: Date }

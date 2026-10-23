@@ -71,7 +71,6 @@ export const seller = {
   updateOrderStatus: (orderId, status) => api.put(`/seller/orders/${orderId}/status`, { status }),
   getAnalytics: (period) => api.get('/seller/analytics', { params: { period } }),
   getPickups: (params) => api.get('/seller/pickups', { params }),
-  subscribe: (plan) => api.post('/seller/subscribe', { plan }),
   setOffer: (productId, data) => api.put(`/seller/products/${productId}/offer`, data),
   removeOffer: (productId) => api.delete(`/seller/products/${productId}/offer`),
   // Inventory management
@@ -88,6 +87,8 @@ export const seller = {
   getInventoryAnalytics: (params) => api.get('/inventory-analytics/seller', { params }),
   getInventoryHealth: () => api.get('/inventory-analytics/seller/health'),
   getReturnAnalytics: (params) => api.get('/return-analytics/seller', { params }),
+  // Commission
+  getMyCommission: (params) => api.get('/commission/my-commission', { params }),
 };
 
 export const products = {
@@ -201,6 +202,10 @@ export const admin = {
   getManufacturerSellers: (id) => api.get(`/admin/manufacturers/${id}/sellers`),
   // Commissions
   getCommissions: () => api.get('/admin/commissions'),
+  getCommissionSummary: (params) => api.get('/commission/summary', { params }),
+  recordCommission: (orderId) => api.post(`/commission/record/${orderId}`),
+  getPendingCommissions: () => api.get('/commission/pending'),
+  getSellerCommissionDetails: (sellerId, params) => api.get(`/commission/seller/${sellerId}`, { params }),
   // Return Analytics
   getReturnAnalytics: (params) => api.get('/return-analytics/admin', { params }),
 };

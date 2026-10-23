@@ -77,10 +77,33 @@ const sellerSchema = new mongoose.Schema({
   banReason: { type: String, default: '' },
   bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   bannedAt: { type: Date },
-  sellerId: { type: String, unique: true, sparse: true }
+  sellerId: { type: String, unique: true, sparse: true },
+  // Location fields for proximity-based order routing
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0]
+    }
+  },
+  address: {
+    street: { type: String, default: '' },
+    city: { type: String, default: '' },
+    state: { type: String, default: '' },
+    pincode: { type: String, default: '' },
+    country: { type: String, default: 'India' }
+  },
+  serviceRadius: { type: Number, default: 10 }, // in km
 }, {
   timestamps: true
 });
+
+// Create 2dsphere index for location-based queries
+sellerSchema.index({ location: '2dsphere' });
 
 sellerSchema.pre('save', function(next) {
   if (!this.sellerId) {

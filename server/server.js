@@ -49,6 +49,7 @@ import inventoryAnalyticsRoutes from './routes/inventoryAnalytics.js';
 import returnAnalyticsRoutes from './routes/returnAnalytics.js';
 import deliveryRouteRoutes from './routes/deliveryRoute.js';
 import customerReturnsRoutes from './routes/customerReturns.js';
+import commissionRoutes from './routes/commission.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -128,6 +129,7 @@ app.use('/api/inventory-analytics', inventoryAnalyticsRoutes);
 app.use('/api/return-analytics', returnAnalyticsRoutes);
 app.use('/api/delivery-route', deliveryRouteRoutes);
 app.use('/api/customer-returns', customerReturnsRoutes);
+app.use('/api/commission', commissionRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

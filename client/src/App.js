@@ -85,7 +85,10 @@ const DeliveryPartnerDashboard = lazy(() => import('./pages/deliveryPartner/Deli
 const LensConfiguration = lazy(() => import('./pages/LensConfiguration'));
 const SellerInventoryAnalytics = lazy(() => import('./pages/seller/SellerInventoryAnalytics'));
 const SellerReturnAnalytics = lazy(() => import('./pages/seller/SellerReturnAnalytics'));
+const SellerCommission = lazy(() => import('./pages/seller/SellerCommission'));
 const AdminReturnAnalytics = lazy(() => import('./pages/admin/AdminReturnAnalytics'));
+const CommissionDashboard = lazy(() => import('./pages/admin/CommissionDashboard'));
+const OrderAssignment = lazy(() => import('./pages/admin/OrderAssignment'));
 const DeliveryRouteOptimization = lazy(() => import('./pages/deliveryPartner/DeliveryRouteOptimization'));
 const CustomerReturnPortal = lazy(() => import('./pages/CustomerReturnPortal'));
 
@@ -198,6 +201,7 @@ function App() {
         <Route path="/seller/returns" element={<SellerRoute><SellerReturns /></SellerRoute>} />
         <Route path="/seller/inventory-analytics" element={<SellerRoute><SellerInventoryAnalytics /></SellerRoute>} />
         <Route path="/seller/return-analytics" element={<SellerRoute><SellerReturnAnalytics /></SellerRoute>} />
+        <Route path="/seller/commission" element={<SellerRoute><SellerCommission /></SellerRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />
@@ -218,6 +222,8 @@ function App() {
           <Route path="commissions" element={<Commissions />} />
           <Route path="chatbot" element={<ChatbotManagement />} />
           <Route path="return-analytics" element={<AdminReturnAnalytics />} />
+          <Route path="commission" element={<CommissionDashboard />} />
+          <Route path="order-assignment" element={<OrderAssignment />} />
         </Route>
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>
