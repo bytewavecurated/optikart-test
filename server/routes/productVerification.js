@@ -1,259 +1,96 @@
 import express from 'express';
-import { verifyToken, verifyAdmin, verifyManufacturer } from '../middleware/auth.js';
+import { verifyToken, verifyAdmin } from '../middleware/auth.js';
 import {
-  submitProductForVerification,
+  getPendingProducts,
   verifyProduct,
   rejectProduct,
-  manufacturerAcceptProduct,
-  getManufacturerPendingVerifications,
-  getAllVerifications,
-  checkExpiredAcceptances
+  getVerificationStats
 } from '../services/productVerification.js';
 
 const router = express.Router();
 
 /**
- * POST /api/product-verification/submit
- * Submit product for verification (manufacturer)
+ * GET /api/product-verification/pending
+ * Get all pending products for verification
  */
-router.post('/submit', verifyToken, verifyManufacturer, async (req, res) => {
+router.get('/pending', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { productId } = req.body;
-    const manufacturerId = req.manufacturer._id;
-    const submittedById = req.user.id;
-
-    if (!productId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Product ID is required'
-      });
-    }
-
-    const result = await submitProductForVerification(productId, manufacturerId, submittedById);
-
+    const { manufacturer, brand, category } = req.query;
+    const result = await getPendingProducts({ manufacturer, brand, category });
+    
     if (result.success) {
-      res.status(201).json({
-        success: true,
-        message: 'Product submitted for verification',
-        data: result.verification
-      });
+      res.json(result);
     } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
+      res.status(400).json(result);
     }
   } catch (error) {
-    console.error('Error in submit product for verification:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 /**
- * POST /api/product-verification/:id/verify
- * Verify product (admin)
+ * POST /api/product-verification/:productId/verify
+ * Verify a product
  */
-router.post('/:id/verify', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/:productId/verify', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-    const adminId = req.user.id;
+    const { productId } = req.params;
     const { notes } = req.body;
-
-    const result = await verifyProduct(id, adminId, notes);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        message: 'Product verified successfully',
-        data: result
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
-    }
-  } catch (error) {
-    console.error('Error in verify product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
-
-/**
- * POST /api/product-verification/:id/reject
- * Reject product (admin)
- */
-router.post('/:id/reject', verifyToken, verifyAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
     const adminId = req.user.id;
-    const { reason, updateRequired } = req.body;
+    
+    const result = await verifyProduct(productId, adminId, notes);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
+/**
+ * POST /api/product-verification/:productId/reject
+ * Reject a product (mark for correction)
+ */
+router.post('/:productId/reject', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { reason } = req.body;
+    const adminId = req.user.id;
+    
     if (!reason) {
-      return res.status(400).json({
-        success: false,
-        message: 'Rejection reason is required'
-      });
+      return res.status(400).json({ success: false, error: 'Rejection reason is required' });
     }
-
-    const result = await rejectProduct(id, adminId, reason, updateRequired);
-
+    
+    const result = await rejectProduct(productId, adminId, reason);
+    
     if (result.success) {
-      res.json({
-        success: true,
-        message: 'Product rejected',
-        data: result
-      });
+      res.json(result);
     } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
+      res.status(400).json(result);
     }
   } catch (error) {
-    console.error('Error in reject product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 /**
- * POST /api/product-verification/:id/accept
- * Manufacturer accepts verified product
+ * GET /api/product-verification/stats
+ * Get verification statistics
  */
-router.post('/:id/accept', verifyToken, verifyManufacturer, async (req, res) => {
+router.get('/stats', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-    const manufacturerId = req.manufacturer._id;
-
-    const result = await manufacturerAcceptProduct(id, manufacturerId);
-
+    const result = await getVerificationStats();
+    
     if (result.success) {
-      res.json({
-        success: true,
-        message: 'Product accepted',
-        data: result.verification
-      });
+      res.json(result);
     } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
+      res.status(400).json(result);
     }
   } catch (error) {
-    console.error('Error in accept product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
-
-/**
- * GET /api/product-verification/manufacturer/pending
- * Get manufacturer's pending verifications
- */
-router.get('/manufacturer/pending', verifyToken, verifyManufacturer, async (req, res) => {
-  try {
-    const manufacturerId = req.manufacturer._id;
-
-    const result = await getManufacturerPendingVerifications(manufacturerId);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.verifications
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
-    }
-  } catch (error) {
-    console.error('Error in get manufacturer pending verifications:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
-
-/**
- * GET /api/product-verification
- * Get all verifications (admin)
- */
-router.get('/', verifyToken, verifyAdmin, async (req, res) => {
-  try {
-    const { status, manufacturer } = req.query;
-    const filters = {};
-
-    if (status) filters.status = status;
-    if (manufacturer) filters.manufacturer = manufacturer;
-
-    const result = await getAllVerifications(filters);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.verifications
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
-    }
-  } catch (error) {
-    console.error('Error in get all verifications:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
-
-/**
- * POST /api/product-verification/check-expired
- * Check for expired acceptances (admin/cron)
- */
-router.post('/check-expired', verifyToken, verifyAdmin, async (req, res) => {
-  try {
-    const result = await checkExpiredAcceptances();
-
-    if (result.success) {
-      res.json({
-        success: true,
-        message: `Processed ${result.expiredCount} expired verifications`,
-        data: result
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
-    }
-  } catch (error) {
-    console.error('Error in check expired acceptances:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

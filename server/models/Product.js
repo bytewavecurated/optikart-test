@@ -139,3 +139,18 @@ productSchema.index({ title: 'text', description: 'text', brand: 'text', tags: '
 
 const Product = mongoose.model('Product', productSchema);
 export default Product;
+
+// Add verification fields
+productSchema.add({
+  verificationStatus: { 
+    type: String, 
+    enum: ['pending', 'verified', 'rejected', 'data_incorrect'], 
+    default: 'pending' 
+  },
+  verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  verifiedAt: { type: Date },
+  verificationNotes: { type: String, default: '' },
+  rejectionReason: { type: String, default: '' },
+  submittedAt: { type: Date, default: Date.now },
+  lastUpdatedAt: { type: Date, default: Date.now }
+});

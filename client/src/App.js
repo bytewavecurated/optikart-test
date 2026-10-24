@@ -89,6 +89,8 @@ const SellerCommission = lazy(() => import('./pages/seller/SellerCommission'));
 const AdminReturnAnalytics = lazy(() => import('./pages/admin/AdminReturnAnalytics'));
 const CommissionDashboard = lazy(() => import('./pages/admin/CommissionDashboard'));
 const OrderAssignment = lazy(() => import('./pages/admin/OrderAssignment'));
+const ProductVerification = lazy(() => import('./pages/admin/ProductVerification'));
+const LensSelection = lazy(() => import('./pages/LensSelection'));
 const DeliveryRouteOptimization = lazy(() => import('./pages/deliveryPartner/DeliveryRouteOptimization'));
 const CustomerReturnPortal = lazy(() => import('./pages/CustomerReturnPortal'));
 
@@ -224,6 +226,8 @@ function App() {
           <Route path="return-analytics" element={<AdminReturnAnalytics />} />
           <Route path="commission" element={<CommissionDashboard />} />
           <Route path="order-assignment" element={<OrderAssignment />} />
+          <Route path="product-verification" element={<ProductVerification />} />
+        <Route path="/product/:productId/lenses" element={<LensSelection />} />
         </Route>
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>

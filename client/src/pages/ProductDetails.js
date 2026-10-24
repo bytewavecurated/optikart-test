@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [otherBrandProducts, setOtherBrandProducts] = useState([]);
@@ -425,9 +426,19 @@ const ProductDetails = () => {
                 <button className="btn btn-primary btn-lg" style={{ flex: 1 }} onClick={handleAddToCart}>
                   <FiShoppingCart /> Add to Cart
                 </button>
-                <button className="btn btn-secondary btn-lg" style={{ flex: 1 }} onClick={handleBuyNow}>
-                  Buy Now
-                </button>
+                {product.category === 'eyeglasses' ? (
+                  <button 
+                    className="btn btn-secondary btn-lg" 
+                    style={{ flex: 1 }} 
+                    onClick={() => navigate(`/product/${id}/lenses`)}
+                  >
+                    Choose Lenses
+                  </button>
+                ) : (
+                  <button className="btn btn-secondary btn-lg" style={{ flex: 1 }} onClick={handleBuyNow}>
+                    Buy Now
+                  </button>
+                )}
               </div>
 
               <div className="card" style={{ padding: '16px 20px' }}>

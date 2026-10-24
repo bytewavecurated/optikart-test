@@ -1,56 +1,41 @@
-import ProductVerification from '../models/ProductVerification.js';
+/**
+ * Product Verification Service
+ * Handles product verification workflow with email notifications
+ */
+
 import Product from '../models/Product.js';
 import { sendEmail } from './email.js';
 
-const ACCEPTANCE_DEADLINE_DAYS = 7; // 7 working days
+const VERIFICATION_DEADLINE_DAYS = 7;
 
 /**
- * Submit product for verification
+ * Get pending products for verification
  */
-export const submitProductForVerification = async (productId, manufacturerId, submittedById) => {
+export const getPendingProducts = async (filters = {}) => {
   try {
-    const product = await Product.findById(productId);
+    const query = { verificationStatus: 'pending' };
     
-    if (!product) {
-      throw new Error('Product not found');
+    if (filters.manufacturer) {
+      query.manufacturer = filters.manufacturer;
+    }
+    if (filters.brand) {
+      query.brand = { $regex: filters.brand, $options: 'i' };
+    }
+    if (filters.category) {
+      query.category = filters.category;
     }
 
-    // Check if verification already exists
-    const existingVerification = await ProductVerification.findOne({
-      product: productId,
-      status: { $in: ['pending', 'verified'] }
-    });
-
-    if (existingVerification) {
-      throw new Error('Product already submitted for verification');
-    }
-
-    // Calculate acceptance deadline (7 working days from now)
-    const acceptanceDeadline = new Date();
-    acceptanceDeadline.setDate(acceptanceDeadline.getDate() + ACCEPTANCE_DEADLINE_DAYS);
-
-    const verification = await ProductVerification.create({
-      product: productId,
-      manufacturer: manufacturerId,
-      submittedBy: submittedById,
-      status: 'pending',
-      submittedAt: new Date(),
-      acceptanceDeadline
-    });
-
-    // Send email to admin
-    await sendEmail({
-      to: process.env.ADMIN_EMAIL,
-      subject: 'New Product Submitted for Verification',
-      text: `A new product "${product.title}" has been submitted for verification by manufacturer.`
-    });
+    const products = await Product.find(query)
+      .populate('manufacturer', 'brandName contactEmail')
+      .sort({ submittedAt: 1 });
 
     return {
       success: true,
-      verification
+      count: products.length,
+      products
     };
   } catch (error) {
-    console.error('Error submitting product for verification:', error);
+    console.error('Error getting pending products:', error);
     return {
       success: false,
       error: error.message
@@ -59,40 +44,36 @@ export const submitProductForVerification = async (productId, manufacturerId, su
 };
 
 /**
- * Verify product (admin)
+ * Verify a product
  */
-export const verifyProduct = async (verificationId, adminId, notes = '') => {
+export const verifyProduct = async (productId, adminId, notes = '') => {
   try {
-    const verification = await ProductVerification.findById(verificationId)
-      .populate('product')
-      .populate('manufacturer');
-
-    if (!verification) {
-      throw new Error('Verification not found');
+    const product = await Product.findById(productId).populate('manufacturer', 'brandName contactEmail');
+    
+    if (!product) {
+      return { success: false, error: 'Product not found' };
     }
 
-    verification.status = 'verified';
-    verification.verifiedBy = adminId;
-    verification.verificationNotes = notes;
-    verification.verifiedAt = new Date();
-    await verification.save();
-
-    // Update product status
-    const product = await Product.findById(verification.product._id);
     product.verificationStatus = 'verified';
-    product.isActive = true; // Make product visible on marketplace
+    product.verifiedBy = adminId;
+    product.verifiedAt = new Date();
+    product.verificationNotes = notes;
+    product.isActive = true;
+    
     await product.save();
 
-    // Send email to manufacturer
-    await sendEmail({
-      to: verification.manufacturer.email,
-      subject: 'Product Verified Successfully',
-      text: `Your product "${product.title}" has been verified and is now live on the marketplace. Please accept within 7 working days.`
-    });
+    // Send email notification to manufacturer
+    if (product.manufacturer?.contactEmail) {
+      await sendEmail(
+        product.manufacturer.contactEmail,
+        `Product Verified: ${product.title}`,
+        `Your product "${product.title}" (Brand: ${product.brand}) has been verified and is now live on the marketplace.`
+      );
+    }
 
     return {
       success: true,
-      verification,
+      message: 'Product verified successfully',
       product
     };
   } catch (error) {
@@ -105,41 +86,35 @@ export const verifyProduct = async (verificationId, adminId, notes = '') => {
 };
 
 /**
- * Reject product (admin)
+ * Reject a product
  */
-export const rejectProduct = async (verificationId, adminId, reason, updateRequired = []) => {
+export const rejectProduct = async (productId, adminId, reason) => {
   try {
-    const verification = await ProductVerification.findById(verificationId)
-      .populate('product')
-      .populate('manufacturer');
-
-    if (!verification) {
-      throw new Error('Verification not found');
+    const product = await Product.findById(productId).populate('manufacturer', 'brandName contactEmail');
+    
+    if (!product) {
+      return { success: false, error: 'Product not found' };
     }
 
-    verification.status = 'needs_update';
-    verification.verifiedBy = adminId;
-    verification.rejectionReason = reason;
-    verification.updateRequired = updateRequired;
-    verification.verifiedAt = new Date();
-    await verification.save();
-
-    // Update product status
-    const product = await Product.findById(verification.product._id);
-    product.verificationStatus = 'rejected';
-    product.isActive = false;
+    product.verificationStatus = 'data_incorrect';
+    product.verifiedBy = adminId;
+    product.verifiedAt = new Date();
+    product.rejectionReason = reason;
+    
     await product.save();
 
-    // Send email to manufacturer
-    await sendEmail({
-      to: verification.manufacturer.email,
-      subject: 'Product Verification Requires Updates',
-      text: `Your product "${product.title}" requires updates. Reason: ${reason}. Please update and resubmit.`
-    });
+    // Send email notification to manufacturer
+    if (product.manufacturer?.contactEmail) {
+      await sendEmail(
+        product.manufacturer.contactEmail,
+        `Product Verification Required: ${product.title}`,
+        `Your product "${product.title}" (Brand: ${product.brand}) requires data correction.\n\nReason: ${reason}\n\nPlease update the product details and resubmit for verification within ${VERIFICATION_DEADLINE_DAYS} days.`
+      );
+    }
 
     return {
       success: true,
-      verification,
+      message: 'Product marked for correction',
       product
     };
   } catch (error) {
@@ -152,124 +127,38 @@ export const rejectProduct = async (verificationId, adminId, reason, updateRequi
 };
 
 /**
- * Manufacturer accepts verified product
+ * Get verification statistics
  */
-export const manufacturerAcceptProduct = async (verificationId, manufacturerId) => {
+export const getVerificationStats = async () => {
   try {
-    const verification = await ProductVerification.findById(verificationId);
+    const stats = await Product.aggregate([
+      {
+        $group: {
+          _id: '$verificationStatus',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
-    if (!verification) {
-      throw new Error('Verification not found');
-    }
-
-    if (verification.manufacturer.toString() !== manufacturerId.toString()) {
-      throw new Error('Unauthorized');
-    }
-
-    if (verification.status !== 'verified') {
-      throw new Error('Product is not verified');
-    }
-
-    verification.acceptedByManufacturer = true;
-    verification.acceptedAt = new Date();
-    await verification.save();
-
-    return {
-      success: true,
-      verification
+    const result = {
+      pending: 0,
+      verified: 0,
+      rejected: 0,
+      data_incorrect: 0,
+      total: 0
     };
-  } catch (error) {
-    console.error('Error accepting product:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
 
-/**
- * Get manufacturer's pending verifications
- */
-export const getManufacturerPendingVerifications = async (manufacturerId) => {
-  try {
-    const verifications = await ProductVerification.find({
-      manufacturer: manufacturerId,
-      status: { $in: ['pending', 'verified', 'needs_update'] }
-    })
-      .populate('product')
-      .populate('verifiedBy', 'name email')
-      .sort({ submittedAt: -1 });
-
-    return {
-      success: true,
-      verifications
-    };
-  } catch (error) {
-    console.error('Error getting manufacturer pending verifications:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-/**
- * Get all verifications (admin)
- */
-export const getAllVerifications = async (filters = {}) => {
-  try {
-    const verifications = await ProductVerification.find(filters)
-      .populate('product')
-      .populate('manufacturer', 'name companyName')
-      .populate('submittedBy', 'name email')
-      .populate('verifiedBy', 'name email')
-      .sort({ submittedAt: -1 });
-
-    return {
-      success: true,
-      verifications
-    };
-  } catch (error) {
-    console.error('Error getting all verifications:', error);
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-};
-
-/**
- * Check for expired acceptances
- */
-export const checkExpiredAcceptances = async () => {
-  try {
-    const expiredVerifications = await ProductVerification.find({
-      status: 'verified',
-      acceptedByManufacturer: false,
-      acceptanceDeadline: { $lt: new Date() }
+    stats.forEach(stat => {
+      result[stat._id] = stat.count;
+      result.total += stat.count;
     });
 
-    for (const verification of expiredVerifications) {
-      // Deactivate product
-      await Product.findByIdAndUpdate(verification.product, {
-        isActive: false,
-        verificationStatus: 'expired'
-      });
-
-      // Send notification
-      await sendEmail({
-        to: verification.manufacturer.email,
-        subject: 'Product Verification Expired',
-        text: `Your product verification has expired as it was not accepted within 7 working days.`
-      });
-    }
-
     return {
       success: true,
-      expiredCount: expiredVerifications.length
+      stats: result
     };
   } catch (error) {
-    console.error('Error checking expired acceptances:', error);
+    console.error('Error getting verification stats:', error);
     return {
       success: false,
       error: error.message
@@ -278,11 +167,8 @@ export const checkExpiredAcceptances = async () => {
 };
 
 export default {
-  submitProductForVerification,
+  getPendingProducts,
   verifyProduct,
   rejectProduct,
-  manufacturerAcceptProduct,
-  getManufacturerPendingVerifications,
-  getAllVerifications,
-  checkExpiredAcceptances
+  getVerificationStats
 };

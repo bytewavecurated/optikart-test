@@ -86,6 +86,10 @@ export const seller = {
   // Analytics
   getInventoryAnalytics: (params) => api.get('/inventory-analytics/seller', { params }),
   getInventoryHealth: () => api.get('/inventory-analytics/seller/health'),
+  getPendingProducts: (params) => api.get("/product-verification/pending", { params }),
+  verifyProduct: (productId, data) => api.post(`/product-verification/${productId}/verify`, data),
+  rejectProduct: (productId, data) => api.post(`/product-verification/${productId}/reject`, data),
+  getVerificationStats: () => api.get("/product-verification/stats"),
   getReturnAnalytics: (params) => api.get('/return-analytics/seller', { params }),
   // Commission
   getMyCommission: (params) => api.get('/commission/my-commission', { params }),
@@ -207,6 +211,10 @@ export const admin = {
   getPendingCommissions: () => api.get('/commission/pending'),
   getSellerCommissionDetails: (sellerId, params) => api.get(`/commission/seller/${sellerId}`, { params }),
   // Return Analytics
+  getPendingProducts: (params) => api.get("/product-verification/pending", { params }),
+  verifyProduct: (productId, data) => api.post(`/product-verification/${productId}/verify`, data),
+  rejectProduct: (productId, data) => api.post(`/product-verification/${productId}/reject`, data),
+  getVerificationStats: () => api.get("/product-verification/stats"),
   getReturnAnalytics: (params) => api.get('/return-analytics/admin', { params }),
 };
 
@@ -284,3 +292,11 @@ export const returns = {
 };
 
 export default api;
+
+// Product Verification APIs
+export const productVerification = {
+  getPendingProducts: (params) => api.get('/product-verification/pending', { params }),
+  verifyProduct: (productId, data) => api.post(`/product-verification/${productId}/verify`, data),
+  rejectProduct: (productId, data) => api.post(`/product-verification/${productId}/reject`, data),
+  getVerificationStats: () => api.get('/product-verification/stats'),
+};

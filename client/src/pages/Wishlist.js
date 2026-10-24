@@ -1,111 +1,146 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FiHeart, FiShoppingCart } from 'react-icons/fi';
-import { wishlist } from '../services/api';
-import { useCart } from '../contexts/CartContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiTrash2, FiShoppingCart, FiHeart } from 'react-icons/fi';
+import { wishlist as wishlistApi, cart as cartApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 
+const MAX_WISHLIST_LOGGED_IN = 30;
+const MAX_WISHLIST_GUEST = 3;
+
 const Wishlist = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchWishlist = async () => {
-      try {
-        const res = await wishlist.get();
-        setItems(res.data.data || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (isAuthenticated) fetchWishlist();
-    else setLoading(false);
-  }, [isAuthenticated]);
+    fetchWishlist();
+  }, []);
 
-  const handleRemove = async (productId) => {
+  const fetchWishlist = async () => {
     try {
-      await wishlist.remove(productId);
-      setItems(items.filter((item) => item.product?._id !== productId));
-      toast.success('Removed from wishlist');
+      const res = await wishlistApi.get();
+      setItems(res.data.data || []);
     } catch (err) {
-      toast.error('Failed to remove');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleMoveToCart = (product) => {
-    addToCart(product);
-    handleRemove(product._id);
-    toast.success('Moved to cart');
+  const removeItem = async (productId) => {
+    try {
+      await wishlistApi.remove(productId);
+      setItems(items.filter(item => item.product._id !== productId));
+      toast.success('Removed from wishlist');
+    } catch (err) {
+      toast.error('Failed to remove item');
+    }
   };
 
-  if (!isAuthenticated) {
+  const moveToCart = async (productId) => {
+    try {
+      await cartApi.add(productId, 1);
+      await wishlistApi.remove(productId);
+      setItems(items.filter(item => item.product._id !== productId));
+      toast.success('Moved to cart');
+    } catch (err) {
+      toast.error('Failed to move to cart');
+    }
+  };
+
+  const maxItems = isAuthenticated ? MAX_WISHLIST_LOGGED_IN : MAX_WISHLIST_GUEST;
+
+  if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <>
         <Header />
-        <main className="container page-wrapper">
-          <div className="empty-state">
-            <FiHeart style={{ fontSize: '64px', color: 'var(--text-light)', marginBottom: '16px' }} />
-            <h3>Please login to view wishlist</h3>
-            <Link to="/login" className="btn btn-primary">Login</Link>
+        <div className="container page-wrapper">
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div className="spinner"></div>
           </div>
-        </main>
+        </div>
         <Footer />
-      </div>
+      </>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <>
+        <Header />
+        <div className="container page-wrapper">
+          <div className="card" style={{ padding: '60px 20px', textAlign: 'center' }}>
+            <FiHeart size={64} style={{ color: 'var(--text-light)', marginBottom: '16px' }} />
+            <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '12px' }}>Your wishlist is empty</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Save items you love for later</p>
+            <Link to="/" className="btn btn-primary">Start Shopping</Link>
+          </div>
+        </div>
+        <Footer />
+      </>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <>
       <Header />
-      <main style={{ flex: 1 }}>
-        <div className="container page-wrapper">
-          <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>My Wishlist ({items.length})</h1>
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><div className="spinner spinner-lg" /></div>
-          ) : items.length === 0 ? (
-            <div className="empty-state">
-              <FiHeart style={{ fontSize: '64px', color: 'var(--text-light)', marginBottom: '16px' }} />
-              <h3>Your wishlist is empty</h3>
-              <p>Save items you like for later</p>
-              <Link to="/" className="btn btn-primary">Explore Products</Link>
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
-              {items.map((item) => {
-                const product = item.product || item;
-                return (
-                  <div key={product._id} className="card" style={{ overflow: 'hidden' }}>
-                    <Link to={`/product/${product._id}`}>
-                      <img src={product.images?.[0] || '/placeholder-glasses.png'} alt={product.name} style={{ width: '100%', height: '200px', objectFit: 'contain', background: '#fafafa' }} />
-                    </Link>
-                    <div style={{ padding: '12px' }}>
-                      <Link to={`/product/${product._id}`} style={{ fontSize: '14px', fontWeight: 500, display: 'block', marginBottom: '4px' }} className="truncate">{product.name}</Link>
-                      <div style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '8px' }}>{product.brand}</div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '16px', fontWeight: 700 }}>₹{product.price}</span>
-                        {product.originalPrice && <span className="price-original" style={{ fontSize: '12px' }}>₹{product.originalPrice}</span>}
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => handleMoveToCart(product)} className="btn btn-primary btn-sm" style={{ flex: 1 }}><FiShoppingCart size={12} /> Add to Cart</button>
-                        <button onClick={() => handleRemove(product._id)} className="btn btn-outline btn-sm"><FiHeart size={12} /></button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+      <div className="container page-wrapper">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-heading)' }}>My Wishlist ({items.length}/{maxItems})</h1>
+            {!isAuthenticated && (
+              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+                Guest wishlist limited to {MAX_WISHLIST_GUEST} items. <Link to="/login" style={{ color: 'var(--primary)' }}>Login</Link> for up to {MAX_WISHLIST_LOGGED_IN} items.
+              </p>
+            )}
+          </div>
+          <Link to="/" className="btn btn-outline">Continue Shopping</Link>
         </div>
-      </main>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          {items.map((item) => (
+            <div key={item._id} className="card">
+              <Link to={`/product/${item.product._id}`}>
+                <img
+                  src={item.product.images?.[0] || '/placeholder.png'}
+                  alt={item.product.title}
+                  style={{ width: '100%', height: '280px', objectFit: 'cover' }}
+                />
+              </Link>
+              <div style={{ padding: '16px' }}>
+                <Link to={`/product/${item.product._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{item.product.title}</h3>
+                </Link>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>{item.product.brand}</p>
+                <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)', marginBottom: '16px' }}>
+                  ₹{item.product.price}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => moveToCart(item.product._id)}
+                    className="btn btn-primary btn-sm"
+                    style={{ flex: 1 }}
+                  >
+                    <FiShoppingCart size={14} /> Move to Cart
+                  </button>
+                  <button
+                    onClick={() => removeItem(item.product._id)}
+                    className="btn btn-outline btn-sm"
+                  >
+                    <FiTrash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
       <Footer />
-    </div>
+    </>
   );
 };
 
