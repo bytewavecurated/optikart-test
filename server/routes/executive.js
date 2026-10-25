@@ -380,4 +380,52 @@ router.get('/department-data', async (req, res) => {
   }
 });
 
+// Executive dashboard endpoints
+router.get('/dashboard/stats', verifyExecutive, async (req, res) => {
+  try {
+    const executiveId = req.executive._id;
+    // In a real implementation, fetch actual stats from database
+    const stats = {
+      totalOrders: 150,
+      completedOrders: 120,
+      inProgressOrders: 20,
+      pendingOrders: 10
+    };
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/deliveries/assigned', verifyExecutive, async (req, res) => {
+  try {
+    const executiveId = req.executive._id;
+    // In a real implementation, fetch actual deliveries from database
+    const deliveries = [];
+    res.json({ success: true, data: deliveries });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/deliveries/:id', verifyExecutive, async (req, res) => {
+  try {
+    const { id } = req.params;
+    // In a real implementation, fetch delivery details from database
+    res.json({ success: true, data: null });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.put('/deliveries/:id/status', verifyExecutive, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    // In a real implementation, update delivery status in database
+    res.json({ success: true, message: 'Status updated' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 export default router;

@@ -367,7 +367,7 @@ router.post('/withdraw', verifyToken, verifyDeliveryPartner, async (req, res) =>
       });
     }
 
-    const result = await processWithdrawal(partnerId, amount);
+    const result = await processPaymentWithdrawal(partnerId, amount);
 
     if (result.success) {
       res.json({
@@ -474,3 +474,53 @@ router.put('/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 export default router;
+
+// Payment endpoints
+import { 
+  calculateDeliveryFee, 
+  getDeliveryPartnerEarnings, 
+  processWithdrawal as processPaymentWithdrawal
+} from '../services/deliveryPartnerPayment.js';
+
+router.get('/payment/calculate', verifyDeliveryPartner, async (req, res) => {
+  try {
+    const { distance } = req.query;
+    if (!distance) {
+      return res.status(400).json({ success: false, error: 'Distance is required' });
+    }
+    const fee = calculateDeliveryFee(parseFloat(distance));
+    res.json({ success: true, fee });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/payment/earnings', verifyDeliveryPartner, async (req, res) => {
+  try {
+    const { period } = req.query;
+    const partnerId = req.partner._id;
+    const result = await getDeliveryPartnerEarnings(partnerId, period);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/payment/withdraw', verifyDeliveryPartner, async (req, res) => {
+  try {
+    const { amount } = req.body;
+    const partnerId = req.partner._id;
+    const result = await processPaymentWithdrawal(partnerId, amount);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});

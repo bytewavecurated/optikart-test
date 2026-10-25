@@ -300,3 +300,47 @@ export const productVerification = {
   rejectProduct: (productId, data) => api.post(`/product-verification/${productId}/reject`, data),
   getVerificationStats: () => api.get('/product-verification/stats'),
 };
+
+// Delivery Partner Payment APIs
+export const deliveryPartnerPayment = {
+  calculateFee: (distance) => api.get(`/delivery-partner/payment/calculate?distance=${distance}`),
+  getEarnings: (period) => api.get(`/delivery-partner/payment/earnings?period=${period}`),
+  processWithdrawal: (amount) => api.post('/delivery-partner/payment/withdraw', { amount }),
+};
+
+// Manufacturer Enhancement APIs
+export const manufacturerEnhancements = {
+  deleteSeller: (sellerId) => api.delete(`/manufacturer/sellers/${sellerId}`),
+  banSeller: (sellerId, reason) => api.post(`/manufacturer/sellers/${sellerId}/ban`, { reason }),
+  validateBulkUpload: (products) => api.post('/manufacturer/products/validate-bulk', { products }),
+  getPendingProducts: () => api.get('/manufacturer/products/pending'),
+  updatePendingProduct: (productId, data) => api.put(`/manufacturer/products/pending/${productId}`, data),
+  deletePendingProduct: (productId) => api.delete(`/manufacturer/products/pending/${productId}`),
+};
+
+// Banner Management APIs
+export const bannerManagement = {
+  getAll: () => api.get('/admin/banners'),
+  create: (data) => api.post('/admin/banners', data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  update: (id, data) => api.put(`/admin/banners/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  delete: (id) => api.delete(`/admin/banners/${id}`),
+};
+
+// Executive Dashboard APIs
+export const executive = {
+  getDashboardStats: () => api.get('/executive/dashboard/stats'),
+  getAssignedDeliveries: () => api.get('/executive/deliveries/assigned'),
+  getDeliveryDetails: (id) => api.get(`/executive/deliveries/${id}`),
+  updateDeliveryStatus: (id, status) => api.put(`/executive/deliveries/${id}/status`, { status }),
+};
+
+// Manufacturers API (public)
+export const manufacturers = {
+  getAll: () => api.get('/manufacturers'),
+  getById: (id) => api.get(`/manufacturers/${id}`),
+  getProducts: (id) => api.get(`/manufacturers/${id}/products`),
+};

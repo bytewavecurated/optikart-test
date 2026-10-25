@@ -91,6 +91,8 @@ const CommissionDashboard = lazy(() => import('./pages/admin/CommissionDashboard
 const OrderAssignment = lazy(() => import('./pages/admin/OrderAssignment'));
 const ProductVerification = lazy(() => import('./pages/admin/ProductVerification'));
 const LensSelection = lazy(() => import('./pages/LensSelection'));
+const AdvancedSearch = lazy(() => import('./components/AdvancedSearch'));
+const ContactLenses = lazy(() => import('./pages/ContactLenses'));
 const DeliveryRouteOptimization = lazy(() => import('./pages/deliveryPartner/DeliveryRouteOptimization'));
 const CustomerReturnPortal = lazy(() => import('./pages/CustomerReturnPortal'));
 
@@ -251,6 +253,7 @@ function App() {
         <Route path="/search" element={<SearchResults />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/category/:category" element={<CategoryPage />} />
+        <Route path="/contact-lenses" element={<ContactLenses />} />
         <Route path="/brands" element={<AllBrands />} />
         <Route path="/blog" element={<BlogList />} />
         <Route path="/blog/:slug" element={<BlogPost />} />

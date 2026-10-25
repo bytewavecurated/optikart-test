@@ -1,473 +1,208 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiTruck, FiShield, FiRefreshCw, FiHeadphones, FiArrowRight, FiTag, FiPercent, FiGift, FiEye, FiAward, FiStar } from 'react-icons/fi';
+import { FiSearch, FiHeart, FiShoppingCart, FiStar, FiArrowRight } from 'react-icons/fi';
+import { products as productsApi, manufacturers as manufacturersApi } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import HeroCarousel from '../components/HeroCarousel';
-import CategorySection from '../components/CategorySection';
-import BrandSection from '../components/BrandSection';
-import ContactLensBrandSection from '../components/ContactLensBrandSection';
-import ProductCard from '../components/ProductCard';
-import LoadMore from '../components/LoadMore';
-import SmartChoice from '../components/SmartChoice';
-import GenderSelection from '../components/GenderSelection';
-import { products } from '../services/api';
-
-const ITEMS_PER_PAGE = 8;
 
 const Home = () => {
-  const [trendingProducts, setTrendingProducts] = useState([]);
-  const [newArrivals, setNewArrivals] = useState([]);
-  const [bestSellers, setBestSellers] = useState([]);
-  const [dealsProducts, setDealsProducts] = useState([]);
-  const [topPicks, setTopPicks] = useState([]);
-  const [budgetBuys, setBudgetBuys] = useState([]);
-  const [justForYou, setJustForYou] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [manufacturers, setManufacturers] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [dealsVisible, setDealsVisible] = useState(ITEMS_PER_PAGE);
-  const [topPicksVisible, setTopPicksVisible] = useState(ITEMS_PER_PAGE);
-  const [budgetVisible, setBudgetVisible] = useState(ITEMS_PER_PAGE);
-  const [justForYouVisible, setJustForYouVisible] = useState(ITEMS_PER_PAGE);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [trendingRes, newArrivalsRes, bestSellersRes, dealsRes, budgetRes, randomRes] = await Promise.allSettled([
-          products.getAll({ sort: 'popularity', limit: 10 }),
-          products.getAll({ sort: 'newest', limit: 10 }),
-          products.getAll({ sort: 'rating', limit: 10 }),
-          products.getAll({ hasOffer: true, limit: 10 }),
-          products.getAll({ maxPrice: 999, limit: 10 }),
-          products.getRandom({ limit: 20 }),
-        ]);
-
-        if (trendingRes.status === 'fulfilled') setTrendingProducts(trendingRes.value.data.products || []);
-        if (newArrivalsRes.status === 'fulfilled') setNewArrivals(newArrivalsRes.value.data.products || []);
-        if (bestSellersRes.status === 'fulfilled') setBestSellers(bestSellersRes.value.data.products || []);
-        if (dealsRes.status === 'fulfilled') setDealsProducts(dealsRes.value.data.products || []);
-        if (budgetRes.status === 'fulfilled') setBudgetBuys(budgetRes.value.data.products || []);
-
-        if (randomRes.status === 'fulfilled') {
-          const allRandom = randomRes.value.data.products || [];
-          const shuffled = [...allRandom].sort(() => Math.random() - 0.5);
-          setTopPicks(shuffled.slice(0, 10));
-          setJustForYou([...allRandom].sort(() => Math.random() - 0.5).slice(0, 10));
-        }
-      } catch (err) {
-        console.error('Failed to load products:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
-  const offers = [
-    { 
-      title: 'Flat 50% Off', 
-      subtitle: 'On premium sunglasses', 
-      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      icon: <FiPercent size={32} />,
-      link: '/category/sunglasses' 
-    },
-    { 
-      title: 'Buy 1 Get 1', 
-      subtitle: 'Selected eyeglasses', 
-      gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      icon: <FiGift size={32} />,
-      link: '/category/eyeglasses' 
-    },
-    { 
-      title: 'Starting ₹299', 
-      subtitle: 'Contact lenses', 
-      gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-      icon: <FiEye size={32} />,
-      link: '/category/contact-lenses' 
-    },
-    { 
-      title: 'Extra ₹200 Off', 
-      subtitle: 'Use code: EYE200', 
-      gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-      icon: <FiAward size={32} />,
-      link: '/coupons' 
-    },
+  const fetchData = async () => {
+    try {
+      const [productsRes, manufacturersRes] = await Promise.all([
+        productsApi.getAll({ limit: 50 }),
+        manufacturersApi.getAll()
+      ]);
+      setProducts(productsRes.data.data || []);
+      setManufacturers(manufacturersRes.data.data || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = [
+    { id: 'all', name: 'All Products', icon: '👓' },
+    { id: 'sunglasses', name: 'Sunglasses', icon: '🕶️' },
+    { id: 'eyeglasses', name: 'Eyeglasses', icon: '👓' },
+    { id: 'contactlenses', name: 'Contact Lenses', icon: '👁️' },
+    { id: 'readingglasses', name: 'Reading Glasses', icon: '📖' }
   ];
 
-  const features = [
-    { icon: <FiTruck size={28} />, title: 'Free Delivery', desc: 'On orders above ₹999', color: '#667eea' },
-    { icon: <FiShield size={28} />, title: '100% Genuine', desc: 'Authentic products only', color: '#f5576c' },
-    { icon: <FiRefreshCw size={28} />, title: 'Easy Returns', desc: '7-day return policy', color: '#4facfe' },
-    { icon: <FiHeadphones size={28} />, title: '24/7 Support', desc: 'Dedicated help center', color: '#43e97b' },
-  ];
+  const frameShapes = ['Rectangle', 'Cat Eye', 'Oval', 'Aviator', 'Round', 'Wayfarer', 'Geometric', 'Square'];
+  const frameTypes = ['Full Rim', 'Half Rim', 'Rimless'];
+  const materials = ['Acetate', 'Metal', 'Polycarbonate', 'Stainless Steel', 'TR90', 'Titanium'];
 
-  const renderSkeletons = (count = 8) =>
-    Array.from({ length: count }).map((_, i) => (
-      <div key={i} className="product-skeleton" style={{ height: '320px', borderRadius: '12px', background: '#f5f5f5' }}>
-        <div className="skeleton" style={{ height: '240px', width: '100%', borderRadius: '12px 12px 0 0' }} />
-        <div style={{ padding: '16px' }}>
-          <div className="skeleton" style={{ height: '16px', width: '80%', marginBottom: '8px', borderRadius: '4px' }} />
-          <div className="skeleton" style={{ height: '14px', width: '50%', borderRadius: '4px' }} />
+  const filteredProducts = selectedCategory === 'all' 
+    ? products 
+    : products.filter(p => p.category === selectedCategory);
+
+  if (loading) {
+    return (
+      <>
+        <Header />
+        <div className="container page-wrapper">
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div className="spinner"></div>
+          </div>
         </div>
-      </div>
-    ));
-
-  const renderProductGrid = (items, visibleCount) =>
-    loading
-      ? renderSkeletons()
-      : items.slice(0, visibleCount).map((product) => (
-          <ProductCard key={product._id} product={product} />
-        ));
+        <Footer />
+      </>
+    );
+  }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8f9fa' }}>
+    <>
       <Header />
-      <main style={{ flex: 1 }}>
-        <HeroCarousel />
-        <GenderSelection />
+      
+      {/* Hero Section */}
+      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', padding: '60px 0', color: 'white', textAlign: 'center' }}>
+        <div className="container">
+          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '48px', marginBottom: '16px' }}>
+            India's #1 Eyewear Destination
+          </h1>
+          <p style={{ fontSize: '20px', marginBottom: '32px', opacity: 0.9 }}>
+            Shop sunglasses, eyeglasses, contact lenses and more
+          </p>
+          <div style={{ maxWidth: '600px', margin: '0 auto', position: 'relative' }}>
+            <FiSearch style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} size={20} />
+            <input
+              type="text"
+              placeholder="Search for products, brands and more..."
+              className="input"
+              style={{ paddingLeft: '48px', fontSize: '16px', height: '56px' }}
+            />
+          </div>
+        </div>
+      </div>
 
-        <div className="container" style={{ marginTop: '24px', maxWidth: '1400px' }}>
-          {/* Offers Section - Modern Gradient Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '40px' }}>
-            {offers.map((offer, idx) => (
-              <Link 
-                key={idx} 
-                to={offer.link} 
-                className="modern-offer-card"
-                style={{ 
-                  background: offer.gradient, 
-                  borderRadius: '16px', 
-                  padding: '28px', 
-                  color: '#fff', 
-                  textDecoration: 'none',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                  transition: 'all 0.3s ease',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+      <div className="container page-wrapper">
+        {/* Categories */}
+        <div style={{ marginBottom: '48px' }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Category</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className="card"
+                style={{
+                  padding: '24px',
+                  cursor: 'pointer',
+                  border: selectedCategory === cat.id ? '2px solid var(--primary)' : '2px solid transparent',
+                  transition: 'all 0.2s',
+                  textAlign: 'center'
                 }}
               >
-                <div style={{ 
-                  position: 'absolute', 
-                  right: '-20px', 
-                  top: '-20px',
-                  opacity: 0.15,
-                  transform: 'rotate(15deg)'
-                }}>
-                  {offer.icon}
-                </div>
-                <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1.2 }}>{offer.title}</div>
-                <div style={{ fontSize: '14px', opacity: 0.95, fontWeight: 500 }}>{offer.subtitle}</div>
-                <div style={{ marginTop: '8px', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  Shop Now <FiArrowRight size={14} />
+                <div style={{ fontSize: '48px', marginBottom: '12px' }}>{cat.icon}</div>
+                <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)' }}>{cat.name}</h3>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Frame Shapes */}
+        <div style={{ marginBottom: '48px' }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Frame Shape</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+            {frameShapes.map((shape) => (
+              <Link key={shape} to={`/products?frameShape=${shape.toLowerCase().replace(' ', '-')}`} className="card" style={{ padding: '20px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
+                <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)' }}>{shape}</h3>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Frame Types */}
+        <div style={{ marginBottom: '48px' }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Frame Type</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            {frameTypes.map((type) => (
+              <Link key={type} to={`/products?frameType=${type.toLowerCase().replace(' ', '-')}`} className="card" style={{ padding: '24px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
+                <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)' }}>{type}</h3>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Materials */}
+        <div style={{ marginBottom: '48px' }}>
+          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Material</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+            {materials.map((material) => (
+              <Link key={material} to={`/products?material=${material.toLowerCase().replace(' ', '-')}`} className="card" style={{ padding: '20px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
+                <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)' }}>{material}</h3>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Brands */}
+        {manufacturers.length > 0 && (
+          <div style={{ marginBottom: '48px' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Brand</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              {manufacturers.slice(0, 8).map((manufacturer) => (
+                <Link key={manufacturer._id} to={`/products?brand=${manufacturer.brandName}`} className="card" style={{ padding: '24px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
+                  <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)' }}>{manufacturer.brandName}</h3>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{manufacturer.productCount || 0} products</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Products */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <h2 style={{ fontFamily: 'var(--font-heading)' }}>
+              {selectedCategory === 'all' ? 'All Products' : categories.find(c => c.id === selectedCategory)?.name}
+            </h2>
+            <Link to={`/products?category=${selectedCategory}`} className="btn btn-outline">
+              View All <FiArrowRight size={16} />
+            </Link>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+            {filteredProducts.slice(0, 12).map((product) => (
+              <Link key={product._id} to={`/product/${product._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <img
+                  src={product.images?.[0] || '/placeholder.png'}
+                  alt={product.title}
+                  style={{ width: '100%', height: '280px', objectFit: 'cover' }}
+                />
+                <div style={{ padding: '16px' }}>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{product.brand}</p>
+                  <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{product.title}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <FiStar size={14} style={{ color: 'var(--warning)' }} fill="var(--warning)" />
+                      <span style={{ fontSize: '14px', fontWeight: 600 }}>{product.rating || 0}</span>
+                    </div>
+                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>({product.reviewCount || 0} reviews)</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>₹{product.price}</span>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <span style={{ fontSize: '14px', color: 'var(--text-light)', textDecoration: 'line-through' }}>₹{product.originalPrice}</span>
+                    )}
+                  </div>
                 </div>
               </Link>
             ))}
           </div>
-
-          {/* Trending Now Section */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
-                  Trending Now
-                </h2>
-                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Most popular products this week</p>
-              </div>
-              <Link to="/search?sort=popularity" className="view-all-btn" style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                color: '#667eea', 
-                fontSize: '14px', 
-                fontWeight: 600,
-                textDecoration: 'none',
-                padding: '10px 20px',
-                borderRadius: '8px',
-                background: '#f0f4ff',
-                transition: 'all 0.3s ease'
-              }}>
-                View All <FiArrowRight size={16} />
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {renderProductGrid(trendingProducts, trendingProducts.length)}
-            </div>
-          </section>
-
-          <CategorySection />
-
-          {/* Deals of the Day Section */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '12px', 
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff'
-                }}>
-                  <FiTag size={24} />
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
-                    Deals of the Day
-                  </h2>
-                  <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Exclusive offers just for you</p>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {renderProductGrid(dealsProducts, dealsVisible)}
-            </div>
-            {!loading && dealsProducts.length > 0 && (
-              <LoadMore
-                onLoadMore={() => setDealsVisible((prev) => prev + ITEMS_PER_PAGE)}
-                hasMore={dealsVisible < dealsProducts.length}
-                label="Load More Deals"
-              />
-            )}
-          </section>
-
-          {/* New Arrivals Section */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
-                  New Arrivals
-                </h2>
-                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Fresh styles just landed</p>
-              </div>
-              <Link to="/search?sort=newest" className="view-all-btn" style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                color: '#667eea', 
-                fontSize: '14px', 
-                fontWeight: 600,
-                textDecoration: 'none',
-                padding: '10px 20px',
-                borderRadius: '8px',
-                background: '#f0f4ff',
-                transition: 'all 0.3s ease'
-              }}>
-                View All <FiArrowRight size={16} />
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {renderProductGrid(newArrivals, newArrivals.length)}
-            </div>
-          </section>
-
-          <BrandSection />
-          <ContactLensBrandSection />
-
-          {/* Top Picks Section */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '12px', 
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff'
-                }}>
-                  <FiStar size={24} />
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
-                    Top Picks For You
-                  </h2>
-                  <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Handpicked based on your preferences</p>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {renderProductGrid(topPicks, topPicksVisible)}
-            </div>
-            {!loading && topPicks.length > 0 && (
-              <LoadMore
-                onLoadMore={() => setTopPicksVisible((prev) => prev + ITEMS_PER_PAGE)}
-                hasMore={topPicksVisible < topPicks.length}
-                label="Load More Picks"
-              />
-            )}
-          </section>
-
-          {/* Best Sellers Section */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
-                  Best Sellers
-                </h2>
-                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Customer favorites</p>
-              </div>
-              <Link to="/search?sort=rating" className="view-all-btn" style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                color: '#667eea', 
-                fontSize: '14px', 
-                fontWeight: 600,
-                textDecoration: 'none',
-                padding: '10px 20px',
-                borderRadius: '8px',
-                background: '#f0f4ff',
-                transition: 'all 0.3s ease'
-              }}>
-                View All <FiArrowRight size={16} />
-              </Link>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {renderProductGrid(bestSellers, bestSellers.length)}
-            </div>
-          </section>
-
-          {/* Budget Buys Section */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '12px', 
-                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  fontSize: '20px',
-                  fontWeight: 800
-                }}>
-                  ₹
-                </div>
-                <div>
-                  <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
-                    Budget Buys Under ₹999
-                  </h2>
-                  <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Quality eyewear at affordable prices</p>
-                </div>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {renderProductGrid(budgetBuys, budgetVisible)}
-            </div>
-            {!loading && budgetBuys.length > 0 && (
-              <LoadMore
-                onLoadMore={() => setBudgetVisible((prev) => prev + ITEMS_PER_PAGE)}
-                hasMore={budgetVisible < budgetBuys.length}
-                label="Load More Budget Buys"
-              />
-            )}
-          </section>
-
-          {/* Just For You Section */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
-                  Just For You
-                </h2>
-                <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>Personalized recommendations</p>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-              {renderProductGrid(justForYou, justForYouVisible)}
-            </div>
-            {!loading && justForYou.length > 0 && (
-              <LoadMore
-                onLoadMore={() => setJustForYouVisible((prev) => prev + ITEMS_PER_PAGE)}
-                hasMore={justForYouVisible < justForYou.length}
-                label="Load More"
-              />
-            )}
-          </section>
-
-          <SmartChoice />
-
-          {/* Features Section - Modern Design */}
-          <section style={{ marginBottom: '48px' }}>
-            <div style={{ 
-              background: '#fff', 
-              borderRadius: '16px', 
-              padding: '40px', 
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
-            }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px' }}>
-                {features.map((feature, idx) => (
-                  <div key={idx} style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    gap: '12px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ 
-                      color: '#fff',
-                      background: feature.color,
-                      width: '64px', 
-                      height: '64px', 
-                      borderRadius: '16px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      boxShadow: `0 4px 12px ${feature.color}40`
-                    }}>
-                      {feature.icon}
-                    </div>
-                    <h4 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: '#212121' }}>{feature.title}</h4>
-                    <p style={{ fontSize: '13px', color: '#757575', margin: 0, lineHeight: 1.5 }}>{feature.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
         </div>
-      </main>
+      </div>
       <Footer />
-      <style>{`
-        .modern-offer-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 32px rgba(0,0,0,0.15);
-        }
-        .view-all-btn:hover {
-          background: #667eea !important;
-          color: #fff !important;
-        }
-        .product-skeleton {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        .skeleton {
-          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-          background-size: 200% 100%;
-          animation: loading 1.5s ease-in-out infinite;
-        }
-        @keyframes loading {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-        @media (max-width: 768px) {
-          .container {
-            padding: 0 16px !important;
-          }
-        }
-      `}</style>
-    </div>
+    </>
   );
 };
 

@@ -9,6 +9,14 @@ import { sendOTP } from '../services/email.js';
 import multer from 'multer';
 import xlsx from 'xlsx';
 
+import {
+  deleteManufacturerSeller,
+  banManufacturerSeller,
+  validateBulkUpload,
+  getManufacturerPendingProducts,
+  updatePendingProduct,
+  deletePendingProduct
+} from '../services/manufacturerEnhancements.js';
 const router = express.Router();
 
 const upload = multer({ dest: 'uploads/' });
@@ -601,4 +609,93 @@ router.get('/staff', async (req, res) => {
   }
 });
 
+
+router.delete('/sellers/:sellerId', verifyManufacturer, async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const manufacturerId = req.manufacturer._id;
+    const result = await deleteManufacturerSeller(sellerId, manufacturerId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/sellers/:sellerId/ban', verifyManufacturer, async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const { reason } = req.body;
+    const manufacturerId = req.manufacturer._id;
+    const result = await banManufacturerSeller(sellerId, manufacturerId, reason);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/products/validate-bulk', verifyManufacturer, async (req, res) => {
+  try {
+    const { products } = req.body;
+    const result = await validateBulkUpload(products);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/products/pending', verifyManufacturer, async (req, res) => {
+  try {
+    const manufacturerId = req.manufacturer._id;
+    const result = await getManufacturerPendingProducts(manufacturerId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.put('/products/pending/:productId', verifyManufacturer, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const manufacturerId = req.manufacturer._id;
+    const result = await updatePendingProduct(productId, req.body, manufacturerId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.delete('/products/pending/:productId', verifyManufacturer, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const manufacturerId = req.manufacturer._id;
+    const result = await deletePendingProduct(productId, manufacturerId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 export default router;

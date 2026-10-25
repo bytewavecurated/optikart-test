@@ -1,417 +1,283 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { FiSearch, FiMic, FiCamera, FiX, FiLoader } from 'react-icons/fi';
-import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { FiSearch, FiFilter, FiX } from 'react-icons/fi';
 
 const AdvancedSearch = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [faceShape, setFaceShape] = useState(null);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const recognitionRef = useRef(null);
-  const navigate = useNavigate();
+  const [filters, setFilters] = useState({
+    category: '',
+    brand: '',
+    frameShape: '',
+    frameType: '',
+    frameMaterial: '',
+    gender: '',
+    priceMin: '',
+    priceMax: '',
+    color: '',
+    rating: ''
+  });
 
-  // Voice Search
-  const startVoiceSearch = () => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      toast.error('Voice search is not supported in your browser');
-      return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = false;
-    recognitionRef.current.lang = 'en-US';
-
-    recognitionRef.current.onstart = () => {
-      setIsListening(true);
-      toast.success('Listening...');
-    };
-
-    recognitionRef.current.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setSearchQuery(transcript);
-      setIsListening(false);
-      handleSearch(transcript);
-    };
-
-    recognitionRef.current.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-      toast.error('Voice search failed. Please try again.');
-    };
-
-    recognitionRef.current.onend = () => {
-      setIsListening(false);
-    };
-
-    recognitionRef.current.start();
-  };
-
-  const stopVoiceSearch = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  };
-
-  // Camera Search with Face Shape Detection
-  const startCameraSearch = async () => {
-    setCameraActive(true);
-    setIsAnalyzing(true);
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: 640, 
-          height: 480,
-          facingMode: 'user'
-        } 
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-
-      // Simulate face shape detection (in production, use a real face detection API)
-      setTimeout(() => {
-        const shapes = ['oval', 'round', 'square', 'heart', 'oblong'];
-        const detectedShape = shapes[Math.floor(Math.random() * shapes.length)];
-        setFaceShape(detectedShape);
-        setIsAnalyzing(false);
-        toast.success(`Face shape detected: ${detectedShape}`);
-      }, 3000);
-
-    } catch (error) {
-      console.error('Camera error:', error);
-      toast.error('Failed to access camera. Please check permissions.');
-      setCameraActive(false);
-      setIsAnalyzing(false);
-    }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setCameraActive(false);
-    setFaceShape(null);
-    setIsAnalyzing(false);
-  };
-
-  const captureAndAnalyze = () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      
-      // In production, send this image to a face detection API
-      // For now, simulate detection
-      stopCamera();
-      const shapes = ['oval', 'round', 'square', 'heart', 'oblong'];
-      const detectedShape = shapes[Math.floor(Math.random() * shapes.length)];
-      setFaceShape(detectedShape);
-      toast.success(`Face shape detected: ${detectedShape}. Showing recommended frames.`);
-      
-      // Navigate to search with face shape filter
-      navigate(`/search?q=${detectedShape}+face+shape+glasses`);
-    }
-  };
-
-  const handleSearch = (query) => {
-    if (query.trim()) {
-      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
-      setIsOpen(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch(searchQuery);
-    }
-  };
+  const categories = ['sunglasses', 'eyeglasses', 'contactlenses', 'readingglasses', 'sportseyewear'];
+  const frameShapes = ['Rectangle', 'Cat Eye', 'Oval', 'Aviator', 'Round', 'Wayfarer', 'Geometric', 'Square'];
+  const frameTypes = ['Full Rim', 'Half Rim', 'Rimless'];
+  const materials = ['Acetate', 'Metal', 'Polycarbonate', 'Stainless Steel', 'TR90', 'Titanium', 'Plastic', 'Wood'];
+  const genders = ['Men', 'Women', 'Unisex', 'Kids'];
+  const colors = ['Black', 'Brown', 'Gold', 'Silver', 'Blue', 'Red', 'Green', 'Pink', 'Transparent'];
 
   useEffect(() => {
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      stopCamera();
+    // Parse URL params on mount
+    const params = new URLSearchParams(location.search);
+    const query = params.get('q') || '';
+    setSearchQuery(query);
+    
+    const newFilters = {
+      category: params.get('category') || '',
+      brand: params.get('brand') || '',
+      frameShape: params.get('frameShape') || '',
+      frameType: params.get('frameType') || '',
+      frameMaterial: params.get('frameMaterial') || '',
+      gender: params.get('gender') || '',
+      priceMin: params.get('priceMin') || '',
+      priceMax: params.get('priceMax') || '',
+      color: params.get('color') || '',
+      rating: params.get('rating') || ''
     };
-  }, []);
+    setFilters(newFilters);
+  }, [location.search]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    applyFilters();
+  };
+
+  const applyFilters = () => {
+    const params = new URLSearchParams();
+    
+    if (searchQuery) params.set('q', searchQuery);
+    
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+
+    navigate(`/products?${params.toString()}`);
+    setIsOpen(false);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      category: '',
+      brand: '',
+      frameShape: '',
+      frameType: '',
+      frameMaterial: '',
+      gender: '',
+      priceMin: '',
+      priceMax: '',
+      color: '',
+      rating: ''
+    });
+    setSearchQuery('');
+    navigate('/products');
+  };
+
+  const hasActiveFilters = Object.values(filters).some(v => v !== '') || searchQuery !== '';
 
   return (
     <>
-      {/* Search Trigger Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '10px 16px',
-          background: '#fff',
-          border: '1px solid var(--border)',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          color: 'var(--text-secondary)'
-        }}
-      >
-        <FiSearch size={18} />
-        <span>Search products...</span>
-      </button>
-
-      {/* Search Modal */}
-      {isOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'center',
-            paddingTop: '100px',
-            zIndex: 1000
-          }}
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: '12px',
-              width: '90%',
-              maxWidth: '600px',
-              padding: '24px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.15)'
-            }}
-            onClick={(e) => e.stopPropagation()}
+      {/* Search Bar */}
+      <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
+        <form onSubmit={handleSearch}>
+          <FiSearch style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} size={20} />
+          <input
+            type="text"
+            placeholder="Search products, brands, categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input"
+            style={{ paddingLeft: '48px', paddingRight: '120px', fontSize: '16px', height: '56px' }}
+          />
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="btn btn-outline"
+            style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)' }}
           >
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 600 }}>Search Products</h3>
-              <button
-                onClick={() => setIsOpen(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  color: 'var(--text-secondary)'
-                }}
-              >
-                <FiX size={24} />
+            <FiFilter size={16} /> Filters
+          </button>
+        </form>
+      </div>
+
+      {/* Filter Panel */}
+      {isOpen && (
+        <div className="card" style={{ padding: '24px', marginTop: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)' }}>Advanced Filters</h3>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="btn btn-sm btn-outline">
+                  <FiX size={14} /> Clear All
+                </button>
+              )}
+              <button onClick={() => setIsOpen(false)} className="btn btn-sm btn-outline">
+                Close
               </button>
             </div>
+          </div>
 
-            {/* Search Input */}
-            <div style={{ position: 'relative', marginBottom: '16px' }}>
-              <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            {/* Category */}
+            <div className="input-group">
+              <label>Category</label>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters({ ...filters, category: e.target.value })}
+                className="input"
+              >
+                <option value="">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Brand */}
+            <div className="input-group">
+              <label>Brand</label>
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Search for eyewear, brands, styles..."
-                style={{
-                  width: '100%',
-                  padding: '12px 12px 12px 40px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  outline: 'none'
-                }}
-                autoFocus
+                value={filters.brand}
+                onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
+                className="input"
+                placeholder="e.g., Ray-Ban"
               />
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-              <button
-                onClick={isListening ? stopVoiceSearch : startVoiceSearch}
-                disabled={cameraActive}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: isListening ? 'var(--danger)' : 'var(--primary-light)',
-                  color: isListening ? '#fff' : 'var(--primary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: cameraActive ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  opacity: cameraActive ? 0.5 : 1
-                }}
+            {/* Frame Shape */}
+            <div className="input-group">
+              <label>Frame Shape</label>
+              <select
+                value={filters.frameShape}
+                onChange={(e) => setFilters({ ...filters, frameShape: e.target.value })}
+                className="input"
               >
-                {isListening ? (
-                  <>
-                    <div className="spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} />
-                    Listening...
-                  </>
-                ) : (
-                  <>
-                    <FiMic size={18} />
-                    Voice Search
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={startCameraSearch}
-                disabled={isListening}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: 'var(--secondary-light)',
-                  color: 'var(--secondary)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: isListening ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  opacity: isListening ? 0.5 : 1
-                }}
-              >
-                <FiCamera size={18} />
-                Camera Search
-              </button>
+                <option value="">All Shapes</option>
+                {frameShapes.map(shape => (
+                  <option key={shape} value={shape}>{shape}</option>
+                ))}
+              </select>
             </div>
 
-            {/* Camera View */}
-            {cameraActive && (
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', background: '#000' }}>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    style={{ width: '100%', display: 'block' }}
-                  />
-                  <canvas ref={canvasRef} style={{ display: 'none' }} />
-                  
-                  {isAnalyzing && (
-                    <div style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      background: 'rgba(0,0,0,0.7)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#fff'
-                    }}>
-                      <div className="spinner spinner-lg" style={{ marginBottom: '16px' }} />
-                      <p style={{ margin: 0, fontSize: '16px' }}>Analyzing face shape...</p>
-                    </div>
-                  )}
+            {/* Frame Type */}
+            <div className="input-group">
+              <label>Frame Type</label>
+              <select
+                value={filters.frameType}
+                onChange={(e) => setFilters({ ...filters, frameType: e.target.value })}
+                className="input"
+              >
+                <option value="">All Types</option>
+                {frameTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
 
-                  {faceShape && !isAnalyzing && (
-                    <div style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      background: 'rgba(0,0,0,0.8)',
-                      padding: '16px',
-                      color: '#fff',
-                      textAlign: 'center'
-                    }}>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Detected Face Shape:</p>
-                      <p style={{ margin: 0, fontSize: '20px', fontWeight: 600, textTransform: 'capitalize' }}>{faceShape}</p>
-                    </div>
-                  )}
-                </div>
+            {/* Material */}
+            <div className="input-group">
+              <label>Material</label>
+              <select
+                value={filters.frameMaterial}
+                onChange={(e) => setFilters({ ...filters, frameMaterial: e.target.value })}
+                className="input"
+              >
+                <option value="">All Materials</option>
+                {materials.map(mat => (
+                  <option key={mat} value={mat}>{mat}</option>
+                ))}
+              </select>
+            </div>
 
-                <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                  <button
-                    onClick={captureAndAnalyze}
-                    disabled={isAnalyzing || faceShape}
-                    style={{
-                      flex: 1,
-                      padding: '12px',
-                      background: 'var(--primary)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: (isAnalyzing || faceShape) ? 'not-allowed' : 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      opacity: (isAnalyzing || faceShape) ? 0.5 : 1
-                    }}
-                  >
-                    {isAnalyzing ? 'Analyzing...' : faceShape ? 'Detected' : 'Capture & Analyze'}
-                  </button>
-                  <button
-                    onClick={stopCamera}
-                    style={{
-                      padding: '12px 24px',
-                      background: 'var(--danger)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 500
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Gender */}
+            <div className="input-group">
+              <label>Gender</label>
+              <select
+                value={filters.gender}
+                onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+                className="input"
+              >
+                <option value="">All Genders</option>
+                {genders.map(gender => (
+                  <option key={gender} value={gender}>{gender}</option>
+                ))}
+              </select>
+            </div>
 
-            {/* Search Suggestions */}
-            {!cameraActive && (
-              <div>
-                <p style={{ fontSize: '12px', color: 'var(--text-light)', marginBottom: '12px' }}>Popular searches:</p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {['Sunglasses', 'Eyeglasses', 'Ray-Ban', 'Blue cut', 'Contact lenses', 'Sports eyewear'].map((term) => (
-                    <button
-                      key={term}
-                      onClick={() => {
-                        setSearchQuery(term);
-                        handleSearch(term);
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        background: 'var(--bg-primary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '16px',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        color: 'var(--text-secondary)'
-                      }}
-                    >
-                      {term}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Color */}
+            <div className="input-group">
+              <label>Color</label>
+              <select
+                value={filters.color}
+                onChange={(e) => setFilters({ ...filters, color: e.target.value })}
+                className="input"
+              >
+                <option value="">All Colors</option>
+                {colors.map(color => (
+                  <option key={color} value={color}>{color}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Price Range */}
+            <div className="input-group">
+              <label>Min Price (₹)</label>
+              <input
+                type="number"
+                value={filters.priceMin}
+                onChange={(e) => setFilters({ ...filters, priceMin: e.target.value })}
+                className="input"
+                placeholder="0"
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Max Price (₹)</label>
+              <input
+                type="number"
+                value={filters.priceMax}
+                onChange={(e) => setFilters({ ...filters, priceMax: e.target.value })}
+                className="input"
+                placeholder="10000"
+              />
+            </div>
+
+            {/* Rating */}
+            <div className="input-group">
+              <label>Min Rating</label>
+              <select
+                value={filters.rating}
+                onChange={(e) => setFilters({ ...filters, rating: e.target.value })}
+                className="input"
+              >
+                <option value="">Any Rating</option>
+                <option value="4">4+ Stars</option>
+                <option value="3">3+ Stars</option>
+                <option value="2">2+ Stars</option>
+                <option value="1">1+ Star</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+            <button onClick={applyFilters} className="btn btn-primary">
+              Apply Filters
+            </button>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="btn btn-outline">
+                Clear All
+              </button>
             )}
           </div>
         </div>
