@@ -6,7 +6,7 @@ import ExecutiveStaff from '../models/ExecutiveStaff.js';
 import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import Order from '../models/Order.js';
-import { verifyToken, verifyAdmin } from '../middleware/auth.js';
+import { verifyToken, verifyAdmin, verifyExecutive } from '../middleware/auth.js';
 import { sendOTP } from '../services/email.js';
 
 const router = express.Router();

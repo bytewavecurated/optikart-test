@@ -4,6 +4,7 @@ import Seller from '../models/Seller.js';
 import StaffRole from '../models/StaffRole.js';
 import DeliveryPartner from '../models/DeliveryPartner.js';
 import Manufacturer from '../models/Manufacturer.js';
+import Executive from '../models/Executive.js';
 
 export const verifyToken = async (req, res, next) => {
   try {
@@ -206,5 +207,39 @@ export const verifyManufacturer = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Token has expired.' });
     }
     return res.status(401).json({ success: false, message: 'Invalid manufacturer token.' });
+  }
+};
+
+export const verifyExecutive = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const executive = await Executive.findById(decoded.id || decoded.executiveId);
+    if (!executive) {
+      return res.status(401).json({ success: false, message: 'Invalid token. Executive not found.' });
+    }
+
+    if (!executive.isActive) {
+      return res.status(403).json({ success: false, message: 'Executive account has been deactivated.' });
+    }
+
+    if (executive.isBanned) {
+      return res.status(403).json({ success: false, message: 'Executive account has been banned.' });
+    }
+
+    req.executive = executive;
+    req.user = { id: executive._id, role: 'executive', name: executive.name, email: executive.email };
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Token has expired.' });
+    }
+    return res.status(401).json({ success: false, message: 'Invalid executive token.' });
   }
 };
