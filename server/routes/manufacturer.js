@@ -8,6 +8,7 @@ import ManufacturerStaff from '../models/ManufacturerStaff.js';
 import { sendOTP } from '../services/email.js';
 import multer from 'multer';
 import xlsx from 'xlsx';
+import { verifyManufacturer } from '../middleware/auth.js';
 
 import {
   deleteManufacturerSeller,
