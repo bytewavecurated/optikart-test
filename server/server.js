@@ -155,6 +155,29 @@ io.on('connection', (socket) => {
 
 app.set('io', io);
 
+// Serve static files from the React app build directory in production
+const clientBuildPath = path.join(__dirname, '../client/build');
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+  
+  // Handle React routing - send index.html for all non-API routes
+  app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ success: false, message: 'API route not found.' });
+    }
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+} else {
+  // In development, just return 404 for non-API routes
+  app.use((req, res) => {
+    if (!req.path.startsWith('/api/')) {
+      return res.status(404).json({ success: false, message: 'Route not found. Frontend not built.' });
+    }
+    res.status(404).json({ success: false, message: 'API route not found.' });
+  });
+}
+
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
 
@@ -179,10 +202,6 @@ app.use((err, req, res, next) => {
     success: false,
     message: err.message || 'Internal server error'
   });
-});
-
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found.' });
 });
 
 const PORT = process.env.PORT || 5000;
