@@ -229,8 +229,8 @@ function App() {
           <Route path="commission" element={<CommissionDashboard />} />
           <Route path="order-assignment" element={<OrderAssignment />} />
           <Route path="product-verification" element={<ProductVerification />} />
-        <Route path="/product/:productId/lenses" element={<LensSelection />} />
         </Route>
+        <Route path="/product/:productId/lenses" element={<LensSelection />} />
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>
           <Route index element={<div>Staff Dashboard - Coming Soon</div>} />
