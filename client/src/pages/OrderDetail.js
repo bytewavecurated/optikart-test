@@ -5,6 +5,7 @@ import { orders } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
+import { oneOf } from '../services/apiResponse';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'shipped', 'delivered'];
 const STATUS_COLORS = { pending: '#ff9f00', confirmed: '#2874f0', shipped: '#2874f0', delivered: '#26a541', cancelled: '#ff6161', returned: '#878787' };
@@ -21,7 +22,7 @@ const OrderDetail = () => {
     const fetchOrder = async () => {
       try {
         const res = await orders.getById(id);
-        setOrder(res.data.data);
+        setOrder(oneOf(res.data, 'order'));
       } catch (err) {
         toast.error('Failed to load order');
       } finally {

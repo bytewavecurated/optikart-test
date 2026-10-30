@@ -161,7 +161,7 @@ router.get('/reservations', verifyToken, async (req, res) => {
  * POST /api/inventory/bulk-update
  * Bulk update stock for multiple products (seller only)
  */
-router.post('/bulk-update', verifyToken, verifySeller, async (req, res) => {
+router.post('/bulk-update', verifySeller, async (req, res) => {
   try {
     const { updates } = req.body;
 

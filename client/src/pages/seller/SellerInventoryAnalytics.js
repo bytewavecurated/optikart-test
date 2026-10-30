@@ -195,7 +195,7 @@ const SellerInventoryAnalytics = () => {
                   <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
                     <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      {item.avgDailySales.toFixed(1)} units/day • {item.quantitySold} sold
+                      {item.avgDailySales.toFixed(1)} units/day · {item.quantitySold} sold
                     </div>
                   </div>
                 ))}
@@ -216,7 +216,7 @@ const SellerInventoryAnalytics = () => {
                   <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
                     <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      {item.avgDailySales.toFixed(2)} units/day • Last sold {item.daysSinceLastSale}d ago
+                      {item.avgDailySales.toFixed(2)} units/day · Last sold {item.daysSinceLastSale}d ago
                     </div>
                   </div>
                 ))}

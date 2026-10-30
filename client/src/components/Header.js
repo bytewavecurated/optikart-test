@@ -367,7 +367,12 @@ const Header = () => {
       </AnimatePresence>
 
       <style>{`
+        /* The desktop nav and the category rail are marked .hide-mobile; without
+           this rule they rendered on phones and forced a horizontal scrollbar. */
         @media (max-width: 768px) {
+          .hide-mobile {
+            display: none !important;
+          }
           .mobile-icons {
             display: flex !important;
           }

@@ -1,17 +1,24 @@
 import express from 'express';
 import Notification from '../models/Notification.js';
-import { verifyToken, verifySeller } from '../middleware/auth.js';
+import { verifyToken, verifySeller, verifyAnyPrincipal } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyAnyPrincipal, async (req, res) => {
   try {
     const { page = 1, limit = 20, type, isRead } = req.query;
-    const userId = req.user._id;
+    const principal = req.principal;
 
-    const query = { user: userId };
+    // Scope notifications to whoever is asking: sellers see their own,
+    // customers see theirs. Never fail just because the caller is not a User.
+    const scope = principal.seller
+      ? { seller: principal.id }
+      : { user: principal.id };
+
+    const query = { ...scope };
     if (type) query.type = type;
     if (isRead !== undefined) query.isRead = isRead === 'true';
+    if (req.query.unread === 'true') query.isRead = false;
 
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
@@ -19,7 +26,7 @@ router.get('/', verifyToken, async (req, res) => {
       .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Notification.countDocuments(query);
-    const unreadCount = await Notification.countDocuments({ user: userId, isRead: false });
+    const unreadCount = await Notification.countDocuments({ ...scope, isRead: false });
 
     res.json({
       success: true,

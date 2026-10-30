@@ -24,21 +24,72 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      const role = localStorage.getItem('optikart_role');
-      localStorage.removeItem('optikart_token');
-      localStorage.removeItem('optikart_role');
-      localStorage.removeItem('optikart_user');
-      localStorage.removeItem('optikart_session_expiry');
+    const status = error.response?.status;
+    const role = localStorage.getItem('optikart_role');
+    const path = window.location.pathname;
 
-      if (role === 'seller') {
-        window.location.href = '/seller/login';
-      } else if (role === 'admin') {
-        window.location.href = '/admin/login';
-      } else {
-        window.location.href = '/login';
+    // Login endpoints must surface their own error instead of triggering a
+    // redirect loop (a wrong password should not look like a lost session).
+    const isAuthCall = /\/(login|verify-login-otp|verify-otp|register)$/.test(
+      error.config?.url || ''
+    );
+
+    if (status === 401 && !isAuthCall) {
+      const onSellerArea = path.startsWith('/seller');
+      const onAdminArea = path.startsWith('/admin');
+      const onProtectedArea =
+        onSellerArea ||
+        onAdminArea ||
+        path.startsWith('/staff') ||
+        path.startsWith('/executive') ||
+        path.startsWith('/manufacturer') ||
+        path.startsWith('/delivery-partner') ||
+        path.startsWith('/orders') ||
+        path.startsWith('/cart') ||
+        path.startsWith('/wishlist') ||
+        path.startsWith('/profile');
+
+      // Only drop the session when the user is actually inside an area that
+      // requires it. A 401 from an optional call on a public page must not
+      // log a signed-in seller out of their dashboard.
+      if (onProtectedArea) {
+        localStorage.removeItem('optikart_token');
+        localStorage.removeItem('optikart_role');
+        localStorage.removeItem('optikart_user');
+        localStorage.removeItem('optikart_session_expiry');
+
+        if (onSellerArea || role === 'seller') {
+          window.location.href = '/seller/login';
+        } else if (onAdminArea || role === 'admin') {
+          window.location.href = '/admin/login';
+        } else if (path.startsWith('/executive') || role === 'executive') {
+          window.location.href = '/executive/login';
+        } else if (
+          path.startsWith('/delivery-partner') ||
+          role === 'deliveryPartner'
+        ) {
+          window.location.href = '/delivery-partner/login';
+        } else if (
+          path.startsWith('/manufacturer-seller') ||
+          role === 'manufacturerSeller'
+        ) {
+          window.location.href = '/manufacturer-seller/login';
+        } else if (path.startsWith('/manufacturer') || role === 'manufacturer') {
+          window.location.href = '/manufacturer/login';
+        } else {
+          window.location.href = '/login';
+        }
       }
     }
+
+    if (status === 429) {
+      // Make throttling visible instead of failing silently.
+      const message =
+        error.response?.data?.message ||
+        'Too many requests. Please wait a moment and try again.';
+      return Promise.reject(Object.assign(error, { friendlyMessage: message }));
+    }
+
     return Promise.reject(error);
   }
 );
@@ -66,7 +117,7 @@ export const auth = {
 export const seller = {
   register: (data) => api.post('/seller/register', data),
   login: (email, password) => api.post('/seller/login', { email, password }),
-  verifyOTP: (sellerId, otp) => api.post('/seller/verify-otp', { sellerId, otp }),
+  verifyOTP: (sellerId, otp) => api.post('/seller/verify-login-otp', { sellerId, otp }),
   getMe: () => api.get('/seller/me'),
   getOrders: (params) => api.get('/seller/orders', { params }),
   updateOrderStatus: (orderId, status) => api.put(`/seller/orders/${orderId}/status`, { status }),
@@ -107,7 +158,7 @@ export const products = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   getBrands: () => api.get('/products/brands'),
-  getByCategory: (category, params) => api.get(`/products/category/${category}`, { params }),
+  getByCategory: (category, params) => api.get('/products', { params: { ...params, category } }),
   getOffers: (params) => api.get('/products/offers', { params }),
   getRandom: (params) => api.get('/products/random', { params }),
   getFilters: () => api.get('/products/filters'),
@@ -119,16 +170,23 @@ export const orders = {
   getAll: (params) => api.get('/orders', { params }),
   getById: (id) => api.get(`/orders/${id}`),
   cancel: (id, reason) => api.put(`/orders/${id}/cancel`, { reason }),
-  return: (id, data) => api.put(`/orders/${id}/return`, data),
+  return: (id, data) => api.post(`/orders/${id}/return`, data),
   review: (id, data) => api.post(`/orders/${id}/review`, data),
 };
 
 export const cart = {
   get: () => api.get('/cart'),
-  add: (data) => api.post('/cart', data),
-  update: (itemId, data) => api.put(`/cart/${itemId}`, data),
-  remove: (itemId) => api.delete(`/cart/${itemId}`),
-  clear: () => api.delete('/cart'),
+  add: (productId, quantity = 1, variant = null) =>
+    api.post('/cart/add', { productId, quantity, variant }),
+  addWithLens: (payload) => api.post('/cart/add-lens', payload),
+  update: (data) => api.put('/cart/update', data),
+  updateQuantity: (productId, quantity, variant = null) =>
+    api.put('/cart/update', { productId, quantity, variant }),
+  removeItem: (productId, variant) =>
+    api.delete(`/cart/remove/${productId}${variant ? `?variant=${encodeURIComponent(variant)}` : ''}`),
+  remove: (productId, variant) =>
+    api.delete(`/cart/remove/${productId}${variant ? `?variant=${encodeURIComponent(variant)}` : ''}`),
+  clear: () => api.delete('/cart/clear'),
 };
 
 export const payment = {
@@ -138,8 +196,8 @@ export const payment = {
 
 export const wishlist = {
   get: () => api.get('/wishlist'),
-  add: (productId) => api.post('/wishlist', { productId }),
-  remove: (productId) => api.delete(`/wishlist/${productId}`),
+  add: (productId) => api.post('/wishlist/add', { productId }),
+  remove: (productId) => api.delete(`/wishlist/remove/${productId}`),
 };
 
 export const coupons = {
@@ -148,19 +206,19 @@ export const coupons = {
 };
 
 export const blog = {
-  getAll: (params) => api.get('/blog', { params }),
-  getBySlug: (slug) => api.get(`/blog/${slug}`),
-  create: (data) => api.post('/blog', data),
-  update: (id, data) => api.put(`/blog/${id}`, data),
-  delete: (id) => api.delete(`/blog/${id}`),
-  comment: (id, data) => api.post(`/blog/${id}/comment`, data),
-  like: (id) => api.post(`/blog/${id}/like`),
+  getAll: (params) => api.get('/blogs', { params }),
+  getBySlug: (slug) => api.get(`/blogs/${slug}`),
+  create: (data) => api.post('/blogs', data),
+  update: (id, data) => api.put(`/blogs/${id}`, data),
+  delete: (id) => api.delete(`/blogs/${id}`),
+  comment: (id, data) => api.post(`/blogs/${id}/comment`, data),
+  like: (id) => api.post(`/blogs/${id}/like`),
 };
 
 export const help = {
-  getAll: () => api.get('/help'),
-  getByCategory: (category) => api.get(`/help/${category}`),
-  getById: (id) => api.get(`/help/article/${id}`),
+  getAll: (params) => api.get('/help', { params }),
+  getByCategory: (category) => api.get('/help', { params: { category } }),
+  getById: (id) => api.get(`/help/${id}`),
   contact: (data) => api.post('/help/contact', data),
 };
 
@@ -211,6 +269,11 @@ export const admin = {
   recordCommission: (orderId) => api.post(`/commission/record/${orderId}`),
   getPendingCommissions: () => api.get('/commission/pending'),
   getSellerCommissionDetails: (sellerId, params) => api.get(`/commission/seller/${sellerId}`, { params }),
+  // Banners (device upload; server mounts these under /banners)
+  getBanners: () => api.get('/banners'),
+  createBanner: (formData) => api.post('/banners', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  updateBanner: (id, formData) => api.put(`/banners/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteBanner: (id) => api.delete(`/banners/${id}`),
   // Return Analytics
   getPendingProducts: (params) => api.get("/product-verification/pending", { params }),
   verifyProduct: (productId, data) => api.post(`/product-verification/${productId}/verify`, data),
@@ -236,6 +299,7 @@ export const saleEvents = {
 
 export const banners = {
   getActive: () => api.get('/banners/active'),
+  getBySlug: (slug) => api.get(`/banners/slug/${slug}`),
   getAll: () => api.get('/banners'),
   create: (data) => api.post('/banners', data),
   update: (id, data) => api.put(`/banners/${id}`, data),
@@ -321,19 +385,24 @@ export const manufacturerEnhancements = {
 
 // Banner Management APIs
 export const bannerManagement = {
-  getAll: () => api.get('/admin/banners'),
-  create: (data) => api.post('/admin/banners', data, {
+  getAll: () => api.get('/banners'),
+  create: (data) => api.post('/banners', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  update: (id, data) => api.put(`/admin/banners/${id}`, data, {
+  update: (id, data) => api.put(`/banners/${id}`, data, {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
-  delete: (id) => api.delete(`/admin/banners/${id}`),
+  delete: (id) => api.delete(`/banners/${id}`),
+  getBySlug: (slug) => api.get(`/banners/slug/${slug}`),
 };
 
 // Executive Dashboard APIs
 export const executive = {
   getDashboardStats: () => api.get('/executive/dashboard/stats'),
+  getCustomers: () => api.get('/executive/customers'),
+  getReports: () => api.get('/executive/reports'),
+  getStaff: () => api.get('/executive/staff'),
+  addStaff: (data) => api.post('/executive/staff', data),
   getAssignedDeliveries: () => api.get('/executive/deliveries/assigned'),
   getDeliveryDetails: (id) => api.get(`/executive/deliveries/${id}`),
   updateDeliveryStatus: (id, status) => api.put(`/executive/deliveries/${id}/status`, { status }),

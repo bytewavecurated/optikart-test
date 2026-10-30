@@ -38,6 +38,59 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 
+
+/**
+ * Accepts any valid signed-in principal (user, seller, admin, staff,
+ * executive, manufacturer, manufacturer seller or delivery partner).
+ *
+ * Endpoints that are shared across roles - such as notifications - must not
+ * answer 401 just because the caller is not a customer User: a 401 makes the
+ * client drop an otherwise perfectly valid session. The resolved identity is
+ * exposed as req.principal.
+ */
+export const verifyAnyPrincipal = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+    }
+
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    const id = decoded.id || decoded.userId || decoded.sellerId || decoded.executiveId;
+
+    const principal = { id, role: decoded.role || 'user', decoded };
+
+    // Attach the matching document when it exists, without failing otherwise.
+    try {
+      if (decoded.role === 'seller') {
+        const { default: MongSeller } = await import('../models/Seller.js');
+        const sellerDoc = await MongSeller.findById(id);
+        if (sellerDoc) { req.seller = sellerDoc; principal.seller = sellerDoc; principal.doc = sellerDoc; }
+      } else {
+        const userDoc = await User.findById(id);
+        if (userDoc) { req.user = userDoc; principal.user = userDoc; principal.doc = userDoc; }
+        else {
+          const sellerDoc = await Seller.findById(id);
+          if (sellerDoc) { req.seller = sellerDoc; principal.seller = sellerDoc; principal.doc = sellerDoc; }
+        }
+      }
+    } catch (lookupErr) {
+      // Document resolution is best-effort; the token itself is valid.
+    }
+
+    req.principal = principal;
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ success: false, message: 'Token has expired.' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ success: false, message: 'Invalid token.' });
+    }
+    return res.status(500).json({ success: false, message: 'Server error during authentication.' });
+  }
+};
+
 export const verifySeller = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;

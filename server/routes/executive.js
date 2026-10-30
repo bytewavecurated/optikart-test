@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import Executive from '../models/Executive.js';
@@ -74,7 +75,10 @@ router.post('/login', async (req, res) => {
 
     // Check if this is a test credential - bypass OTP for testing
     const testExecutiveEmails = ['executive.delivery@optikart.com'];
-    const isTestCredential = testExecutiveEmails.includes(email);
+    // Second-factor OTP may only be skipped outside production, and only
+    // for the well-known seededdemo accounts whose password is also public.
+    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
+    const isTestCredential = allowOtpBypass && testExecutiveEmails.includes(email);
 
     if (isTestCredential) {
       // Direct login for test credentials
@@ -91,7 +95,7 @@ router.post('/login', async (req, res) => {
       });
     } else {
       // Generate OTP
-      const loginOtp = otpGenerator.generate('6789', { 
+      const loginOtp = otpGenerator.generate(6, { 
         upperCaseAlphabets: false, 
         specialChars: false, 
         lowerCaseAlphabets: false 
@@ -105,6 +109,7 @@ router.post('/login', async (req, res) => {
 
       res.json({
         success: true,
+        requiresOTP: true,
         message: 'Login OTP sent to your email.',
         executiveId: executive._id
       });
@@ -384,15 +389,37 @@ router.get('/department-data', async (req, res) => {
 router.get('/dashboard/stats', verifyExecutive, async (req, res) => {
   try {
     const executiveId = req.executive._id;
-    // In a real implementation, fetch actual stats from database
-    const stats = {
-      totalOrders: 150,
-      completedOrders: 120,
-      inProgressOrders: 20,
-      pendingOrders: 10
-    };
-    res.json({ success: true, data: stats });
+    const scoped = { assignedExecutive: executiveId };
+
+    const [totalOrders, delivered, inProgress, pending] = await Promise.all([
+      Order.countDocuments(scoped),
+      Order.countDocuments({ ...scoped, orderStatus: 'delivered' }),
+      Order.countDocuments({ ...scoped, orderStatus: { $in: ['packed', 'picked_up', 'in_transit'] } }),
+      Order.countDocuments({ ...scoped, orderStatus: { $in: ['pending', 'confirmed'] } })
+    ]);
+
+    // Executives that are not yet attached to orders still get a meaningful
+    // view of the queue they are responsible for.
+    let queue = 0;
+    if (totalOrders === 0) {
+      queue = await Order.countDocuments({
+        orderStatus: { $in: ['pending', 'confirmed', 'packed'] },
+        assignmentStatus: { $in: ['pending', 'pending_acceptance', 'assigned', 'admin_required'] }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        totalOrders: totalOrders || queue,
+        completedOrders: delivered,
+        inProgressOrders: inProgress,
+        pendingOrders: pending || queue,
+        department: req.executive.department || 'delivery'
+      }
+    });
   } catch (error) {
+    console.error('Executive stats error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -400,32 +427,226 @@ router.get('/dashboard/stats', verifyExecutive, async (req, res) => {
 router.get('/deliveries/assigned', verifyExecutive, async (req, res) => {
   try {
     const executiveId = req.executive._id;
-    // In a real implementation, fetch actual deliveries from database
-    const deliveries = [];
+
+    let orders = await Order.find({ assignedExecutive: executiveId })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate('user', 'name email phone')
+      .populate('seller', 'storeName phone email address city')
+      .populate('assignedDeliveryPartner', 'name phone email vehicleType status')
+      .populate('items.product', 'title images brand')
+      .lean();
+
+    // Nothing assigned yet: show the active delivery queue instead.
+    if (orders.length === 0) {
+      orders = await Order.find({ orderStatus: { $in: ['confirmed', 'packed', 'picked_up', 'in_transit'] } })
+        .sort({ createdAt: -1 })
+        .limit(100)
+        .populate('user', 'name email phone')
+        .populate('seller', 'storeName phone email address city')
+        .populate('assignedDeliveryPartner', 'name phone email vehicleType status')
+        .populate('items.product', 'title images brand')
+        .lean();
+    }
+
+    const deliveries = orders.map((o) => ({
+      _id: o._id,
+      orderId: o.orderId,
+      orderStatus: o.orderStatus,
+      assignmentStatus: o.assignmentStatus,
+      paymentStatus: o.paymentStatus,
+      totalAmount: o.totalAmount,
+      deliveryCharge: o.deliveryCharge,
+      deliveryFee: o.deliveryFee || 0,
+      deliveryDistanceKm: o.deliveryDistanceKm || 0,
+      deliveryAssignmentMode: o.deliveryAssignmentMode || 'none',
+      trackingId: o.shiprocketTrackingId || '',
+      trackingUrl: o.shiprocketTrackingUrl || '',
+      createdAt: o.createdAt,
+      deliveredAt: o.deliveredAt || null,
+      customer: o.user ? { name: o.user.name, email: o.user.email, phone: o.user.phone } : null,
+      seller: o.seller ? {
+        storeName: o.seller.storeName,
+        phone: o.seller.phone,
+        email: o.seller.email,
+        city: o.seller.address?.city || '',
+        address: [o.seller.address?.street, o.seller.address?.city, o.seller.address?.pincode].filter(Boolean).join(', ')
+      } : null,
+      deliveryPartner: o.assignedDeliveryPartner ? {
+        name: o.assignedDeliveryPartner.name,
+        phone: o.assignedDeliveryPartner.phone,
+        email: o.assignedDeliveryPartner.email,
+        vehicleType: o.assignedDeliveryPartner.vehicleType,
+        status: o.assignedDeliveryPartner.status
+      } : null,
+      shippingAddress: o.shippingAddress,
+      pickupLocation: o.pickupLocation || null,
+      deliveryLocation: o.deliveryLocation || null,
+      deliveryJourney: o.deliveryJourney || [],
+      items: (o.items || []).map((it) => ({
+        name: it.name,
+        quantity: it.quantity,
+        price: it.price,
+        image: it.product?.images?.[0] || '',
+        brand: it.product?.brand || '',
+        variant: it.variant || {},
+        lensConfig: it.lensConfig || null
+      }))
+    }));
+
     res.json({ success: true, data: deliveries });
   } catch (error) {
+    console.error('Executive deliveries error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 router.get('/deliveries/:id', verifyExecutive, async (req, res) => {
   try {
-    const { id } = req.params;
-    // In a real implementation, fetch delivery details from database
-    res.json({ success: true, data: null });
+    const order = await Order.findById(req.params.id)
+      .populate('user', 'name email phone')
+      .populate('seller', 'storeName phone email address')
+      .populate('assignedDeliveryPartner', 'name phone email vehicleType status currentLocation')
+      .populate('items.product', 'title images brand')
+      .lean();
+
+    if (!order) return res.json({ success: true, data: null });
+
+    res.json({
+      success: true,
+      data: {
+        _id: order._id,
+        orderId: order.orderId,
+        orderStatus: order.orderStatus,
+        paymentStatus: order.paymentStatus,
+        totalAmount: order.totalAmount,
+        customer: order.user ? { name: order.user.name, email: order.user.email, phone: order.user.phone } : null,
+        seller: order.seller ? { storeName: order.seller.storeName, phone: order.seller.phone } : null,
+        deliveryPartner: order.assignedDeliveryPartner
+          ? { name: order.assignedDeliveryPartner.name, phone: order.assignedDeliveryPartner.phone } : null,
+        shippingAddress: order.shippingAddress,
+        pickupLocation: order.pickupLocation || null,
+        deliveryLocation: order.deliveryLocation || null,
+        deliveryJourney: order.deliveryJourney || [],
+        trackingId: order.shiprocketTrackingId || '',
+        trackingUrl: order.shiprocketTrackingUrl || '',
+        items: (order.items || []).map((it) => ({
+          name: it.name, quantity: it.quantity, price: it.price,
+          image: it.product?.images?.[0] || '', lensConfig: it.lensConfig || null
+        }))
+      }
+    });
   } catch (error) {
+    console.error('Executive delivery detail error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 router.put('/deliveries/:id/status', verifyExecutive, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-    // In a real implementation, update delivery status in database
-    res.json({ success: true, message: 'Status updated' });
+    const { status, note } = req.body;
+    const allowed = ['pending', 'confirmed', 'packed', 'picked_up', 'in_transit', 'delivered', 'cancelled'];
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid delivery status.' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+
+    order.orderStatus = status;
+    order.deliveryJourney.push({ status, note: note || 'Updated by executive', at: new Date() });
+    if (status === 'delivered') {
+      order.deliveredAt = new Date();
+    }
+    await order.save();
+
+    res.json({ success: true, message: 'Delivery status updated.', order });
   } catch (error) {
+    console.error('Executive delivery status error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// Customers served by this executive (distinct buyers on their orders).
+router.get('/customers', verifyExecutive, async (req, res) => {
+  try {
+    const orders = await Order.find({ assignedExecutive: req.executive._id })
+      .select('user totalAmount orderStatus createdAt')
+      .populate('user', 'name email phone')
+      .lean();
+
+    const byUser = {};
+    orders.forEach((o) => {
+      const uid = o.user?._id?.toString();
+      if (!uid) return;
+      if (!byUser[uid]) {
+        byUser[uid] = {
+          _id: uid,
+          name: o.user.name,
+          email: o.user.email,
+          phone: o.user.phone,
+          orders: 0,
+          spent: 0,
+          lastOrderAt: o.createdAt
+        };
+      }
+      byUser[uid].orders += 1;
+      byUser[uid].spent += o.totalAmount || 0;
+      if (o.createdAt && new Date(o.createdAt) > new Date(byUser[uid].lastOrderAt)) {
+        byUser[uid].lastOrderAt = o.createdAt;
+      }
+    });
+
+    res.json({ success: true, data: Object.values(byUser) });
+  } catch (error) {
+    console.error('Executive customers error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Reports for this executive: status split, revenue handled and daily volume.
+router.get('/reports', verifyExecutive, async (req, res) => {
+  try {
+    const executiveId = req.executive._id;
+
+    const [statusSplit, revenueAgg, dailyAgg] = await Promise.all([
+      Order.aggregate([
+        { $match: { assignedExecutive: new mongoose.Types.ObjectId(executiveId) } },
+        { $group: { _id: '$orderStatus', count: { $sum: 1 }, amount: { $sum: '$totalAmount' } } }
+      ]),
+      Order.aggregate([
+        { $match: { assignedExecutive: new mongoose.Types.ObjectId(executiveId) } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 },
+                    deliveryFees: { $sum: '$deliveryFee' }, distances: { $sum: '$deliveryDistanceKm' } } }
+      ]),
+      Order.aggregate([
+        { $match: { assignedExecutive: new mongoose.Types.ObjectId(executiveId) } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                    count: { $sum: 1 }, amount: { $sum: '$totalAmount' } } },
+        { $sort: { _id: 1 } },
+        { $limit: 30 }
+      ])
+    ]);
+
+    const totals = revenueAgg[0] || { total: 0, count: 0, deliveryFees: 0, distances: 0 };
+
+    res.json({
+      success: true,
+      data: {
+        byStatus: statusSplit.map((s) => ({ status: s._id, count: s.count, amount: s.amount })),
+        totals: {
+          orders: totals.count,
+          revenue: totals.total,
+          deliveryFees: totals.deliveryFees,
+          distanceKm: Math.round((totals.distances || 0) * 100) / 100
+        },
+        daily: dailyAgg.map((d) => ({ date: d._id, count: d.count, amount: d.amount }))
+      }
+    });
+  } catch (error) {
+    console.error('Executive reports error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

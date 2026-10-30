@@ -1,208 +1,295 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiSearch, FiHeart, FiShoppingCart, FiStar, FiArrowRight } from 'react-icons/fi';
-import { products as productsApi, manufacturers as manufacturersApi } from '../services/api';
+import {
+  FiTruck, FiShield, FiRefreshCw, FiHeadphones, FiArrowRight, FiTag, FiPercent,
+  FiGift, FiEye, FiAward, FiStar, FiDroplet, FiSun, FiLayers,
+  FiBookOpen, FiActivity, FiSmile
+} from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import HeroCarousel from '../components/HeroCarousel';
+import CategorySection from '../components/CategorySection';
+import BrandSection from '../components/BrandSection';
+import ContactLensBrandSection from '../components/ContactLensBrandSection';
+import ProductCard from '../components/ProductCard';
+import LoadMore from '../components/LoadMore';
+import GenderSelection from '../components/GenderSelection';
+import { products } from '../services/api';
+import api from '../services/api';
+import { listOf } from '../services/apiResponse';
+
+const ITEMS_PER_PAGE = 8;
+
+// Facets exposed on the home page. Values are sent to the products API which
+// normalises the spelling, so these read as labels rather than raw enums.
+const FACE_SHAPES = ['Rectangle', 'Cat Eye', 'Oval', 'Aviator', 'Geometric', 'Round', 'Square', 'Wayfarer'];
+const FRAME_TYPES = ['Full Rim', 'Half Rim', 'Rimless'];
+const FRAME_MATERIALS = ['Acetate', 'Metal', 'Polycarbonate', 'Stainless Steel', 'TR90', 'Titanium'];
+
+const CATEGORIES = [
+  { name: 'Sunglasses', slug: 'sunglasses', icon: <FiSun size={26} /> },
+  { name: 'Eyeglasses', slug: 'eyeglasses', icon: <FiEye size={26} /> },
+  { name: 'Contact Lenses', slug: 'contact-lenses', icon: <FiDroplet size={26} /> },
+  { name: 'Reading Glasses', slug: 'reading-glasses', icon: <FiBookOpen size={26} /> },
+  { name: 'Sports Eyewear', slug: 'sports-eyewear', icon: <FiActivity size={26} /> },
+  { name: 'Kids', slug: 'kids', icon: <FiSmile size={26} /> }
+];
+
+const OFFERS = [
+  { title: 'Flat 50% Off', subtitle: 'On premium sunglasses', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: <FiPercent size={32} />, link: '/category/sunglasses' },
+  { title: 'Buy 1 Get 1', subtitle: 'Selected eyeglasses', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: <FiGift size={32} />, link: '/category/eyeglasses' },
+  { title: 'Starting Rs. 299', subtitle: 'Contact lenses', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: <FiDroplet size={32} />, link: '/category/contact-lenses' },
+  { title: 'Extra Rs. 200 Off', subtitle: 'Use code: EYE200', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', icon: <FiAward size={32} />, link: '/coupons' }
+];
+
+const FEATURES = [
+  { icon: <FiTruck size={26} />, title: 'Free Delivery', desc: 'On orders above Rs. 999' },
+  { icon: <FiShield size={26} />, title: '100% Genuine', desc: 'Authentic products only' },
+  { icon: <FiRefreshCw size={26} />, title: 'Easy Returns', desc: '7-day return policy' },
+  { icon: <FiHeadphones size={26} />, title: '24/7 Support', desc: 'Dedicated help center' }
+];
+
+const sectionHeading = (title, subtitle) => (
+  <div>
+    <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.4px' }}>{title}</h2>
+    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{subtitle}</p>
+  </div>
+);
+
+const viewAllLink = {
+  display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)',
+  fontSize: '14px', fontWeight: 600, textDecoration: 'none', padding: '10px 18px',
+  borderRadius: '8px', background: 'var(--primary-light)'
+};
+
+const chipLink = {
+  display: 'block', padding: '16px 12px', textAlign: 'center', textDecoration: 'none',
+  color: 'inherit', background: 'var(--bg-white)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s'
+};
+
+const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' };
 
 const Home = () => {
-  const [products, setProducts] = useState([]);
-  const [manufacturers, setManufacturers] = useState([]);
+  const [trending, setTrending] = useState([]);
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [bestSellers, setBestSellers] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [brandGroups, setBrandGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [dealsVisible, setDealsVisible] = useState(ITEMS_PER_PAGE);
 
   useEffect(() => {
+    const fetchData = async () => {
+      const results = await Promise.allSettled([
+        products.getAll({ sort: 'popularity', limit: 10 }),
+        products.getAll({ sort: 'newest', limit: 10 }),
+        products.getAll({ sort: 'rating', limit: 10 }),
+        products.getAll({ hasOffer: true, limit: 10 }),
+        api.get('/products/manufacturer-brands', { params: { perBrand: 8 } })
+      ]);
+
+      const pick = (i, key) => (results[i].status === 'fulfilled' ? listOf(results[i].value.data) : []);
+      setTrending(pick(0));
+      setNewArrivals(pick(1));
+      setBestSellers(pick(2));
+      setDeals(pick(3));
+      if (results[4].status === 'fulfilled') setBrandGroups(results[4].value.data.brands || []);
+      setLoading(false);
+    };
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const [productsRes, manufacturersRes] = await Promise.all([
-        productsApi.getAll({ limit: 50 }),
-        manufacturersApi.getAll()
-      ]);
-      setProducts(productsRes.data.data || []);
-      setManufacturers(manufacturersRes.data.data || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+  const renderGrid = (items, visible) => {
+    if (loading) {
+      return Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} style={{ height: '320px', borderRadius: 'var(--radius)', background: 'var(--border-light)' }} />
+      ));
     }
+    return (visible === undefined ? items : items.slice(0, visible)).map((product) => (
+      <ProductCard key={product._id} product={product} />
+    ));
   };
 
-  const categories = [
-    { id: 'all', name: 'All Products', icon: '👓' },
-    { id: 'sunglasses', name: 'Sunglasses', icon: '🕶️' },
-    { id: 'eyeglasses', name: 'Eyeglasses', icon: '👓' },
-    { id: 'contactlenses', name: 'Contact Lenses', icon: '👁️' },
-    { id: 'readingglasses', name: 'Reading Glasses', icon: '📖' }
-  ];
-
-  const frameShapes = ['Rectangle', 'Cat Eye', 'Oval', 'Aviator', 'Round', 'Wayfarer', 'Geometric', 'Square'];
-  const frameTypes = ['Full Rim', 'Half Rim', 'Rimless'];
-  const materials = ['Acetate', 'Metal', 'Polycarbonate', 'Stainless Steel', 'TR90', 'Titanium'];
-
-  const filteredProducts = selectedCategory === 'all' 
-    ? products 
-    : products.filter(p => p.category === selectedCategory);
-
-  if (loading) {
-    return (
-      <>
-        <Header />
-        <div className="container page-wrapper">
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div className="spinner"></div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
+  const activeBrands = brandGroups.slice(0, 4);
 
   return (
-    <>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
       <Header />
-      
-      {/* Hero Section */}
-      <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)', padding: '60px 0', color: 'white', textAlign: 'center' }}>
-        <div className="container">
-          <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '48px', marginBottom: '16px' }}>
-            India's #1 Eyewear Destination
-          </h1>
-          <p style={{ fontSize: '20px', marginBottom: '32px', opacity: 0.9 }}>
-            Shop sunglasses, eyeglasses, contact lenses and more
-          </p>
-          <div style={{ maxWidth: '600px', margin: '0 auto', position: 'relative' }}>
-            <FiSearch style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} size={20} />
-            <input
-              type="text"
-              placeholder="Search for products, brands and more..."
-              className="input"
-              style={{ paddingLeft: '48px', fontSize: '16px', height: '56px' }}
-            />
+      <main style={{ flex: 1 }}>
+        <HeroCarousel />
+
+        {/* Trust strip */}
+        <div className="container" style={{ maxWidth: 1400, marginTop: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            {FEATURES.map((f) => (
+              <div key={f.title} className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
+                <span style={{ color: 'var(--primary)' }}>{f.icon}</span>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 700 }}>{f.title}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{f.desc}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
 
-      <div className="container page-wrapper">
         {/* Categories */}
-        <div style={{ marginBottom: '48px' }}>
-          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Category</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategory(cat.id)}
-                className="card"
-                style={{
-                  padding: '24px',
-                  cursor: 'pointer',
-                  border: selectedCategory === cat.id ? '2px solid var(--primary)' : '2px solid transparent',
-                  transition: 'all 0.2s',
-                  textAlign: 'center'
-                }}
-              >
-                <div style={{ fontSize: '48px', marginBottom: '12px' }}>{cat.icon}</div>
-                <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)' }}>{cat.name}</h3>
-              </button>
-            ))}
+        <div className="container" style={{ maxWidth: 1400, marginTop: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            {sectionHeading('Shop by Category', 'Find exactly what you are looking for')}
+            <Link to="/categories" style={viewAllLink}>All Categories <FiArrowRight size={16} /></Link>
           </div>
-        </div>
-
-        {/* Frame Shapes */}
-        <div style={{ marginBottom: '48px' }}>
-          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Frame Shape</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-            {frameShapes.map((shape) => (
-              <Link key={shape} to={`/products?frameShape=${shape.toLowerCase().replace(' ', '-')}`} className="card" style={{ padding: '20px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
-                <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)' }}>{shape}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+            {CATEGORIES.map((cat) => (
+              <Link key={cat.slug} to={`/category/${cat.slug}`} className="home-chip card" style={chipLink}>
+                <span style={{ color: 'var(--primary)', display: 'block', marginBottom: 8 }}>{cat.icon}</span>
+                {cat.name}
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Frame Types */}
-        <div style={{ marginBottom: '48px' }}>
-          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Frame Type</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-            {frameTypes.map((type) => (
-              <Link key={type} to={`/products?frameType=${type.toLowerCase().replace(' ', '-')}`} className="card" style={{ padding: '24px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
-                <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)' }}>{type}</h3>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Materials */}
-        <div style={{ marginBottom: '48px' }}>
-          <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Material</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-            {materials.map((material) => (
-              <Link key={material} to={`/products?material=${material.toLowerCase().replace(' ', '-')}`} className="card" style={{ padding: '20px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
-                <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)' }}>{material}</h3>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Brands */}
-        {manufacturers.length > 0 && (
-          <div style={{ marginBottom: '48px' }}>
-            <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Shop by Brand</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-              {manufacturers.slice(0, 8).map((manufacturer) => (
-                <Link key={manufacturer._id} to={`/products?brand=${manufacturer.brandName}`} className="card" style={{ padding: '24px', textAlign: 'center', textDecoration: 'none', color: 'inherit' }}>
-                  <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)' }}>{manufacturer.brandName}</h3>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{manufacturer.productCount || 0} products</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Products */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h2 style={{ fontFamily: 'var(--font-heading)' }}>
-              {selectedCategory === 'all' ? 'All Products' : categories.find(c => c.id === selectedCategory)?.name}
-            </h2>
-            <Link to={`/products?category=${selectedCategory}`} className="btn btn-outline">
-              View All <FiArrowRight size={16} />
-            </Link>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
-            {filteredProducts.slice(0, 12).map((product) => (
-              <Link key={product._id} to={`/product/${product._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <img
-                  src={product.images?.[0] || '/placeholder.png'}
-                  alt={product.title}
-                  style={{ width: '100%', height: '280px', objectFit: 'cover' }}
-                />
-                <div style={{ padding: '16px' }}>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{product.brand}</p>
-                  <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{product.title}</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <FiStar size={14} style={{ color: 'var(--warning)' }} fill="var(--warning)" />
-                      <span style={{ fontSize: '14px', fontWeight: 600 }}>{product.rating || 0}</span>
-                    </div>
-                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>({product.reviewCount || 0} reviews)</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>₹{product.price}</span>
-                    {product.originalPrice && product.originalPrice > product.price && (
-                      <span style={{ fontSize: '14px', color: 'var(--text-light)', textDecoration: 'line-through' }}>₹{product.originalPrice}</span>
-                    )}
-                  </div>
+        {/* Offers */}
+        <div className="container" style={{ maxWidth: 1400, marginTop: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16 }}>
+            {OFFERS.map((offer) => (
+              <Link key={offer.title} to={offer.link} style={{ background: offer.gradient, borderRadius: 16, padding: '26px', color: '#fff', textDecoration: 'none', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: 'var(--shadow)' }}>
+                <span style={{ position: 'absolute', right: -18, top: -18, opacity: 0.18, transform: 'rotate(15deg)' }}>{offer.icon}</span>
+                <div style={{ fontSize: '22px', fontWeight: 800 }}>{offer.title}</div>
+                <div style={{ fontSize: '14px', opacity: 0.95 }}>{offer.subtitle}</div>
+                <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Shop Now <FiArrowRight size={14} />
                 </div>
               </Link>
             ))}
           </div>
         </div>
-      </div>
+
+        <div className="container" style={{ maxWidth: 1400, marginTop: 36 }}>
+          <GenderSelection />
+        </div>
+
+        {/* Face shape / frame type / material */}
+        <div className="container" style={{ maxWidth: 1400, marginTop: 36 }}>
+          <div style={{ marginBottom: 36 }}>
+            <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.4px' }}>Shop by Face Shape</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Pick the frame that suits you best</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
+              {FACE_SHAPES.map((shape) => (
+                <Link key={shape} to={`/products?frameShape=${encodeURIComponent(shape)}`} className="home-chip card" style={chipLink}>{shape}</Link>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 36 }}>
+            <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.4px' }}>Shop by Frame Type</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Full rim, half rim and rimless constructions</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+              {FRAME_TYPES.map((type) => (
+                <Link key={type} to={`/products?frameType=${encodeURIComponent(type)}`} className="home-chip card" style={chipLink}>
+                  <FiLayers size={18} style={{ verticalAlign: 'middle', marginRight: 8, color: 'var(--primary)' }} />{type}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.4px' }}>Shop by Material</h2>
+            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>The material decides the weight, feel and durability</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+              {FRAME_MATERIALS.map((mat) => (
+                <Link key={mat} to={`/products?material=${encodeURIComponent(mat)}`} className="home-chip card" style={chipLink}>{mat}</Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Trending */}
+        <div className="container" style={{ maxWidth: 1400, marginTop: 44 }}>
+          <section style={{ marginBottom: 44 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              {sectionHeading('Trending Now', 'Most popular products this week')}
+              <Link to="/products?sort=popularity" style={viewAllLink}>View All <FiArrowRight size={16} /></Link>
+            </div>
+            <div style={gridStyle}>{renderGrid(trending)}</div>
+          </section>
+
+          <CategorySection />
+
+          {/* Deals */}
+          <section style={{ margin: '44px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <FiTag size={22} />
+              </div>
+              {sectionHeading('Deals of the Day', 'Exclusive offers just for you')}
+            </div>
+            <div style={gridStyle}>{renderGrid(deals, dealsVisible)}</div>
+            {!loading && deals.length > dealsVisible && (
+              <LoadMore onLoadMore={() => setDealsVisible((p) => p + ITEMS_PER_PAGE)} hasMore label="Load More Deals" />
+            )}
+          </section>
+
+          {/* New arrivals */}
+          <section style={{ margin: '44px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              {sectionHeading('New Arrivals', 'Fresh styles just landed')}
+              <Link to="/products?sort=newest" style={viewAllLink}>View All <FiArrowRight size={16} /></Link>
+            </div>
+            <div style={gridStyle}>{renderGrid(newArrivals)}</div>
+          </section>
+
+          <BrandSection />
+
+          {/* Brand-wise manufacturer catalogue */}
+          <section style={{ margin: '44px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              {sectionHeading('Shop by Brand', 'Every product each manufacturer has listed, grouped by brand')}
+              <Link to="/brands" style={viewAllLink}>All Brands <FiArrowRight size={16} /></Link>
+            </div>
+            {loading ? (
+              <div style={gridStyle}>{renderGrid([])}</div>
+            ) : activeBrands.length === 0 ? (
+              <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                No manufacturer catalogue is published yet.
+              </div>
+            ) : (
+              activeBrands.map((group) => (
+                <div key={group.brand} style={{ marginBottom: 36 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '20px 0 14px', borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                    <h3 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{group.brand}</h3>
+                    <Link to={`/products?brand=${encodeURIComponent(group.brand)}`} style={{ fontSize: 14, fontWeight: 600, color: 'var(--primary)', textDecoration: 'none' }}>
+                      View all {group.productCount} products
+                    </Link>
+                  </div>
+                  <div style={gridStyle}>
+                    {group.products.map((product) => <ProductCard key={product._id} product={product} />)}
+                  </div>
+                </div>
+              ))
+            )}
+          </section>
+
+          <ContactLensBrandSection />
+
+          {/* Best sellers */}
+          <section style={{ margin: '44px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                  <FiStar size={22} />
+                </div>
+                {sectionHeading('Best Sellers', 'Highest rated by our customers')}
+              </div>
+              <Link to="/products?sort=rating" style={viewAllLink}>View All <FiArrowRight size={16} /></Link>
+            </div>
+            <div style={gridStyle}>{renderGrid(bestSellers)}</div>
+          </section>
+        </div>
+      </main>
       <Footer />
-    </>
+    </div>
   );
 };
 

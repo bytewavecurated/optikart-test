@@ -60,7 +60,19 @@ const deliveryPartnerSchema = new mongoose.Schema({
     type: String,
     enum: ['auto', 'admin', 'seller'],
     default: 'auto'
-  }
+  },
+  // Withdrawals: one per day, flat Rs. 3 platform fee per started Rs. 50 slab.
+  lastWithdrawalAt: { type: Date, default: null },
+  totalWithdrawn: { type: Number, default: 0 },
+  totalPlatformFees: { type: Number, default: 0 },
+  withdrawals: [{
+    amount: { type: Number, required: true },
+    platformFee: { type: Number, required: true },
+    netPaid: { type: Number, required: true },
+    payoutId: { type: String, default: '' },
+    status: { type: String, enum: ['initiated', 'processed', 'failed'], default: 'processed' },
+    at: { type: Date, default: Date.now }
+  }]
 }, {
   timestamps: true
 });

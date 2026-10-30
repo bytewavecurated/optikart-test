@@ -69,7 +69,10 @@ router.post('/login', async (req, res) => {
 
     // Check if this is a test credential - bypass OTP for testing
     const testManufacturerSellerEmails = ['rayban.retailer1@optikart.com'];
-    const isTestCredential = testManufacturerSellerEmails.includes(email);
+    // Second-factor OTP may only be skipped outside production, and only
+    // for the well-known seededdemo accounts whose password is also public.
+    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
+    const isTestCredential = allowOtpBypass && testManufacturerSellerEmails.includes(email);
 
     if (isTestCredential) {
       // Direct login for test credentials
@@ -85,7 +88,7 @@ router.post('/login', async (req, res) => {
         seller: seller.toJSON()
       });
     } else {
-      const loginOtp = otpGenerator.generate('6789', { 
+      const loginOtp = otpGenerator.generate(6, { 
         upperCaseAlphabets: false, 
         specialChars: false, 
         lowerCaseAlphabets: false 
@@ -99,6 +102,7 @@ router.post('/login', async (req, res) => {
 
       res.json({
         success: true,
+        requiresOTP: true,
         message: 'Login OTP sent to your email.',
         sellerId: seller._id
       });

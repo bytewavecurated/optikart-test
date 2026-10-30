@@ -1,81 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiTrash2, FiMinus, FiPlus, FiShoppingBag } from 'react-icons/fi';
-import { cart as cartApi } from '../services/api';
+import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 
-const MAX_CART_ITEMS = 25;
-
 const Cart = () => {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { isAuthenticated } = useAuth();
+  const {
+    items,
+    removeFromCart,
+    updateQuantity: updateQuantityCtx,
+    MAX_ITEMS: CTX_MAX
+  } = useCart();
+  const MAX_CART_ITEMS = CTX_MAX || 25;
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchCart();
-  }, []);
+  // The cart lives in CartContext (shared with the header badge and checkout),
+  // so this page reads and mutates that single source of truth.
+  const indexById = (id) => items.findIndex((it) => it.product?._id === id);
 
-  const fetchCart = async () => {
-    try {
-      const res = await cartApi.get();
-      setItems(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateQuantity = async (itemId, quantity) => {
+  const updateQuantity = (productId, quantity) => {
     if (quantity < 1) return;
-    
-    // Check cart limit
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    const diff = quantity - (items.find(i => i._id === itemId)?.quantity || 0);
-    
-    if (totalItems + diff > MAX_CART_ITEMS) {
+    const idx = indexById(productId);
+    if (idx < 0) return;
+
+    const totalUnits = items.reduce((sum, it) => sum + it.quantity, 0);
+    const diff = quantity - items[idx].quantity;
+    if (totalUnits + diff > MAX_CART_ITEMS) {
       toast.error(`Cart is limited to ${MAX_CART_ITEMS} items`);
       return;
     }
-    
-    try {
-      await cartApi.updateQuantity(itemId, quantity);
-      setItems(items.map(item => item._id === itemId ? { ...item, quantity } : item));
-    } catch (err) {
-      toast.error('Failed to update quantity');
-    }
+    updateQuantityCtx(idx, quantity);
   };
 
-  const removeItem = async (itemId) => {
-    try {
-      await cartApi.removeItem(itemId);
-      setItems(items.filter(item => item._id !== itemId));
-      toast.success('Item removed');
-    } catch (err) {
-      toast.error('Failed to remove item');
-    }
+  const removeItem = (productId) => {
+    const idx = indexById(productId);
+    if (idx < 0) return;
+    removeFromCart(idx);
+    toast.success('Item removed');
   };
 
   const total = items.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-
-  if (loading) {
-    return (
-      <>
-        <Header />
-        <div className="container page-wrapper">
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div className="spinner"></div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
 
   if (items.length === 0) {
     return (

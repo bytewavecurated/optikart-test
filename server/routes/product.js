@@ -6,30 +6,102 @@ import { uploadProductImages } from '../middleware/upload.js';
 
 const router = express.Router();
 
+// Category slugs arrive in many spellings ('contact-lenses', 'Contact Lenses',
+// 'contactlenses') but the stored enum is a flat lowercase token.
+const CATEGORY_ALIASES = {
+  sunglasses: 'sunglasses',
+  eyeglasses: 'eyeglasses',
+  'computer-glasses': 'eyeglasses',
+  contactlenses: 'contactlenses',
+  'contact-lenses': 'contactlenses',
+  readingglasses: 'readingglasses',
+  'reading-glasses': 'readingglasses',
+  sportseyewear: 'sportseyewear',
+  'sports-eyewear': 'sportseyewear',
+  sports: 'sportseyewear',
+  kids: 'kids'
+};
+
+const normalizeCategory = (value) => {
+  if (!value) return value;
+  const raw = String(value).trim();
+  const lower = raw.toLowerCase();
+  if (CATEGORY_ALIASES[lower]) return CATEGORY_ALIASES[lower];
+  const compact = lower.replace(/[^a-z0-9]/g, '');
+  return CATEGORY_ALIASES[compact] || compact;
+};
+
+
+// The stored enums use inconsistent casing and spacing ('Cat Eye' vs 'cateye',
+// 'Full Rim' vs 'full-rim', 'Stainless Steel' vs 'stainless-steel'), so match
+// on a normalised pattern that accepts any of those spellings.
+const normalizedRegex = (value) => {
+  const clean = String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (!clean) return null;
+  const flexible = clean.split('').join('[\\s_-]*');
+  return new RegExp(`^${flexible}$`, 'i');
+};
+
+const shapeVariants = (v) => {
+  const r = normalizedRegex(v);
+  return r ? [r, v] : [v];
+};
+
+const frameTypeVariants = (v) => {
+  const r = normalizedRegex(v);
+  return r ? [r, v] : [v];
+};
+
+const materialVariants = (v) => {
+  const r = normalizedRegex(v);
+  return r ? [r, v] : [v];
+};
+
+const sizeVariants = (v) => {
+  const r = normalizedRegex(v);
+  return r ? [r, v] : [v];
+};
+
 router.get('/', optionalAuth, async (req, res) => {
   try {
     const { 
       page = 1, limit = 20, search, category, brand, minPrice, maxPrice, 
-      frameShape, frameColor, lensType, gender, frameSize, sort, hasOffer, seller: isSeller 
+      frameShape, frameType, material, frameColor, lensType, gender, frameSize,
+      modelNumber, color, sellerCode, sort, hasOffer, seller: isSeller 
     } = req.query;
 
     const query = { isActive: true };
 
+    if (sellerCode) {
+      // Public store link from the product page: resolve the seller by their
+      // human-readable sellerId and only show that seller's active listings.
+      const { default: Seller } = await import('../models/Seller.js');
+      const target = await Seller.findOne({ sellerId: sellerCode });
+      if (!target) {
+        return res.json({ success: true, products: [], pagination: { total: 0, page: 1, limit: parseInt(limit), pages: 0 } });
+      }
+      query.seller = target._id;
+    }
+
     if (search) {
       query.$text = { $search: search };
     }
-    if (category) query.category = category;
+    if (category) query.category = normalizeCategory(category);
     if (brand) query.brand = brand;
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = parseInt(minPrice);
       if (maxPrice) query.price.$lte = parseInt(maxPrice);
     }
-    if (frameShape) query.frameShape = frameShape;
+    if (frameShape) query.frameShape = { $in: shapeVariants(frameShape) };
+    if (frameType) query.frameType = { $in: frameTypeVariants(frameType) };
+    if (material) query.frameMaterial = { $in: materialVariants(material) };
     if (frameColor) query.frameColor = frameColor;
     if (lensType) query.lensType = lensType;
     if (gender) query.gender = gender;
-    if (frameSize) query.frameSize = frameSize;
+    if (frameSize) query.frameSize = { $in: sizeVariants(frameSize) };
+    if (modelNumber) query.modelNumber = new RegExp(String(modelNumber).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    if (color) query.colors = { $elemMatch: { name: new RegExp(String(color).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } };
     if (hasOffer === 'true') {
       query.$or = [
         { 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } },
@@ -77,6 +149,39 @@ router.get('/', optionalAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get products error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+
+// Brand-wise manufacturer catalogue for the home page.
+// Groups the products each manufacturer has added under the brand name,
+// instead of sampling individual seller listings.
+router.get('/manufacturer-brands', async (req, res) => {
+  try {
+    const limitPerBrand = Math.min(parseInt(req.query.perBrand || 8, 10) || 8, 24);
+
+    const brandNames = await Product.distinct('brand', {
+      isActive: true,
+      isManufacturerProduct: true,
+      manufacturer: { $ne: null }
+    });
+
+    const brands = [];
+    for (const brandName of brandNames.filter(Boolean).sort()) {
+      const filter = { isActive: true, isManufacturerProduct: true, brand: brandName };
+      const [products, productCount] = await Promise.all([
+        Product.find(filter).sort({ createdAt: -1 }).limit(limitPerBrand)
+          .populate('seller', 'storeName storeLogo rating').lean(),
+        Product.countDocuments(filter)
+      ]);
+      if (products.length) brands.push({ brand: brandName, productCount, products });
+    }
+
+    brands.sort((a, b) => b.productCount - a.productCount);
+    res.json({ success: true, brands });
+  } catch (error) {
+    console.error('Manufacturer brands error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
@@ -144,7 +249,7 @@ router.get('/random', async (req, res) => {
     const { limit = 10, category } = req.query;
 
     const query = { isActive: true };
-    if (category) query.category = category;
+    if (category) query.category = normalizeCategory(category);
 
     const count = await Product.countDocuments(query);
     const randomSkip = Math.max(0, Math.floor(Math.random() * (count - parseInt(limit))));
@@ -164,6 +269,8 @@ router.get('/filters', async (req, res) => {
   try {
     const brands = await Product.distinct('brand', { isActive: true });
     const frameShapes = await Product.distinct('frameShape', { isActive: true });
+    const frameTypes = await Product.distinct('frameType', { isActive: true });
+    const materials = await Product.distinct('frameMaterial', { isActive: true });
     const frameColors = await Product.distinct('frameColor', { isActive: true });
     const lensTypes = await Product.distinct('lensType', { isActive: true });
     const genders = await Product.distinct('gender', { isActive: true });
@@ -180,6 +287,8 @@ router.get('/filters', async (req, res) => {
       filters: {
         brands: brands.filter(Boolean).sort(),
         frameShapes: frameShapes.filter(Boolean).sort(),
+        frameTypes: frameTypes.filter(Boolean).sort(),
+        materials: materials.filter(Boolean).sort(),
         frameColors: frameColors.filter(Boolean).sort(),
         lensTypes: lensTypes.filter(Boolean).sort(),
         genders: genders.filter(Boolean).sort(),

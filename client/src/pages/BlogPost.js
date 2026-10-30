@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
+import { oneOf } from '../services/apiResponse';
 
 const BlogPost = () => {
   const { slug } = useParams();
@@ -18,7 +19,7 @@ const BlogPost = () => {
     const fetchPost = async () => {
       try {
         const res = await blog.getBySlug(slug);
-        setPost(res.data.data);
+        setPost(oneOf(res.data, 'blog'));
       } catch (err) {
         toast.error('Failed to load post');
       } finally {
@@ -46,7 +47,7 @@ const BlogPost = () => {
       setComment('');
       toast.success('Comment added');
       const res = await blog.getBySlug(slug);
-      setPost(res.data.data);
+      setPost(oneOf(res.data, 'blog'));
     } catch (err) {
       toast.error('Failed to add comment');
     }

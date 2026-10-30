@@ -12,7 +12,7 @@ const router = express.Router();
  * GET /api/seller-performance/metrics
  * Get current seller's performance metrics
  */
-router.get('/metrics', verifyToken, verifySeller, async (req, res) => {
+router.get('/metrics', verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
     const { startDate, endDate } = req.query;

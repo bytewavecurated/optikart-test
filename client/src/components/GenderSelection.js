@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUser, FiArrowRight, FiEye, FiSun, FiDroplet, FiMonitor } from 'react-icons/fi';
+import {
+  FiArrowLeft, FiArrowRight, FiDroplet, FiEye, FiMonitor, FiSun, FiUser } from 'react-icons/fi';
 
 const GenderSelection = () => {
   const [selectedGender, setSelectedGender] = useState(null);
@@ -10,19 +11,19 @@ const GenderSelection = () => {
     {
       id: 'men',
       name: 'Men',
-      image: 'https://images.unsplash.com/photo-1577803645773-f96470579636?w=400&h=400&fit=crop',
+      image: '/assets/gen-men.svg',
       color: '#2874f0'
     },
     {
       id: 'women',
       name: 'Women',
-      image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop',
+      image: '/assets/gen-women.svg',
       color: '#ff6161'
     },
     {
       id: 'kids',
       name: 'Kids',
-      image: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?w=400&h=400&fit=crop',
+      image: '/assets/gen-kids.svg',
       color: '#ff9f00'
     }
   ];
@@ -147,7 +148,7 @@ const GenderSelection = () => {
                   color: 'var(--text-secondary)'
                 }}
               >
-                ← Back to Gender Selection
+                <FiArrowLeft size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Back to Gender Selection
               </button>
               <h3 style={{ margin: '16px 0 0 0', fontSize: '20px', fontWeight: 600 }}>
                 Select Category for <span style={{ color: 'var(--primary)', textTransform: 'capitalize' }}>{selectedGender}</span>

@@ -6,7 +6,7 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
   },
   starsWrap: {
     display: 'inline-flex',

@@ -12,6 +12,8 @@ import Executive from './models/Executive.js';
 import Manufacturer from './models/Manufacturer.js';
 import ManufacturerSeller from './models/ManufacturerSeller.js';
 import Blog from './models/Blog.js';
+import DeliveryPartner from './models/DeliveryPartner.js';
+import StaffRole from './models/StaffRole.js';
 
 dotenv.config();
 
@@ -26,6 +28,8 @@ const seedDatabase = async () => {
     await Executive.deleteMany({});
     await Manufacturer.deleteMany({});
     await ManufacturerSeller.deleteMany({});
+    await DeliveryPartner.deleteMany({});
+    await StaffRole.deleteMany({});
     console.log('Cleared existing data');
 
     const admin = await User.create({
@@ -196,6 +200,49 @@ const seedDatabase = async () => {
       createdBy: admin._id
     });
     console.log("Executive created:", executive.email);
+
+    // Create a delivery partner so the admin-created partner login flow is
+    // usable out of the box (admin panel can add more).
+    const deliveryPartner = await DeliveryPartner.create({
+      name: "Suresh Kumar",
+      email: "suresh.partner@optikart.com",
+      password: "Partner123@",
+      phone: "9876543233",
+      vehicleType: "bike",
+      vehicleNumber: "MH12AB1234",
+      licenseNumber: "MH1220200012345",
+      aadharNumber: "123412341234",
+      panNumber: "ABCDE1234F",
+      bankDetails: {
+        accountNumber: "987654321098",
+        ifscCode: "HDFC0001234",
+        bankName: "HDFC Bank",
+        branchName: "Andheri East"
+      },
+      isActive: true,
+      isVerified: true,
+      status: "online",
+      currentLocation: { latitude: 19.076, longitude: 72.8777 }
+    });
+    console.log("Delivery partner created:", deliveryPartner.email);
+
+    // Staff accounts: a User (role 'staff') plus a StaffRole with the same
+    // email, which is what verifyStaff looks up.
+    const staffUser = await User.create({
+      name: 'Priya Sharma',
+      email: 'priya.staff@optikart.com',
+      password: 'Staff123@',
+      phone: '9876543244',
+      role: 'staff'
+    });
+    const staffRole = await StaffRole.create({
+      admin: admin._id,
+      email: staffUser.email,
+      name: staffUser.name,
+      role: 'seller_manager',
+      permissions: ['products:read', 'products:verify', 'sellers:read']
+    });
+    console.log("Staff account created:", staffRole.email);
 
     // Create test manufacturer
     const manufacturer = await Manufacturer.create({
@@ -861,6 +908,119 @@ const seedDatabase = async () => {
     ]);
     console.log(`${products.length} products created`);
 
+    // Seed data expresses the frame material as a `materials` list; the schema
+    // filters on the single-value `frameMaterial` enum. Backfill it so the
+    // material facet on the storefront returns results.
+    const MATERIAL_TO_ENUM = {
+      'stainless steel': 'stainless-steel',
+      'stainless-steel': 'stainless-steel',
+      'acetate': 'acetate',
+      'metal': 'metal',
+      'polycarbonate': 'polycarbonate',
+      'tr90': 'tr90',
+      'titanium': 'titanium',
+      'plastic': 'plastic',
+      'wood': 'wood'
+    };
+    for (const prod of products) {
+      if (prod.frameMaterial) continue;
+      const first = (prod.materials && prod.materials[0]) || '';
+      const mapped = MATERIAL_TO_ENUM[String(first).toLowerCase().trim()];
+      if (mapped) {
+        prod.frameMaterial = mapped;
+        await prod.save();
+      }
+    }
+    console.log('Backfilled frameMaterial from materials list');
+
+    // Seed references placeholder image paths; generate real PNG product
+    // images so the marketplace never renders broken pictures.
+    try {
+      const pathMod = await import('path');
+      const fsMod = await import('fs');
+      const zlibMod = await import('zlib');
+      const { fileURLToPath } = await import('url');
+      const dir = pathMod.join(pathMod.dirname(fileURLToPath(import.meta.url)), 'uploads', 'products');
+      fsMod.mkdirSync(dir, { recursive: true });
+
+      const crcTable = [];
+      for (let n = 0; n < 256; n++) {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        crcTable[n] = c >>> 0;
+      }
+      const crc32 = (buf) => {
+        let c = 0xffffffff;
+        for (let i = 0; i < buf.length; i++) c = crcTable[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
+        return (c ^ 0xffffffff) >>> 0;
+      };
+      const pngChunk = (type, data) => {
+        const len = Buffer.alloc(4);
+        len.writeUInt32BE(data.length, 0);
+        const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+        const crc = Buffer.alloc(4);
+        crc.writeUInt32BE(crc32(body), 0);
+        return Buffer.concat([len, body, crc]);
+      };
+      // Solid colour PNG; the product name is shown as text by the UI itself.
+      const makePng = (file, rgb) => {
+        const w = 600, h = 600;
+        const pixel = Buffer.from(Uint8Array.from(rgb));
+        const row = Buffer.alloc(1 + w * 3);
+        row[0] = 0;
+        for (let x = 0; x < w; x++) pixel.copy(row, 1 + x * 3);
+        const raw = Buffer.concat(Array.from({ length: h }, () => row));
+        const ihdr = Buffer.alloc(13);
+        ihdr.writeUInt32BE(w, 0);
+        ihdr.writeUInt32BE(h, 4);
+        ihdr[8] = 8; ihdr[9] = 2; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
+        fsMod.writeFileSync(file, Buffer.concat([
+          Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+          pngChunk('IHDR', ihdr),
+          pngChunk('IDAT', zlibMod.deflateSync(raw, { level: 9 })),
+          pngChunk('IEND', Buffer.alloc(0))
+        ]));
+      };
+
+      const palettes = [
+        [0x28, 0x74, 0xf0], [0x66, 0x7e, 0xea], [0xf5, 0x57, 0x6c],
+        [0x43, 0xe9, 0x7b], [0x4f, 0xac, 0xfe], [0xff, 0x9f, 0x00],
+        [0x0a, 0x25, 0x40], [0x76, 0x4b, 0xa2]
+      ];
+
+      const productImages = await Product.find({}).select('images title').lean();
+      let made = 0;
+      for (const prod of productImages) {
+        const seedNum = [...String(prod.title || 'eyewear')].reduce((a, ch) => a + ch.charCodeAt(0), 0);
+        const base = palettes[seedNum % palettes.length];
+        let idx = 0;
+        for (const rel of prod.images || []) {
+          if (typeof rel !== 'string' || !rel.startsWith('/uploads/products/')) continue;
+          const file = pathMod.join(dir, pathMod.basename(rel));
+          if (fsMod.existsSync(file)) continue;
+          // Slight tint per gallery slot so multi-image products look distinct.
+          const tint = base.map((v) => Math.max(0, Math.min(255, v - idx * 28)));
+          makePng(file, tint);
+          made += 1;
+          idx += 1;
+        }
+      }
+      console.log(`Generated ${made} placeholder product images`);
+    } catch (imgErr) {
+      console.log('Placeholder image note:', imgErr.message);
+    }
+
+    // Mark the eyewear brands as manufacturer-added catalogue so the home page
+    // can show products grouped brand-wise (manufacturers, not seller picks).
+    const manufacturerBrands = ['Ray-Ban', 'Fastrack', 'Lenskart Air', 'John Jacobs', 'Vogue'];
+    await Product.updateMany(
+      { brand: { $in: manufacturerBrands } },
+      { manufacturer: manufacturer._id, isManufacturerProduct: true }
+    );
+    manufacturer.brands = manufacturerBrands;
+    await manufacturer.save();
+    console.log(`Manufacturer products tagged for brands: ${manufacturerBrands.join(', ')}`);
+
     const coupons = await Coupon.create([
       {
         code: 'WELCOME10',
@@ -960,13 +1120,6 @@ const seedDatabase = async () => {
         content: 'View incoming orders in your dashboard. Confirm, pack, and hand over to the pickup partner. Track order status in real-time.',
         category: 'seller_orders',
         forRole: 'seller'
-      },
-      {
-        title: 'Subscription plans',
-        category: 'seller_general',
-        forRole: 'seller',
-        faq: true,
-        answer: '₹590/month (₹500 + ₹90 GST) with auto-renewal.'
       },
       {
         title: 'Shipping and delivery',

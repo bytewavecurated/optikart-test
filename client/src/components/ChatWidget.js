@@ -53,7 +53,7 @@ const styles = {
     flexDirection: 'column',
     overflow: 'hidden',
     zIndex: 1200,
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
     animation: 'chatSlideUp 0.3s ease',
   },
   chatHeader: {

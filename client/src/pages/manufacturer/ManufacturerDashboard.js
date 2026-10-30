@@ -566,7 +566,7 @@ const ManufacturerDashboard = () => {
                         color: newProduct.kidsType === 'eyeglasses' ? '#2874f0' : '#212121'
                       }}
                     >
-                      👓 Eyeglasses
+                      Eyeglasses
                     </button>
                     <button
                       type="button"
@@ -581,7 +581,7 @@ const ManufacturerDashboard = () => {
                         color: newProduct.kidsType === 'sunglasses' ? '#2874f0' : '#212121'
                       }}
                     >
-                      🕶️ Sunglasses
+                      Sunglasses
                     </button>
                   </div>
                 </div>

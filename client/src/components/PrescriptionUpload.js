@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { FiUpload, FiCamera, FiFile, FiX, FiCheck, FiEye } from 'react-icons/fi';
+import {
+  FiAlertTriangle, FiCamera, FiCheck, FiEye, FiFile, FiUpload, FiX } from 'react-icons/fi';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -12,7 +13,7 @@ const LENS_OPTIONS = [
 
 const styles = {
   container: {
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
     background: '#fff',
     borderRadius: '4px',
     border: '1px solid #e0e0e0',
@@ -373,7 +374,7 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
         </div>
       )}
 
-      {error && <div style={styles.error}>⚠ {error}</div>}
+      {error && <div style={styles.error}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />{error}</div>}
 
       <h4 style={styles.sectionTitle}>Lens Preference</h4>
       <div style={styles.lensGrid} className="lens-grid">

@@ -143,7 +143,10 @@ router.post('/login', async (req, res) => {
 
     // Check if this is a test credential - bypass OTP for testing
     const testPartnerEmails = ['delivery@optikart.com'];
-    const isTestCredential = testPartnerEmails.includes(email);
+    // Second-factor OTP may only be skipped outside production, and only
+    // for the well-known seededdemo accounts whose password is also public.
+    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
+    const isTestCredential = allowOtpBypass && testPartnerEmails.includes(email);
 
     if (isTestCredential) {
       // Direct login for test credentials
@@ -159,7 +162,7 @@ router.post('/login', async (req, res) => {
         partner: partner.toJSON()
       });
     } else {
-      const loginOtp = otpGenerator.generate('6789', { 
+      const loginOtp = otpGenerator.generate(6, { 
         upperCaseAlphabets: false, 
         specialChars: false, 
         lowerCaseAlphabets: false 
@@ -173,6 +176,7 @@ router.post('/login', async (req, res) => {
 
       res.json({
         success: true,
+        requiresOTP: true,
         message: 'Login OTP sent to your email.',
         partnerId: partner._id
       });
@@ -251,7 +255,7 @@ router.post('/verify-login-otp', async (req, res) => {
  * GET /api/delivery-partner/me
  * Get delivery partner profile
  */
-router.get('/me', verifyToken, verifyDeliveryPartner, async (req, res) => {
+router.get('/me', verifyDeliveryPartner, async (req, res) => {
   try {
     const partnerId = req.partner._id;
 
@@ -282,7 +286,7 @@ router.get('/me', verifyToken, verifyDeliveryPartner, async (req, res) => {
  * POST /api/delivery-partner/location
  * Update partner location
  */
-router.post('/location', verifyToken, verifyDeliveryPartner, async (req, res) => {
+router.post('/location', verifyDeliveryPartner, async (req, res) => {
   try {
     const partnerId = req.partner._id;
     const { latitude, longitude } = req.body;
@@ -321,7 +325,7 @@ router.post('/location', verifyToken, verifyDeliveryPartner, async (req, res) =>
  * POST /api/delivery-partner/complete/:orderId
  * Complete delivery
  */
-router.post('/complete/:orderId', verifyToken, verifyDeliveryPartner, async (req, res) => {
+router.post('/complete/:orderId', verifyDeliveryPartner, async (req, res) => {
   try {
     const { orderId } = req.params;
 
@@ -355,7 +359,7 @@ router.post('/complete/:orderId', verifyToken, verifyDeliveryPartner, async (req
  * POST /api/delivery-partner/withdraw
  * Process withdrawal
  */
-router.post('/withdraw', verifyToken, verifyDeliveryPartner, async (req, res) => {
+router.post('/withdraw', verifyDeliveryPartner, async (req, res) => {
   try {
     const partnerId = req.partner._id;
     const { amount } = req.body;

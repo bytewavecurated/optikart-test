@@ -14,9 +14,9 @@ const DEFAULT_LENS_TYPES = ['Non-Powered', 'Powered', 'Photochromic', 'Polarized
 const DEFAULT_GENDERS = ['Men', 'Women', 'Unisex', 'Kids'];
 const DEFAULT_FRAME_SIZES = ['Small', 'Medium', 'Large', 'Extra-Large'];
 const RATING_OPTIONS = [
-  { label: '4★ & above', value: 4 },
-  { label: '3★ & above', value: 3 },
-  { label: '2★ & above', value: 2 },
+  { label: '4 Star & above', value: 4 },
+  { label: '3 Star & above', value: 3 },
+  { label: '2 Star & above', value: 2 },
 ];
 const DISCOUNT_OPTIONS = [
   { label: '10% or more', value: 10 },
@@ -31,7 +31,7 @@ const styles = {
     background: '#fff',
     borderRadius: '4px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
     overflow: 'hidden',
     position: 'sticky',
     top: '120px',

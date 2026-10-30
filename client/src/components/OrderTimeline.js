@@ -12,7 +12,7 @@ const STEPS = [
 
 const styles = {
   container: {
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
     background: '#fff',
     borderRadius: '4px',
     padding: '24px',

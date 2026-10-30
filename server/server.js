@@ -51,6 +51,7 @@ import returnAnalyticsRoutes from './routes/returnAnalytics.js';
 import deliveryRouteRoutes from './routes/deliveryRoute.js';
 import customerReturnsRoutes from './routes/customerReturns.js';
 import commissionRoutes from './routes/commission.js';
+import staffRoutes from './routes/staff.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -132,6 +133,7 @@ app.use('/api/return-analytics', returnAnalyticsRoutes);
 app.use('/api/delivery-route', deliveryRouteRoutes);
 app.use('/api/customer-returns', customerReturnsRoutes);
 app.use('/api/commission', commissionRoutes);
+app.use('/api/staff', staffRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -144,10 +146,32 @@ app.get('/api/health', (req, res) => {
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
+  // Legacy generic join
   socket.on('join', (data) => {
-    if (data.userId) socket.join(`user_${data.userId}`);
-    if (data.sellerId) socket.join(`seller_${data.sellerId}`);
-    if (data.adminId) socket.join('admin_room');
+    if (data?.userId) socket.join(`user_${data.userId}`);
+    if (data?.sellerId) socket.join(`seller_${data.sellerId}`);
+    if (data?.adminId) socket.join('admin_room');
+  });
+
+  // The client emits these event names (see client/src/services/socket.js)
+  socket.on('joinSellerRoom', (sellerId) => {
+    if (sellerId) socket.join(`seller_${sellerId}`);
+  });
+
+  socket.on('leaveSellerRoom', (sellerId) => {
+    if (sellerId) socket.leave(`seller_${sellerId}`);
+  });
+
+  socket.on('joinOrderRoom', (orderId) => {
+    if (orderId) socket.join(`order_${orderId}`);
+  });
+
+  socket.on('leaveOrderRoom', (orderId) => {
+    if (orderId) socket.leave(`order_${orderId}`);
+  });
+
+  socket.on('joinAdminRoom', () => {
+    socket.join('admin_room');
   });
 
   socket.on('disconnect', () => {

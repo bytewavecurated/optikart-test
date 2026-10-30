@@ -1,7 +1,6 @@
 import express from 'express';
 import Order from '../models/Order.js';
 import Seller from '../models/Seller.js';
-import Subscription from '../models/Subscription.js';
 import { verifyToken, verifySeller } from '../middleware/auth.js';
 import { paymentLimiter } from '../middleware/rateLimiter.js';
 import { createOrder, verifyOrder } from '../services/razorpay.js';
@@ -85,97 +84,6 @@ router.post('/verify', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Verify payment error:', error);
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
-  }
-});
-
-/**
- * POST /api/payment/subscribe
- * Create Razorpay order for seller subscription (₹590 = ₹500 + ₹90 GST)
- */
-router.post('/subscribe', verifyToken, verifySeller, async (req, res) => {
-  try {
-    const sellerId = req.seller._id;
-    const totalAmount = 590;
-
-    const razorpayOrder = await createOrder(totalAmount, 'INR', `seller_sub_${sellerId}_${Date.now()}`);
-
-    if (!razorpayOrder.success) {
-      return res.status(500).json({ success: false, message: 'Failed to create subscription order.', error: razorpayOrder.error });
-    }
-
-    res.json({
-      success: true,
-      orderId: razorpayOrder.orderId,
-      amount: razorpayOrder.amount,
-      currency: razorpayOrder.currency,
-      key: process.env.RAZORPAY_KEY_ID
-    });
-  } catch (error) {
-    console.error('Create subscription order error:', error);
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
-  }
-});
-
-/**
- * POST /api/payment/verify-subscription
- * Verify Razorpay payment and activate seller subscription
- */
-router.post('/verify-subscription', verifyToken, verifySeller, async (req, res) => {
-  try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-    const sellerId = req.seller._id;
-
-    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-      return res.status(400).json({ success: false, message: 'Payment verification details are required.' });
-    }
-
-    const verification = verifyOrder(razorpayOrderId, razorpayPaymentId, razorpaySignature);
-
-    if (!verification.verified) {
-      return res.status(400).json({ success: false, message: 'Payment verification failed.' });
-    }
-
-    // Check if an active subscription already exists
-    const existingSubscription = await Subscription.findOne({
-      seller: sellerId,
-      status: 'active'
-    });
-
-    if (existingSubscription) {
-      return res.status(400).json({ success: false, message: 'You already have an active subscription.' });
-    }
-
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setFullYear(endDate.getFullYear() + 1);
-
-    // Create subscription record
-    await Subscription.create({
-      seller: sellerId,
-      plan: 'basic',
-      amount: 500,
-      gstAmount: 90,
-      totalAmount: 590,
-      razorpayOrderId,
-      razorpayPaymentId,
-      status: 'active',
-      startDate,
-      endDate
-    });
-
-    // Mark seller as verified
-    await Seller.findByIdAndUpdate(sellerId, {
-      isVerified: true,
-      verifiedAt: new Date()
-    });
-
-    res.json({
-      success: true,
-      message: 'Subscription activated successfully.'
-    });
-  } catch (error) {
-    console.error('Verify subscription error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });

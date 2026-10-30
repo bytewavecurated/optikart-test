@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import Seller from '../models/Seller.js';
 import { findNearbySellers } from './proximityOrderRouting.js';
@@ -226,6 +227,19 @@ export const aiFallbackAssignment = async (order) => {
       return { success: false, message: 'No sellers available' };
     }
 
+    // Pending workload per candidate seller (assigned but not finished yet).
+    const candidateIds = nearbyResult.sellers.map((x) => String(x._id));
+    const workloadRows = await Order.aggregate([
+      {
+        $match: {
+          seller: { $in: candidateIds.map((id) => new mongoose.Types.ObjectId(id)) },
+          orderStatus: { $nin: ['delivered', 'cancelled', 'returned'] }
+        }
+      },
+      { $group: { _id: '$seller', count: { $sum: 1 } } }
+    ]);
+    const workloadBySeller = new Map(workloadRows.map((r) => [String(r._id), r.count]));
+
     // Score each seller
     const scoredSellers = nearbyResult.sellers.map(seller => {
       let score = 100; // Base score
@@ -239,11 +253,11 @@ export const aiFallbackAssignment = async (order) => {
       // Experience bonus (more orders = more experienced)
       score += Math.min((seller.totalSales || 0) / 100, 20);
       
-      // Workload penalty (check current pending orders)
-      // In a real implementation, query for pending orders
-      // For now, assume all sellers have similar workload
-      
-      return { ...seller, score };
+      // Workload penalty: fewer open orders is better.
+      const openOrders = workloadBySeller.get(String(seller._id)) || 0;
+      score -= openOrders * 5;
+
+      return { ...seller, score, openOrders };
     });
 
     // Sort by score descending

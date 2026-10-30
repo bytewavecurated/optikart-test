@@ -1,13 +1,13 @@
 import React from 'react';
-import { FiTruck, FiMapPin, FiClock, FiPackage, FiCheckCircle, FiInfo } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiGlobe, FiHome, FiInfo, FiMapPin, FiPackage, FiTrendingUp, FiTruck } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const timelines = [
-  { region: 'Metro Cities', cities: 'Delhi, Mumbai, Bangalore, Chennai, Kolkata, Hyderabad', delivery: '2-4 business days', icon: '🏙️' },
-  { region: 'Tier-2 Cities', cities: 'Jaipur, Lucknow, Chandigarh, Pune, Ahmedabad, Coimbatore', delivery: '4-6 business days', icon: '🏘️' },
-  { region: 'Tier-3 Cities & Towns', cities: 'All other cities and towns across India', delivery: '6-8 business days', icon: '🏡' },
-  { region: 'Remote / North-East', cities: 'North-East states, J&K, Ladakh, and remote areas', delivery: '8-12 business days', icon: '🏔️' },
+  { region: 'Metro Cities', cities: 'Delhi, Mumbai, Bangalore, Chennai, Kolkata, Hyderabad', delivery: '2-4 business days', icon: <FiHome /> },
+  { region: 'Tier-2 Cities', cities: 'Jaipur, Lucknow, Chandigarh, Pune, Ahmedabad, Coimbatore', delivery: '4-6 business days', icon: <FiGlobe /> },
+  { region: 'Tier-3 Cities & Towns', cities: 'All other cities and towns across India', delivery: '6-8 business days', icon: <FiMapPin /> },
+  { region: 'Remote / North-East', cities: 'North-East states, J&K, Ladakh, and remote areas', delivery: '8-12 business days', icon: <FiTrendingUp /> },
 ];
 
 const shippingPartners = [

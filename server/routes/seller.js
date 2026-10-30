@@ -4,7 +4,6 @@ import otpGenerator from 'otp-generator';
 import Seller from '../models/Seller.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
-import Subscription from '../models/Subscription.js';
 import { sellerRegisterValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifySeller } from '../middleware/auth.js';
@@ -37,7 +36,7 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
       }
     }
 
-    const phoneOtp = otpGenerator.generate('6789', { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+    const phoneOtp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
     const seller = new Seller({
       name, email, phone, password, gstNumber, aadharNumber, panNumber,
@@ -171,7 +170,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
       });
     } else {
       // Generate OTP for login verification (production flow)
-      const loginOtp = otpGenerator.generate('6789', { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+      const loginOtp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
       seller.loginOtp = loginOtp;
       seller.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);

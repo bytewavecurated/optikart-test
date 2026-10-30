@@ -31,6 +31,8 @@ const UserDetailView = lazy(() => import('./pages/admin/UserDetailView'));
 const SellerDetailView = lazy(() => import('./pages/admin/SellerDetailView'));
 const StaffLogin = lazy(() => import('./pages/staff/StaffLogin'));
 const StaffLayout = lazy(() => import('./pages/staff/StaffLayout'));
+const StaffWorkspace = lazy(() => import('./pages/staff/StaffWorkspace'));
+const ProductsBrowse = lazy(() => import('./pages/ProductsBrowse'));
 const ProductDetails = lazy(() => import('./pages/ProductDetails'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
@@ -73,6 +75,7 @@ const Commissions = lazy(() => import('./pages/admin/Commissions'));
 const ChatbotManagement = lazy(() => import('./pages/admin/ChatbotManagement'));
 const ExecutiveLogin = lazy(() => import('./pages/executive/ExecutiveLogin'));
 const ExecutiveDashboard = lazy(() => import('./pages/executive/ExecutiveDashboard'));
+const ExecutiveSection = lazy(() => import('./pages/executive/ExecutiveSection'));
 const ManufacturerLogin = lazy(() => import('./pages/manufacturer/ManufacturerLogin'));
 const ManufacturerDashboard = lazy(() => import('./pages/manufacturer/ManufacturerDashboard'));
 const ManufacturerSellerLogin = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerLogin'));
@@ -233,15 +236,16 @@ function App() {
         <Route path="/product/:productId/lenses" element={<LensSelection />} />
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>
-          <Route index element={<div>Staff Dashboard - Coming Soon</div>} />
-          <Route path="blogs" element={<div>Blog Management - Coming Soon</div>} />
-          <Route path="blogs/manage" element={<div>Manage Blogs - Coming Soon</div>} />
-          <Route path="support" element={<div>Support Dashboard - Coming Soon</div>} />
-          <Route path="support/tickets" element={<div>Support Tickets - Coming Soon</div>} />
-          <Route path="products" element={<div>Product Management - Coming Soon</div>} />
-          <Route path="products/manage" element={<div>Manage Products - Coming Soon</div>} />
-          <Route path="orders" element={<div>Order Management - Coming Soon</div>} />
-          <Route path="orders/manage" element={<div>Manage Orders - Coming Soon</div>} />
+          <Route index element={<StaffWorkspace view="overview" />} />
+          <Route path="dashboard" element={<StaffWorkspace view="overview" />} />
+          <Route path="blogs" element={<StaffWorkspace view="overview" />} />
+          <Route path="blogs/manage" element={<StaffWorkspace view="blogs" />} />
+          <Route path="support" element={<StaffWorkspace view="overview" />} />
+          <Route path="support/tickets" element={<StaffWorkspace view="returns" />} />
+          <Route path="products" element={<StaffWorkspace view="overview" />} />
+          <Route path="products/manage" element={<StaffWorkspace view="products" />} />
+          <Route path="orders" element={<StaffWorkspace view="overview" />} />
+          <Route path="orders/manage" element={<StaffWorkspace view="orders" />} />
         </Route>
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
@@ -252,6 +256,7 @@ function App() {
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/categories" element={<Categories />} />
+        <Route path="/products" element={<ProductsBrowse />} />
         <Route path="/category/:category" element={<CategoryPage />} />
         <Route path="/contact-lenses" element={<ContactLenses />} />
         <Route path="/brands" element={<AllBrands />} />
@@ -288,6 +293,10 @@ function App() {
         <Route path="/policy/epr" element={<EPRCompliance />} />
         <Route path="/executive/login" element={<ExecutiveLogin />} />
         <Route path="/executive/dashboard" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveDashboard /></ProtectedRoute>} />
+        <Route path="/executive/deliveries" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="deliveries" /></ProtectedRoute>} />
+        <Route path="/executive/customers" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="customers" /></ProtectedRoute>} />
+        <Route path="/executive/reports" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="reports" /></ProtectedRoute>} />
+        <Route path="/executive/delivery/:id" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="detail" /></ProtectedRoute>} />
         <Route path="/manufacturer/login" element={<ManufacturerLogin />} />
         <Route path="/manufacturer/dashboard" element={<ProtectedRoute allowedRoles={['manufacturer']}><ManufacturerDashboard /></ProtectedRoute>} />
         <Route path="/manufacturer-seller/login" element={<ManufacturerSellerLogin />} />

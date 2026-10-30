@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
+import { oneOf, listOf } from '../services/apiResponse';
 
 const ProductCompare = () => {
   const location = useLocation();
@@ -33,7 +34,7 @@ const ProductCompare = () => {
       for (const id of productIds) {
         const res = await products.getById(id);
         if (res.data.success) {
-          loadedProducts.push(res.data.data);
+          loadedProducts.push(oneOf(res.data, 'product'));
         }
       }
       setCompareProducts(loadedProducts);
@@ -52,7 +53,7 @@ const ProductCompare = () => {
     setSearching(true);
     try {
       const res = await products.getAll({ search: query, limit: 10 });
-      setSearchResults(res.data.data || []);
+      setSearchResults(listOf(res.data));
     } catch (err) {
       console.error('Search failed:', err);
     } finally {

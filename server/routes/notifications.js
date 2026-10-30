@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../middleware/auth.js';
+import { verifyToken, verifyAnyPrincipal } from '../middleware/auth.js';
 import {
   getUserNotifications,
   markAsRead,
@@ -13,12 +13,12 @@ const router = express.Router();
  * GET /api/notifications
  * Get user notifications
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyAnyPrincipal, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.principal.id;
     const { limit = 20, unreadOnly = false } = req.query;
 
-    const result = await getUserNotifications(userId, parseInt(limit), unreadOnly === 'true');
+    const result = await getUserNotifications(req.principal.user ? req.principal.user._id : userId, parseInt(limit), unreadOnly === 'true');
 
     if (result.success) {
       res.json({

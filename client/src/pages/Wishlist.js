@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
+import { wishlistItemsOf } from '../services/apiResponse';
 
 const MAX_WISHLIST_LOGGED_IN = 30;
 const MAX_WISHLIST_GUEST = 3;
@@ -23,7 +24,7 @@ const Wishlist = () => {
   const fetchWishlist = async () => {
     try {
       const res = await wishlistApi.get();
-      setItems(res.data.data || []);
+      setItems(wishlistItemsOf(res.data));
     } catch (err) {
       console.error(err);
     } finally {

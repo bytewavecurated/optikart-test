@@ -30,24 +30,17 @@ const StaffLogin = () => {
         setStep(2);
         toast.success('OTP sent to your email');
       } else if (result.token) {
-        // Redirect based on staff role
-        const role = result.staff?.role || 'blog_manager';
-        switch(role) {
-          case 'blog_manager':
-            navigate('/staff/blogs');
-            break;
-          case 'support_agent':
-            navigate('/staff/support');
-            break;
-          case 'product_manager':
-            navigate('/staff/products');
-            break;
-          case 'order_manager':
-            navigate('/staff/orders');
-            break;
-          default:
-            navigate('/staff/dashboard');
-        }
+        // Land on the queue for this staff role.
+        const landing = {
+          blog_manager: '/staff/blogs/manage',
+          doc_verifier: '/staff/products/manage',
+          user_manager: '/staff/support/tickets',
+          seller_manager: '/staff/products/manage',
+          finance_manager: '/staff/orders/manage',
+          delivery_manager: '/staff/orders/manage',
+          pickup_manager: '/staff/orders/manage'
+        };
+        navigate(landing[result.staff?.staffRole || result.staff?.role] || '/staff');
       }
     } else {
       toast.error(result.message || 'Login failed');

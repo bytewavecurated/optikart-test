@@ -20,7 +20,7 @@ const styles = {
     padding: '20px 24px',
     borderRadius: '4px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
   },
   header: {
     display: 'flex',

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiUser, FiMail, FiPhone, FiCalendar, FiPackage, FiShoppingBag, FiDollarSign, FiMapPin, FiTrash2, FiShield, FiEye, FiEyeOff, FiStar, FiCheckCircle } from 'react-icons/fi';
+import { FiAlertTriangle, FiArrowLeft, FiCalendar, FiCheckCircle, FiDollarSign, FiEye, FiEyeOff, FiMail, FiMapPin, FiPackage, FiPhone, FiShield, FiShoppingBag, FiStar, FiTrash2, FiUser } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -170,7 +170,7 @@ const SellerDetailView = () => {
 
             {seller.isBanned && (
               <div style={{ background: '#ffebee', border: '1px solid #ef5350', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: '#c62828', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>⚠️ Seller is Banned</p>
+                <p style={{ color: '#c62828', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Banned</p>
                 <p style={{ color: '#c62828', fontSize: '12px' }}>Reason: {seller.banReason || 'No reason provided'}</p>
                 <p style={{ color: '#c62828', fontSize: '12px' }}>Banned on: {new Date(seller.bannedAt).toLocaleDateString()}</p>
               </div>
@@ -178,7 +178,7 @@ const SellerDetailView = () => {
 
             {seller.isShadowBanned && !seller.isBanned && (
               <div style={{ background: '#fff3e0', border: '1px solid #ff9800', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: '#e65100', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>⚠️ Seller is Shadow Banned</p>
+                <p style={{ color: '#e65100', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Shadow Banned</p>
                 <p style={{ color: '#e65100', fontSize: '12px' }}>Seller can still access the platform but with limited visibility</p>
               </div>
             )}

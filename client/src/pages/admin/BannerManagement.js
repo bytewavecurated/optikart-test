@@ -32,7 +32,7 @@ const BannerManagement = () => {
   const fetchBanners = async () => {
     try {
       const res = await adminApi.getBanners();
-      setBanners(res.data.data || []);
+      setBanners(res.data.banners || []);
     } catch (error) {
       console.error('Error fetching banners:', error);
       toast.error('Failed to load banners');
@@ -115,16 +115,16 @@ const BannerManagement = () => {
     setFormData({
       title: banner.title || '',
       subtitle: banner.subtitle || '',
-      link: banner.link || '',
-      discountType: banner.discountType || 'percentage',
-      discountValue: banner.discountValue || '',
-      minPrice: banner.minPrice || '',
-      maxPrice: banner.maxPrice || '',
-      startDate: banner.startDate ? new Date(banner.startDate).toISOString().split('T')[0] : '',
-      endDate: banner.endDate ? new Date(banner.endDate).toISOString().split('T')[0] : '',
+      link: banner.linkUrl || '',
+      discountType: banner.discount?.kind || 'percentage',
+      discountValue: banner.discount?.value ?? '',
+      minPrice: banner.discount?.minPrice || '',
+      maxPrice: banner.discount?.maxPrice || '',
+      startDate: banner.discount?.startDate ? new Date(banner.discount.startDate).toISOString().split('T')[0] : '',
+      endDate: banner.discount?.endDate ? new Date(banner.discount.endDate).toISOString().split('T')[0] : '',
       isActive: banner.isActive !== false
     });
-    setImagePreview(banner.image);
+    setImagePreview(banner.images?.desktop?.url || '');
     setShowForm(true);
   };
 
@@ -357,7 +357,7 @@ const BannerManagement = () => {
               <div key={banner._id} className="card" style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', gap: '20px' }}>
                   <img
-                    src={banner.image}
+                    src={banner.images?.desktop?.url || banner.images?.mobile?.url || banner.image}
                     alt={banner.title}
                     style={{ width: '200px', height: '120px', objectFit: 'cover', borderRadius: '8px' }}
                   />

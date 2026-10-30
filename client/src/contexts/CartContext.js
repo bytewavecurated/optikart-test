@@ -7,7 +7,8 @@ const CartContext = createContext(null);
 
 const CART_KEY = 'optikart_cart';
 const COUPON_KEY = 'optikart_coupon';
-const MAX_ITEMS = 20;
+// Logged-in shoppers may hold up to 25 line items in the cart.
+const MAX_ITEMS = 25;
 const DELIVERY_CHARGE_PER_ITEM = 16;
 
 export const CartProvider = ({ children }) => {
@@ -74,7 +75,7 @@ export const CartProvider = ({ children }) => {
       }
 
       if (prevItems.length >= MAX_ITEMS) {
-        toast.error('Cart is full (max 20 items)');
+        toast.error(`Cart is full (max ${MAX_ITEMS} items)`);
         return prevItems;
       }
 

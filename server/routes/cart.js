@@ -1,5 +1,5 @@
 import express from 'express';
-import Cart from '../models/Cart.js';
+import Cart, { MAX_CART_ITEMS } from '../models/Cart.js';
 import Product from '../models/Product.js';
 import { verifyToken } from '../middleware/auth.js';
 
@@ -64,8 +64,8 @@ router.post('/add', verifyToken, async (req, res) => {
       }
       existingItem.quantity = newQuantity;
     } else {
-      if (cart.totalItems >= 20) {
-        return res.status(400).json({ success: false, message: 'Cart can have maximum 20 items.' });
+      if (cart.totalItems >= MAX_CART_ITEMS) {
+        return res.status(400).json({ success: false, message: `Cart can have a maximum of ${MAX_CART_ITEMS} items.` });
       }
 
       const price = product.discountedPrice || product.price;
@@ -94,6 +94,74 @@ router.post('/add', verifyToken, async (req, res) => {
   }
 });
 
+// Add an eyeglass product together with its full lens configuration.
+// The lens options the customer picked are stored on the cart line so the
+// seller can see the exact configuration and build the product accordingly.
+router.post('/add-lens', verifyToken, async (req, res) => {
+  try {
+    const { productId, quantity = 1, lensConfiguration = {} } = req.body;
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found.' });
+    }
+    if (!product.isActive) {
+      return res.status(400).json({ success: false, message: 'Product is not available.' });
+    }
+    if (product.stock < quantity) {
+      return res.status(400).json({ success: false, message: 'Insufficient stock.' });
+    }
+
+    let cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) {
+      cart = new Cart({ user: req.user._id, items: [] });
+    }
+    if (cart.totalItems + quantity > MAX_CART_ITEMS) {
+      return res.status(400).json({ success: false, message: `Cart can have a maximum of ${MAX_CART_ITEMS} items.` });
+    }
+
+    const rx = lensConfiguration.prescription || {};
+    const lensConfig = {
+      lensType: lensConfiguration.lensType || '',
+      lensPackage: lensConfiguration.material || '',
+      coating: lensConfiguration.coating || '',
+      power: {
+        sphereRight: String(rx.rightEye?.sphere ?? ''),
+        sphereLeft: String(rx.leftEye?.sphere ?? ''),
+        cylRight: String(rx.rightEye?.cylinder ?? ''),
+        cylLeft: String(rx.leftEye?.cylinder ?? ''),
+        axisRight: String(rx.rightEye?.axis ?? ''),
+        axisLeft: String(rx.leftEye?.axis ?? ''),
+        addRight: String(rx.rightEye?.add ?? ''),
+        addLeft: String(rx.leftEye?.add ?? '')
+      },
+      prescriptionMethod: lensConfiguration.prescriptionFile ? 'upload' : (lensConfiguration.prescription ? 'manual' : 'none'),
+      prescriptionFileUrl: typeof lensConfiguration.prescriptionFile === 'string' ? lensConfiguration.prescriptionFile : '',
+      prescriptionPrice: Number(lensConfiguration.price || 0)
+    };
+
+    const basePrice = product.discountedPrice || product.price;
+
+    cart.items.push({
+      product: productId,
+      variant: { lensType: lensConfig.lensType },
+      lensConfig,
+      quantity,
+      price: basePrice + lensConfig.prescriptionPrice
+    });
+
+    cart.totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+    await cart.save();
+
+    cart = await Cart.findById(cart._id)
+      .populate('items.product', 'title images price discountedPrice stock');
+
+    res.json({ success: true, message: 'Item added to cart with lens configuration.', cart });
+  } catch (error) {
+    console.error('Add lens item to cart error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
 router.put('/update', verifyToken, async (req, res) => {
   try {
     const { productId, variant, quantity } = req.body;

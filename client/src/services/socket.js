@@ -1,7 +1,10 @@
 import { io } from 'socket.io-client';
 
 // Use environment variable or derive from API URL
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+// Default to the origin the app was served from so the socket follows the
+// API host in every environment instead of failing against a fixed port.
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL
+  || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
 
 let socket = null;
 

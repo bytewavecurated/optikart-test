@@ -89,7 +89,7 @@ router.get('/user', verifyToken, async (req, res) => {
  * GET /api/returns/seller
  * Get seller's return requests
  */
-router.get('/seller', verifyToken, verifySeller, async (req, res) => {
+router.get('/seller', verifySeller, async (req, res) => {
   try {
     const sellerId = req.user.id;
 

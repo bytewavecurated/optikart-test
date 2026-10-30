@@ -4,6 +4,7 @@ import { FiClock, FiHeart, FiSearch, FiX } from 'react-icons/fi';
 import { blog } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { listOf } from '../services/apiResponse';
 
 const CATEGORIES = ['All', 'Eye Care', 'Style Guide', 'Technology', 'Trends', 'Tips & Tricks', 'News'];
 const POSTS_PER_PAGE = 6;
@@ -19,7 +20,7 @@ const BlogList = () => {
     const fetchPosts = async () => {
       try {
         const res = await blog.getAll({ limit: 100 });
-        setAllPosts(res.data.data || res.data.blogs || []);
+        setAllPosts(listOf(res.data));
       } catch (err) {
         console.error(err);
       } finally {

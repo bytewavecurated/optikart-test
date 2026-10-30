@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiEdit2, FiSave, FiX, FiPlus, FiMessageCircle } from 'react-icons/fi';
+import { FiEdit2, FiInfo, FiMessageCircle, FiPlus, FiSave, FiX } from 'react-icons/fi';
 import { chatbot } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -183,7 +183,7 @@ const ChatbotManagement = () => {
 
           <div className="card" style={{ background: 'var(--primary-light)', border: '2px solid var(--primary)' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px', color: 'var(--primary)' }}>
-              💡 Tips for Editing Knowledge Base
+              <FiInfo size={16} style={{ verticalAlign:'middle', marginRight:6 }} /> Tips for Editing Knowledge Base
             </h3>
             <ul style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.8', margin: 0, paddingLeft: '20px' }}>
               <li>Keep responses concise and helpful</li>

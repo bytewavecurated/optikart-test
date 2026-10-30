@@ -3,7 +3,7 @@ import { FiStar, FiTrendingUp, FiClock, FiRefreshCw, FiMessageSquare, FiAward, F
 
 const styles = {
   container: {
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
     background: '#fff',
     borderRadius: '4px',
     boxShadow: '0 1px 4px rgba(0,0,0,0.08)',

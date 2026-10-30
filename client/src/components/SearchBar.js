@@ -16,7 +16,7 @@ const STYLES = {
   wrapper: {
     position: 'relative',
     width: '100%',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
   },
   form: {
     display: 'flex',

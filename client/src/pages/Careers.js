@@ -1,5 +1,6 @@
 import React from 'react';
-import { FiBriefcase, FiMapPin, FiClock, FiMail, FiHeart, FiZap, FiUsers, FiAward, FiCoffee, FiTrendingUp } from 'react-icons/fi';
+import {
+  FiAward, FiBriefcase, FiCheck, FiClock, FiCoffee, FiHeart, FiMail, FiMapPin, FiTrendingUp, FiUsers, FiZap } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -89,7 +90,7 @@ const Careers = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }} className="benefits-grid">
                 {benefits.map((benefit, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 0' }}>
-                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--success-light)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px', fontWeight: 700 }}>✓</div>
+                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--success-light)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><FiCheck size={12} /></div>
                     <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{benefit}</span>
                   </div>
                 ))}

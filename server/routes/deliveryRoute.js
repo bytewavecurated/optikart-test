@@ -11,7 +11,7 @@ const router = express.Router();
  * GET /api/delivery-route/optimize
  * Get optimized delivery route for logged-in partner
  */
-router.get('/optimize', verifyToken, verifyDeliveryPartner, async (req, res) => {
+router.get('/optimize', verifyDeliveryPartner, async (req, res) => {
   try {
     const partnerId = req.partner._id;
 
@@ -32,7 +32,7 @@ router.get('/optimize', verifyToken, verifyDeliveryPartner, async (req, res) => 
  * GET /api/delivery-route/updates
  * Get real-time route updates
  */
-router.get('/updates', verifyToken, verifyDeliveryPartner, async (req, res) => {
+router.get('/updates', verifyDeliveryPartner, async (req, res) => {
   try {
     const partnerId = req.partner._id;
     const { lat, lon } = req.query;

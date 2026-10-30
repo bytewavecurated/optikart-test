@@ -5,32 +5,32 @@ import { FiArrowRight } from 'react-icons/fi';
 const CONTACT_LENS_BRANDS = [
   {
     name: 'Acuvue',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/ACUVUE_logo.svg/320px-ACUVUE_logo.svg.png',
+    logo: '',
     link: '/brands/acuvue',
   },
   {
     name: 'Bausch + Lomb',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Bausch_%26_Lomb_logo.svg/320px-Bausch_%26_Lomb_logo.svg.png',
+    logo: '',
     link: '/brands/bausch-lomb',
   },
   {
     name: 'CooperVision',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/CooperVision_logo.svg/320px-CooperVision_logo.svg.png',
+    logo: '',
     link: '/brands/cooper-vision',
   },
   {
     name: 'Alcon',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/Alcon_logo.svg/320px-Alcon_logo.svg.png',
+    logo: '',
     link: '/brands/alcon',
   },
   {
     name: 'SofLens',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/ACUVUE_logo.svg/320px-ACUVUE_logo.svg.png',
+    logo: '',
     link: '/brands/soflens',
   },
   {
     name: 'Biofinity',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/CooperVision_logo.svg/320px-CooperVision_logo.svg.png',
+    logo: '',
     link: '/brands/biofinity',
   },
 ];
@@ -123,17 +123,19 @@ export default function ContactLensBrandSection() {
             className="brand-card"
           >
             <div style={styles.logoContainer}>
-              <img
-                src={brand.logo}
-                alt={brand.name}
-                style={styles.logo}
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'block';
-                }}
-              />
-              <span style={{ display: 'none', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                {brand.name}
+              {brand.logo ? (
+                <img
+                  src={brand.logo}
+                  alt={brand.name}
+                  style={styles.logo}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    if (e.target.nextSibling) e.target.nextSibling.style.display = 'block';
+                  }}
+                />
+              ) : null}
+              <span style={{ display: brand.logo ? 'none' : 'block', fontSize: '16px', fontWeight: 700, color: 'var(--primary)' }}>
+                {brand.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase()}
               </span>
             </div>
             <p style={styles.brandName}>{brand.name}</p>

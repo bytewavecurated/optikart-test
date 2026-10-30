@@ -72,7 +72,10 @@ router.post('/login', async (req, res) => {
 
     // Check if this is a test credential - bypass OTP for testing
     const testAdminEmails = ['samedayopticians@gmail.com'];
-    const isTestCredential = testAdminEmails.includes(email);
+    // Second-factor OTP may only be skipped outside production, and only
+    // for the well-known seededdemo accounts whose password is also public.
+    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
+    const isTestCredential = allowOtpBypass && testAdminEmails.includes(email);
 
     if (isTestCredential) {
       // Direct login for test credentials
@@ -89,7 +92,7 @@ router.post('/login', async (req, res) => {
       });
     } else {
       // Generate OTP for login verification (production flow)
-      const otp = otpGenerator.generate('6789', { 
+      const otp = otpGenerator.generate(6, { 
         upperCaseAlphabets: false, 
         specialChars: false, 
         lowerCaseAlphabets: false,

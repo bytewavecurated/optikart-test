@@ -201,7 +201,7 @@ const CustomerReturnPortal = () => {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                   <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                    Quantity: {item.quantity} • Price: ₹{item.price}
+                    Quantity: {item.quantity} · Price: ₹{item.price}
                   </div>
                 </div>
                 {selectedItems.some(si => si.productId === item.product._id) && (

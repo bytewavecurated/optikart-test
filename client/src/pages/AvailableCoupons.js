@@ -4,6 +4,7 @@ import { coupons } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../services/apiResponse';
 
 const AvailableCoupons = () => {
   const [couponList, setcouponList] = useState([]);
@@ -14,7 +15,7 @@ const AvailableCoupons = () => {
     const fetchCoupons = async () => {
       try {
         const res = await coupons.getAll();
-        setcouponList(res.data.data || []);
+        setcouponList(listOf(res.data));
       } catch (err) {
         console.error(err);
       } finally {

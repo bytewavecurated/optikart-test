@@ -7,7 +7,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     padding: '32px 16px',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
   },
   button: {
     background: '#fff',

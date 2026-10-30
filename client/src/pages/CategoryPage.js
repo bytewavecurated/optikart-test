@@ -30,9 +30,9 @@ const CategoryPage = () => {
           products.getByCategory(category, params),
           products.getBrands(),
         ]);
-        setProductsList(prodRes.data.data || []);
-        if (brandRes.data.data) {
-          setBrands(brandRes.data.data.map((b) => b.name || b));
+        setProductsList(prodRes.data.products || []);
+        if (Array.isArray(brandRes.data.brands)) {
+          setBrands(brandRes.data.brands);
         }
       } catch (err) {
         console.error(err);

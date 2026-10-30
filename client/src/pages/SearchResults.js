@@ -6,6 +6,7 @@ import { useUserBehavior } from '../contexts/UserBehaviorContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import { listOf } from '../services/apiResponse';
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
@@ -35,7 +36,7 @@ const SearchResults = () => {
           if (max) params.maxPrice = max;
         }
         const res = await products.getAll(params);
-        setResults(res.data.data || []);
+        setResults(listOf(res.data));
         setTotal(res.data.pagination?.total || 0);
       } catch (err) {
         console.error(err);

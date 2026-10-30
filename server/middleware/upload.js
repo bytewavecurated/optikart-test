@@ -19,6 +19,8 @@ const storage = multer.diskStorage({
       uploadDir = 'uploads/avatars';
     } else if (file.fieldname === 'blogImage' || file.fieldname === 'coverImage') {
       uploadDir = 'uploads/blogs';
+    } else if (file.fieldname === 'image' || file.fieldname === 'bannerImage') {
+      uploadDir = 'uploads/banners';
     }
 
     cb(null, uploadDir);

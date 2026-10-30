@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken, verifyAdmin, verifySeller } from '../middleware/auth.js';
+import { verifyToken, verifyAdmin, verifySeller, verifyAnyPrincipal } from '../middleware/auth.js';
 import {
   recordCommission,
   getCommissionSummary,
@@ -51,13 +51,16 @@ router.get('/summary', verifyToken, verifyAdmin, async (req, res) => {
  * GET /api/commission/seller/:sellerId
  * Get commission details for a specific seller (admin or seller)
  */
-router.get('/seller/:sellerId', verifyToken, async (req, res) => {
+router.get('/seller/:sellerId', verifyAnyPrincipal, async (req, res) => {
   try {
     const { sellerId } = req.params;
     const { startDate, endDate } = req.query;
-    
-    // Check if user is admin or the seller themselves
-    if (req.user.role !== 'admin' && req.user.id !== sellerId && req.seller?._id?.toString() !== sellerId) {
+
+    // Allowed for the platform admin or for the seller themself.
+    const principal = req.principal;
+    const isAdmin = principal.decoded && principal.decoded.role === 'admin';
+    const isSelf = principal.seller && String(principal.seller._id) === String(sellerId);
+    if (!isAdmin && !isSelf) {
       return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
     
@@ -77,7 +80,7 @@ router.get('/seller/:sellerId', verifyToken, async (req, res) => {
  * GET /api/commission/my-commission
  * Get commission details for logged-in seller
  */
-router.get('/my-commission', verifyToken, verifySeller, async (req, res) => {
+router.get('/my-commission', verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
     const { startDate, endDate } = req.query;

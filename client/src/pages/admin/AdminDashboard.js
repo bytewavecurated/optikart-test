@@ -11,7 +11,7 @@ const AdminDashboard = () => {
     const fetchDashboard = async () => {
       try {
         const res = await adminApi.dashboard();
-        setDashboard(res.data.data);
+        setDashboard(res.data.dashboard || res.data.data);
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
@@ -21,7 +21,8 @@ const AdminDashboard = () => {
     fetchDashboard();
   }, []);
 
-  const stats = dashboard?.stats || {};
+  const stats = dashboard?.stats || dashboard || {};
+  const recentOrders = dashboard?.recentOrders || dashboard?.recent_orders || [];
 
   const statCards = [
     { label: 'Total Users', value: stats.totalUsers || 0, icon: <FiUsers />, color: '#667eea', bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', trend: '+12%', trendUp: true },
@@ -67,7 +68,7 @@ const AdminDashboard = () => {
       }}>
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-            Welcome back, Admin! 👋
+            Welcome back, Admin!
           </h1>
           <p style={{ fontSize: '16px', margin: 0, opacity: 0.95 }}>
             Here's what's happening with your store today.
@@ -210,29 +211,51 @@ const AdminDashboard = () => {
         <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '24px', color: '#212121', margin: '0 0 24px 0' }}>
           Recent Activity
         </h2>
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '20px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            fontSize: '32px',
-            margin: '0 auto 20px',
-            boxShadow: '0 4px 16px rgba(102, 126, 234, 0.3)'
-          }}>
-            <FiPieChart />
+        {recentOrders.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 20px' }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 20,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 32, margin: '0 auto 20px'
+            }}>
+              <FiPieChart />
+            </div>
+            <p style={{ fontSize: 16, color: '#757575', margin: 0 }}>No orders have been placed yet</p>
+            <p style={{ fontSize: 14, color: '#9e9e9e', margin: '8px 0 0 0' }}>
+              New orders will appear here as soon as customers start checking out.
+            </p>
           </div>
-          <p style={{ fontSize: '16px', color: '#757575', margin: 0 }}>
-            Activity feed coming soon
-          </p>
-          <p style={{ fontSize: '14px', color: '#9e9e9e', margin: '8px 0 0 0' }}>
-            Track all your store activities in real-time
-          </p>
-        </div>
+        ) : (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {recentOrders.map((o) => (
+              <Link
+                key={o._id}
+                to="/admin/orders"
+                style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+                  padding: '12px 14px', border: '1px solid #f0f0f0', borderRadius: 10,
+                  textDecoration: 'none', color: 'inherit'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{o.orderId || o._id}</div>
+                  <div style={{ fontSize: 12, color: '#9e9e9e' }}>
+                    {o.createdAt ? new Date(o.createdAt).toLocaleString('en-IN') : ''}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>
+                    Rs. {(o.totalAmount || 0).toLocaleString('en-IN')}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#757575', textTransform: 'capitalize' }}>
+                    {(o.orderStatus || 'pending').replace(/_/g, ' ')}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       <style>{`

@@ -1,5 +1,5 @@
 import express from 'express';
-import Wishlist from '../models/Wishlist.js';
+import Wishlist, { MAX_WISHLIST_ITEMS } from '../models/Wishlist.js';
 import Product from '../models/Product.js';
 import { verifyToken } from '../middleware/auth.js';
 
@@ -48,6 +48,10 @@ router.post('/add', verifyToken, async (req, res) => {
 
     if (alreadyExists) {
       return res.status(400).json({ success: false, message: 'Product already in wishlist.' });
+    }
+
+    if (wishlist.products.length >= MAX_WISHLIST_ITEMS) {
+      return res.status(400).json({ success: false, message: `Wishlist can have a maximum of ${MAX_WISHLIST_ITEMS} items.` });
     }
 
     wishlist.products.push({

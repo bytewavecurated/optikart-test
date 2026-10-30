@@ -104,7 +104,10 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
 
     // Check if this is a test credential - bypass OTP for testing
     const testEmails = ['testuser@optikart.com', 'demo@optikart.com', 'samedayopticians@gmail.com'];
-    const isTestCredential = testEmails.includes(email);
+    // Second-factor OTP may only be skipped outside production, and only
+    // for the well-known seededdemo accounts whose password is also public.
+    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
+    const isTestCredential = allowOtpBypass && testEmails.includes(email);
 
     if (isTestCredential) {
       // Direct login for test credentials
@@ -121,7 +124,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
       });
     } else {
       // Generate OTP for login verification (production flow)
-      const otp = otpGenerator.generate('6789', { 
+      const otp = otpGenerator.generate(6, { 
         upperCaseAlphabets: false, 
         specialChars: false, 
         lowerCaseAlphabets: false,
@@ -156,7 +159,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid 10-digit phone number is required.' });
     }
 
-    const otp = otpGenerator.generate('6789', { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+    const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
     const user = await User.findOne({ phone });
     if (!user) {
@@ -331,7 +334,7 @@ router.post('/forgot-password', otpLimiter, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Email not registered.' });
     }
 
-    const otp = otpGenerator.generate('6789', { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+    const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
     user.resetOtp = otp;
     user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);

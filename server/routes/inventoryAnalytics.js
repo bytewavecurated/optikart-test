@@ -11,7 +11,7 @@ const router = express.Router();
  * GET /api/inventory-analytics/seller
  * Get inventory analytics for logged-in seller
  */
-router.get('/seller', verifyToken, verifySeller, async (req, res) => {
+router.get('/seller', verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
     const { startDate, endDate } = req.query;
@@ -33,7 +33,7 @@ router.get('/seller', verifyToken, verifySeller, async (req, res) => {
  * GET /api/inventory-analytics/seller/health
  * Get inventory health score for logged-in seller
  */
-router.get('/seller/health', verifyToken, verifySeller, async (req, res) => {
+router.get('/seller/health', verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
 

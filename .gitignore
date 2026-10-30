@@ -34,3 +34,10 @@ coverage/
 # Temporary files
 *.tmp
 .tmp/
+
+# Runtime file storage (uploaded banners, product images, prescriptions)
+server/uploads/
+!server/uploads/.gitkeep
+
+# Local test/build artifacts
+client/build/

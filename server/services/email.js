@@ -117,35 +117,6 @@ export const sendPickupAlert = async (email, pickupDetails) => {
   }
 };
 
-export const sendSubscriptionReminder = async (email, seller) => {
-  const mailOptions = {
-    from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
-    to: email,
-    subject: 'Subscription Renewal Reminder',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
-          <h1 style="color: white; margin: 0;">Subscription Reminder</h1>
-        </div>
-        <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-          <h2 style="color: #333;">Hi ${seller.name},</h2>
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="color: #666;"><strong>Store:</strong> ${seller.storeName}</p>
-            <p style="color: #666;"><strong>Renewal Amount:</strong> ₹590 (including GST)</p>
-          </div>
-        </div>
-      </div>
-    `
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
-
 export const sendPasswordReset = async (email, otp) => {
   const mailOptions = {
     from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,

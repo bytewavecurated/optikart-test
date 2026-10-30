@@ -4,6 +4,7 @@ import { FiHelpCircle, FiChevronRight, FiSearch, FiPackage, FiRefreshCw, FiCredi
 import { help } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { listOf } from '../services/apiResponse';
 
 const HELP_CATEGORIES = [
   { id: 'orders', title: 'Orders & Shipping', desc: 'Track orders, delivery status, shipping info', icon: <FiPackage size={24} /> },
@@ -22,7 +23,7 @@ const HelpCenter = () => {
     const fetchArticles = async () => {
       try {
         const res = await help.getAll();
-        setArticles(res.data.data || []);
+        setArticles(listOf(res.data));
       } catch (err) {
         console.error(err);
       }

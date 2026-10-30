@@ -11,7 +11,7 @@ const router = express.Router();
  * GET /api/return-analytics/seller
  * Get return analytics for logged-in seller
  */
-router.get('/seller', verifyToken, verifySeller, async (req, res) => {
+router.get('/seller', verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
     const { startDate, endDate } = req.query;

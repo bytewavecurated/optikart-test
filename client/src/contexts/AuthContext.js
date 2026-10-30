@@ -14,6 +14,7 @@ const SESSION_DURATION = {
   user: 30 * 24 * 60 * 60 * 1000,
   seller: 24 * 60 * 60 * 1000,
   admin: 24 * 60 * 60 * 1000,
+  staff: 24 * 60 * 60 * 1000,
   executive: 24 * 60 * 60 * 1000,
   manufacturer: 24 * 60 * 60 * 1000,
   manufacturerSeller: 24 * 60 * 60 * 1000,
@@ -84,7 +85,9 @@ export const AuthProvider = ({ children }) => {
       // First, try to load user data from localStorage
       if (userData) {
         const parsedData = JSON.parse(userData);
-        if (role === 'seller') {
+        if (role === 'staff') {
+          setStaff(parsedData);
+        } else if (role === 'seller') {
           setSeller(parsedData);
         } else if (role === 'admin') {
           setAdmin(parsedData);
@@ -122,6 +125,12 @@ export const AuthProvider = ({ children }) => {
       } else if (role === 'manufacturerSeller') {
         response = await api.get('/manufacturer-seller/me');
         setManufacturerSeller(response.data.seller);
+      } else if (role === 'deliveryPartner') {
+        response = await api.get('/delivery-partner/me');
+        setDeliveryPartner(response.data.partner || response.data.deliveryPartner);
+      } else if (role === 'staff') {
+        response = await api.get('/auth/me');
+        setStaff(response.data.user);
       } else {
         response = await api.get('/auth/me');
         setUser(response.data.user);
@@ -221,6 +230,85 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message };
     }
   };
+
+  // Staff members are Users whose role is 'staff' with a matching StaffRole.
+  // They authenticate through the normal auth endpoints; the difference is the
+  // stored role and the landing area.
+  const staffLogin = async (email, password) => {
+    try {
+      const response = await api.post('/auth/login', { email, password });
+      const data = response.data;
+
+      if (data.requiresOTP) {
+        return { success: true, requiresOTP: true, email: data.email };
+      }
+
+      if (data.token) {
+        const { token, user: userData } = data;
+        if (userData && userData.role && userData.role !== 'staff' && userData.role !== 'admin') {
+          return { success: false, message: 'This account is not a staff account.' };
+        }
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(ROLE_KEY, 'staff');
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+        setSessionExpiry('staff');
+        setStaff(userData);
+        setIsAuthenticated(true);
+        connectSocket(token);
+        toast.success('Staff login successful!');
+        // Enrich with the StaffRole record so the workspace can show the
+        // correct queues for this person's actual role.
+        try {
+          const overview = await api.get('/staff/overview');
+          const enriched = { ...userData, staffRole: overview.data.role, permissions: overview.data.permissions || [] };
+          localStorage.setItem(USER_KEY, JSON.stringify(enriched));
+          setStaff(enriched);
+          return { success: true, token, staff: enriched };
+        } catch (e) {
+          return { success: true, token, staff: userData };
+        }
+      }
+
+      return { success: false, message: 'Unexpected response from server' };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Staff login failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const verifyStaffLoginOTP = async (email, otp) => {
+    try {
+      const response = await api.post('/auth/verify-login-otp', { email, otp });
+      const { token, user: userData } = response.data;
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(ROLE_KEY, 'staff');
+      localStorage.setItem(USER_KEY, JSON.stringify(userData));
+      setSessionExpiry('staff');
+      setStaff(userData);
+      setIsAuthenticated(true);
+      connectSocket(token);
+      try {
+        const overview = await api.get('/staff/overview');
+        const enriched = { ...userData, staffRole: overview.data.role, permissions: overview.data.permissions || [] };
+        localStorage.setItem(USER_KEY, JSON.stringify(enriched));
+        setStaff(enriched);
+        return { success: true, token, staff: enriched };
+      } catch (e) {
+        return { success: true, token, staff: userData };
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || 'OTP verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const staffLogout = useCallback(() => {
+    api.post('/auth/logout').catch(() => {});
+    clearAllState();
+    toast.success('Logged out successfully');
+  }, [clearAllState]);
 
   const logout = useCallback(() => {
     api.post('/auth/logout').catch(() => {});
@@ -521,6 +609,9 @@ export const AuthProvider = ({ children }) => {
     sellerLogin,
     verifySellerLoginOTP,
     sellerLogout,
+    staffLogin,
+    verifyStaffLoginOTP,
+    staffLogout,
     adminLogin,
     verifyAdminLoginOTP,
     adminLogout,

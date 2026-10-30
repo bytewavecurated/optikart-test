@@ -49,7 +49,7 @@ const styles = {
   footer: {
     background: '#172337',
     color: '#878787',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
     fontSize: '12px',
   },
   topBanner: {

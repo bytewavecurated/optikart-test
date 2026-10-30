@@ -91,6 +91,28 @@ const orderSchema = new mongoose.Schema({
   acceptedAt: { type: Date },
   assignmentDistance: { type: Number }, // in km
   assignmentNotes: { type: String, default: '' },
+  // Delivery execution tracking
+  assignedExecutive: { type: mongoose.Schema.Types.ObjectId, ref: 'Executive', default: null },
+  assignedDeliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner', default: null },
+  deliveryAssignmentMode: { type: String, enum: ['shiprocket', 'self', 'none'], default: 'none' },
+  pickupLocation: {
+    name: { type: String, default: '' },
+    address: { type: String, default: '' },
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  deliveryLocation: {
+    address: { type: String, default: '' },
+    lat: { type: Number },
+    lng: { type: Number }
+  },
+  deliveryJourney: [{
+    status: { type: String },
+    note: { type: String, default: '' },
+    at: { type: Date, default: Date.now }
+  }],
+  deliveryDistanceKm: { type: Number, default: 0 },
+  deliveryFee: { type: Number, default: 0 },
   // Payout tracking
   payoutProcessed: { type: Boolean, default: false },
   deliveredAt: { type: Date }

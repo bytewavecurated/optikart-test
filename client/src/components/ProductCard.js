@@ -14,7 +14,7 @@ const styles = {
     transition: 'box-shadow 0.2s, transform 0.2s',
     cursor: 'pointer',
     position: 'relative',
-    fontFamily: "'Roboto', sans-serif",
+    fontFamily: "var(--font-body)",
     display: 'flex',
     flexDirection: 'column',
     height: '100%',

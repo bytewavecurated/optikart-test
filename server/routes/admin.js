@@ -4,7 +4,6 @@ import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
-import Subscription from '../models/Subscription.js';
 import Coupon from '../models/Coupon.js';
 import StaffRole from '../models/StaffRole.js';
 import Notification from '../models/Notification.js';
@@ -14,6 +13,18 @@ import Manufacturer from '../models/Manufacturer.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 
 const router = express.Router();
+
+// GET /api/admin/me - the signed-in administrator's own profile.
+router.get('/me', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user._id).select('-password -__v');
+    if (!admin) return res.status(404).json({ success: false, message: 'Admin account not found.' });
+    res.json({ success: true, admin });
+  } catch (error) {
+    console.error('Admin me error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
 
 router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
   try {
@@ -35,7 +46,6 @@ router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
 
     const totalProducts = await Product.countDocuments({ isActive: true });
 
-    const activeSubscriptions = await Subscription.countDocuments({ status: 'active' });
 
     const last30Days = new Date();
     last30Days.setDate(last30Days.getDate() - 30);
@@ -69,7 +79,6 @@ router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
         totalRevenue,
         avgOrderValue,
         totalProducts,
-        activeSubscriptions,
         recentOrders,
         topSellers
       }
@@ -291,7 +300,7 @@ router.get('/revenue', verifyToken, verifyAdmin, async (req, res) => {
 
 router.post('/staff', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { email, name, role, permissions } = req.body;
+    const { email, name, role, permissions, password } = req.body;
 
     if (!email || !name || !role) {
       return res.status(400).json({ success: false, message: 'Email, name, and role are required.' });
@@ -307,7 +316,12 @@ router.post('/staff', verifyToken, verifyAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'A user with this email already exists.' });
     }
 
-    const tempPassword = `Staff${Date.now()}@`;
+    // Admin supplies the login credentials (fall back to a generated one), so
+    // the staff account is actually usable instead of an unknowable password.
+    let tempPassword = password;
+    if (!tempPassword) {
+      tempPassword = `Staff${Date.now()}@`;
+    }
     const user = new User({
       name,
       email,

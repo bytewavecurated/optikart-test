@@ -5,11 +5,21 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 
+const STAFF_ROLES = [
+  { value: 'blog_manager', label: 'Blog Manager' },
+  { value: 'doc_verifier', label: 'Document Verifier' },
+  { value: 'user_manager', label: 'User Manager' },
+  { value: 'seller_manager', label: 'Seller Manager' },
+  { value: 'finance_manager', label: 'Finance Manager' },
+  { value: 'delivery_manager', label: 'Delivery Manager' },
+  { value: 'pickup_manager', label: 'Pickup Manager' }
+];
+
 const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', role: 'support', password: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', role: 'blog_manager', password: '' });
 
   useEffect(() => { fetchStaff(); }, []);
   const fetchStaff = async () => {
@@ -19,7 +29,16 @@ const StaffManagement = () => {
 
   const handleCreate = async () => {
     if (!formData.name || !formData.email || !formData.password) { toast.error('Fill all fields'); return; }
-    try { await adminApi.createStaff(formData); toast.success('Staff created'); setShowForm(false); setFormData({ name: '', email: '', role: 'support', password: '' }); fetchStaff(); } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    try {
+      const res = await adminApi.createStaff(formData);
+      const issued = res.data.tempPassword && res.data.tempPassword !== formData.password
+        ? res.data.tempPassword
+        : formData.password;
+      toast.success(`Staff created. Login password: ${issued}`, { duration: 12000 });
+      setShowForm(false);
+      setFormData({ name: '', email: '', role: 'blog_manager', password: '' });
+      fetchStaff();
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
   const handleDelete = async (id) => {
@@ -42,7 +61,7 @@ const StaffManagement = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="input-group"><label>Name</label><input className="input" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></div>
                 <div className="input-group"><label>Email</label><input className="input" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
-                <div className="input-group"><label>Role</label><select className="input" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}><option value="support">Support</option><option value="moderator">Moderator</option><option value="manager">Manager</option></select></div>
+                <div className="input-group"><label>Role</label><select className="input" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>{STAFF_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
                 <div className="input-group"><label>Password</label><input className="input" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} /></div>
               </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>

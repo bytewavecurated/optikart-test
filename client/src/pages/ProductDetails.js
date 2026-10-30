@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiShare2, FiTruck, FiShield, FiRefreshCw, FiCheck, FiChevronDown, FiChevronUp, FiStar, FiMinus, FiPlus, FiUser, FiPackage, FiCalendar, FiFileText, FiExternalLink } from 'react-icons/fi';
 import { Carousel } from 'react-responsive-carousel';
 import ReactStars from 'react-rating-stars-component';
@@ -11,6 +11,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import toast from 'react-hot-toast';
+import { oneOf, listOf } from '../services/apiResponse';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -40,7 +41,7 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       try {
         const res = await products.getById(id);
-        const prod = res.data.data;
+        const prod = oneOf(res.data, 'product');
         setProduct(prod);
         
         // Track browsing history
@@ -66,18 +67,18 @@ const ProductDetails = () => {
         
         try {
           const relatedRes = await api.get(`/products/${id}/related`);
-          const data = relatedRes.data.data || relatedRes.data;
+          const data = listOf(relatedRes.data).length ? relatedRes.data : relatedRes.data;
           setRelatedProducts((data.similar || data.related || []).slice(0, 8));
           setOtherBrandProducts((data.otherBrands || []).slice(0, 8));
           setBrandCards(data.brands || []);
         } catch {
           const relatedRes = await products.getAll({ category: prod?.category, limit: 8 });
-          setRelatedProducts((relatedRes.data.data || []).filter(p => p._id !== prod?._id).slice(0, 8));
+          setRelatedProducts(listOf(relatedRes.data).filter(p => p._id !== prod?._id).slice(0, 8));
         }
         if (isAuthenticated) {
           try {
             const ordersRes = await orders.getAll({ status: 'delivered', limit: 100 });
-            setUserOrders(ordersRes.data.data || []);
+            setUserOrders(listOf(ordersRes.data));
           } catch {}
         }
       } catch (err) {
@@ -157,7 +158,7 @@ const ProductDetails = () => {
       setReviewRating(0);
       setReviewText('');
       const res = await products.getById(id);
-      setProduct(res.data.data);
+      setProduct(oneOf(res.data, 'product'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit review');
     } finally {
@@ -306,7 +307,7 @@ const ProductDetails = () => {
                     )}
                   </div>
                   {seller.sellerId && (
-                    <Link to={`/seller/${seller.sellerId}/products`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--primary)', fontWeight: 500, marginTop: '12px', textDecoration: 'none' }}>
+                    <Link to={`/products?sellerCode=${encodeURIComponent(seller.sellerId)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--primary)', fontWeight: 500, marginTop: '12px', textDecoration: 'none' }}>
                       View all products <FiExternalLink size={12} />
                     </Link>
                   )}
@@ -461,7 +462,7 @@ const ProductDetails = () => {
                 {product.isExchangeable !== false && (
                   <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', textAlign: 'center' }}>
                     <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 500 }}>
-                      ✓ Exchange Available
+                      Exchange Available
                     </span>
                   </div>
                 )}

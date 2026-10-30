@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { products } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { listOf } from '../services/apiResponse';
 
 const AllBrands = () => {
   const [brands, setBrands] = useState([]);
@@ -12,7 +13,7 @@ const AllBrands = () => {
     const fetchBrands = async () => {
       try {
         const res = await products.getBrands();
-        setBrands(res.data.data || []);
+        setBrands(listOf(res.data));
       } catch (err) {
         console.error(err);
       } finally {

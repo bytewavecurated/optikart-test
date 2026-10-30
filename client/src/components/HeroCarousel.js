@@ -7,21 +7,21 @@ const DEFAULT_BANNERS = [
   {
     _id: 'default-1',
     title: 'Summer Sale',
-    imageUrl: 'https://images.unsplash.com/photo-1577803645773-f96470579636?w=1200&h=400&fit=crop',
-    linkUrl: '/sale/summer',
+    images: { desktop: { url: '/assets/banner-1.svg' }, tablet: { url: '/assets/banner-1.svg' }, mobile: { url: '/assets/banner-1.svg' } },
+    linkUrl: '/products?hasOffer=1'
   },
   {
     _id: 'default-2',
     title: 'New Arrivals',
-    imageUrl: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=1200&h=400&fit=crop',
-    linkUrl: '/brands/ray-ban',
+    images: { desktop: { url: '/assets/banner-2.svg' }, tablet: { url: '/assets/banner-2.svg' }, mobile: { url: '/assets/banner-2.svg' } },
+    linkUrl: '/brands'
   },
   {
     _id: 'default-3',
     title: 'Blue Cut Lenses',
-    imageUrl: 'https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=1200&h=400&fit=crop',
-    linkUrl: '/category/blue-cut',
-  },
+    images: { desktop: { url: '/assets/banner-3.svg' }, tablet: { url: '/assets/banner-3.svg' }, mobile: { url: '/assets/banner-3.svg' } },
+    linkUrl: '/category/eyeglasses'
+  }
 ];
 
 const styles = {

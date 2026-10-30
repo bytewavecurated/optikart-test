@@ -55,7 +55,7 @@ router.post('/route', verifyToken, async (req, res) => {
  * POST /api/order-routing/:id/accept
  * Seller accepts order
  */
-router.post('/:id/accept', verifyToken, verifySeller, async (req, res) => {
+router.post('/:id/accept', verifySeller, async (req, res) => {
   try {
     const { id } = req.params;
     const sellerId = req.seller._id;
@@ -87,7 +87,7 @@ router.post('/:id/accept', verifyToken, verifySeller, async (req, res) => {
  * POST /api/order-routing/:id/reject
  * Seller rejects order
  */
-router.post('/:id/reject', verifyToken, verifySeller, async (req, res) => {
+router.post('/:id/reject', verifySeller, async (req, res) => {
   try {
     const { id } = req.params;
     const sellerId = req.seller._id;

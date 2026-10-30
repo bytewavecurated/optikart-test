@@ -16,27 +16,30 @@ const StaffLayout = () => {
 
   // Get menu items based on staff role
   const getMenuItems = () => {
-    const role = staff?.role || 'blog_manager';
-    
+    const role = staff?.staffRole || staff?.role || 'blog_manager';
+
     switch(role) {
       case 'blog_manager':
         return [
-          { label: 'Dashboard', path: '/staff/blogs', icon: <FiHome /> },
+          { label: 'Dashboard', path: '/staff', icon: <FiHome /> },
           { label: 'Manage Blogs', path: '/staff/blogs/manage', icon: <FiFileText /> },
         ];
-      case 'support_agent':
+      case 'user_manager':
         return [
-          { label: 'Dashboard', path: '/staff/support', icon: <FiHome /> },
-          { label: 'Support Tickets', path: '/staff/support/tickets', icon: <FiHeadphones /> },
+          { label: 'Dashboard', path: '/staff', icon: <FiHome /> },
+          { label: 'Returns and Tickets', path: '/staff/support/tickets', icon: <FiHeadphones /> },
         ];
-      case 'product_manager':
+      case 'doc_verifier':
+      case 'seller_manager':
         return [
-          { label: 'Dashboard', path: '/staff/products', icon: <FiHome /> },
+          { label: 'Dashboard', path: '/staff', icon: <FiHome /> },
           { label: 'Manage Products', path: '/staff/products/manage', icon: <FiPackage /> },
         ];
-      case 'order_manager':
+      case 'finance_manager':
+      case 'delivery_manager':
+      case 'pickup_manager':
         return [
-          { label: 'Dashboard', path: '/staff/orders', icon: <FiHome /> },
+          { label: 'Dashboard', path: '/staff', icon: <FiHome /> },
           { label: 'Manage Orders', path: '/staff/orders/manage', icon: <FiShoppingBag /> },
         ];
       default:

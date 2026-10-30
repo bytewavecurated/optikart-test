@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import {FiArrowRight} from 'react-icons/fi';
 
 const ALL_CATEGORIES = [
   { 
@@ -193,7 +194,7 @@ export default function Categories() {
                 <h3 style={styles.name}>{cat.name}</h3>
                 <p style={styles.description}>{cat.description}</p>
                 <span style={styles.link}>
-                  Browse Collection →
+                  Browse Collection <FiArrowRight size={14} style={{ verticalAlign: 'middle' }} />
                 </span>
               </div>
             </Link>

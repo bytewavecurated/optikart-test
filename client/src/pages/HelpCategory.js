@@ -14,7 +14,7 @@ const HelpCategory = () => {
     const fetchArticles = async () => {
       try {
         const res = await help.getByCategory(category);
-        setArticles(res.data.data || []);
+        setArticles(res.data.articles || []);
       } catch (err) {
         console.error(err);
       } finally {

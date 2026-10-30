@@ -155,7 +155,7 @@ const DeliveryRouteOptimization = () => {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <FiClock size={16} />
-                          <span>Distance: {delivery.distanceFromPrevious.toFixed(2)} km • ETA: {delivery.estimatedTimeFromPrevious} min</span>
+                          <span>Distance: {delivery.distanceFromPrevious.toFixed(2)} km · ETA: {delivery.estimatedTimeFromPrevious} min</span>
                         </div>
                         {delivery.priority === 1 && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning)' }}>

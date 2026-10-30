@@ -4,6 +4,7 @@ import { products } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import { listOf } from '../services/apiResponse';
 
 const BrandPage = () => {
   const { brand } = useParams();
@@ -18,7 +19,7 @@ const BrandPage = () => {
       setLoading(true);
       try {
         const res = await products.getAll({ brand: brandName, sort });
-        setProductsList(res.data.data || []);
+        setProductsList(listOf(res.data));
       } catch (err) {
         console.error(err);
       } finally {
