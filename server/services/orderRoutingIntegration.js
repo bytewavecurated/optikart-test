@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import Seller from '../models/Seller.js';
 import { findNearbySellers } from './proximityOrderRouting.js';
-import { sendEmail } from './email.js';
+import { sendEmail, notify } from './email.js';
 
 /**
  * Integrate proximity-based routing into order creation
@@ -102,7 +102,7 @@ const notifySellerNewOrder = async (order, seller) => {
       <p>Please login to your seller dashboard to accept or reject this order.</p>
     `;
 
-    await sendEmail(seller.email, `New Order Assignment - ${order.orderNumber}`, emailContent);
+    await notify(seller.email, `New Order Assignment - ${order.orderNumber}`, emailContent);
   } catch (error) {
     console.error('Error notifying seller:', error);
   }
@@ -131,7 +131,7 @@ const notifyAdminNoSellers = async (order) => {
       <p>Please login to the admin dashboard to manually assign this order to a seller.</p>
     `;
 
-    await sendEmail(adminEmail, `Order Requires Manual Assignment - ${order.orderNumber}`, emailContent);
+    await notify(adminEmail, `Order Requires Manual Assignment - ${order.orderNumber}`, emailContent);
   } catch (error) {
     console.error('Error notifying admin:', error);
   }

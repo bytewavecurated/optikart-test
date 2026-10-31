@@ -3,6 +3,7 @@ import { FiDollarSign, FiTrendingUp, FiShoppingBag, FiCalendar } from 'react-ico
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { oneOf } from '../../services/apiResponse.js';
 
 const Revenue = () => {
   const [revenue, setRevenue] = useState(null);
@@ -18,7 +19,7 @@ const Revenue = () => {
           ? { from: customDateRange.from, to: customDateRange.to }
           : { period };
         const res = await adminApi.getRevenue(params); 
-        setRevenue(res.data.data); 
+        setRevenue(oneOf(res.data)); 
       } catch (err) { 
         console.error(err); 
       } finally { 

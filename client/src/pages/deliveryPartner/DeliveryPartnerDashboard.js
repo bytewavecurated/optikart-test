@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation } from 'react-icons/fi';
+import { toastError } from '../../services/errors.js';
 
 const DeliveryPartnerDashboard = () => {
   const [partner, setPartner] = useState(null);
@@ -27,7 +28,7 @@ const DeliveryPartnerDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       const meResponse = await deliveryApi.getMe();
-      const partnerData = meResponse.data.data;
+      const partnerData = meResponse.data.data || {};
       setPartner(partnerData);
       setIsOnline(partnerData.isOnline || false);
       setLocationSharing(partnerData.locationSharing || false);
@@ -49,7 +50,7 @@ const DeliveryPartnerDashboard = () => {
         navigate('/delivery-partner/login');
         return;
       }
-      toast.error('Failed to load dashboard data');
+      toastError(error, "Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -71,7 +72,7 @@ const DeliveryPartnerDashboard = () => {
       setIsOnline(newStatus);
       toast.success(newStatus ? 'You are now online' : 'You are now offline');
     } catch {
-      toast.error('Failed to update status');
+      toastError(error, "Failed to update status");
       setIsOnline(isOnline);
     }
   };
@@ -87,7 +88,7 @@ const DeliveryPartnerDashboard = () => {
               setLocationSharing(true);
               toast.success('Location sharing enabled');
             } catch {
-              toast.error('Failed to update location');
+              toastError(error, "Failed to update location");
             }
           },
           () => {

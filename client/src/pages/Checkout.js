@@ -4,7 +4,7 @@ import { FiMapPin, FiCreditCard, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { orders, payment, coupons } from '../services/api';
+import { orders, payment, coupons, auth } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
@@ -26,6 +26,23 @@ const Checkout = () => {
     pincode: user?.address?.pincode || '',
   });
 
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [saveThisAddress, setSaveThisAddress] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadSaved = async () => {
+      try {
+        const res = await auth.getAddresses();
+        if (!cancelled) setSavedAddresses(res.data.addresses || []);
+      } catch (e) {
+        if (!cancelled) setSavedAddresses([]);
+      }
+    };
+    if (isAuthenticated) loadSaved();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
   const [paymentMethod, setPaymentMethod] = useState('online');
 
   if (!isAuthenticated) {
@@ -42,9 +59,11 @@ const Checkout = () => {
     if (!couponCode.trim()) return;
     setApplyingCoupon(true);
     try {
-      const res = await coupons.validate(couponCode.trim());
-      applyCoupon(res.data.data);
-      toast.success('Coupon applied!');
+      const res = await coupons.validate(couponCode.trim(), subtotal);
+      // Server answers { success, message, coupon: { code, discountType, discountValue, discount } }
+      const applied = res.data.coupon || res.data.data || res.data;
+      applyCoupon(applied);
+      toast.success(`Coupon applied! You saved Rs. ${applied.discount ?? ''}`.trim());
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid coupon code');
     } finally {
@@ -52,7 +71,7 @@ const Checkout = () => {
     }
   };
 
-  const handleAddressSubmit = (e) => {
+  const handleAddressSubmit = async (e) => {
     e.preventDefault();
     if (!address.fullName || !address.phone || !address.addressLine || !address.city || !address.state || !address.pincode) {
       toast.error('Please fill all address fields');
@@ -62,39 +81,114 @@ const Checkout = () => {
       toast.error('Enter a valid 6-digit pincode');
       return;
     }
+    // Keep the account's address book in sync so the next checkout is faster.
+    if (isAuthenticated && saveThisAddress) {
+      try {
+        const all = [...savedAddresses];
+        const dup = all.find((a) => a.pincode === address.pincode && a.street === address.addressLine);
+        if (!dup) {
+          all.push({
+            name: address.fullName,
+            phone: address.phone,
+            street: address.addressLine,
+            city: address.city,
+            state: address.state,
+            pincode: address.pincode,
+            isDefault: all.length === 0
+          });
+          await auth.updateProfile({ addresses: all });
+          setSavedAddresses(all);
+        }
+      } catch (saveErr) {
+        console.error('Could not save address:', saveErr);
+      }
+    }
+
     setStep(2);
   };
+
+
+  // The API contract: items[].product and shippingAddress.{name,street,...}
+  const buildOrderPayload = () => ({
+    items: items.map((i) => ({
+      product: i.product._id,
+      quantity: i.quantity,
+      variant: i.variant || undefined
+    })),
+    shippingAddress: {
+      name: address.fullName,
+      phone: address.phone,
+      street: address.addressLine,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode,
+      country: address.country || 'India'
+    },
+    couponCode: coupon?.code,
+    prescription: prescription || undefined
+  });
 
   const handlePlaceOrder = async () => {
     setProcessing(true);
     try {
       if (paymentMethod === 'online') {
-        const orderRes = await payment.createOrder({ amount: total, items: items.map((i) => ({ productId: i.product._id, quantity: i.quantity, variant: i.variant })) });
-        const { orderId, amount, currency } = orderRes.data.data;
-        const options = { key: orderRes.data.data.razorpayKeyId, amount, currency, name: 'OptiKart', order_id: orderId, handler: async (response) => {
-          try {
-            await payment.verify({ razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id, razorpaySignature: response.razorpay_signature, orderData: { address, items: items.map((i) => ({ productId: i.product._id, quantity: i.quantity, variant: i.variant })), couponCode: coupon?.code, paymentMethod: 'online' } });
-            toast.success('Order placed successfully!');
-            clearCart();
-            navigate('/orders');
-          } catch (err) {
-            toast.error('Payment verification failed');
-          }
-        }, prefill: { name: address.fullName, contact: address.phone }, theme: { color: '#2874f0' } };
-        if (window.Razorpay) {
-          const rzp = new window.Razorpay(options);
-          rzp.open();
-        } else {
-          toast.error('Payment gateway not loaded');
+        // 1. Create the real orders first; a mixed cart splits into one
+        //    order per seller.
+        const created = await orders.create({ ...buildOrderPayload(), paymentMethod: 'razorpay' });
+        const createdOrders = ((created.data && created.data.orders) || []).filter(Boolean);
+        const orderIds = createdOrders.map((o) => o._id);
+        if (!orderIds.length) throw new Error('We could not create your order. Please try again.');
+
+        // 2. Ask the gateway for a payment order for this checkout.
+        const orderRes = await payment.createOrder({ amount: total, receipt: orderIds[0], orderIds });
+        const payload = orderRes.data || {};
+        const razorpayOrderId = payload.orderId;
+        const keyId = payload.key || payload.razorpayKeyId;
+        if (!razorpayOrderId || !keyId) {
+          throw new Error(payload.message || 'Payment gateway is unavailable. Choose cash on delivery or try again shortly.');
         }
+
+        if (!window.Razorpay) {
+          throw new Error('Payment gateway did not load. Check your connection, or choose cash on delivery.');
+        }
+
+        const rzp = new window.Razorpay({
+          key: keyId,
+          amount: payload.amount || Math.round(total * 100),
+          currency: payload.currency || 'INR',
+          name: 'OptiKart',
+          order_id: razorpayOrderId,
+          prefill: { name: address.fullName, contact: address.phone },
+          theme: { color: '#2874f0' },
+          handler: async (response) => {
+            try {
+              // 3. Settle exactly the orders this payment covered.
+              await payment.verify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                orderIds
+              });
+              toast.success('Order placed successfully!');
+              clearCart();
+              navigate('/orders');
+            } catch (verifyErr) {
+              console.error(verifyErr);
+              toast.error('Payment was captured but the order could not be confirmed. Contact support with your payment ID.');
+            }
+          }
+        });
+        rzp.on('payment.failed', () => toast.error('Payment failed. Your order is still awaiting payment.'));
+        rzp.open();
       } else {
-        await orders.create({ address, items: items.map((i) => ({ productId: i.product._id, quantity: i.quantity, variant: i.variant })), couponCode: coupon?.code, paymentMethod: 'cod' });
+        await orders.create({ ...buildOrderPayload(), paymentMethod: 'cod' });
         toast.success('Order placed successfully!');
         clearCart();
         navigate('/orders');
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to place order');
+      console.error(err);
+      toast.error((err.response && err.response.data && err.response.data.message) || err.message || 'Failed to place order');
     } finally {
       setProcessing(false);
     }
@@ -124,6 +218,49 @@ const Checkout = () => {
               {step === 1 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card" style={{ padding: '24px' }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiMapPin /> Delivery Address</h2>
+                  {savedAddresses.length > 0 && (
+                    <div style={{ marginBottom: 20 }}>
+                      <p className="eyebrow" style={{ marginBottom: 8 }}>Saved addresses</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                        {savedAddresses.map((sa, i) => {
+                          const selected = address.fullName === sa.name && address.pincode === sa.pincode && address.addressLine === sa.street;
+                          return (
+                            <button
+                              type="button"
+                              key={sa._id || i}
+                              onClick={() => setAddress({
+                                ...address,
+                                fullName: sa.name || address.fullName,
+                                phone: sa.phone || address.phone,
+                                addressLine: sa.street,
+                                city: sa.city,
+                                state: sa.state,
+                                pincode: sa.pincode
+                              })}
+                              className="chip"
+                              style={{
+                                justifyContent: 'flex-start',
+                                alignItems: 'flex-start',
+                                flexDirection: 'column',
+                                gap: 2,
+                                textAlign: 'left',
+                                borderColor: selected ? 'var(--brand)' : 'var(--border)',
+                                background: selected ? 'var(--brand-tint)' : 'var(--bg-white)',
+                                padding: '12px 14px'
+                              }}
+                            >
+                              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+                                {sa.name}{sa.isDefault ? ' - Default' : ''}
+                              </span>
+                              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', whiteSpace: 'normal' }}>
+                                {sa.street}, {sa.city} {sa.pincode}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <form onSubmit={handleAddressSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div className="input-group" style={{ gridColumn: 'span 2' }}>
                       <label>Full Name</label>
@@ -150,6 +287,12 @@ const Checkout = () => {
                       <input className="input" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} placeholder="State" />
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
+                      {isAuthenticated && (
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)', gridColumn: 'span 2', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={saveThisAddress} onChange={(e) => setSaveThisAddress(e.target.checked)} />
+                          Save this address for future orders
+                        </label>
+                      )}
                       <button type="submit" className="btn btn-primary btn-lg">Deliver Here</button>
                     </div>
                   </form>

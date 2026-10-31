@@ -4,6 +4,8 @@ import { seller as sellerApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const SellerInventory = () => {
   const [products, setProducts] = useState([]);
@@ -27,9 +29,9 @@ const SellerInventory = () => {
   const fetchInventory = async () => {
     try {
       const res = await sellerApi.getInventory();
-      setProducts(res.data.data || []);
-    } catch (err) {
-      toast.error('Failed to load inventory');
+      setProducts(listOf(res.data));
+    } catch (error) {
+      toastError(error, "Failed to load inventory");
       console.error(err);
     } finally {
       setLoading(false);
@@ -136,7 +138,7 @@ const SellerInventory = () => {
       }
       setShowVariantModal(false);
       fetchInventory();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to save variant');
     }
   };
@@ -147,8 +149,8 @@ const SellerInventory = () => {
       await sellerApi.deleteVariant(productId, variantId);
       toast.success('Variant deleted');
       fetchInventory();
-    } catch (err) {
-      toast.error('Failed to delete variant');
+    } catch (error) {
+      toastError(error, "Failed to delete variant");
     }
   };
 
@@ -163,8 +165,8 @@ const SellerInventory = () => {
       toast.success('Stock updated');
       setInlineEditVariant(null);
       fetchInventory();
-    } catch (err) {
-      toast.error('Failed to update stock');
+    } catch (error) {
+      toastError(error, "Failed to update stock");
     }
   };
 
@@ -207,7 +209,7 @@ const SellerInventory = () => {
       setShowBulkUpdate(false);
       setBulkStockValue('');
       fetchInventory();
-    } catch (err) {
+    } catch (error) {
       toast.error('Bulk update failed');
     }
   };

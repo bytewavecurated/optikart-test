@@ -32,7 +32,7 @@ const ManufacturerSellerLogin = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)' }}>
       <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px', padding: '40px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px', color: '#212121' }}>Manufacturer Seller Login</h1>
         <p style={{ color: '#757575', marginBottom: '32px' }}>Access your seller dashboard</p>

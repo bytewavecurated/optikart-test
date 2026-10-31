@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { products } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const AllBrands = () => {
   const [brands, setBrands] = useState([]);

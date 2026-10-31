@@ -204,6 +204,21 @@ router.post('/webhook', express.json(), async (req, res) => {
         }
 
         await order.save();
+
+        // Shiprocket says it is delivered -> book the commission + tell the buyer.
+        if (order.orderStatus === 'delivered') {
+          try {
+            const { settleDeliveredOrder } = await import('../services/commissionTracking.js');
+            await settleDeliveredOrder(order);
+            const { sendOrderStatusNotification } = await import('../services/email.js');
+            const withBuyer = await Order.findById(order._id).populate('user', 'email name');
+            if (withBuyer?.user?.email) {
+              await sendOrderStatusNotification(withBuyer.user.email, withBuyer, 'delivered');
+            }
+          } catch (settleErr) {
+            console.error('Post-delivery settlement failed:', settleErr.message);
+          }
+        }
       }
     }
 

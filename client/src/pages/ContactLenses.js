@@ -5,7 +5,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 import { FiEye, FiRefreshCw, FiActivity, FiAperture, FiStar, FiGrid, FiTool, FiDroplet } from 'react-icons/fi';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const ContactLenses = () => {
   const navigate = useNavigate();

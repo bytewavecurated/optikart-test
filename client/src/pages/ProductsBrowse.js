@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { FiFilter, FiX, FiChevronDown } from 'react-icons/fi';
 import { products } from '../services/api';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';

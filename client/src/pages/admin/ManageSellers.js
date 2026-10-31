@@ -5,6 +5,8 @@ import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const ManageSellers = () => {
   const navigate = useNavigate();
@@ -23,9 +25,9 @@ const ManageSellers = () => {
       if (statusFilter !== 'all') params.status = statusFilter;
       if (searchQuery.trim()) params.search = searchQuery.trim();
       const res = await adminApi.getSellers(params);
-      setSellers(res.data.data || []);
+      setSellers(listOf(res.data));
       setTotalPages(res.data.totalPages || 1);
-    } catch (err) { console.error(err); }
+    } catch (error) { console.error(err); }
     finally { setLoading(false); }
   }, []);
 
@@ -41,12 +43,12 @@ const ManageSellers = () => {
   }, [search, filter, fetchSellers]);
 
   const handleVerify = async (id, status) => {
-    try { await adminApi.verifySeller(id, status); toast.success(`Seller ${status}`); fetchSellers(search, filter, page); } catch (err) { toast.error('Failed'); }
+    try { await adminApi.verifySeller(id, status); toast.success(`Seller ${status}`); fetchSellers(search, filter, page); } catch (error) { toastError(error, "Failed"); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this seller?')) return;
-    try { await adminApi.deleteSeller(id); toast.success('Seller deleted'); fetchSellers(search, filter, page); } catch (err) { toast.error('Failed'); }
+    try { await adminApi.deleteSeller(id); toast.success('Seller deleted'); fetchSellers(search, filter, page); } catch (error) { toastError(error, "Failed"); }
   };
 
   const handleBan = async (id, banType) => {
@@ -61,8 +63,8 @@ const ManageSellers = () => {
       });
       toast.success(`Seller ${action}ned successfully`);
       fetchSellers(search, filter, page);
-    } catch (err) {
-      toast.error('Failed to update seller status');
+    } catch (error) {
+      toastError(error, "Failed to update seller status");
     }
   };
 

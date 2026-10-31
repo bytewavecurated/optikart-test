@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { executive as executiveApi } from '../../services/api';
-import { listOf } from '../../services/apiResponse';
+import { listOf, oneOf } from '../../services/apiResponse.js';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { FiTruck, FiArrowLeft, FiMapPin, FiClock, FiPackage } from 'react-icons/fi';
@@ -206,7 +206,7 @@ function DetailView() {
 
   useEffect(() => {
     executiveApi.getDeliveryDetails(id)
-      .then((res) => setOrder(res.data.data))
+      .then((res) => setOrder(oneOf(res.data, "order")))
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
   }, [id]);

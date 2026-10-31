@@ -4,6 +4,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { FiDollarSign, FiTrendingUp, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { toastError } from '../../services/errors.js';
 
 const CommissionDashboard = () => {
   const [summary, setSummary] = useState(null);
@@ -31,7 +32,7 @@ const CommissionDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching commission data:', error);
-      toast.error('Failed to load commission data');
+      toastError(error, "Failed to load commission data");
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,7 @@ const CommissionDashboard = () => {
         toast.error(res.data.error || 'Failed to record commission');
       }
     } catch (error) {
-      toast.error('Failed to record commission');
+      toastError(error, "Failed to record commission");
     }
   };
 

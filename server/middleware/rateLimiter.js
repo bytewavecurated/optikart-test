@@ -1,5 +1,15 @@
 import rateLimit from 'express-rate-limit';
 
+// The server sets an explicit trusted-hop count (never `true`), so the
+// permissive-trust-proxy validation can stay enabled. `xForwardedForHeader` is
+// disabled because clients can still send that header in local development,
+// which would otherwise log a spurious warning on every request.
+const VALIDATE = {
+  trustProxy: true,
+  xForwardedForHeader: false
+};
+
+
 // Authentication endpoints. Successful attempts are not counted so a normal
 // user logging in a few times is never blocked; only failures burn quota.
 export const authLimiter = rateLimit({
@@ -11,6 +21,7 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: VALIDATE,
   skipSuccessfulRequests: true
 });
 
@@ -29,6 +40,7 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: VALIDATE,
   skip: (req) => req.method === 'GET' || req.path === '/api/health'
 });
 
@@ -41,6 +53,7 @@ export const otpLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: VALIDATE,
   skipSuccessfulRequests: true
 });
 

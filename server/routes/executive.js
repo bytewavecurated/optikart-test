@@ -8,7 +8,8 @@ import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import Order from '../models/Order.js';
 import { verifyToken, verifyAdmin, verifyExecutive } from '../middleware/auth.js';
-import { sendOTP } from '../services/email.js';
+import { sendOTP, sendOrderStatusNotification } from '../services/email.js';
+import { settleDeliveredOrder } from '../services/commissionTracking.js';
 
 const router = express.Router();
 
@@ -557,8 +558,20 @@ router.put('/deliveries/:id/status', verifyExecutive, async (req, res) => {
     order.deliveryJourney.push({ status, note: note || 'Updated by executive', at: new Date() });
     if (status === 'delivered') {
       order.deliveredAt = new Date();
+      order.deliveryDate = new Date();
     }
     await order.save();
+
+    await settleDeliveredOrder(order);
+
+    try {
+      const withBuyer = await Order.findById(order._id).populate('user', 'email name');
+      if (withBuyer?.user?.email) {
+        await sendOrderStatusNotification(withBuyer.user.email, withBuyer, status);
+      }
+    } catch (mailErr) {
+      console.error('Order status email skipped:', mailErr.message);
+    }
 
     res.json({ success: true, message: 'Delivery status updated.', order });
   } catch (error) {

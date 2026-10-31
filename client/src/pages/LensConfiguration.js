@@ -5,6 +5,7 @@ import { lensConfiguration as lensApi, products as productsApi } from '../servic
 import toast from 'react-hot-toast';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { oneOf } from '../services/apiResponse.js';
 
 const LENS_TYPES = [
   { value: 'single-vision', label: 'Single Vision', description: 'One prescription power across the entire lens. Best for basic nearsightedness or farsightedness.', basePrice: 499 },
@@ -70,13 +71,14 @@ const LensConfiguration = () => {
           productsApi.getById(id),
           lensApi.getPricing(),
         ]);
-        setProduct(productRes.data.data);
-        setPricing(pricingRes.data.data);
+        setProduct(oneOf(productRes.data));
+        setPricing(oneOf(pricingRes.data));
 
         try {
           const existingRes = await lensApi.getByProduct(id);
-          if (existingRes.data.data) {
-            const config = existingRes.data.data;
+          const existing = oneOf(existingRes.data);
+        if (existing) {
+            const config = existing;
             setExistingConfigId(config._id);
             if (config.lensType) setSelectedType(config.lensType);
             if (config.lensMaterial) setSelectedMaterial(config.lensMaterial);
@@ -158,7 +160,7 @@ const LensConfiguration = () => {
         toast.success('Lens configuration updated!');
       } else {
         const res = await lensApi.create(formData);
-        setExistingConfigId(res.data.data._id);
+        setExistingConfigId(oneOf(res.data)?._id);
         toast.success('Lens configuration saved!');
       }
       navigate(`/product/${id}`);

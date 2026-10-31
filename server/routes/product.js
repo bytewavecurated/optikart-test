@@ -3,6 +3,7 @@ import Product from '../models/Product.js';
 import { verifySeller, optionalAuth } from '../middleware/auth.js';
 import { productValidation } from '../middleware/validate.js';
 import { uploadProductImages } from '../middleware/upload.js';
+import { sendPriceChangeNotification, sendProductUpdateNotification } from '../services/email.js';
 
 const router = express.Router();
 
@@ -408,13 +409,53 @@ router.put('/:id', verifySeller, async (req, res) => {
       'gender', 'frameSize', 'isReturnable', 'isExchangeable'
     ];
 
+    const previous = {
+      price: product.price,
+      discountedPrice: product.discountedPrice,
+      stock: product.stock
+    };
+
+    const changed = {};
     allowedUpdates.forEach(field => {
-      if (req.body[field] !== undefined) {
+      if (req.body[field] !== undefined && String(req.body[field]) !== String(product[field])) {
         product[field] = req.body[field];
+        changed[field] = req.body[field];
       }
     });
 
     await product.save();
+
+    // Audit trail for the seller: a price move gets its own mail, any other
+    // field edit gets a summary. Never block the update if mailing fails.
+    try {
+      const Seller = (await import('../models/Seller.js')).default;
+      const owner = await Seller.findById(product.seller).select('email storeName name').lean();
+      const sellerEmail = owner?.email;
+      const priceMoved =
+        String(req.body.price) !== String(previous.price) ||
+        String(req.body.discountedPrice) !== String(previous.discountedPrice);
+
+      if (sellerEmail && priceMoved) {
+        await sendPriceChangeNotification(
+          sellerEmail, product,
+          req.body.discountedPrice ?? req.body.price ?? previous.discountedPrice ?? previous.price,
+          product.discountedPrice ?? product.price,
+          'a listing edit'
+        );
+      }
+
+      const summaryEntries = Object.entries(changed).filter(([k]) => !['price', 'discountedPrice'].includes(k));
+      if (sellerEmail && summaryEntries.length) {
+        await sendProductUpdateNotification(
+          sellerEmail,
+          product,
+          Object.fromEntries(summaryEntries.map(([k, v]) => [k, Array.isArray(v) ? v.length + ' entries' : String(v).slice(0, 90)])),
+          owner.storeName || owner.name || 'the seller'
+        );
+      }
+    } catch (mailErr) {
+      console.error('Listing notification email skipped:', mailErr.message);
+    }
 
     res.json({
       success: true,

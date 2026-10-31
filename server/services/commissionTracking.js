@@ -9,7 +9,47 @@ import Seller from '../models/Seller.js';
 const DEFAULT_COMMISSION_PERCENTAGE = 3; // 3% commission
 
 /**
- * Calculate commission for an order
+ * Build the money picture for one order.
+ *
+ * Rules the platform operates on:
+ *  - Commission is charged on the merchandise subtotal only. Delivery and
+ *    platform fees are not merchandise, so taking a percentage of them would
+ *    over-charge the seller.
+ *  - Fulfilment cost is borne by the seller: the Shiprocket bill for automatic
+ *    deliveries, or the per-order fee when the platform delivers it itself.
+ *  - Everything the customer paid that is not passed to the seller (platform
+ *    commission, platform fee, the customer-facing delivery charge) is platform
+ *    revenue and lands in the Razorpay account.
+ */
+export const buildOrderSettlement = (order) => {
+  const subtotal = Number(order.subtotal)
+    || (order.items || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
+  const commissionPercentage = Number(order.commissionPercentage ?? DEFAULT_COMMISSION_PERCENTAGE);
+  const customerDeliveryCharge = Number(order.deliveryCharge || 0);
+  const platformFee = Number(order.platformFee || 0);
+  // What it actually cost to get the parcel delivered.
+  const fulfilmentCost = order.deliveryAssignmentMode === 'self'
+    ? Number(order.deliveryFee || 0)
+    : Number(order.shiprocketDeliveryCharge || 0);
+
+  const commission = Math.round(((subtotal * commissionPercentage) / 100) * 100) / 100;
+  const netAmountToSeller =
+    Math.round((subtotal - commission - fulfilmentCost) * 100) / 100;
+
+  return {
+    merchandiseAmount: subtotal,
+    commissionPercentage,
+    commissionAmount: commission,
+    fulfilmentCost,
+    netAmountToSeller,
+    // Platform-side revenue, all of which is collected in the Razorpay account.
+    platformRevenue: Math.round((commission + platformFee + customerDeliveryCharge) * 100) / 100
+  };
+};
+
+/**
+ * Calculate commission for an order.
+ * `orderAmount` stays the merchandise base for backwards compatibility.
  */
 export const calculateCommission = (orderAmount, commissionPercentage = DEFAULT_COMMISSION_PERCENTAGE) => {
   const commission = (orderAmount * commissionPercentage) / 100;
@@ -36,32 +76,36 @@ export const recordCommission = async (orderId) => {
       return { success: false, error: 'Commission already recorded for this order' };
     }
 
-    // Calculate commission
-    const orderAmount = order.totalAmount || order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const commissionPercentage = order.commissionPercentage || DEFAULT_COMMISSION_PERCENTAGE;
-    const commissionData = calculateCommission(orderAmount, commissionPercentage);
+    // Calculate commission on merchandise only, and take the delivery cost out
+    // of the seller's share as agreed.
+    const settlement = buildOrderSettlement(order);
 
-    // Update order with commission details
-    order.commissionAmount = commissionData.commissionAmount;
-    order.commissionPercentage = commissionPercentage;
-    order.netAmountToSeller = commissionData.netAmount;
+    order.commissionPercentage = settlement.commissionPercentage;
+    order.commissionAmount = settlement.commissionAmount;
+    order.netAmountToSeller = settlement.netAmountToSeller;
     order.commissionRecorded = true;
     order.commissionRecordedAt = new Date();
 
     await order.save();
 
-    // Update seller's total commission earned
-    await Seller.findByIdAndUpdate(order.seller._id, {
-      $inc: { 
-        totalCommissionEarned: commissionData.commissionAmount,
-        totalSales: orderAmount
+    // Update the seller's running totals. The reference may not resolve if the
+    // account was removed, so the ids are read off the raw document.
+    const sellerRefId = order.seller && order.seller._id
+      ? order.seller._id
+      : order.seller;
+
+    await Seller.findByIdAndUpdate(sellerRefId, {
+      $inc: {
+        totalCommissionEarned: settlement.commissionAmount,
+        totalSales: settlement.merchandiseAmount
       }
     });
 
+  
     return {
       success: true,
       message: 'Commission recorded successfully',
-      commission: commissionData,
+      commission: settlement,
       order: order.orderNumber
     };
   } catch (error) {
@@ -70,6 +114,27 @@ export const recordCommission = async (orderId) => {
       success: false,
       error: error.message
     };
+  }
+};
+
+
+/**
+ * Called whenever an order reaches 'delivered'. Recording the commission here -
+ * instead of waiting for an admin to press a button - is what makes the
+ * commission model automatic. Safe to call repeatedly.
+ */
+export const settleDeliveredOrder = async (order) => {
+  try {
+    if (!order || order.orderStatus !== 'delivered') {
+      return { success: false, skipped: true, reason: 'order is not delivered' };
+    }
+    if (order.commissionRecorded) {
+      return { success: true, skipped: true, reason: 'already recorded' };
+    }
+    return await recordCommission(order._id);
+  } catch (error) {
+    console.error('Auto commission settlement failed:', error.message);
+    return { success: false, error: error.message };
   }
 };
 
@@ -96,6 +161,12 @@ export const getCommissionSummary = async (dateRange = {}) => {
       totalOrderAmount: 0,
       totalCommission: 0,
       totalNetToSellers: 0,
+      // Everything the platform keeps, itemised so the Razorpay balance can be
+      // reconciled against it: commission + platform fee + customer delivery.
+      totalPlatformFees: 0,
+      totalDeliveryRevenue: 0,
+      totalFulfilmentCost: 0,
+      platformRevenue: 0,
       averageCommissionPercentage: 0,
       bySeller: {}
     };
@@ -104,8 +175,14 @@ export const getCommissionSummary = async (dateRange = {}) => {
       summary.totalOrderAmount += order.totalAmount || 0;
       summary.totalCommission += order.commissionAmount || 0;
       summary.totalNetToSellers += order.netAmountToSeller || 0;
+      summary.totalPlatformFees += order.platformFee || 0;
+      summary.totalDeliveryRevenue += order.deliveryCharge || 0;
+      summary.totalFulfilmentCost += order.deliveryAssignmentMode === 'self'
+        ? (order.deliveryFee || 0)
+        : (order.shiprocketDeliveryCharge || 0);
 
-      const sellerId = order.seller._id.toString();
+      // Sellers can be deleted or banned, so the reference may not populate.
+      const sellerId = String(order.seller?._id || order.seller || 'unknown');
       if (!summary.bySeller[sellerId]) {
         summary.bySeller[sellerId] = {
           seller: order.seller,
@@ -121,6 +198,15 @@ export const getCommissionSummary = async (dateRange = {}) => {
       summary.bySeller[sellerId].totalCommission += order.commissionAmount || 0;
       summary.bySeller[sellerId].totalNet += order.netAmountToSeller || 0;
     });
+
+    const rupee = (n) => Math.round((Number(n) || 0) * 100) / 100;
+    summary.platformRevenue = rupee(summary.totalCommission + summary.totalPlatformFees + summary.totalDeliveryRevenue);
+    summary.totalOrderAmount = rupee(summary.totalOrderAmount);
+    summary.totalCommission = rupee(summary.totalCommission);
+    summary.totalNetToSellers = rupee(summary.totalNetToSellers);
+    summary.totalPlatformFees = rupee(summary.totalPlatformFees);
+    summary.totalDeliveryRevenue = rupee(summary.totalDeliveryRevenue);
+    summary.totalFulfilmentCost = rupee(summary.totalFulfilmentCost);
 
     if (summary.totalOrders > 0) {
       summary.averageCommissionPercentage = (summary.totalCommission / summary.totalOrderAmount * 100).toFixed(2);

@@ -4,8 +4,9 @@ import { executive as executiveApi } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import toast from 'react-hot-toast';
 import { FiPackage, FiTruck, FiMapPin, FiClock, FiCheckCircle, FiAlertCircle, FiUsers } from 'react-icons/fi';
+import { listOf, oneOf } from '../../services/apiResponse.js';;
+import { toastError } from '../../services/errors.js';
 
 const ExecutiveDashboard = () => {
   const { executive } = useAuth();
@@ -24,11 +25,11 @@ const ExecutiveDashboard = () => {
         executiveApi.getAssignedDeliveries()
       ]);
       
-      setStats(statsRes.data.data);
-      setDeliveries(deliveriesRes.data.data);
+      setStats(oneOf(statsRes.data));
+      setDeliveries(listOf(deliveriesRes.data));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      toast.error('Failed to load dashboard data');
+      toastError(error, "Failed to load dashboard data");
     } finally {
       setLoading(false);
     }

@@ -7,7 +7,8 @@ import Product from '../models/Product.js';
 import { sellerRegisterValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifySeller } from '../middleware/auth.js';
-import { sendOTP } from '../services/email.js';
+import { sendOTP, sendOrderStatusNotification } from '../services/email.js';
+import { settleDeliveredOrder } from '../services/commissionTracking.js';
 import { createOrder as createRazorpayOrder } from '../services/razorpay.js';
 
 const router = express.Router();
@@ -339,10 +340,36 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
     }
 
     order.orderStatus = status;
+    order.deliveryJourney = order.deliveryJourney || [];
+    order.deliveryJourney.push({
+      status,
+      note: `${status.replace(/_/g, ' ')} by seller`,
+      at: new Date()
+    });
     if (status === 'delivered') {
       order.deliveryDate = new Date();
+      order.deliveredAt = new Date();
+      // Cash-on-delivery money is collected at the doorstep; without this the
+      // order stays `pending` forever and never qualifies for a payout.
+      if (order.paymentMethod === 'cod') {
+        order.paymentStatus = 'completed';
+      }
     }
     await order.save();
+
+    // Tell the customer what changed. Populated lazily so the mail carries the
+    // buyer address; a failure here must never break the seller's action.
+    // Delivery completed -> book the platform commission automatically.
+    await settleDeliveredOrder(order);
+
+    try {
+      const withBuyer = await Order.findById(order._id).populate('user', 'email name');
+      if (withBuyer?.user?.email) {
+        await sendOrderStatusNotification(withBuyer.user.email, withBuyer, status);
+      }
+    } catch (mailErr) {
+      console.error('Order status email skipped:', mailErr.message);
+    }
 
     res.json({
       success: true,

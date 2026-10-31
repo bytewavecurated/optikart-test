@@ -6,7 +6,7 @@ import { useUserBehavior } from '../contexts/UserBehaviorContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const SearchResults = () => {
   const [searchParams] = useSearchParams();

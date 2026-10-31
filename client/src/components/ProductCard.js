@@ -184,11 +184,17 @@ export default function ProductCard({ product }) {
     originalPrice = 1999,
     rating = 4.2,
     ratingCount = 124,
+    stock,
+    discountedPrice,
   } = product;
 
-  const discount = originalPrice > price
-    ? Math.round(((originalPrice - price) / originalPrice) * 100)
-    : 0;
+  // The API sends `discountedPrice`; `originalPrice` is only a fallback.
+  const selling = discountedPrice || price;
+  const list = Math.max(originalPrice || 0, selling);
+  const discount = list > selling ? Math.round(((list - selling) / list) * 100) : 0;
+  // Low-stock urgency is only shown when the number is real.
+  const lowStock = typeof stock === 'number' && stock > 0 && stock <= 5;
+  const soldOut = stock === 0;
 
   const handleWishlistClick = (e) => {
     e.preventDefault();
@@ -289,14 +295,19 @@ export default function ProductCard({ product }) {
         </div>
 
         <div style={styles.priceWrap}>
-          <span style={styles.price}>₹{price.toLocaleString()}</span>
-          {originalPrice > price && (
+          <span style={styles.price}>₹{selling.toLocaleString()}</span>
+          {discount > 0 && (
             <>
-              <span style={styles.originalPrice}>₹{originalPrice.toLocaleString()}</span>
+              <span style={styles.originalPrice}>₹{list.toLocaleString()}</span>
               <span style={styles.discount}>{discount}% off</span>
             </>
           )}
         </div>
+        {soldOut ? (
+          <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 700, color: 'var(--danger)' }}>Currently unavailable</p>
+        ) : lowStock ? (
+          <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, color: 'var(--warning)' }}>Only {stock} left</p>
+        ) : null}
       </div>
 
       <button

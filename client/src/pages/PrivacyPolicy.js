@@ -118,7 +118,7 @@ const PrivacyPolicy = () => {
                 </div>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: section.items ? '12px' : 0 }}>{section.content}</p>
                 {section.items && (
-                  <ul style={{ paddingLeft: '20px', listStyle: 'disc', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 2 }}>
+                  <ul className="list-clean">
                     {section.items.map((item, i) => (
                       <li key={i}>{item}</li>
                     ))}

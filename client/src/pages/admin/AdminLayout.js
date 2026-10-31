@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiHome, FiUsers, FiShoppingBag, FiPackage, FiDollarSign, FiTrendingUp, FiTruck, FiTag, FiFileText, FiSettings, FiActivity, FiImage, FiLogOut, FiMenu, FiX, FiShield, FiMessageCircle } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
+import Logo from '../../components/Logo';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -63,25 +64,7 @@ const AdminLayout = () => {
           minHeight: '80px'
         }}>
           {sidebarOpen && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontSize: '20px'
-              }}>
-                <FiShield />
-              </div>
-              <div>
-                <span style={{ fontSize: '18px', fontWeight: 800, color: '#212121', display: 'block', letterSpacing: '-0.5px' }}>OptiKart</span>
-                <span style={{ fontSize: '11px', color: '#757575', fontWeight: 500 }}>Admin Panel</span>
-              </div>
-            </div>
+            <Logo variant="onLight" size={22} tagline={false} />
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -125,7 +108,7 @@ const AdminLayout = () => {
                 marginBottom: '6px',
                 textDecoration: 'none',
                 color: isActive(item) ? '#667eea' : '#757575',
-                background: isActive(item) ? 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)' : 'transparent',
+                background: isActive(item) ? 'var(--brand-tint)' : 'transparent',
                 fontWeight: isActive(item) ? 600 : 500,
                 fontSize: '14px',
                 transition: 'all 0.2s ease',
@@ -154,7 +137,7 @@ const AdminLayout = () => {
                   transform: 'translateY(-50%)',
                   width: '4px',
                   height: '24px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: 'var(--brand)',
                   borderRadius: '0 4px 4px 0'
                 }} />
               )}
@@ -178,8 +161,8 @@ const AdminLayout = () => {
                   width: '40px',
                   height: '40px',
                   borderRadius: '10px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: '#fff',
+                  background: 'var(--brand-tint)',
+                  color: 'var(--brand)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -196,7 +179,7 @@ const AdminLayout = () => {
               <div style={{
                 display: 'inline-block',
                 padding: '4px 10px',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'var(--brand)',
                 color: '#fff',
                 borderRadius: '6px',
                 fontSize: '11px',
@@ -270,7 +253,7 @@ const AdminLayout = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{
               padding: '8px 16px',
-              background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+              background: 'var(--brand-tint)',
               borderRadius: '10px',
               display: 'flex',
               alignItems: 'center',

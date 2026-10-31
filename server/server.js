@@ -70,7 +70,26 @@ const io = new Server(httpServer, {
   }
 });
 
-app.set('trust proxy', true);
+// `trust proxy: true` tells Express to believe every X-Forwarded-For value a
+// client sends, which lets anyone defeat the IP-based rate limiters (and is what
+// express-rate-limit's ERR_ERL_PERMISSIVE_TRUST_PROXY validation rejects).
+//
+// Trusted hops must therefore be an explicit number, not `true`:
+//   0 / false -> direct connections (local development)
+//   1         -> one reverse proxy in front (nginx, Heroku, Render, Railway...)
+// Override with TRUST_PROXY_HOPS when there is more than one hop.
+const trustProxyHops = (() => {
+  const raw = process.env.TRUST_PROXY_HOPS;
+  if (raw === undefined || raw === '') {
+    // Only trust a single hop when not running locally.
+    return process.env.NODE_ENV === 'production' ? 1 : false;
+  }
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 0) return false;
+  return n;
+})();
+
+app.set('trust proxy', trustProxyHops);
 
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',

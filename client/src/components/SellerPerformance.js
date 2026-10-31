@@ -10,7 +10,7 @@ const styles = {
     overflow: 'hidden',
   },
   header: {
-    background: 'linear-gradient(135deg, #2874f0 0%, #1a5dc7 100%)',
+    background: 'var(--brand)',
     padding: '20px 24px',
     display: 'flex',
     alignItems: 'center',

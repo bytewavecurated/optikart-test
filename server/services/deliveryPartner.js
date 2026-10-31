@@ -242,10 +242,23 @@ export const completeDelivery = async (orderId) => {
     // Calculate earnings
     const earningsResult = await calculateDeliveryEarnings(orderId);
 
-    // Update order
-    order.deliveryStatus = 'delivered';
+    // Update order. The status field on Order is `orderStatus`; writing a
+    // non-existent path left partner-delivered orders stuck in transit, so no
+    // commission or payout was ever triggered for them.
+    order.orderStatus = 'delivered';
     order.deliveredAt = new Date();
+    order.deliveryDate = new Date();
+    order.deliveryJourney = order.deliveryJourney || [];
+    order.deliveryJourney.push({ status: 'delivered', note: 'Delivered by partner', at: new Date() });
     await order.save();
+
+    // Booking the platform commission happens automatically on delivery.
+    try {
+      const { settleDeliveredOrder } = await import('./commissionTracking.js');
+      await settleDeliveredOrder(order);
+    } catch (settleErr) {
+      console.error('Auto commission settlement after partner delivery:', settleErr.message);
+    }
 
     // Update partner
     const partner = await DeliveryPartner.findById(order.deliveryPartner);

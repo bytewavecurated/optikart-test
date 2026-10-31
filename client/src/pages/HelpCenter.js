@@ -4,7 +4,7 @@ import { FiHelpCircle, FiChevronRight, FiSearch, FiPackage, FiRefreshCw, FiCredi
 import { help } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const HELP_CATEGORIES = [
   { id: 'orders', title: 'Orders & Shipping', desc: 'Track orders, delivery status, shipping info', icon: <FiPackage size={24} /> },

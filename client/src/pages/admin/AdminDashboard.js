@@ -24,25 +24,27 @@ const AdminDashboard = () => {
   const stats = dashboard?.stats || dashboard || {};
   const recentOrders = dashboard?.recentOrders || dashboard?.recent_orders || [];
 
+  // Only figures the API actually returns are shown - no invented month-on-month
+  // deltas, which would misread as real analytics.
   const statCards = [
-    { label: 'Total Users', value: stats.totalUsers || 0, icon: <FiUsers />, color: '#667eea', bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', trend: '+12%', trendUp: true },
-    { label: 'Total Sellers', value: stats.totalSellers || 0, icon: <FiShoppingBag />, color: '#f093fb', bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', trend: '+8%', trendUp: true },
-    { label: 'Total Orders', value: stats.totalOrders || 0, icon: <FiPackage />, color: '#4facfe', bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', trend: '+24%', trendUp: true },
-    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, icon: <FiDollarSign />, color: '#43e97b', bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', trend: '+18%', trendUp: true },
+    { label: 'Customers', value: (stats.totalUsers || 0).toLocaleString('en-IN'), icon: <FiUsers /> },
+    { label: 'Sellers', value: (stats.totalSellers || 0).toLocaleString('en-IN'), sub: `${stats.verifiedSellers || 0} verified`, icon: <FiShoppingBag /> },
+    { label: 'Orders', value: (stats.totalOrders || 0).toLocaleString('en-IN'), sub: `${stats.pendingOrders || 0} pending`, icon: <FiPackage /> },
+    { label: 'Revenue', value: `Rs. ${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, sub: `Avg order Rs. ${(stats.avgOrderValue || 0).toLocaleString('en-IN')}`, icon: <FiDollarSign /> },
   ];
 
   const quickLinks = [
-    { label: 'Manage Users', path: '/admin/users', icon: <FiUsers />, color: '#667eea', desc: 'View and manage all users' },
-    { label: 'Manage Sellers', path: '/admin/sellers', icon: <FiShoppingBag />, color: '#f5576c', desc: 'Oversee seller accounts' },
-    { label: 'Manage Executives', path: '/admin/executives', icon: <FiSettings />, color: '#9c27b0', desc: 'Control executive access' },
-    { label: 'Manage Manufacturers', path: '/admin/manufacturers', icon: <FiPackage />, color: '#00bcd4', desc: 'Manage manufacturer accounts' },
-    { label: 'View Orders', path: '/admin/orders', icon: <FiPackage />, color: '#26a541', desc: 'Track all orders' },
-    { label: 'Revenue Analytics', path: '/admin/revenue', icon: <FiBarChart2 />, color: '#ff6161', desc: 'Financial insights' },
+    { label: 'Manage Users', path: '/admin/users', icon: <FiUsers />, color: 'var(--brand)', desc: 'View and manage all users' },
+    { label: 'Manage Sellers', path: '/admin/sellers', icon: <FiShoppingBag />, color: 'var(--brand)', desc: 'Oversee seller accounts' },
+    { label: 'Manage Executives', path: '/admin/executives', icon: <FiSettings />, color: 'var(--brand)', desc: 'Control executive access' },
+    { label: 'Manage Manufacturers', path: '/admin/manufacturers', icon: <FiPackage />, color: 'var(--brand)', desc: 'Manage manufacturer accounts' },
+    { label: 'View Orders', path: '/admin/orders', icon: <FiPackage />, color: 'var(--brand)', desc: 'Track all orders' },
+    { label: 'Revenue Analytics', path: '/admin/revenue', icon: <FiBarChart2 />, color: 'var(--brand)', desc: 'Financial insights' },
     { label: 'Sale Events', path: '/admin/sale-events', icon: <FiActivity />, color: '#e91e63', desc: 'Create sales events' },
-    { label: 'Banners', path: '/admin/banners', icon: <FiImage />, color: '#00bcd4', desc: 'Manage homepage banners' },
+    { label: 'Banners', path: '/admin/banners', icon: <FiImage />, color: 'var(--brand)', desc: 'Manage homepage banners' },
     { label: 'Coupons', path: '/admin/coupons', icon: <FiTag />, color: '#ff5722', desc: 'Create discount codes' },
     { label: 'Blog Management', path: '/admin/blogs', icon: <FiFileText />, color: '#607d8b', desc: 'Manage blog content' },
-    { label: 'Staff Management', path: '/admin/staff', icon: <FiSettings />, color: '#9c27b0', desc: 'Manage staff accounts' },
+    { label: 'Staff Management', path: '/admin/staff', icon: <FiSettings />, color: 'var(--brand)', desc: 'Manage staff accounts' },
     { label: 'Delivery', path: '/admin/delivery', icon: <FiTruck />, color: '#795548', desc: 'Track deliveries' },
   ];
 
@@ -57,12 +59,13 @@ const AdminDashboard = () => {
   return (
     <div>
       {/* Welcome Section */}
-      <div style={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '16px',
-        padding: '32px',
-        marginBottom: '32px',
-        color: '#fff',
+      <div style={{
+        background: 'var(--bg-white)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '28px',
+        marginBottom: '28px',
+        color: 'var(--text-primary)',
         position: 'relative',
         overflow: 'hidden'
       }}>
@@ -114,31 +117,23 @@ const AdminDashboard = () => {
                 </h3>
               </div>
               <div style={{
-                width: '56px',
-                height: '56px',
-                borderRadius: '16px',
-                background: card.bg,
+                width: 48,
+                height: 48,
+                borderRadius: 12,
+                background: 'var(--bg-subtle)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff',
-                fontSize: '24px',
-                boxShadow: `0 4px 12px ${card.color}40`
+                color: 'var(--text-primary)',
+                fontSize: 20,
+                flexShrink: 0
               }}>
                 {card.icon}
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {card.trendUp ? (
-                <FiArrowUp style={{ color: '#4caf50' }} size={16} />
-              ) : (
-                <FiArrowDown style={{ color: '#f44336' }} size={16} />
-              )}
-              <span style={{ fontSize: '13px', fontWeight: 600, color: card.trendUp ? '#4caf50' : '#f44336' }}>
-                {card.trend}
-              </span>
-              <span style={{ fontSize: '13px', color: '#757575' }}>from last month</span>
-            </div>
+            {card.sub && (
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '8px 0 0' }}>{card.sub}</p>
+            )}
           </div>
         ))}
       </div>
@@ -215,9 +210,9 @@ const AdminDashboard = () => {
           <div style={{ textAlign: 'center', padding: '48px 20px' }}>
             <div style={{
               width: 80, height: 80, borderRadius: 20,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'var(--brand-tint)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', fontSize: 32, margin: '0 auto 20px'
+              color: 'var(--brand)', fontSize: 32, margin: '0 auto 20px'
             }}>
               <FiPieChart />
             </div>

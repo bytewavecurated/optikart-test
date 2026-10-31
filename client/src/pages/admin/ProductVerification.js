@@ -4,6 +4,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { FiCheck, FiX, FiFilter, FiSearch } from 'react-icons/fi';
+import { toastError } from '../../services/errors.js';
 
 const ProductVerification = () => {
   const [products, setProducts] = useState([]);
@@ -35,7 +36,7 @@ const ProductVerification = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
+      toastError(error, "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,7 @@ const ProductVerification = () => {
         toast.error(res.data.error || 'Failed to verify product');
       }
     } catch (error) {
-      toast.error('Failed to verify product');
+      toastError(error, "Failed to verify product");
     }
   };
 
@@ -76,7 +77,7 @@ const ProductVerification = () => {
         toast.error(res.data.error || 'Failed to reject product');
       }
     } catch (error) {
-      toast.error('Failed to reject product');
+      toastError(error, "Failed to reject product");
     }
   };
 

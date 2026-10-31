@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FiX, FiChevronDown, FiChevronUp, FiFilter } from 'react-icons/fi';
 import api from '../services/api';
+import { oneOf } from '../services/apiResponse.js';
 
 const DEFAULT_FRAME_SHAPES = ['Round', 'Rectangle', 'Square', 'Aviator', 'Cat Eye', 'Wayfarer', 'Oval', 'Geometric'];
 const DEFAULT_COLORS = [
@@ -8,7 +9,7 @@ const DEFAULT_COLORS = [
   { name: 'Gold', hex: '#FFD700' }, { name: 'Silver', hex: '#C0C0C0' },
   { name: 'Blue', hex: '#2874f0' }, { name: 'Red', hex: '#e43f5a' },
   { name: 'Green', hex: '#388e3c' }, { name: 'Transparent', hex: '#e0e0e0' },
-  { name: 'Multi', hex: 'linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3)' },
+  { name: 'Multi', hex: 'var(--brand)' },
 ];
 const DEFAULT_LENS_TYPES = ['Non-Powered', 'Powered', 'Photochromic', 'Polarized', 'Blue-Cut'];
 const DEFAULT_GENDERS = ['Men', 'Women', 'Unisex', 'Kids'];
@@ -214,7 +215,7 @@ export default function FilterSidebar({ filters = {}, onFilterChange, mobileOpen
     const fetchFilterOptions = async () => {
       try {
         const res = await api.get('/products/filters');
-        const data = res.data.data || res.data;
+        const data = oneOf(res.data) || res.data;
         if (data.brands) setDynamicBrands(data.brands);
         if (data.colors) {
           setDynamicColors(data.colors.map(c =>

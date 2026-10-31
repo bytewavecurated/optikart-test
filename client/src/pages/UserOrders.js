@@ -5,7 +5,7 @@ import { orders } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const STATUS_COLORS = { pending: '#ff9f00', confirmed: '#2874f0', shipped: '#2874f0', delivered: '#26a541', cancelled: '#ff6161', returned: '#878787' };
 

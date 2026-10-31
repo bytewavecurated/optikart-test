@@ -4,6 +4,8 @@ import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const STAFF_ROLES = [
   { value: 'blog_manager', label: 'Blog Manager' },
@@ -23,7 +25,7 @@ const StaffManagement = () => {
 
   useEffect(() => { fetchStaff(); }, []);
   const fetchStaff = async () => {
-    try { const res = await adminApi.getStaff(); setStaff(res.data.data || []); } catch (err) { console.error(err); }
+    try { const res = await adminApi.getStaff(); setStaff(listOf(res.data)); } catch (error) { console.error(err); }
     finally { setLoading(false); }
   };
 
@@ -38,12 +40,12 @@ const StaffManagement = () => {
       setShowForm(false);
       setFormData({ name: '', email: '', role: 'blog_manager', password: '' });
       fetchStaff();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed'); }
+    } catch (error) { toast.error(err.response?.data?.message || 'Failed'); }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this staff member?')) return;
-    try { await adminApi.deleteStaff(id); toast.success('Deleted'); fetchStaff(); } catch (err) { toast.error('Failed'); }
+    try { await adminApi.deleteStaff(id); toast.success('Deleted'); fetchStaff(); } catch (error) { toastError(error, "Failed"); }
   };
 
   return (

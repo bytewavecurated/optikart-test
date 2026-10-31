@@ -77,7 +77,7 @@ const Login = () => {
           animate={{ opacity: 1, y: 0 }}
           style={{ background: 'var(--bg-white)', borderRadius: '8px', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}
         >
-          <div style={{ background: 'var(--primary)', padding: '24px 32px' }}>
+          <div style={{ background: 'var(--bg-dark)', padding: '24px 32px' }}>
             <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: 700 }}>
               {step === 1 ? 'Login' : 'Verify OTP'}
             </h1>

@@ -3,6 +3,7 @@ import { FiDollarSign, FiSearch, FiCalendar, FiFilter, FiDownload, FiTrendingUp,
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { listOf } from '../../services/apiResponse.js';
 
 const Commissions = () => {
   const [commissions, setCommissions] = useState([]);
@@ -23,13 +24,15 @@ const Commissions = () => {
   const fetchCommissions = async () => {
     try {
       const res = await adminApi.getCommissions();
-      setCommissions(res.data.data || []);
-      
-      // Calculate stats
-      const totalCommission = res.data.data?.reduce((sum, c) => sum + (c.commissionAmount || 0), 0) || 0;
-      const totalOrders = res.data.data?.length || 0;
+      const rows = listOf(res.data);
+      setCommissions(rows);
+
+      // Calculate stats from the same list the table renders, so the two can
+      // never disagree if the API changes its payload key.
+      const totalCommission = rows.reduce((sum, c) => sum + (c.commissionAmount || 0), 0);
+      const totalOrders = rows.length;
       const averageCommission = totalOrders > 0 ? totalCommission / totalOrders : 0;
-      const pendingPayout = res.data.data?.filter(c => !c.commissionPaid).reduce((sum, c) => sum + (c.sellerPayoutAmount || 0), 0) || 0;
+      const pendingPayout = rows.filter(c => !c.commissionPaid).reduce((sum, c) => sum + (c.sellerPayoutAmount || 0), 0);
       
       setStats({
         totalCommission,

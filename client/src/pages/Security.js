@@ -75,7 +75,7 @@ const Security = () => {
             <div className="card" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
                 <p>We are committed to protecting your privacy. Here are our key privacy practices:</p>
-                <ul style={{ paddingLeft: '20px', listStyle: 'disc', lineHeight: 2.2 }}>
+                <ul className="list-clean">
                   <li>We collect only the data necessary to provide our services.</li>
                   <li>Your personal data is never sold to third parties.</li>
                   <li>Data is stored in encrypted databases with restricted access.</li>

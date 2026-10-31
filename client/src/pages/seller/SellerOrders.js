@@ -4,6 +4,8 @@ import { seller as sellerApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const STATUS_COLORS = { pending: '#ff9f00', confirmed: '#2874f0', shipped: '#2874f0', delivered: '#26a541', cancelled: '#ff6161' };
 const STATUS_FLOW = ['pending', 'confirmed', 'shipped', 'delivered'];
@@ -18,8 +20,8 @@ const SellerOrders = () => {
   const fetchOrders = async () => {
     try {
       const res = await sellerApi.getOrders({ status: filter !== 'all' ? filter : undefined });
-      setOrders(res.data.data || []);
-    } catch (err) { console.error(err); }
+      setOrders(listOf(res.data));
+    } catch (error) { console.error(err); }
     finally { setLoading(false); }
   };
 
@@ -28,7 +30,7 @@ const SellerOrders = () => {
       await sellerApi.updateOrderStatus(orderId, newStatus);
       toast.success(`Order marked as ${newStatus}`);
       fetchOrders();
-    } catch (err) { toast.error('Failed to update status'); }
+    } catch (error) { toastError(error, "Failed to update status"); }
   };
 
   const getNextStatus = (current) => {

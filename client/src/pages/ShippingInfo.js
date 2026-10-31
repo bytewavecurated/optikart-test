@@ -34,7 +34,7 @@ const ShippingInfo = () => {
                   <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '8px' }}>
                     OptiKart charges a flat <strong>INR 16 platform fee</strong> on all orders. Additionally, standard Shiprocket delivery charges apply based on the weight and destination of your order.
                   </p>
-                  <ul style={{ paddingLeft: '20px', listStyle: 'disc', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 2 }}>
+                  <ul className="list-clean">
                     <li>Platform handling fee: <strong>INR 16</strong> (flat, on all orders)</li>
                     <li>Shiprocket delivery charges: <strong>INR 40 - 120</strong> (based on weight & destination)</li>
                     <li>Orders above <strong>INR 999</strong>: Free delivery (platform fee of INR 16 still applies)</li>
@@ -103,7 +103,7 @@ const ShippingInfo = () => {
 
           <div className="card" style={{ padding: '24px', marginBottom: '32px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>Important Shipping Notes</h2>
-            <ul style={{ paddingLeft: '20px', listStyle: 'disc', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 2.2 }}>
+            <ul className="list-clean">
               <li>Orders placed before 2:00 PM are processed the same day (Mon-Sat).</li>
               <li>Custom prescription orders may take an additional 2-3 days for lens fitting.</li>
               <li>Delivery timelines are estimates and may vary during festivals or sales.</li>

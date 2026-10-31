@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
-import { oneOf, listOf } from '../services/apiResponse';
+import { oneOf, listOf } from '../services/apiResponse.js';
 
 const ProductCompare = () => {
   const location = useLocation();

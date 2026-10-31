@@ -3,6 +3,7 @@ import { FiTrendingUp, FiDollarSign, FiShoppingBag, FiPackage } from 'react-icon
 import { seller as sellerApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { oneOf } from '../../services/apiResponse.js';
 
 const SellerAnalytics = () => {
   const [period, setPeriod] = useState('30d');
@@ -13,7 +14,7 @@ const SellerAnalytics = () => {
     const fetch = async () => {
       try {
         const res = await sellerApi.getAnalytics(period);
-        setAnalytics(res.data.data);
+        setAnalytics(oneOf(res.data));
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };

@@ -5,7 +5,7 @@
 
 import Seller from '../models/Seller.js';
 import Order from '../models/Order.js';
-import { sendEmail } from './email.js';
+import { sendEmail, notify } from './email.js';
 
 const DEFAULT_RADIUS_KM = 10;
 const ORDER_ACCEPTANCE_TIMEOUT_MINUTES = 30;
@@ -112,7 +112,7 @@ export const assignOrderToNearestSeller = async (orderId, customerLat, customerL
     await order.save();
 
     // Send notification to seller
-    await sendEmail(selectedSeller.email, 'New Order Assignment', 
+    await notify(selectedSeller.email, 'New Order Assignment', 
       `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`);
 
     // Set timeout to move to next seller if not accepted
@@ -186,7 +186,7 @@ const checkOrderAcceptance = async (orderId) => {
     await order.save();
 
     // Notify next seller
-    await sendEmail(nextSeller.email, 'New Order Assignment', 
+    await notify(nextSeller.email, 'New Order Assignment', 
       `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`);
 
     // Set timeout again
@@ -294,7 +294,7 @@ export const rejectOrder = async (orderId, sellerId, reason) => {
     await order.save();
 
     // Notify next seller
-    await sendEmail(nextSeller.email, 'New Order Assignment', 
+    await notify(nextSeller.email, 'New Order Assignment', 
       `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`);
 
     return {

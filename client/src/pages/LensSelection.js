@@ -6,7 +6,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 import { FiArrowLeft, FiArrowRight, FiUpload, FiCheck } from 'react-icons/fi';
-import { oneOf } from '../services/apiResponse';
+import { oneOf } from '../services/apiResponse.js';
 
 const LENS_TYPES = [
   { id: 'single-vision', name: 'Single Vision', price: 799, description: 'For distance or reading' },

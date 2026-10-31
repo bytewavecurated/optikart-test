@@ -4,6 +4,7 @@ import { FiPackage, FiToggleLeft, FiToggleRight, FiLogOut } from 'react-icons/fi
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { toastError } from '../../services/errors.js';
 
 const ManufacturerSellerDashboard = () => {
   const [availableProducts, setAvailableProducts] = useState([]);
@@ -60,7 +61,7 @@ const ManufacturerSellerDashboard = () => {
       }
       fetchMyProducts();
     } catch (error) {
-      toast.error('Failed to toggle product');
+      toastError(error, "Failed to toggle product");
     }
   };
 

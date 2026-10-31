@@ -3,6 +3,7 @@ import { FiTruck, FiPackage, FiSearch } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { listOf } from '../../services/apiResponse.js';
 
 const STATUS_COLORS = { pending: '#ff9f00', picked: '#2874f0', in_transit: '#2874f0', delivered: '#26a541', failed: '#ff6161' };
 
@@ -17,8 +18,8 @@ const DeliveryManagement = () => {
     const fetch = async () => {
       try {
         const [delRes, pickRes] = await Promise.allSettled([adminApi.getDelivery(), adminApi.getPickups()]);
-        if (delRes.status === 'fulfilled') setDeliveries(delRes.value.data.data || []);
-        if (pickRes.status === 'fulfilled') setPickups(pickRes.value.data.data || []);
+        if (delRes.status === 'fulfilled') setDeliveries(listOf(delRes.value.data));
+        if (pickRes.status === 'fulfilled') setPickups(listOf(pickRes.value.data));
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };

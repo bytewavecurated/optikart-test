@@ -5,7 +5,7 @@ import Cart from '../models/Cart.js';
 import Coupon from '../models/Coupon.js';
 import { verifyToken } from '../middleware/auth.js';
 import { orderValidation } from '../middleware/validate.js';
-import { sendOrderConfirmation } from '../services/email.js';
+import { sendOrderConfirmation, sendOrderStatusNotification } from '../services/email.js';
 
 const router = express.Router();
 
@@ -273,6 +273,15 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
 
     await order.save();
 
+
+    try {
+      const withBuyer = await Order.findById(order._id).populate('user', 'email name');
+      if (withBuyer?.user?.email) {
+        await sendOrderStatusNotification(withBuyer.user.email, withBuyer, 'cancelled');
+      }
+    } catch (mailErr) {
+      console.error('Cancellation email skipped:', mailErr.message);
+    }
     res.json({
       success: true,
       message: 'Order cancelled successfully.',
@@ -314,6 +323,15 @@ router.post('/:id/return', verifyToken, async (req, res) => {
     order.returnReason = reason || 'Return requested by user';
     await order.save();
 
+
+    try {
+      const withBuyer = await Order.findById(order._id).populate('user', 'email name');
+      if (withBuyer?.user?.email) {
+        await sendOrderStatusNotification(withBuyer.user.email, withBuyer, 'return_requested');
+      }
+    } catch (mailErr) {
+      console.error('Return email skipped:', mailErr.message);
+    }
     res.json({
       success: true,
       message: 'Return request submitted successfully.',

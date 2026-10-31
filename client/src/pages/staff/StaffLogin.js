@@ -4,6 +4,7 @@ import { FiMail, FiLock, FiUser, FiKey } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import Logo from '../../components/Logo';
 
 const StaffLogin = () => {
   const [step, setStep] = useState(1); // 1: email/password, 2: OTP
@@ -84,10 +85,10 @@ const StaffLogin = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1b2a', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', padding: '20px' }}>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', width: '100%', maxWidth: '400px', overflow: 'hidden' }}>
-        <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '32px', textAlign: 'center' }}>
-          <FiUser size={40} style={{ color: '#fff', marginBottom: '12px' }} />
+        <div style={{ background: 'var(--bg-dark)', padding: '28px', textAlign: 'center' }}>
+          <div style={{ marginBottom: 12 }}><Logo variant="onDark" size={24} /></div>
           <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: 700 }}>
             {step === 1 ? 'Staff Portal' : 'Verify OTP'}
           </h1>

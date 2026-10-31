@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import toast from 'react-hot-toast';
 import { FiMapPin, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { listOf, oneOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const OrderAssignment = () => {
   const [orders, setOrders] = useState([]);
@@ -19,11 +20,11 @@ const OrderAssignment = () => {
       setLoading(true);
       const res = await adminApi.getOrders({ assignmentStatus: filter, limit: 100 });
       if (res.data.success) {
-        setOrders(res.data.data);
+        setOrders(listOf(res.data));
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      toast.error('Failed to load orders');
+      toastError(error, "Failed to load orders");
     } finally {
       setLoading(false);
     }

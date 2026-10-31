@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import toast from 'react-hot-toast';
 import { FiPackage, FiTrendingUp, FiDollarSign, FiAlertTriangle } from 'react-icons/fi';
+import { oneOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const AdminReturnAnalytics = () => {
   const [analytics, setAnalytics] = useState(null);
@@ -20,11 +21,11 @@ const AdminReturnAnalytics = () => {
       const res = await adminApi.getReturnAnalytics(dateRange);
 
       if (res.data.success) {
-        setAnalytics(res.data.data);
+        setAnalytics(oneOf(res.data));
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      toast.error('Failed to load analytics');
+      toastError(error, "Failed to load analytics");
     } finally {
       setLoading(false);
     }

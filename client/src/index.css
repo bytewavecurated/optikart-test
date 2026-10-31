@@ -1,30 +1,54 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --primary: #2874f0;
-  --primary-dark: #1a5dc7;
-  --primary-light: #e8f0fe;
-  --secondary: #34A853;
-  --success: #26a541;
-  --danger: #ff6161;
-  --warning: #ff9f00;
-  --info: #2874f0;
-  --bg-primary: #f5f5f5;
-  --bg-secondary: #fafafa;
+  /* Brand: one accent, used sparingly. */
+  --brand: #2874f0;
+  --brand-dark: #1b5fc4;
+  --brand-tint: #eef4fe;
+
+  /* Keep the old names as aliases so existing markup keeps working. */
+  --primary: var(--brand);
+  --primary-dark: var(--brand-dark);
+  --primary-light: var(--brand-tint);
+
+  --secondary: #1a7f4b;
+  --success: #1a7f4b;
+  --success-light: #e8f5ee;
+  --danger: #d13438;
+  --danger-light: #fdecec;
+  --warning: #b06e00;
+  --info: var(--brand);
+
+  /* Neutrals: a calm grey ramp instead of competing surfaces. */
+  --bg-page: #f7f8fa;
+  --bg-primary: #f7f8fa;
+  --bg-secondary: #ffffff;
   --bg-white: #ffffff;
-  --bg-dark: #0A2540;
-  --text-primary: #212121;
-  --text-secondary: #757575;
-  --text-light: #999999;
+  --bg-elevated: #ffffff;
+  --bg-dark: #101114;
+  --bg-subtle: #f1f3f6;
+
+  --text-primary: #14161a;
+  --text-secondary: #5c6470;
+  --text-light: #8a929e;
   --text-white: #ffffff;
-  --border: #e0e0e0;
-  --border-light: #f0f0f0;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow: 0 2px 8px rgba(0,0,0,0.1);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
-  --radius-sm: 4px;
-  --radius: 8px;
-  --radius-lg: 12px;
+  --text-muted: #8a929e;
+
+  --border: #e3e6ea;
+  --border-light: #eef0f3;
+  --border-strong: #d2d7de;
+
+  /* Flat, low-contrast elevation - no gradients, no heavy drop shadows. */
+  --shadow-sm: 0 1px 2px rgba(16, 17, 20, 0.05);
+  --shadow: 0 1px 3px rgba(16, 17, 20, 0.07), 0 1px 2px rgba(16, 17, 20, 0.04);
+  --shadow-lg: 0 8px 24px rgba(16, 17, 20, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(40, 116, 240, 0.18);
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
   --font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-heading: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -219,12 +243,227 @@ h6 { font-size: 1rem; }
   border-color: var(--danger);
 }
 
+/* ------------------------------------------------------------------
+   Global link + focus treatment
+   Links are never underlined by default; affordance comes from colour
+   and weight. Underlines are opt-in via .is-linked for inline prose.
+   ------------------------------------------------------------------ */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.is-linked,
+.prose a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  color: var(--brand);
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: var(--brand-tint);
+}
+
+/* ------------------------------------------------------------------
+   Headings: tighter, quieter scale in the spirit of product surfaces.
+   ------------------------------------------------------------------ */
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.018em;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.section-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ------------------------------------------------------------------
+   Surfaces: flat white with a hairline instead of shadows where possible.
+   ------------------------------------------------------------------ */
+.card-flat {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-white);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.chip.is-active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.chip.is-active:hover {
+  color: #fff;
+}
+
+/* Buttons: consistent, restrained, no gradients. */
+.btn-quiet {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid transparent;
+}
+
+.btn-quiet:hover {
+  background: #e9ecf1;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-weight: 600;
+  padding: 0;
+}
+
+/* Badges: soft tinted pills rather than solid saturated blocks. */
+.badge-soft-success { background: var(--success-light); color: var(--success); }
+.badge-soft-warning { background: #fdf3e3; color: var(--warning); }
+.badge-soft-danger  { background: var(--danger-light); color: var(--danger); }
+.badge-soft-neutral { background: var(--bg-subtle); color: var(--text-secondary); }
+
+.badge-success, .badge-warning, .badge-danger {
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+/* ------------------------------------------------------------------
+   Lists: a quiet rule per item instead of raw disc bullets.
+   ------------------------------------------------------------------ */
+.list-clean {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list-clean > li {
+  position: relative;
+  padding: 10px 0 10px 20px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.list-clean > li:last-child { border-bottom: 0; }
+
+.list-clean > li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 18px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.list-clean > li strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Divider that does not compete for attention. */
+.hairline {
+  height: 1px;
+  background: var(--border);
+  border: 0;
+}
+
+/* Hide scrollbar on horizontal rails while keeping them scrollable. */
+.rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 4px;
+}
+
+.rail::-webkit-scrollbar { display: none; }
+
+.rail > * { scroll-snap-align: start; flex: 0 0 auto; }
+
+/* Tables: one light rule per row, no heavy header borders. */
+.table-clean {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-clean thead th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table-clean tbody td {
+  padding: 12px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: top;
+}
+
+.table-clean tbody tr:last-child td { border-bottom: 0; }
+
 @media (max-width: 768px) {
   h1 { font-size: 2rem; }
   h2 { font-size: 1.75rem; }
   h3 { font-size: 1.5rem; }
-  
+
   .container {
     padding: 0 16px;
   }
+
+  .section-title { font-size: 19px; }
 }
+

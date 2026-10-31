@@ -5,6 +5,8 @@ import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf, oneOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const UserDetailView = () => {
   const { id } = useParams();
@@ -23,11 +25,11 @@ const UserDetailView = () => {
         adminApi.getUserById(id),
         adminApi.getUserOrders(id)
       ]);
-      setUser(userRes.data.data);
-      setOrders(ordersRes.data.data || []);
-    } catch (err) {
+      setUser(oneOf(userRes.data, "user"));
+      setOrders(listOf(ordersRes.data));
+    } catch (error) {
       console.error(err);
-      toast.error('Failed to load user details');
+      toastError(error, "Failed to load user details");
     } finally {
       setLoading(false);
     }
@@ -45,8 +47,8 @@ const UserDetailView = () => {
       });
       toast.success(`User ${action}ned successfully`);
       fetchUserDetails();
-    } catch (err) {
-      toast.error('Failed to update user status');
+    } catch (error) {
+      toastError(error, "Failed to update user status");
     }
   };
 
@@ -56,8 +58,8 @@ const UserDetailView = () => {
       await adminApi.deleteUser(id);
       toast.success('User deleted successfully');
       navigate('/admin/users');
-    } catch (err) {
-      toast.error('Failed to delete user');
+    } catch (error) {
+      toastError(error, "Failed to delete user");
     }
   };
 

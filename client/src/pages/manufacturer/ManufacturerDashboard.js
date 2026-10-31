@@ -4,6 +4,7 @@ import { FiPackage, FiUsers, FiPlus, FiUpload, FiLogOut, FiEdit, FiTrash2, FiEye
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import { toastError } from '../../services/errors.js';
 
 const ManufacturerDashboard = () => {
   const [products, setProducts] = useState([]);
@@ -121,7 +122,7 @@ const ManufacturerDashboard = () => {
       toast.success('Product discontinued successfully');
       fetchProducts();
     } catch (error) {
-      toast.error('Failed to discontinue product');
+      toastError(error, "Failed to discontinue product");
     }
   };
 
@@ -131,7 +132,7 @@ const ManufacturerDashboard = () => {
       toast.success('Product re-continued successfully');
       fetchProducts();
     } catch (error) {
-      toast.error('Failed to re-continue product');
+      toastError(error, "Failed to re-continue product");
     }
   };
 
@@ -152,7 +153,7 @@ const ManufacturerDashboard = () => {
       if (error.response?.data?.errors) {
         toast.error(`Validation errors: ${error.response.data.errors.join(', ')}`);
       } else {
-        toast.error('Failed to upload products');
+        toastError(error, "Failed to upload products");
       }
     }
   };
@@ -240,7 +241,7 @@ const ManufacturerDashboard = () => {
       if (error.response?.data?.errors) {
         toast.error(`Validation errors: ${error.response.data.errors.join(', ')}`);
       } else {
-        toast.error('Failed to upload sellers');
+        toastError(error, "Failed to upload sellers");
       }
     }
   };

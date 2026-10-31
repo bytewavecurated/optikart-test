@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { seller as sellerApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import toast from 'react-hot-toast';
 import { FiDollarSign, FiTrendingUp, FiCheckCircle } from 'react-icons/fi';
+import { toastError } from '../../services/errors.js';
 
 const SellerCommission = () => {
   const [summary, setSummary] = useState(null);
@@ -23,7 +23,7 @@ const SellerCommission = () => {
       }
     } catch (error) {
       console.error('Error fetching commission data:', error);
-      toast.error('Failed to load commission data');
+      toastError(error, "Failed to load commission data");
     } finally {
       setLoading(false);
     }

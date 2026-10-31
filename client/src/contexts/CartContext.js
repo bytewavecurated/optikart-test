@@ -116,7 +116,17 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const applyCoupon = useCallback((couponData) => {
-    setCoupon(couponData);
+    if (!couponData) return;
+    // The API returns { code, discountType, discountValue, discount }; the cart
+    // maths works in terms of type/value. Normalise so either shape works.
+    const normalised = {
+      ...couponData,
+      code: couponData.code,
+      type: couponData.type || couponData.discountType,
+      value: couponData.value !== undefined ? couponData.value : couponData.discountValue,
+      maxDiscount: couponData.maxDiscount
+    };
+    setCoupon(normalised);
   }, []);
 
   const removeCoupon = useCallback(() => {

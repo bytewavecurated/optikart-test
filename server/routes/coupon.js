@@ -22,7 +22,13 @@ router.get('/', async (req, res) => {
 
 router.post('/validate', verifyToken, async (req, res) => {
   try {
-    const { code, orderAmount } = req.body;
+    const { code } = req.body;
+    // The discount maths needs a real number; a missing amount must never
+    // silently produce NaN prices.
+    const orderAmount = Number(req.body.orderAmount);
+    if (!Number.isFinite(orderAmount) || orderAmount < 0) {
+      return res.status(400).json({ success: false, message: 'A valid order amount is required to apply a coupon.' });
+    }
 
     if (!code) {
       return res.status(400).json({ success: false, message: 'Coupon code is required.' });

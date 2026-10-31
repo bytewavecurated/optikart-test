@@ -4,6 +4,9 @@ import bcrypt from 'bcryptjs';
 const bankAccountSchema = new mongoose.Schema({
   accountNumber: { type: String, required: true },
   ifscCode: { type: String, required: true },
+  // Payouts cannot be settled without the name on the account, so the
+  // SellerPayout record requires it; it was previously never captured.
+  accountHolderName: { type: String, default: '' },
   bankName: { type: String, required: true },
   branchName: { type: String, required: true }
 });

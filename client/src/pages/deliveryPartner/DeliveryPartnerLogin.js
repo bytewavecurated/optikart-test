@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { deliveryPartner as deliveryApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiKey, FiTruck } from 'react-icons/fi';
+import { toastError } from '../../services/errors.js';
+import Logo from '../../components/Logo';
 
 const DeliveryPartnerLogin = () => {
   const [step, setStep] = useState(1);
@@ -82,14 +84,13 @@ const DeliveryPartnerLogin = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, var(--primary) 0%, #764ba2 100%)', padding: '20px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', padding: '20px' }}>
       <div style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}>
-        <div style={{ background: 'var(--primary)', padding: '28px 32px', textAlign: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '8px' }}>
-            <FiTruck size={28} color="#fff" />
-            <h1 style={{ color: '#fff', fontSize: '24px', fontWeight: 700, margin: 0 }}>OptiKart</h1>
+        <div style={{ background: 'var(--bg-dark)', padding: '26px 32px', textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+            <Logo variant="onDark" size={22} />
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '14px', margin: '4px 0 0' }}>
+          <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '14px', margin: '4px 0 0' }}>
             {step === 1 ? 'Delivery Partner Login' : `Enter OTP sent to ${email}`}
           </p>
         </div>
@@ -194,7 +195,7 @@ const DeliveryPartnerLogin = () => {
                     await deliveryApi.login(email, password);
                     toast.success('OTP resent to your email');
                   } catch {
-                    toast.error('Failed to resend OTP');
+                    toastError(error, "Failed to resend OTP");
                   }
                 }}
                 style={{ color: 'var(--primary)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '13px' }}

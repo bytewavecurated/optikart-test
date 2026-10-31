@@ -11,7 +11,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import toast from 'react-hot-toast';
-import { oneOf, listOf } from '../services/apiResponse';
+import { oneOf, listOf } from '../services/apiResponse.js';
 
 const ProductDetails = () => {
   const { id } = useParams();

@@ -15,8 +15,9 @@ import ProductCard from '../components/ProductCard';
 import LoadMore from '../components/LoadMore';
 import GenderSelection from '../components/GenderSelection';
 import { products } from '../services/api';
+import { useUserBehavior } from '../contexts/UserBehaviorContext';
 import api from '../services/api';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const ITEMS_PER_PAGE = 8;
 
@@ -36,11 +37,12 @@ const CATEGORIES = [
 ];
 
 const OFFERS = [
-  { title: 'Flat 50% Off', subtitle: 'On premium sunglasses', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', icon: <FiPercent size={32} />, link: '/category/sunglasses' },
-  { title: 'Buy 1 Get 1', subtitle: 'Selected eyeglasses', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', icon: <FiGift size={32} />, link: '/category/eyeglasses' },
-  { title: 'Starting Rs. 299', subtitle: 'Contact lenses', gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', icon: <FiDroplet size={32} />, link: '/category/contact-lenses' },
-  { title: 'Extra Rs. 200 Off', subtitle: 'Use code: EYE200', gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', icon: <FiAward size={32} />, link: '/coupons' }
+  { title: 'Flat 50% off', subtitle: 'On premium sunglasses', tint: '#eef4fe', fg: '#1b5fc4', icon: <FiPercent size={20} />, link: '/category/sunglasses' },
+  { title: 'Buy 1 get 1', subtitle: 'Selected eyeglasses', tint: '#f1f3f6', fg: '#14161a', icon: <FiGift size={20} />, link: '/category/eyeglasses' },
+  { title: 'From Rs. 299', subtitle: 'Contact lenses', tint: '#e8f5ee', fg: '#1a7f4b', icon: <FiDroplet size={20} />, link: '/category/contact-lenses' },
+  { title: 'Extra Rs. 200 off', subtitle: 'Use code EYE200', tint: '#fdf3e3', fg: '#b06e00', icon: <FiAward size={20} />, link: '/coupons' }
 ];
+
 
 const FEATURES = [
   { icon: <FiTruck size={26} />, title: 'Free Delivery', desc: 'On orders above Rs. 999' },
@@ -77,6 +79,7 @@ const Home = () => {
   const [deals, setDeals] = useState([]);
   const [brandGroups, setBrandGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { browsingHistory } = useUserBehavior();
   const [dealsVisible, setDealsVisible] = useState(ITEMS_PER_PAGE);
 
   useEffect(() => {
@@ -154,12 +157,29 @@ const Home = () => {
         <div className="container" style={{ maxWidth: 1400, marginTop: 32 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16 }}>
             {OFFERS.map((offer) => (
-              <Link key={offer.title} to={offer.link} style={{ background: offer.gradient, borderRadius: 16, padding: '26px', color: '#fff', textDecoration: 'none', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: 'var(--shadow)' }}>
-                <span style={{ position: 'absolute', right: -18, top: -18, opacity: 0.18, transform: 'rotate(15deg)' }}>{offer.icon}</span>
-                <div style={{ fontSize: '22px', fontWeight: 800 }}>{offer.title}</div>
-                <div style={{ fontSize: '14px', opacity: 0.95 }}>{offer.subtitle}</div>
-                <div style={{ marginTop: 6, fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Shop Now <FiArrowRight size={14} />
+              <Link
+                key={offer.title}
+                to={offer.link}
+                className="offering"
+                style={{
+                  background: 'var(--bg-white)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '20px',
+                  color: 'var(--text-primary)',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10
+                }}
+              >
+                <span style={{ width: 36, height: 36, borderRadius: 10, background: offer.tint, color: offer.fg, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {offer.icon}
+                </span>
+                <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em' }}>{offer.title}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{offer.subtitle}</div>
+                <div style={{ marginTop: 2, fontSize: 13, fontWeight: 700, color: 'var(--brand)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  Shop now <FiArrowRight size={14} />
                 </div>
               </Link>
             ))}
@@ -220,7 +240,7 @@ const Home = () => {
           {/* Deals */}
           <section style={{ margin: '44px 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)' }}>
                 <FiTag size={22} />
               </div>
               {sectionHeading('Deals of the Day', 'Exclusive offers just for you')}
@@ -271,13 +291,31 @@ const Home = () => {
             )}
           </section>
 
+          {/* Recently viewed - persisted locally, so returning shoppers can
+              pick up where they left off. */}
+          {(browsingHistory || []).length > 0 && (
+            <section style={{ margin: '44px 0' }}>
+              <div style={{ marginBottom: 20 }}>
+                <h2 style={{ fontSize: 26, fontWeight: 800, margin: 0, letterSpacing: '-0.4px' }}>Recently Viewed</h2>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '4px 0 0' }}>Items you looked at recently</p>
+              </div>
+              <div className="rail">
+                {browsingHistory.slice(0, 10).map((p) => (
+                  <div key={p._id} style={{ width: 210 }}>
+                    <ProductCard product={p} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <ContactLensBrandSection />
 
           {/* Best sellers */}
           <section style={{ margin: '44px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)' }}>
                   <FiStar size={22} />
                 </div>
                 {sectionHeading('Best Sellers', 'Highest rated by our customers')}

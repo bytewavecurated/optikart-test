@@ -4,6 +4,7 @@ import { FiMail, FiLock, FiEye, FiEyeOff, FiKey } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import Logo from '../../components/Logo';
 
 const SellerLogin = () => {
   const [step, setStep] = useState(1); // 1: email/password, 2: OTP
@@ -70,6 +71,7 @@ const SellerLogin = () => {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: '20px' }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ background: '#fff', borderRadius: '8px', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}>
         <div style={{ background: 'var(--bg-dark)', padding: '24px 32px' }}>
+          <div style={{ marginBottom: 10 }}><Logo variant="onDark" size={22} /></div>
           <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: 700 }}>
             {step === 1 ? 'Seller Login' : 'Verify OTP'}
           </h1>

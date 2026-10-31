@@ -1,7 +1,7 @@
 import Manufacturer from '../models/Manufacturer.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 import Product from '../models/Product.js';
-import { sendEmail } from './email.js';
+import { sendEmail, notify } from './email.js';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
@@ -33,7 +33,7 @@ export const deleteManufacturerSeller = async (sellerId, manufacturerId) => {
     await seller.save();
 
     // Notify seller
-    await sendEmail(
+    await notify(
       seller.email,
       'Account Deactivated',
       `Your seller account has been deactivated by the manufacturer. If you have questions, please contact the manufacturer directly.`
@@ -77,7 +77,7 @@ export const banManufacturerSeller = async (sellerId, manufacturerId, reason) =>
     await seller.save();
 
     // Notify seller
-    await sendEmail(
+    await notify(
       seller.email,
       'Account Banned',
       `Your seller account has been banned. Reason: ${reason}`

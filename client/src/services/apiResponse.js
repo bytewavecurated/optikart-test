@@ -9,7 +9,9 @@ const COLLECTION_KEYS = [
   'data', 'products', 'orders', 'banners', 'reviews', 'articles',
   'coupons', 'blogs', 'sellers', 'users', 'events', 'results',
   'items', 'notifications', 'categories', 'brands', 'returns',
-  'variants', 'inventory', 'lists'
+  'variants', 'inventory', 'lists', 'staff', 'executives',
+  'manufacturers', 'deliveries', 'payouts', 'commissions',
+  'transactions', 'partner', 'deliveryPartners'
 ];
 
 export const listOf = (payload) => {
@@ -45,7 +47,9 @@ export const wishlistItemsOf = (payload) => {
 export const oneOf = (payload, ...keys) => {
   if (!payload || typeof payload !== 'object') return null;
   const candidates = [...keys, 'data', 'product', 'order', 'blog', 'article',
-                      'coupon', 'banner', 'user', 'seller', 'results', 'result', 'item'];
+                      'coupon', 'banner', 'user', 'seller', 'staff', 'executive',
+                      'manufacturer', 'analytics', 'summary', 'revenue',
+                      'results', 'result', 'item'];
   for (const k of candidates) {
     if (payload[k] !== undefined && payload[k] !== null) return payload[k];
   }

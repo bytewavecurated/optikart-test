@@ -4,7 +4,7 @@ import { coupons } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const AvailableCoupons = () => {
   const [couponList, setcouponList] = useState([]);

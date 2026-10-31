@@ -4,6 +4,8 @@ import { blog as blogApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const BlogManagement = () => {
   const [posts, setPosts] = useState([]);
@@ -14,7 +16,7 @@ const BlogManagement = () => {
 
   useEffect(() => { fetchPosts(); }, []);
   const fetchPosts = async () => {
-    try { const res = await blogApi.getAll(); setPosts(res.data.data || []); } catch (err) { console.error(err); }
+    try { const res = await blogApi.getAll(); setPosts(listOf(res.data)); } catch (error) { console.error(err); toastError(error, "Failed to load posts"); }
     finally { setLoading(false); }
   };
 
@@ -24,7 +26,7 @@ const BlogManagement = () => {
       if (editing) { await blogApi.update(editing._id, formData); toast.success('Updated'); }
       else { await blogApi.create(formData); toast.success('Created'); }
       setShowForm(false); setEditing(null); setFormData({ title: '', slug: '', excerpt: '', content: '', category: '', coverImage: '' }); fetchPosts();
-    } catch (err) { toast.error('Failed'); }
+    } catch (error) { toastError(error, "Failed"); }
   };
 
   const handleEdit = (post) => {
@@ -35,7 +37,7 @@ const BlogManagement = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this post?')) return;
-    try { await blogApi.delete(id); toast.success('Deleted'); fetchPosts(); } catch (err) { toast.error('Failed'); }
+    try { await blogApi.delete(id); toast.success('Deleted'); fetchPosts(); } catch (error) { toastError(error, "Failed"); }
   };
 
   return (

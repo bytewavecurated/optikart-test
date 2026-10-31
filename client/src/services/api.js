@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// Use environment variable or default to localhost for development
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Default to same-origin `/api`. That works both under the CRA dev server
+// (which proxies /api to the backend, see package.json) and when the Express
+// server serves the built app itself. Set REACT_APP_API_URL only when the API
+// really lives on another origin.
+const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -202,7 +205,7 @@ export const wishlist = {
 
 export const coupons = {
   getAll: () => api.get('/coupons'),
-  validate: (code) => api.post('/coupons/validate', { code }),
+  validate: (code, orderAmount) => api.post('/coupons/validate', { code, orderAmount }),
 };
 
 export const blog = {

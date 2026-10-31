@@ -120,7 +120,7 @@ const ReturnPolicy = () => {
             <div className="card" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
                 <p>Want a different frame or size instead of a refund? Here's how exchanges work:</p>
-                <ul style={{ paddingLeft: '20px', listStyle: 'disc', lineHeight: 2.2 }}>
+                <ul className="list-clean">
                   <li>Select "Exchange" instead of "Refund" during the return process.</li>
                   <li>Choose the new product you'd like (same or different frame/lens).</li>
                   <li>If the new product costs more, you'll pay the difference. If less, the balance is refunded.</li>

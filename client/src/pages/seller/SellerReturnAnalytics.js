@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { seller as sellerApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import toast from 'react-hot-toast';
 import { FiPackage, FiTrendingUp, FiAlertTriangle, FiCheckCircle, FiXCircle, FiDollarSign } from 'react-icons/fi';
+import { oneOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const SellerReturnAnalytics = () => {
   const navigate = useNavigate();
@@ -22,11 +23,11 @@ const SellerReturnAnalytics = () => {
       const res = await sellerApi.getReturnAnalytics(dateRange);
 
       if (res.data.success) {
-        setAnalytics(res.data.data);
+        setAnalytics(oneOf(res.data));
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      toast.error('Failed to load analytics');
+      toastError(error, "Failed to load analytics");
     } finally {
       setLoading(false);
     }

@@ -4,7 +4,7 @@ import { products } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const BrandPage = () => {
   const { brand } = useParams();

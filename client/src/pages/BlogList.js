@@ -4,7 +4,7 @@ import { FiClock, FiHeart, FiSearch, FiX } from 'react-icons/fi';
 import { blog } from '../services/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { listOf } from '../services/apiResponse';
+import { listOf } from '../services/apiResponse.js';
 
 const CATEGORIES = ['All', 'Eye Care', 'Style Guide', 'Technology', 'Trends', 'Tips & Tricks', 'News'];
 const POSTS_PER_PAGE = 6;
@@ -133,7 +133,7 @@ const BlogList = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                 {visiblePosts.map((post) => (
                   <Link key={post._id} to={`/blog/${post.slug}`} className="card" style={{ overflow: 'hidden', transition: 'box-shadow 0.2s', textDecoration: 'none' }}>
-                    <div style={{ width: '100%', height: '180px', background: `linear-gradient(135deg, var(--primary), var(--primary-dark, #1a5dc8))`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '100%', height: '180px', background: `var(--brand)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <span style={{ color: '#fff', fontSize: '32px', fontWeight: 700, opacity: 0.3 }}>{(post.category || 'BLOG').charAt(0)}</span>
                     </div>
                     <div style={{ padding: '16px' }}>

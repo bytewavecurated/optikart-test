@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
-import { oneOf } from '../services/apiResponse';
+import { oneOf } from '../services/apiResponse.js';
 
 const BlogPost = () => {
   const { slug } = useParams();

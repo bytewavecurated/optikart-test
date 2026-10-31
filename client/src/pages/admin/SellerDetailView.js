@@ -5,6 +5,8 @@ import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf, oneOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const SellerDetailView = () => {
   const { id } = useParams();
@@ -25,12 +27,12 @@ const SellerDetailView = () => {
         adminApi.getSellerProducts(id),
         adminApi.getSellerOrders(id)
       ]);
-      setSeller(sellerRes.data.data);
-      setProducts(productsRes.data.data || []);
-      setOrders(ordersRes.data.data || []);
-    } catch (err) {
+      setSeller(oneOf(sellerRes.data));
+      setProducts(listOf(productsRes.data));
+      setOrders(listOf(ordersRes.data));
+    } catch (error) {
       console.error(err);
-      toast.error('Failed to load seller details');
+      toastError(error, "Failed to load seller details");
     } finally {
       setLoading(false);
     }
@@ -42,8 +44,8 @@ const SellerDetailView = () => {
       await adminApi.verifySeller(id, true);
       toast.success('Seller verified successfully');
       fetchSellerDetails();
-    } catch (err) {
-      toast.error('Failed to verify seller');
+    } catch (error) {
+      toastError(error, "Failed to verify seller");
     }
   };
 
@@ -59,8 +61,8 @@ const SellerDetailView = () => {
       });
       toast.success(`Seller ${action}ned successfully`);
       fetchSellerDetails();
-    } catch (err) {
-      toast.error('Failed to update seller status');
+    } catch (error) {
+      toastError(error, "Failed to update seller status");
     }
   };
 
@@ -70,8 +72,8 @@ const SellerDetailView = () => {
       await adminApi.deleteSeller(id);
       toast.success('Seller deleted successfully');
       navigate('/admin/sellers');
-    } catch (err) {
-      toast.error('Failed to delete seller');
+    } catch (error) {
+      toastError(error, "Failed to delete seller");
     }
   };
 

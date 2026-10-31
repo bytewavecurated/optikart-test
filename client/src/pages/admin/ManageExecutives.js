@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const ManageExecutives = () => {
   const [executives, setExecutives] = useState([]);
@@ -26,10 +28,10 @@ const ManageExecutives = () => {
   const fetchExecutives = async () => {
     try {
       const res = await adminApi.getExecutives();
-      setExecutives(res.data.data || []);
-    } catch (err) {
+      setExecutives(listOf(res.data));
+    } catch (error) {
       console.error(err);
-      toast.error('Failed to fetch executives');
+      toastError(error, "Failed to fetch executives");
     } finally {
       setLoading(false);
     }
@@ -42,7 +44,7 @@ const ManageExecutives = () => {
       setShowAddModal(false);
       setFormData({ name: '', email: '', password: '', department: '', permissions: [] });
       fetchExecutives();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to add executive');
     }
   };
@@ -54,7 +56,7 @@ const ManageExecutives = () => {
       setEditingExecutive(null);
       setFormData({ name: '', email: '', password: '', department: '', permissions: [] });
       fetchExecutives();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to update executive');
     }
   };
@@ -65,8 +67,8 @@ const ManageExecutives = () => {
       await adminApi.deleteExecutive(id);
       toast.success('Executive deleted successfully');
       fetchExecutives();
-    } catch (err) {
-      toast.error('Failed to delete executive');
+    } catch (error) {
+      toastError(error, "Failed to delete executive");
     }
   };
 
@@ -75,8 +77,8 @@ const ManageExecutives = () => {
       await adminApi.banExecutive(id, { isBanned, banReason: isBanned ? 'Banned by admin' : '' });
       toast.success(isBanned ? 'Executive banned' : 'Executive unbanned');
       fetchExecutives();
-    } catch (err) {
-      toast.error('Failed to update executive status');
+    } catch (error) {
+      toastError(error, "Failed to update executive status");
     }
   };
 

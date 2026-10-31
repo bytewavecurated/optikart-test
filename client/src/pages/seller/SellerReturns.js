@@ -4,6 +4,8 @@ import { seller as sellerApi, returns as returnsApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const STATUS_COLORS = {
   requested: { bg: '#fff3cd', color: '#856404' },
@@ -35,10 +37,10 @@ const SellerReturns = () => {
   const fetchReturns = async () => {
     try {
       const res = await sellerApi.getReturns();
-      setReturns(res.data.data || []);
-    } catch (err) {
+      setReturns(listOf(res.data));
+    } catch (error) {
       console.error(err);
-      toast.error('Failed to load returns');
+      toastError(error, "Failed to load returns");
     } finally {
       setLoading(false);
     }
@@ -80,7 +82,7 @@ const SellerReturns = () => {
       setApproveNotes('');
       setIsExchange(false);
       fetchReturns();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to approve return');
     } finally {
       setActionLoading(false);
@@ -99,7 +101,7 @@ const SellerReturns = () => {
       setRejectModal(null);
       setRejectReason('');
       fetchReturns();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to reject return');
     } finally {
       setActionLoading(false);
@@ -112,7 +114,7 @@ const SellerReturns = () => {
       await returnsApi.markPickedUp(returnId);
       toast.success('Marked as picked up');
       fetchReturns();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to update status');
     } finally {
       setActionLoading(false);
@@ -125,7 +127,7 @@ const SellerReturns = () => {
       await returnsApi.markReceived(returnId);
       toast.success('Marked as received');
       fetchReturns();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to update status');
     } finally {
       setActionLoading(false);
@@ -140,7 +142,7 @@ const SellerReturns = () => {
       toast.success('Refund processed successfully');
       setRefundModal(null);
       fetchReturns();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to process refund');
     } finally {
       setActionLoading(false);

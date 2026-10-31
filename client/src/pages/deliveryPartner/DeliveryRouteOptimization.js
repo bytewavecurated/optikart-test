@@ -5,6 +5,8 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { FiMapPin, FiClock, FiDollarSign, FiNavigation, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
+import { oneOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const DeliveryRouteOptimization = () => {
   const navigate = useNavigate();
@@ -36,14 +38,14 @@ const DeliveryRouteOptimization = () => {
       const res = await deliveryApi.optimizeRoute();
 
       if (res.data.success) {
-        setRouteData(res.data.data);
+        setRouteData(oneOf(res.data) || null);
         toast.success('Route optimized successfully');
       } else {
         toast.error(res.data.message || 'Failed to optimize route');
       }
     } catch (error) {
       console.error('Error optimizing route:', error);
-      toast.error('Failed to optimize route');
+      toastError(error, "Failed to optimize route");
     } finally {
       setLoading(false);
     }

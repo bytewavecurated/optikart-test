@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FiDollarSign, FiCalendar, FiCheckCircle, FiXCircle, FiClock, FiAlertCircle } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
-import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const SellerPayouts = () => {
   const [payouts, setPayouts] = useState([]);
@@ -16,10 +17,10 @@ const SellerPayouts = () => {
   const fetchPayouts = async () => {
     try {
       const response = await api.get('/seller/payouts/history');
-      setPayouts(response.data.data || []);
+      setPayouts(listOf(response.data));
     } catch (error) {
       console.error('Error fetching payouts:', error);
-      toast.error('Failed to load payout history');
+      toastError(error, "Failed to load payout history");
     } finally {
       setLoading(false);
     }

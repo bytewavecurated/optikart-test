@@ -4,6 +4,8 @@ import { products as productsApi, seller as sellerApi } from '../../services/api
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const SellerProducts = () => {
   const [productsList, setProductsList] = useState([]);
@@ -30,8 +32,8 @@ const SellerProducts = () => {
   const fetchProducts = async () => {
     try {
       const res = await productsApi.getAll({ seller: true, limit: 500 });
-      setProductsList(res.data.data || []);
-    } catch (err) { console.error(err); }
+      setProductsList(listOf(res.data));
+    } catch (error) { console.error(err); }
     finally { setLoading(false); }
   };
 
@@ -51,7 +53,7 @@ const SellerProducts = () => {
       setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true });
       setVariants([]);
       fetchProducts();
-    } catch (err) { toast.error(err.response?.data?.message || 'Failed to save'); }
+    } catch (error) { toast.error(err.response?.data?.message || 'Failed to save'); }
   };
 
   const handleEdit = (product) => {
@@ -90,7 +92,7 @@ const SellerProducts = () => {
       await productsApi.delete(id);
       toast.success('Product deleted');
       fetchProducts();
-    } catch (err) { toast.error('Failed to delete'); }
+    } catch (error) { toastError(error, "Failed to delete"); }
   };
 
   const openOfferModal = (product) => {
@@ -122,7 +124,7 @@ const SellerProducts = () => {
       setShowOfferModal(false);
       setOfferProduct(null);
       fetchProducts();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to save offer');
     } finally {
       setOfferLoading(false);

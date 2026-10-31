@@ -44,7 +44,7 @@ router.post('/create-order', verifyToken, paymentLimiter, async (req, res) => {
  */
 router.post('/verify', verifyToken, async (req, res) => {
   try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId } = req.body;
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId, orderIds } = req.body;
 
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
       return res.status(400).json({ success: false, message: 'Payment verification details are required.' });
@@ -56,26 +56,35 @@ router.post('/verify', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment verification failed.' });
     }
 
-    if (orderId) {
-      const order = await Order.findById(orderId);
-      if (order) {
-        order.paymentStatus = 'completed';
-        order.paymentId = razorpayPaymentId;
-        order.orderStatus = 'confirmed';
-        await order.save();
-      }
-    } else {
-      const orders = await Order.find({
-        user: req.user._id,
-        paymentStatus: 'pending'
-      }).sort({ createdAt: -1 });
+    // Which orders does this payment settle? A single checkout is split into
+    // one order per seller, so the caller can pass a list. Marking *every*
+    // pending order the user happens to have would let one payment silently
+    // pay off unrelated unpaid orders, so an explicit reference is required.
+    const targetIds = []
+      .concat(orderId || [])
+      .concat(Array.isArray(orderIds) ? orderIds : []);
 
-      for (const order of orders) {
-        order.paymentStatus = 'completed';
-        order.paymentId = razorpayPaymentId;
-        order.orderStatus = 'confirmed';
-        await order.save();
-      }
+    if (targetIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No order reference supplied with this payment.'
+      });
+    }
+
+    const settled = [];
+    for (const id of targetIds) {
+      // Only this user's own unpaid orders can be settled.
+      const order = await Order.findOne({ _id: id, user: req.user._id });
+      if (!order) continue;
+      order.paymentStatus = 'completed';
+      order.paymentId = razorpayPaymentId;
+      order.orderStatus = order.orderStatus === 'pending' ? 'confirmed' : order.orderStatus;
+      await order.save();
+      settled.push(order.orderNumber);
+    }
+
+    if (settled.length === 0) {
+      return res.status(400).json({ success: false, message: 'No matching orders were found for this payment.' });
     }
 
     res.json({

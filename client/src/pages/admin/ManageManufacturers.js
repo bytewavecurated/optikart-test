@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { FiPlus, FiSearch, FiEdit, FiTrash2, FiEye, FiEyeOff } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const ManageManufacturers = () => {
   const [manufacturers, setManufacturers] = useState([]);
@@ -28,10 +30,10 @@ const ManageManufacturers = () => {
   const fetchManufacturers = async () => {
     try {
       const res = await adminApi.getManufacturers();
-      setManufacturers(res.data.data || []);
-    } catch (err) {
+      setManufacturers(listOf(res.data));
+    } catch (error) {
       console.error(err);
-      toast.error('Failed to fetch manufacturers');
+      toastError(error, "Failed to fetch manufacturers");
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,7 @@ const ManageManufacturers = () => {
         brands: []
       });
       fetchManufacturers();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to add manufacturer');
     }
   };
@@ -76,7 +78,7 @@ const ManageManufacturers = () => {
         brands: []
       });
       fetchManufacturers();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to update manufacturer');
     }
   };
@@ -87,8 +89,8 @@ const ManageManufacturers = () => {
       await adminApi.deleteManufacturer(id);
       toast.success('Manufacturer deleted successfully');
       fetchManufacturers();
-    } catch (err) {
-      toast.error('Failed to delete manufacturer');
+    } catch (error) {
+      toastError(error, "Failed to delete manufacturer");
     }
   };
 
@@ -97,8 +99,8 @@ const ManageManufacturers = () => {
       await adminApi.banManufacturer(id, { isBanned, banReason: isBanned ? 'Banned by admin' : '' });
       toast.success(isBanned ? 'Manufacturer banned' : 'Manufacturer unbanned');
       fetchManufacturers();
-    } catch (err) {
-      toast.error('Failed to update manufacturer status');
+    } catch (error) {
+      toastError(error, "Failed to update manufacturer status");
     }
   };
 

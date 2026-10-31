@@ -197,9 +197,9 @@ const FaceShapeGuide = () => {
       <main style={{ flex: 1, background: '#f8f9fa' }}>
         {/* Hero Section */}
         <div style={{ 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: 'var(--bg-dark)',
           color: '#fff',
-          padding: '60px 20px',
+          padding: '56px 20px',
           textAlign: 'center'
         }}>
           <h1 style={{ fontSize: '42px', fontWeight: 800, marginBottom: '16px' }}>
@@ -230,7 +230,7 @@ const FaceShapeGuide = () => {
                     onClick={startCamera}
                     style={{
                       padding: '30px',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: 'var(--brand)',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '12px',
@@ -383,7 +383,7 @@ const FaceShapeGuide = () => {
               </div>
 
               <div style={{ 
-                background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+                background: 'var(--brand-tint)',
                 borderRadius: '12px',
                 padding: '30px',
                 marginBottom: '30px'

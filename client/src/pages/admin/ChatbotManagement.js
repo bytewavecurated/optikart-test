@@ -4,6 +4,8 @@ import { chatbot } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { oneOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const ChatbotManagement = () => {
   const [knowledgeBase, setKnowledgeBase] = useState({});
@@ -18,10 +20,10 @@ const ChatbotManagement = () => {
   const fetchKnowledgeBase = async () => {
     try {
       const res = await chatbot.getKnowledgeBase();
-      setKnowledgeBase(res.data.data || {});
-    } catch (err) {
+      setKnowledgeBase(oneOf(res.data) || {});
+    } catch (error) {
       console.error(err);
-      toast.error('Failed to load knowledge base');
+      toastError(error, "Failed to load knowledge base");
     } finally {
       setLoading(false);
     }
@@ -54,8 +56,8 @@ const ChatbotManagement = () => {
       toast.success('Knowledge base updated');
       setEditingCell(null);
       setEditValue('');
-    } catch (err) {
-      toast.error('Failed to update knowledge base');
+    } catch (error) {
+      toastError(error, "Failed to update knowledge base");
     }
   };
 

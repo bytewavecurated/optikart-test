@@ -4,6 +4,7 @@ import { FiStar, FiArrowRight, FiUser, FiEye } from 'react-icons/fi';
 import { products as productsApi } from '../services/api';
 import { useUserBehavior } from '../contexts/UserBehaviorContext';
 import { useAuth } from '../contexts/AuthContext';
+import { listOf } from '../services/apiResponse.js';
 
 const SmartChoice = () => {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
@@ -37,7 +38,7 @@ const SmartChoice = () => {
       }
 
       const response = await productsApi.getAll(params);
-      const allProducts = response.data.data || [];
+      const allProducts = listOf(response.data);
       
       // Shuffle and take 8 products
       const shuffled = [...allProducts].sort(() => Math.random() - 0.5);

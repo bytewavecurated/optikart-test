@@ -4,6 +4,7 @@ import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMenu, FiX, FiChevronDown, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
+import Logo from './Logo';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,13 +66,10 @@ const Header = () => {
 
   return (
     <header style={{ background: 'var(--bg-dark)', position: 'sticky', top: 0, zIndex: 50 }}>
-      <div className="container" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '16px' }}>
+      <div className="container header-row" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '16px' }}>
         {/* Logo */}
-        <Link to="/" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 'fit-content' }}>
-          <span style={{ color: '#fff', fontSize: '20px', fontWeight: 700, letterSpacing: '-0.5px' }}>OptiKart</span>
-          <span style={{ color: 'var(--accent)', fontSize: '10px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '2px' }}>
-            Explore <span style={{ color: 'var(--accent)' }}>Plus</span>
-          </span>
+        <Link to="/" aria-label="OptiKart home" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+          <Logo variant="onDark" size={22} tagline />
         </Link>
 
         {/* Search Bar */}
@@ -223,7 +221,7 @@ const Header = () => {
         </nav>
 
         {/* Mobile Icons - Flipkart style */}
-        <div className="mobile-icons" style={{ display: 'none', alignItems: 'center', gap: '16px', marginLeft: 'auto' }}>
+        <div className="mobile-icons" style={{ display: 'none', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexShrink: 0 }}>
           {/* Mobile search toggle */}
           <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <FiSearch size={22} />
@@ -370,6 +368,11 @@ const Header = () => {
         /* The desktop nav and the category rail are marked .hide-mobile; without
            this rule they rendered on phones and forced a horizontal scrollbar. */
         @media (max-width: 768px) {
+          /* The logo tagline and the wide gaps pushed the icon cluster past the
+             viewport edge on phones, creating a 7px horizontal scroll. */
+          .logo-tagline { display: none !important; }
+          .header-row { gap: 10px !important; }
+          .header-row > div.container, .header-row .container { padding-left: 0; padding-right: 0; }
           .hide-mobile {
             display: none !important;
           }

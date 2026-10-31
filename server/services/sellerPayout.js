@@ -37,10 +37,34 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
       };
     }
 
-    // Calculate totals
-    const totalSales = orders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const platformCommission = Math.round(totalSales * COMMISSION_RATE);
-    const netAmount = totalSales - platformCommission;
+    // Calculate totals on the merchandise base, then subtract what it cost to
+    // fulfil. Using order.totalAmount here would commission the delivery charge
+    // as well, and the seller would see it on their statement as a surprise.
+    let totalSales = 0;
+    let fulfilmentCost = 0;
+    let platformCommission = 0;
+
+    orders.forEach((order) => {
+      const merchandise = Number(order.subtotal)
+        || (order.items || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
+      totalSales += merchandise;
+
+      // Prefer the figure recorded when the order was delivered, so the payout
+      // always matches what commission tracking already booked.
+      const booked = Number(order.commissionAmount || 0);
+      platformCommission += booked > 0
+        ? booked
+        : Math.round(merchandise * COMMISSION_RATE * 100) / 100;
+
+      fulfilmentCost += order.deliveryAssignmentMode === 'self'
+        ? Number(order.deliveryFee || 0)
+        : Number(order.shiprocketDeliveryCharge || 0);
+    });
+
+    totalSales = Math.round(totalSales * 100) / 100;
+    platformCommission = Math.round(platformCommission * 100) / 100;
+    fulfilmentCost = Math.round(fulfilmentCost * 100) / 100;
+    const netAmount = Math.round((totalSales - platformCommission - fulfilmentCost) * 100) / 100;
 
     // Get seller bank details
     const seller = await Seller.findById(sellerId);
@@ -62,12 +86,13 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
       },
       totalSales,
       platformCommission,
+      deliveryCharges: fulfilmentCost,
       netAmount,
       status: 'pending',
       bankDetails: {
         accountNumber: seller.bankAccount.accountNumber,
         ifscCode: seller.bankAccount.ifscCode,
-        accountHolderName: seller.bankAccount.accountHolderName,
+        accountHolderName: seller.bankAccount.accountHolderName || seller.name,
         bankName: seller.bankAccount.bankName
       }
     });
@@ -109,16 +134,40 @@ export const processPendingPayouts = async () => {
         payout.processedAt = new Date();
         await payout.save();
 
-        // Transfer funds via Razorpay
+        // Transfer funds via Razorpay. Amount is in rupees; transferFunds
+        // converts to paise itself, so it must not be pre-multiplied here.
+        const sourcePayment = await Order.findOne({
+          seller: payout.seller._id || payout.seller,
+          paymentStatus: 'completed',
+          paymentId: { $exists: true, $ne: null }
+        }).sort({ deliveredAt: -1 }).select('paymentId').lean();
+
         const transferResult = await transferFunds({
-          amount: payout.netAmount * 100, // Convert to paise
+          amount: payout.netAmount,
+          paymentId: sourcePayment && sourcePayment.paymentId,
           accountNumber: payout.bankDetails.accountNumber,
           ifscCode: payout.bankDetails.ifscCode,
           name: payout.bankDetails.accountHolderName,
-          notes: `Payout ${payout.payoutNumber} for seller ${payout.seller.name}`
+          notes: { payout: payout.payoutNumber, seller: String(payout.seller._id || payout.seller) }
         });
 
-        // Update payout with transfer details
+        if (!transferResult.success) {
+          // Nothing reached the gateway, so the payout must not look paid.
+          // `not_initiated` keeps it queued; a hard rejection is recorded as failed.
+          payout.status = transferResult.status === 'not_initiated' ? 'pending' : 'failed';
+          payout.processedAt = null;
+          payout.failureReason = transferResult.message;
+          await payout.save();
+
+          results.push({
+            payoutId: payout._id,
+            payoutNumber: payout.payoutNumber,
+            status: payout.status === 'pending' ? 'awaiting_settlement' : 'failed',
+            error: transferResult.message
+          });
+          continue;
+        }
+
         payout.razorpayTransferId = transferResult.id;
         payout.transactionId = transferResult.id;
         payout.status = 'completed';

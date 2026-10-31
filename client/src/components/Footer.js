@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiFacebook, FiTwitter, FiYoutube, FiInstagram, FiChevronRight } from 'react-icons/fi';
+import Logo from './Logo';
 
 const FOOTER_LINKS = {
   about: {
@@ -47,32 +48,32 @@ const FOOTER_LINKS = {
 
 const styles = {
   footer: {
-    background: '#172337',
-    color: '#878787',
+    background: 'var(--bg-dark)',
+    color: 'rgba(255,255,255,0.62)',
     fontFamily: "var(--font-body)",
     fontSize: '12px',
   },
   topBanner: {
-    background: '#2874f0',
+    background: 'rgba(255,255,255,0.04)',
     padding: '16px 40px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
     gap: '16px',
-    borderBottom: '1px solid #1a2942',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
   },
   bannerText: {
-    color: '#fff',
-    fontSize: '16px',
+    color: 'rgba(255,255,255,0.86)',
+    fontSize: '14px',
     fontWeight: 600,
   },
   bannerBtn: {
-    background: '#ff9f00',
+    background: 'var(--brand)',
     color: '#fff',
     border: 'none',
-    padding: '8px 20px',
-    borderRadius: '3px',
+    padding: '8px 18px',
+    borderRadius: 'var(--radius-sm)',
     fontWeight: 600,
     fontSize: '13px',
     cursor: 'pointer',
@@ -95,7 +96,7 @@ const styles = {
     gap: '8px',
   },
   colTitle: {
-    color: '#878787',
+    color: 'rgba(255,255,255,0.55)',
     fontSize: '12px',
     fontWeight: 700,
     letterSpacing: '0.5px',
@@ -135,7 +136,7 @@ const styles = {
   },
   copyright: {
     fontSize: '12px',
-    color: '#878787',
+    color: 'rgba(255,255,255,0.55)',
   },
   policyLinks: {
     display: 'flex',
@@ -143,7 +144,7 @@ const styles = {
     flexWrap: 'wrap',
   },
   policyLink: {
-    color: '#878787',
+    color: 'rgba(255,255,255,0.55)',
     textDecoration: 'none',
     fontSize: '12px',
   },
@@ -195,7 +196,10 @@ export default function Footer() {
       </div>
 
       <div style={styles.bottomBar} className="footer-bottom">
-        <span style={styles.copyright}>© 2026 OptiKart.com. All rights reserved.</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <Logo variant="onDark" size={18} />
+          <span style={styles.copyright}>© {new Date().getFullYear()} OptiKart. All rights reserved.</span>
+        </span>
 
         <div style={styles.policyLinks}>
           <Link to="/policy/privacy" style={styles.policyLink}>Privacy</Link>

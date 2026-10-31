@@ -3,6 +3,7 @@ import { FiSearch } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { listOf } from '../../services/apiResponse.js';
 
 const STATUS_COLORS = { pending: '#ff9f00', confirmed: '#2874f0', shipped: '#2874f0', delivered: '#26a541', cancelled: '#ff6161', returned: '#878787' };
 
@@ -17,7 +18,7 @@ const ManageOrders = () => {
   const fetchOrders = async () => {
     try { 
       const res = await adminApi.getOrders({ status: filter !== 'all' ? filter : undefined }); 
-      setOrders(res.data.data || []); 
+      setOrders(listOf(res.data)); 
     } catch (err) { 
       console.error(err); 
     } finally { 

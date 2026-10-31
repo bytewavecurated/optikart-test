@@ -23,6 +23,12 @@ const sellerPayoutSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  // Delivery cost borne by the seller (Shiprocket bill or the platform's own
+  // per-order fee). Shown on the statement so the net figure reconciles.
+  deliveryCharges: {
+    type: Number,
+    default: 0
+  },
   netAmount: {
     type: Number,
     required: true

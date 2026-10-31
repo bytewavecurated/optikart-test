@@ -4,6 +4,8 @@ import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const Coupons = () => {
   const [couponList, setcouponList] = useState([]);
@@ -14,7 +16,7 @@ const Coupons = () => {
 
   useEffect(() => { fetchCoupons(); }, []);
   const fetchCoupons = async () => {
-    try { const res = await adminApi.getCoupons(); setcouponList(res.data.data || []); } catch (err) { console.error(err); }
+    try { const res = await adminApi.getCoupons(); setcouponList(listOf(res.data)); } catch (error) { console.error(err); }
     finally { setLoading(false); }
   };
 
@@ -24,7 +26,7 @@ const Coupons = () => {
       if (editing) { await adminApi.updateCoupon(editing._id, formData); toast.success('Updated'); }
       else { await adminApi.createCoupon(formData); toast.success('Created'); }
       setShowForm(false); setEditing(null); setFormData({ code: '', type: 'percentage', value: '', minOrder: '', maxDiscount: '', description: '', validUntil: '' }); fetchCoupons();
-    } catch (err) { toast.error('Failed'); }
+    } catch (error) { toastError(error, "Failed"); }
   };
 
   const handleEdit = (coupon) => {
@@ -35,7 +37,7 @@ const Coupons = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete?')) return;
-    try { await adminApi.deleteCoupon(id); toast.success('Deleted'); fetchCoupons(); } catch (err) { toast.error('Failed'); }
+    try { await adminApi.deleteCoupon(id); toast.success('Deleted'); fetchCoupons(); } catch (error) { toastError(error, "Failed"); }
   };
 
   return (

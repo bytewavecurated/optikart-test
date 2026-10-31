@@ -7,6 +7,7 @@ import { onNewOrder, offNewOrder } from '../../services/socket';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf, oneOf } from '../../services/apiResponse.js';;
 
 const SellerDashboard = () => {
   const { seller: sellerData } = useAuth();
@@ -23,8 +24,8 @@ const SellerDashboard = () => {
           sellerApi.getOrders({ limit: 5 }),
           notifications.getAll({ limit: 1, unread: true }),
         ]);
-        if (analyticsRes.status === 'fulfilled') setStats(analyticsRes.value.data.data || {});
-        if (ordersRes.status === 'fulfilled') setRecentOrders(ordersRes.value.data.data || []);
+        if (analyticsRes.status === 'fulfilled') setStats(oneOf(analyticsRes.value.data) || {});
+        if (ordersRes.status === 'fulfilled') setRecentOrders(listOf(ordersRes.value.data));
         if (notifRes.status === 'fulfilled') setNotifCount(notifRes.value.data.pagination?.total || 0);
       } catch (err) {
         console.error(err);

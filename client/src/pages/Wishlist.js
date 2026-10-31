@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
-import { wishlistItemsOf } from '../services/apiResponse';
+import { wishlistItemsOf } from '../services/apiResponse.js';
 
 const MAX_WISHLIST_LOGGED_IN = 30;
 const MAX_WISHLIST_GUEST = 3;
@@ -18,8 +18,10 @@ const Wishlist = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchWishlist();
-  }, []);
+    // Guests keep a small local wishlist; only members have a server list.
+    if (isAuthenticated) fetchWishlist();
+    else setLoading(false);
+  }, [isAuthenticated]);
 
   const fetchWishlist = async () => {
     try {

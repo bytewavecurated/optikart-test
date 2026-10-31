@@ -4,6 +4,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { FiUpload, FiTrash2, FiEdit2, FiImage } from 'react-icons/fi';
+import { toastError } from '../../services/errors.js';
 
 const BannerManagement = () => {
   const [banners, setBanners] = useState([]);
@@ -35,7 +36,7 @@ const BannerManagement = () => {
       setBanners(res.data.banners || []);
     } catch (error) {
       console.error('Error fetching banners:', error);
-      toast.error('Failed to load banners');
+      toastError(error, "Failed to load banners");
     } finally {
       setLoading(false);
     }
@@ -106,7 +107,7 @@ const BannerManagement = () => {
       fetchBanners();
     } catch (error) {
       console.error('Error saving banner:', error);
-      toast.error('Failed to save banner');
+      toastError(error, "Failed to save banner");
     }
   };
 
@@ -139,7 +140,7 @@ const BannerManagement = () => {
       fetchBanners();
     } catch (error) {
       console.error('Error deleting banner:', error);
-      toast.error('Failed to delete banner');
+      toastError(error, "Failed to delete banner");
     }
   };
 

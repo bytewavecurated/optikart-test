@@ -375,6 +375,9 @@ export const sendReturnConfirmation = async (email, returnRequest) => {
 /**
  * Send a generic email
  */
+
+const rupees = (n) => 'Rs. ' + Number(n || 0).toLocaleString('en-IN');
+
 export const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const mailOptions = {
@@ -391,6 +394,127 @@ export const sendEmail = async ({ to, subject, text, html }) => {
     console.error('Error sending email:', error);
     return { success: false, error: error.message };
   }
+};
+
+
+/**
+ * Simple recipient/subject/body sender.
+ *
+ * Several services historically called sendEmail(email, subject, body) even
+ * though sendEmail takes a single options object, which silently sent mail to
+ * `undefined`. This wrapper keeps that ergonomic call style working.
+ */
+export const notify = async (to, subject, body) => {
+  if (!to) return { success: false, error: 'No recipient supplied' };
+  const text = typeof body === 'string' ? body : String(body || '');
+  return sendEmail({
+    to,
+    subject,
+    text,
+    html: '<div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6">' + text.replace(/\n/g, '<br/>') + '</div>'
+  });
+};
+
+
+// ---------------------------------------------------------------------------
+// Shared, restrained email shell.
+// ---------------------------------------------------------------------------
+const EMAIL_ACCENT = '#2874f0';
+const EMAIL_INK = '#14161a';
+const EMAIL_MUTED = '#5c6470';
+
+const emailShell = (title, introHtml, bodyHtml, footerNote = '') => `
+  <div style="font-family: Arial, Helvetica, sans-serif; background: #f7f8fa; padding: 28px 16px;">
+    <div style="max-width: 560px; margin: 0 auto; background: #ffffff; border: 1px solid #e3e6ea; border-radius: 12px; overflow: hidden;">
+      <div style="padding: 20px 24px; border-bottom: 1px solid #eef0f3;">
+        <span style="font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: ${EMAIL_INK};">Opti<span style="color: ${EMAIL_ACCENT};">Kart</span></span>
+      </div>
+      <div style="padding: 26px 24px;">
+        <h1 style="font-size: 20px; margin: 0 0 8px; color: ${EMAIL_INK}; letter-spacing: -0.02em;">${title}</h1>
+        <p style="font-size: 14px; line-height: 1.7; color: ${EMAIL_MUTED}; margin: 0 0 20px;">${introHtml}</p>
+        ${bodyHtml}
+        ${footerNote ? `<p style="font-size: 12px; color: #8a929e; margin: 22px 0 0;">${footerNote}</p>` : ''}
+      </div>
+      <div style="padding: 16px 24px; background: #f7f8fa; border-top: 1px solid #eef0f3;">
+        <p style="font-size: 12px; color: #8a929e; margin: 0;">You are receiving this because you have an OptiKart account.</p>
+      </div>
+    </div>
+  </div>
+`;
+
+const row = (label, value) =>
+  `<tr><td style="padding: 8px 0; font-size: 13px; color: ${EMAIL_MUTED}; white-space: nowrap;">${label}</td>
+   <td style="padding: 8px 0; font-size: 13px; color: ${EMAIL_INK}; font-weight: 600; text-align: right;">${value}</td></tr>`;
+
+/**
+ * Seller / manufacturer: one of their listings was edited (by them or staff).
+ * Sent as an audit trail so an unauthorised change is noticeable.
+ */
+export const sendProductUpdateNotification = async (email, product, changes, actorLabel = 'OptiKart team') => {
+  const subject = `Listing updated - ${product.title}`;
+  const rows = Object.entries(changes || {})
+    .map(([field, value]) => row(field.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()), value))
+    .join('');
+  const html = emailShell(
+    'Your listing was updated',
+    `The following changes were recorded on <strong>${product.title}</strong> (${product.brand || 'unbranded'}) by ${actorLabel}. If you did not expect these, please review them before they go live.`,
+    `<table role="presentation" style="width: 100%; border-collapse: collapse; background: #f7f8fa; border-radius: 8px; padding: 4px 12px;">${rows}</table>`,
+    'Listing reference: ' + (product.sku || product.modelNumber || product._id)
+  );
+  return sendEmail({ to: email, subject, html, text: `${subject}\n${Object.entries(changes || {}).map(([k, v]) => k + ': ' + v).join('\n')}` });
+};
+
+/**
+ * Seller / manufacturer: a price on one of their listings moved.
+ */
+export const sendPriceChangeNotification = async (email, product, oldPrice, newPrice, actorLabel = 'the seller') => {
+  const up = Number(newPrice) > Number(oldPrice);
+  const subject = `${up ? 'Price increased' : 'Price reduced'} - ${product.title}`;
+  const html = emailShell(
+    up ? 'Price increased' : 'Price reduced',
+    `The selling price of <strong>${product.title}</strong> changed${actorLabel ? ' (' + actorLabel + ')' : ''}.`,
+    `<table role="presentation" style="width: 100%; border-collapse: collapse; background: #f7f8fa; border-radius: 8px; padding: 4px 12px;">
+       ${row('Previous price', rupees(oldPrice))}
+       ${row('New price', rupees(newPrice))}
+       ${row('Change', (up ? '+' : '-') + rupees(Math.abs(Number(oldPrice) - Number(newPrice))))}
+       ${product.stock !== undefined ? row('Stock on hand', product.stock + ' units') : ''}
+     </table>`,
+    'No action is needed unless this change was unexpected.'
+  );
+  return sendEmail({ to: email, subject, html, text: `${subject}: ${oldPrice} -> ${newPrice}` });
+};
+
+/**
+ * Customer: the status of an order moved along.
+ */
+const ORDER_STATUS_COPY = {
+  confirmed: ['Order confirmed', 'We have received your order and it is being prepared.'],
+  packed: ['Order packed', 'Your order has been packed and is waiting for pickup.'],
+  picked_up: ['Picked up', 'The delivery partner has collected your order.'],
+  in_transit: ['On its way', 'Your order is in transit to your address.'],
+  delivered: ['Delivered', 'Your order has been delivered. We hope you love it.'],
+  cancelled: ['Order cancelled', 'Your order has been cancelled. Any payment made is refunded to the original method.'],
+  return_requested: ['Return requested', 'We have received your return request and it is being reviewed.'],
+  returned: ['Returned', 'Your return has been completed and the refund is on its way.']
+};
+
+export const sendOrderStatusNotification = async (email, order, status) => {
+  const [title, blurb] = ORDER_STATUS_COPY[status] || ['Order update', `Your order is now marked as ${status}.`];
+  const subject = `${title} - ${order.orderNumber || order.orderId || ''}`.trim();
+  const items = (order.items || [])
+    .map((i) => row(i.name || 'Item', `${i.quantity} x ${rupees(i.price)}`))
+    .join('');
+  const html = emailShell(
+    title,
+    blurb,
+    `<table role="presentation" style="width: 100%; border-collapse: collapse; background: #f7f8fa; border-radius: 8px; padding: 4px 12px;">
+       ${items}
+       ${order.totalAmount !== undefined ? row('Order total', rupees(order.totalAmount)) : ''}
+       ${order.shiprocketTrackingId ? row('Tracking ID', order.shiprocketTrackingId) : ''}
+     </table>`,
+    order.shiprocketTrackingUrl ? `Track it here: ${order.shiprocketTrackingUrl}` : ''
+  );
+  return sendEmail({ to: email, subject, html, text: `${subject}` });
 };
 
 export default transporter;

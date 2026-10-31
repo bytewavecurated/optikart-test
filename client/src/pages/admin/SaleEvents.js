@@ -4,6 +4,7 @@ import { saleEvents } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { toastError } from '../../services/errors.js';
 
 const CATEGORIES = [
   { value: 'sunglasses', label: 'Sunglasses' },
@@ -38,7 +39,7 @@ const SaleEvents = () => {
       // Handle different response structures
       const eventData = res.data?.events || res.data?.data || res.data || [];
       setEvents(Array.isArray(eventData) ? eventData : []);
-    } catch (err) {
+    } catch (error) {
       console.error('Failed to fetch sale events:', err);
       setEvents([]);
     } finally {
@@ -109,7 +110,7 @@ const SaleEvents = () => {
       }
       setShowForm(false);
       fetchEvents();
-    } catch (err) {
+    } catch (error) {
       toast.error(err.response?.data?.message || 'Failed to save event');
     } finally {
       setFormLoading(false);
@@ -122,8 +123,8 @@ const SaleEvents = () => {
       await saleEvents.delete(id);
       toast.success('Event deleted');
       fetchEvents();
-    } catch (err) {
-      toast.error('Failed to delete event');
+    } catch (error) {
+      toastError(error, "Failed to delete event");
     }
   };
 
@@ -132,8 +133,8 @@ const SaleEvents = () => {
       await saleEvents.toggle(id);
       toast.success('Event status updated');
       fetchEvents();
-    } catch (err) {
-      toast.error('Failed to toggle event');
+    } catch (error) {
+      toastError(error, "Failed to toggle event");
     }
   };
 
@@ -160,7 +161,7 @@ const SaleEvents = () => {
           </div>
 
           {activeEvents.length > 0 && (
-            <div style={{ background: 'linear-gradient(135deg, #2874f0, #1a5dc7)', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px', color: '#fff' }}>
+            <div style={{ background: 'var(--brand)', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px', color: '#fff' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <FiAlertCircle size={18} />
                 <span style={{ fontWeight: 700, fontSize: '15px' }}>Active Sale Events</span>

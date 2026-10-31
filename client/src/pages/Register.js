@@ -56,7 +56,7 @@ const Register = () => {
           animate={{ opacity: 1, y: 0 }}
           style={{ background: 'var(--bg-white)', borderRadius: '8px', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}
         >
-          <div style={{ background: 'var(--primary)', padding: '24px 32px' }}>
+          <div style={{ background: 'var(--bg-dark)', padding: '24px 32px' }}>
             <h1 style={{ color: '#fff', fontSize: '22px', fontWeight: 700 }}>Create Account</h1>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', marginTop: '4px' }}>Sign up and start shopping for eyewear</p>
           </div>

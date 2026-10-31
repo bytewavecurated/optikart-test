@@ -40,7 +40,7 @@ const Cancellation = () => {
                     <strong>Important:</strong> Custom prescription eyewear and personalized products cannot be cancelled once processing has begun. Please verify your prescription details before placing such orders.
                   </div>
                 </div>
-                <ul style={{ paddingLeft: '20px', listStyle: 'disc', lineHeight: 2 }}>
+                <ul className="list-clean">
                   <li>Orders can be cancelled within 2 hours of placement for instant processing.</li>
                   <li>If the order is already in "Processing" status, cancellation may take up to 24 hours.</li>
                   <li>Once the order status changes to "Shipped", it cannot be cancelled.</li>

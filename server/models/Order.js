@@ -47,7 +47,7 @@ const orderSchema = new mongoose.Schema({
   totalAmount: { type: Number, required: true },
   paymentMethod: {
     type: String,
-    enum: ['razorpay'],
+    enum: ['razorpay', 'cod', 'card', 'upi', 'netbanking', 'wallet'],
     default: 'razorpay'
   },
   paymentStatus: {
@@ -120,17 +120,30 @@ const orderSchema = new mongoose.Schema({
   timestamps: true
 });
 
-orderSchema.pre('save', function(next) {
+// Human-readable, time-ordered reference. The random suffix keeps it unique
+// when two orders land in the same millisecond.
+const generateOrderNumber = () => {
+  const d = new Date();
+  const stamp = [
+    String(d.getFullYear()).slice(2),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0')
+  ].join('');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no look-alike glyphs
+  let suffix = '';
+  for (let i = 0; i < 5; i++) suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+  return `OK${stamp}${suffix}`;
+};
+
+// Set the reference before validation runs, so `required` can never trip on it.
+orderSchema.pre('validate', function(next) {
   if (!this.orderNumber) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = '';
-    for (let i = 0; i < 6; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    this.orderNumber = `ORD-${code}`;
+    this.orderNumber = generateOrderNumber();
   }
   next();
 });
+
+export { generateOrderNumber };
 
 const Order = mongoose.model('Order', orderSchema);
 export default Order;

@@ -5,6 +5,8 @@ import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
+import { listOf } from '../../services/apiResponse.js';
+import { toastError } from '../../services/errors.js';
 
 const ManageUsers = () => {
   const navigate = useNavigate();
@@ -21,9 +23,9 @@ const ManageUsers = () => {
       const params = { page: pageNum, limit: 20 };
       if (searchQuery.trim()) params.search = searchQuery.trim();
       const res = await adminApi.getUsers(params);
-      setUsers(res.data.data || []);
+      setUsers(listOf(res.data));
       setTotalPages(res.data.totalPages || 1);
-    } catch (err) { console.error(err); }
+    } catch (error) { console.error(err); }
     finally { setLoading(false); }
   }, []);
 
@@ -40,7 +42,7 @@ const ManageUsers = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this user?')) return;
-    try { await adminApi.deleteUser(id); toast.success('User deleted'); fetchUsers(search, page); } catch (err) { toast.error('Failed'); }
+    try { await adminApi.deleteUser(id); toast.success('User deleted'); fetchUsers(search, page); } catch (error) { toastError(error, "Failed"); }
   };
 
   const handleBan = async (id, banType) => {
@@ -55,8 +57,8 @@ const ManageUsers = () => {
       });
       toast.success(`User ${action}ned successfully`);
       fetchUsers(search, page);
-    } catch (err) {
-      toast.error('Failed to update user status');
+    } catch (error) {
+      toastError(error, "Failed to update user status");
     }
   };
 
