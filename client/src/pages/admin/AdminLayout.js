@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiHome, FiUsers, FiShoppingBag, FiPackage, FiDollarSign, FiTrendingUp, FiTruck, FiTag, FiFileText, FiSettings, FiActivity, FiImage, FiLogOut, FiMenu, FiX, FiShield, FiMessageCircle } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import Logo from '../../components/Logo';
+import BackButton from '../../components/BackButton';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -31,6 +32,7 @@ const AdminLayout = () => {
     { label: 'Chatbot', path: '/admin/chatbot', icon: <FiMessageCircle /> },
     { label: 'Staff', path: '/admin/staff', icon: <FiSettings /> },
     { label: 'Delivery', path: '/admin/delivery', icon: <FiTruck /> },
+    { label: 'Delivery Partners', path: '/admin/delivery-partners', icon: <FiTruck /> },
   ];
 
   const isActive = (item) => {
@@ -243,6 +245,7 @@ const AdminLayout = () => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
         }}>
           <div>
+            <BackButton fallbackTo="/admin" label="Back" style={{ marginBottom: 4 }} />
             <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
               {menuItems.find(item => isActive(item))?.label || 'Admin Panel'}
             </h1>

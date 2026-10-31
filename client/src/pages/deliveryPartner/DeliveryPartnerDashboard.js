@@ -4,8 +4,52 @@ import { deliveryPartner as deliveryApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation } from 'react-icons/fi';
+import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation, FiCreditCard } from 'react-icons/fi';
 import { toastError } from '../../services/errors.js';
+
+/**
+ * One leg of a route. Shows an embedded map only when real coordinates exist,
+ * otherwise the address text - a blank map tile is worse than none.
+ */
+const RouteRow = ({ kind, place }) => {
+  const addr = place?.address || place?.name || 'Address pending';
+  const hasCoords = Number.isFinite(place?.lat) && Number.isFinite(place?.lng);
+  const embed = hasCoords
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${place.lng - 0.01}%2C${place.lat - 0.01}%2C${place.lng + 0.01}%2C${place.lat + 0.01}&layer=mapnik&marker=${place.lat}%2C${place.lng}`
+    : null;
+  const link = hasCoords
+    ? `https://www.openstreetmap.org/?mlat=${place.lat}&mlon=${place.lng}#map=16/${place.lat}/${place.lng}`
+    : null;
+
+  return (
+    <div style={{ border: '1px solid #eee', borderRadius: 10, padding: 10, background: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: hasCoords ? 8 : 0 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.05, color: 'var(--text-secondary, #757575)' }}>{kind}</span>
+        {link && (
+          <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--primary, #2874f0)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <FiMapPin size={13} /> Open map
+          </a>
+        )}
+      </div>
+      {(place?.name && place.name !== place.address) && (
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{place.name}</div>
+      )}
+      <div style={{ fontSize: 12.5, color: 'var(--text-secondary, #757575)', lineHeight: 1.4 }}>{addr}</div>
+      {embed ? (
+        <iframe
+          title={`${kind} location map`}
+          src={embed}
+          loading="lazy"
+          style={{ width: '100%', height: 150, border: '1px solid #eee', borderRadius: 8, marginTop: 8 }}
+        />
+      ) : (
+        <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-light, #999)' }}>
+          No pinned location for this address yet.
+        </div>
+      )}
+    </div>
+  );
+};
 
 const DeliveryPartnerDashboard = () => {
   const [partner, setPartner] = useState(null);
@@ -35,6 +79,8 @@ const DeliveryPartnerDashboard = () => {
 
       setStats({
         todayDeliveries: partnerData.todayDeliveries || 0,
+        availableBalance: partnerData.availableBalance || 0,
+        canWithdrawToday: partnerData.canWithdrawToday !== false,
         totalEarnings: partnerData.totalEarnings || 0,
         pendingDeliveries: partnerData.pendingDeliveries || 0,
         completedToday: partnerData.completedToday || 0,
@@ -134,7 +180,7 @@ const DeliveryPartnerDashboard = () => {
     setWithdrawing(true);
     try {
       await deliveryApi.withdraw(amount);
-      toast.success(`Withdrawal of $${amount.toFixed(2)} requested successfully`);
+      toast.success(`Withdrawal of Rs. ${amount.toFixed(2)} requested successfully`);
       setWithdrawAmount('');
       setStats((prev) => ({ ...prev, totalEarnings: prev.totalEarnings - amount }));
     } catch (error) {
@@ -165,11 +211,13 @@ const DeliveryPartnerDashboard = () => {
     );
   }
 
+  const inr = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+
   const statCards = [
-    { label: "Today's Deliveries", value: stats.todayDeliveries, icon: FiTruck, color: 'var(--primary)', bg: '#e3f2fd' },
-    { label: 'Total Earnings', value: `$${stats.totalEarnings.toFixed(2)}`, icon: FiDollarSign, color: '#4caf50', bg: '#e8f5e9' },
-    { label: 'Pending Deliveries', value: stats.pendingDeliveries, icon: FiClock, color: '#ff9800', bg: '#fff3e0' },
-    { label: 'Completed Today', value: stats.completedToday, icon: FiCheckCircle, color: '#2196f3', bg: '#e3f2fd' },
+    { label: "Today's Deliveries", value: stats.todayDeliveries ?? 0, icon: FiTruck },
+    { label: 'Total Earned', value: inr(stats.totalEarnings), icon: FiDollarSign },
+    { label: 'Available to Withdraw', value: inr(stats.availableBalance), icon: FiCreditCard },
+    { label: 'Pending Deliveries', value: stats.pendingDeliveries ?? 0, icon: FiClock }
   ];
 
   return (
@@ -305,6 +353,10 @@ const DeliveryPartnerDashboard = () => {
                       <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-secondary, #757575)', lineHeight: 1.4 }}>
                         {delivery.address || 'Address not available'}
                       </p>
+                      <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                        <RouteRow kind="Pick up" place={delivery.pickup} />
+                        <RouteRow kind="Drop" place={delivery.drop} />
+                      </div>
                       <button
                         onClick={() => handleCompleteDelivery(delivery.orderId)}
                         className="btn btn-primary"
@@ -362,28 +414,35 @@ const DeliveryPartnerDashboard = () => {
               <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Withdraw Funds</h2>
               <form onSubmit={handleWithdraw}>
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #555)', marginBottom: '6px' }}>
-                    Amount ($)
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary, #555)', marginBottom: 6 }}>
+                    Amount (Rs.)
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <FiDollarSign style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light, #999)' }} />
+                    <FiDollarSign style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light, #999)' }} />
                     <input
+                      className="input"
                       type="number"
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      min="0"
-                      step="0.01"
-                      style={{ width: '100%', padding: '12px 12px 12px 36px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                      placeholder="Minimum Rs. 50"
+                      min="50"
+                      step="1"
+                      max={Math.floor(stats.availableBalance || 0)}
+                      style={{ paddingLeft: 36 }}
                     />
                   </div>
-                  <p style={{ margin: '6px 0 0', fontSize: '12px', color: 'var(--text-light, #999)' }}>
-                    Available: ${stats.totalEarnings.toFixed(2)}
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-light, #999)', lineHeight: 1.5 }}>
+                    Available: Rs. {(stats.availableBalance || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    {' - '}Rs. 3 fee per started Rs. 50, so Rs. {withdrawAmount && Number(withdrawAmount) >= 50
+                      ? Math.ceil(Number(withdrawAmount) / 50) * 3
+                      : 0}
+                    {' would be deducted. One withdrawal per day'}
+                    {stats.canWithdrawToday === false ? ', and you have already used today\'s.' : '.'}
                   </p>
                 </div>
                 <button
                   type="submit"
-                  disabled={withdrawing || !withdrawAmount}
+                  disabled={withdrawing || !withdrawAmount || Number(withdrawAmount) < 50 || stats.canWithdrawToday === false}
                   className="btn btn-primary"
                   style={{
                     width: '100%',

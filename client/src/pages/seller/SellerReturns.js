@@ -319,7 +319,7 @@ const SellerReturns = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                       {ret.items?.map((item, idx) => (
                                         <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                                          <img src={item.product?.images?.[0] || item.image || '/placeholder-glasses.png'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px', background: '#f8f8f8' }} />
+                                          <img src={item.product?.images?.[0] || item.image || '/placeholder.svg'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px', background: '#f8f8f8' }} />
                                           <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '13px', fontWeight: 500 }}>{item.product?.name || item.name || 'Product'}</div>
                                             <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>

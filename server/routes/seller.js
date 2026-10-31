@@ -661,6 +661,9 @@ router.get('/inventory', verifySeller, async (req, res) => {
       return {
         ...product.toObject(),
         variantStock,
+        // The client reads `totalStock`; keep both names so the inventory
+        // summary cannot disagree with the variant rows it renders.
+        totalStock: product.variants && product.variants.length ? variantStock : (product.stock || 0),
         totalVariants,
         activeVariants,
         lowStockVariants,

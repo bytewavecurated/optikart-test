@@ -25,6 +25,7 @@ const StaffManagement = lazy(() => import('./pages/admin/StaffManagement'));
 const Coupons = lazy(() => import('./pages/admin/Coupons'));
 const BlogManagement = lazy(() => import('./pages/admin/BlogManagement'));
 const DeliveryManagement = lazy(() => import('./pages/admin/DeliveryManagement'));
+const ManageDeliveryPartners = lazy(() => import('./pages/admin/ManageDeliveryPartners'));
 const SaleEvents = lazy(() => import('./pages/admin/SaleEvents'));
 const BannerManagement = lazy(() => import('./pages/admin/BannerManagement'));
 const UserDetailView = lazy(() => import('./pages/admin/UserDetailView'));
@@ -222,6 +223,7 @@ function App() {
           <Route path="coupons" element={<Coupons />} />
           <Route path="blogs" element={<BlogManagement />} />
           <Route path="delivery" element={<DeliveryManagement />} />
+          <Route path="delivery-partners" element={<ManageDeliveryPartners />} />
           <Route path="sale-events" element={<SaleEvents />} />
           <Route path="banners" element={<BannerManagement />} />
           <Route path="executives" element={<ManageExecutives />} />

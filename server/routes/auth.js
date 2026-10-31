@@ -103,7 +103,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     user.lockUntil = null;
 
     // Check if this is a test credential - bypass OTP for testing
-    const testEmails = ['testuser@optikart.com', 'demo@optikart.com', 'samedayopticians@gmail.com'];
+    const testEmails = ['testuser@optikart.com', 'demo@optikart.com', 'samedayopticians@gmail.com', 'priya.staff@optikart.com'];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
     const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';

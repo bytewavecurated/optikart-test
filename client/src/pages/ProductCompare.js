@@ -170,7 +170,7 @@ const ProductCompare = () => {
                       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                     >
                       <img
-                        src={product.images?.[0] || '/placeholder-glasses.png'}
+                        src={product.images?.[0] || '/placeholder.svg'}
                         alt={product.name}
                         style={{ width: '60px', height: '60px', objectFit: 'contain', borderRadius: '4px' }}
                       />
@@ -231,7 +231,7 @@ const ProductCompare = () => {
                             <FiX size={14} />
                           </button>
                           <img
-                            src={product.images?.[0] || '/placeholder-glasses.png'}
+                            src={product.images?.[0] || '/placeholder.svg'}
                             alt={product.name}
                             style={{ width: '120px', height: '120px', objectFit: 'contain', marginBottom: '12px' }}
                           />

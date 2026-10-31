@@ -60,7 +60,10 @@ Two settings are worth reading before deploying:
   is `1`. Leave it at `0`/unset for direct local connections; never set Express
   `trust proxy` to `true`, because that lets clients spoof the IP the rate limiter keys on.
 - `AUTH_OTP_BYPASS` - seeded test accounts may skip the email OTP step. This only applies
-  when `NODE_ENV` is not `production`.
+  when `NODE_ENV` is not `production`. Each role keeps an allow-list in its route module and
+  it must match `server/seed.js`, or the printed login quietly demands an OTP that never arrives.
+- `AI_ORDER_ASSIGNMENT` - when `true`, an offer nobody answered is assigned by the scoring
+  fallback instead of waiting for an administrator.
 
 ### Seed and start
 
@@ -148,6 +151,25 @@ lives on the `DeliveryPartner` document (`totalEarnings`, `totalWithdrawn`, `wit
 
 ---
 
+## Seller stock, variants and returns
+
+Every stock movement goes through `services/stockMovement.js`, so the seller's
+inventory view and the storefront cannot drift apart.
+
+- Each listing carries colour/size/gender variants with their own price, discount,
+  stock and SKU. `product.stock` is the sum of active variant stock.
+- Orders match the exact variant the buyer configured. Availability and price both
+  come from that variant; loose matching is not used, so an ordered item can never
+  drain whichever variant happens to be first.
+- On delivery, commission and payout are recorded automatically (see Money model).
+- Cancellations, refunded returns and completed exchanges put the units back into
+  the same variant they came from, and each movement is written to
+  `product.stockMovementLog` with order reference and reason, so a stock figure can
+  always be explained and a reversal is never applied twice.
+- `SellerStock` records which seller actually carries which brand product, at their
+  own selling price and per-variant quantity. This is what makes proximity routing
+  and "which seller sells this exact colour/size" answerable.
+
 ## Order routing
 
 When an order is placed, the platform finds sellers within 5-10 km of the buyer who stock
@@ -172,6 +194,7 @@ client emits. Low-stock thresholds emit `inventory_alert` to the owning seller's
 | Rule | Value | Enforced |
 | --- | --- | --- |
 | Cart line items | 25 | client and server |
+| Per-line quantity | 10 | client and server |
 | Wishlist (signed in) | 30 | client and server |
 | Wishlist (guest) | 3 | client |
 | Return window | from delivery date | server |
@@ -207,6 +230,8 @@ Code paths exist for each of these and fail closed rather than pretending to suc
 | SMTP | OTP and transactional email | OTP is stored and logged, not delivered |
 | OpenAI | prescription check, chatbot | rule-based fallback responses |
 | AWS Rekognition / Google Vision | face-shape detection | guidance page still works without it |
+
+| SMTP | login OTP, order confirmations, order status changes, seller and delivery-partner offers, no-seller-accepted escalation, price change and listing audit mails | Skipped with a log line; routing still cascades, so ordering never depends on mail |
 
 Set the corresponding variables in `server/.env` to enable each one.
 

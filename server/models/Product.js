@@ -116,6 +116,16 @@ const productSchema = new mongoose.Schema({
   discontinuedAt: { type: Date },
   discontinuedBy: { type: mongoose.Schema.Types.ObjectId },
   manufacturerSellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'ManufacturerSeller' },
+  // Movement audit so a stock number can always be explained, and so a
+  // cancellation/return is never applied twice.
+  stockMovementLog: [{
+    type: { type: String, enum: ['in', 'out'], required: true },
+    quantity: { type: Number, required: true, min: 0 },
+    reason: { type: String, default: 'sale' },
+    order: { type: String, default: '' },
+    variant: { type: String, default: null },
+    at: { type: Date, default: Date.now }
+  }],
   // Return and exchange policy
   isReturnable: { type: Boolean, default: true },
   isExchangeable: { type: Boolean, default: true }

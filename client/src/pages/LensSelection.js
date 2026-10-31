@@ -481,7 +481,7 @@ const LensSelection = () => {
               <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '20px' }}>Order Summary</h3>
               
               <img
-                src={product.images?.[0] || '/placeholder.png'}
+                src={product.images?.[0] || '/placeholder.svg'}
                 alt={product.title}
                 style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: 'var(--radius)', marginBottom: '16px' }}
               />

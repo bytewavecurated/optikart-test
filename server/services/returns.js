@@ -3,6 +3,7 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import { sendReturnConfirmation } from './email.js';
 import { processRefund } from './razorpay.js';
+import { restoreStockForOrder } from './stockMovement.js';
 import { schedulePickup } from './shiprocket.js';
 
 /**
@@ -316,40 +317,11 @@ export const processReturnRefund = async (returnId) => {
       returnRequest.completedAt = new Date();
       await returnRequest.save();
 
-      // Restore stock (variant-level if applicable)
-      for (const item of returnRequest.items) {
-        const product = await Product.findById(item.product);
-        if (product) {
-          // Restore overall stock
-          await Product.findByIdAndUpdate(item.product, {
-            $inc: { stock: item.quantity }
-          });
-
-          // If the product has variants, try to restore variant-level stock
-          if (product.variants && product.variants.length > 0) {
-            const order = returnRequest.order;
-            const orderItem = order.items.find(i => i.product.toString() === item.product.toString());
-            if (orderItem && orderItem.variant) {
-              const variantFilter = {
-                color: orderItem.variant.color || '',
-                size: orderItem.variant.size || ''
-              };
-              
-              // Find matching variant
-              const variantIndex = product.variants.findIndex(v => {
-                const colorMatch = !variantFilter.color || v.color === variantFilter.color;
-                const sizeMatch = !variantFilter.size || v.size === variantFilter.size;
-                return colorMatch && sizeMatch;
-              });
-
-              if (variantIndex !== -1) {
-                product.variants[variantIndex].stock = (product.variants[variantIndex].stock || 0) + item.quantity;
-                await product.save();
-              }
-            }
-          }
-        }
-      }
+      // Return units to the exact colour/size they shipped from, so per-variant
+      // stock stays truthful after a refunded return.
+      await restoreStockForOrder(await Order.findById(returnRequest.order), null, {
+        reason: `refund-${returnRequest.returnId}`
+      });
 
       return {
         success: true,

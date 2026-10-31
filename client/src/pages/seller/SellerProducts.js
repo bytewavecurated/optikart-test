@@ -469,7 +469,7 @@ const SellerProducts = () => {
                 <tbody>
                   {filtered.map((product) => (
                     <tr key={product._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                      <td style={{ padding: '12px 16px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><img src={product.images?.[0] || '/placeholder-glasses.png'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px' }} /><div><div style={{ fontSize: '14px', fontWeight: 500 }}>{product.name}</div><div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{product.brand}</div></div></div></td>
+                      <td style={{ padding: '12px 16px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><img src={product.images?.[0] || '/placeholder.svg'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px' }} /><div><div style={{ fontSize: '14px', fontWeight: 500 }}>{product.name}</div><div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{product.brand}</div></div></div></td>
                       <td style={{ padding: '12px 16px', fontSize: '13px', textTransform: 'capitalize' }}>{product.category}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600 }}>₹{product.price}</td>
                       <td style={{ padding: '12px 16px', fontSize: '13px' }}><span className={`badge ${product.stock > 10 ? 'badge-success' : product.stock > 0 ? 'badge-warning' : 'badge-danger'}`}>{product.stock || 0}</span></td>

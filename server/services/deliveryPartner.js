@@ -1,7 +1,9 @@
 import DeliveryPartner from '../models/DeliveryPartner.js';
+import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import { sendEmail } from './email.js';
 
+const SELF_DELIVERY_FEE_PER_ORDER_LINE = 59;
 const DELIVERY_RATE_PER_KM = 10; // ₹10 per km
 const WITHDRAWAL_FEE = 3; // ₹3 per ₹50
 
@@ -75,9 +77,33 @@ export const assignDeliveryPartner = async (orderId, partnerId, assignedBy = 'au
     partner.isAvailable = false;
     await partner.save();
 
-    // Update order
-    order.deliveryPartner = partnerId;
-    order.deliveryStatus = 'assigned';
+    // Update order. The Order schema calls these fields
+    // `assignedDeliveryPartner` and `orderStatus`; writing non-existent paths
+    // left partner assignments invisible to every other screen.
+    order.assignedDeliveryPartner = partnerId;
+    order.deliveryAssignmentMode = 'self';
+    order.orderStatus = order.orderStatus === 'pending' ? 'confirmed' : order.orderStatus;
+    order.pickupLocation = {
+      name: order.seller?.storeName || '',
+      address: order.pickupLocation?.address || '',
+      lat: order.pickupLocation?.lat,
+      lng: order.pickupLocation?.lng
+    };
+    order.deliveryLocation = {
+      address: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode].filter(Boolean).join(', '),
+      lat: order.shippingAddress?.coordinates?.[1],
+      lng: order.shippingAddress?.coordinates?.[0]
+    };
+
+    // Platform-run delivery adds a flat Rs. 59 per line and pays the partner
+    // Rs. 10 per km; both are recorded so the seller payout and the partner
+    // ledger use the same figures.
+    const lines = (order.items || []).length || 1;
+    order.selfDeliveryCharge = SELF_DELIVERY_FEE_PER_ORDER_LINE * lines;
+    order.totalAmount = Math.round(((order.subtotal || 0) + (order.deliveryCharge || 0) + (order.platformFee || 0) + order.selfDeliveryCharge - (order.couponDiscount || 0)) * 100) / 100;
+    order.deliveryFee = Math.round(((order.deliveryDistanceKm || 0) * DELIVERY_RATE_PER_KM) * 100) / 100;
+    order.deliveryJourney = order.deliveryJourney || [];
+    order.deliveryJourney.push({ status: order.orderStatus, note: `Assigned to ${partner.name}`, at: new Date() });
     await order.save();
 
     // Send notification to partner
@@ -108,16 +134,17 @@ export const calculateDeliveryEarnings = async (orderId) => {
   try {
     const order = await Order.findById(orderId);
     
-    if (!order || !order.deliveryPartner) {
+    if (!order || !order.assignedDeliveryPartner) {
       throw new Error('Order or delivery partner not found');
     }
 
     // Calculate distance (in production, use actual delivery distance)
-    const distance = order.deliveryDistance || 5; // Default 5km
+    // Real travelled distance when known, otherwise a conservative estimate.
+    const distance = Number(order.deliveryDistanceKm) || 0;
     const earnings = distance * DELIVERY_RATE_PER_KM;
 
     // Update partner earnings
-    const partner = await DeliveryPartner.findById(order.deliveryPartner);
+    const partner = await DeliveryPartner.findById(order.assignedDeliveryPartner);
     partner.pendingEarnings += earnings;
     partner.totalDeliveries += 1;
     await partner.save();
@@ -235,7 +262,7 @@ export const completeDelivery = async (orderId) => {
   try {
     const order = await Order.findById(orderId);
     
-    if (!order || !order.deliveryPartner) {
+    if (!order || !order.assignedDeliveryPartner) {
       throw new Error('Order or delivery partner not found');
     }
 
@@ -261,7 +288,7 @@ export const completeDelivery = async (orderId) => {
     }
 
     // Update partner
-    const partner = await DeliveryPartner.findById(order.deliveryPartner);
+    const partner = await DeliveryPartner.findById(order.assignedDeliveryPartner);
     partner.currentOrder = null;
     partner.isAvailable = true;
     await partner.save();
@@ -292,35 +319,89 @@ export const getPartnerDashboard = async (partnerId) => {
       throw new Error('Partner not found');
     }
 
-    // Get current order if any
-    let currentOrder = null;
-    if (partner.currentOrder) {
-      currentOrder = await Order.findById(partner.currentOrder)
-        .populate('user', 'name phone email')
-        .populate('seller', 'storeName phone');
-    }
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const startOfWeek = new Date(Date.now() - 7 * 864e5);
+    const startOfMonth = new Date(Date.now() - 30 * 864e5);
 
-    // Get recent deliveries
-    const recentDeliveries = await Order.find({
-      deliveryPartner: partnerId,
-      deliveryStatus: 'delivered'
-    })
-      .sort({ deliveredAt: -1 })
-      .limit(10)
-      .populate('user', 'name');
+    const activeFilter = {
+      assignedDeliveryPartner: partnerId,
+      orderStatus: { $in: ['confirmed', 'packed', 'picked_up', 'in_transit'] }
+    };
+
+    const [activeOrders, deliveredAll, deliveredToday, weekAgg, monthAgg] = await Promise.all([
+      Order.find(activeFilter)
+        .sort({ updatedAt: -1 })
+        .limit(20)
+        .populate('user', 'name phone email')
+        .populate('seller', 'storeName phone address city')
+        .lean(),
+      Order.countDocuments({ assignedDeliveryPartner: partnerId, orderStatus: 'delivered' }),
+      Order.countDocuments({
+        assignedDeliveryPartner: partnerId,
+        orderStatus: 'delivered',
+        deliveredAt: { $gte: startOfDay }
+      }),
+      Order.aggregate([
+        { $match: { assignedDeliveryPartner: new mongoose.Types.ObjectId(String(partnerId)), orderStatus: 'delivered', deliveredAt: { $gte: startOfWeek } } },
+        { $group: { _id: null, total: { $sum: '$deliveryFee' }, count: { $sum: 1 } } }
+      ]),
+      Order.aggregate([
+        { $match: { assignedDeliveryPartner: new mongoose.Types.ObjectId(String(partnerId)), orderStatus: 'delivered', deliveredAt: { $gte: startOfMonth } } },
+        { $group: { _id: null, total: { $sum: '$deliveryFee' }, count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const mapRow = (o) => ({
+      orderId: String(o._id),
+      orderNumber: o.orderNumber || String(o._id).slice(-8),
+      orderStatus: o.orderStatus,
+      customerName: o.user?.name || 'Customer',
+      customerPhone: o.user?.phone || '',
+      address: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+      distance: Number.isFinite(o.deliveryDistanceKm) ? `${o.deliveryDistanceKm} km` : null,
+      earnings: o.deliveryFee || 0,
+      pickup: {
+        name: o.pickupLocation?.name || o.seller?.storeName || '',
+        address: o.pickupLocation?.address || [o.seller?.address?.street, o.seller?.address?.city, o.seller?.address?.pincode].filter(Boolean).join(', ') || o.seller?.city || '',
+        lat: o.pickupLocation?.lat,
+        lng: o.pickupLocation?.lng
+      },
+      drop: {
+        address: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+        lat: o.deliveryLocation?.lat ?? o.shippingAddress?.coordinates?.[1],
+        lng: o.deliveryLocation?.lng ?? o.shippingAddress?.coordinates?.[0]
+      }
+    });
+
+    const availableBalance = (partner.totalEarnings || 0) - (partner.totalWithdrawn || 0);
 
     return {
       success: true,
+      // Flattened shape the partner dashboard renders, kept alongside the raw
+      // document so nothing that reads `partner` breaks.
       partner,
-      currentOrder,
-      recentDeliveries
+      currentOrder: activeOrders[0] || null,
+      recentDeliveries: deliveredAll,
+      activeDeliveries: activeOrders.map(mapRow),
+      todayDeliveries: deliveredToday,
+      completedToday: deliveredToday,
+      pendingDeliveries: activeOrders.length,
+      totalDeliveries: partner.totalDeliveries || deliveredAll,
+      totalEarnings: partner.totalEarnings || 0,
+      pendingEarnings: partner.pendingEarnings || 0,
+      availableBalance: Math.round(availableBalance * 100) / 100,
+      totalWithdrawn: partner.totalWithdrawn || 0,
+      weeklyEarnings: Math.round((weekAgg[0]?.total || 0) * 100) / 100,
+      monthlyEarnings: Math.round((monthAgg[0]?.total || 0) * 100) / 100,
+      canWithdrawToday: !partner.lastWithdrawalAt || new Date(partner.lastWithdrawalAt) < startOfDay,
+      isOnline: partner.status === 'online',
+      locationSharing: !!partner.locationSharing,
+      rating: partner.rating || 0
     };
   } catch (error) {
     console.error('Error getting partner dashboard:', error);
-    return {
-      success: false,
-      error: error.message
-    };
+    return { success: false, error: error.message };
   }
 };
 

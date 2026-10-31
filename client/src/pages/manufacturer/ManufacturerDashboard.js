@@ -12,6 +12,10 @@ const ManufacturerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showAddSeller, setShowAddSeller] = useState(false);
+  const [editingSeller, setEditingSeller] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profile, setProfile] = useState({ companyName: '', phone: '', gstNumber: '', brands: [] });
+  const [brandDraft, setBrandDraft] = useState('');
   const [showBulkSellerUpload, setShowBulkSellerUpload] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -104,6 +108,96 @@ const ManufacturerDashboard = () => {
       setSellers(response.data.sellers);
     } catch (error) {
       console.error('Error fetching sellers:', error);
+    }
+  };
+
+
+  const openProfile = async () => {
+    try {
+      const res = await api.get('/manufacturer/profile');
+      const m = res.data.data || {};
+      setProfile({
+        companyName: m.companyName || '',
+        phone: m.phone || '',
+        gstNumber: m.gstNumber || '',
+        brands: m.brands || []
+      });
+      setShowProfile(true);
+    } catch (err) {
+      toastError(err, 'Could not load your company profile');
+    }
+  };
+
+  const addBrand = () => {
+    const value = brandDraft.trim();
+    if (!value) return;
+    if (profile.brands.some((b) => b.toLowerCase() === value.toLowerCase())) {
+      toast.error('That brand is already added');
+      return;
+    }
+    setProfile((p) => ({ ...p, brands: [...p.brands, value] }));
+    setBrandDraft('');
+  };
+
+  const removeBrand = (name) => {
+    setProfile((p) => ({ ...p, brands: p.brands.filter((b) => b !== name) }));
+  };
+
+  const saveProfile = async () => {
+    if (!profile.companyName.trim()) { toast.error('Company name is required'); return; }
+    if (profile.brands.length === 0) { toast.error('Keep at least one brand'); return; }
+    try {
+      await api.put('/manufacturer/profile', profile);
+      toast.success('Profile updated');
+      setShowProfile(false);
+    } catch (err) {
+      toastError(err, 'Could not save profile');
+    }
+  };
+
+  const toggleSellerBan = async (seller) => {
+    try {
+      if (seller.isBanned) {
+        await api.post(`/manufacturer/sellers/${seller._id}/unban`, {});
+        toast.success(`${seller.storeName || seller.name} reinstated`);
+      } else {
+        const reason = window.prompt('Reason for blocking this seller?') || 'Blocked by manufacturer';
+        await api.post(`/manufacturer/sellers/${seller._id}/ban`, { reason });
+        toast.success(`${seller.storeName || seller.name} blocked`);
+      }
+      fetchSellers();
+    } catch (err) {
+      toastError(err, 'Could not update seller status');
+    }
+  };
+
+  const deleteSeller = async (seller) => {
+    if (!window.confirm(`Remove ${seller.storeName || seller.name}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/manufacturer/sellers/${seller._id}`);
+      toast.success('Seller removed');
+      fetchSellers();
+    } catch (err) {
+      toastError(err, 'Could not remove seller');
+    }
+  };
+
+  const saveSeller = async () => {
+    try {
+      if (editingSeller) {
+        await api.put(`/manufacturer/sellers/${editingSeller._id}`, {
+          name: newSeller.name, phone: newSeller.phone, storeName: newSeller.storeName,
+          storeAddress: newSeller.storeAddress
+        });
+        toast.success('Seller updated');
+      } else {
+        await handleAddSeller();
+      }
+      setShowAddSeller(false);
+      setEditingSeller(null);
+      fetchSellers();
+    } catch (err) {
+      toastError(err, 'Could not save seller');
     }
   };
 
@@ -426,6 +520,12 @@ const ManufacturerDashboard = () => {
               >
                 <FiPlus /> Add Seller
               </button>
+              <button
+                onClick={openProfile}
+                style={{ padding: '10px 20px', background: '#fff', color: '#14161a', border: '1px solid #d2d7de', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <FiEdit size={16} /> Company & brands
+              </button>
             </div>
           </div>
 
@@ -440,6 +540,7 @@ const ManufacturerDashboard = () => {
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#424242' }}>Store Name</th>
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#424242' }}>Email</th>
                     <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#424242' }}>Status</th>
+                    <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#424242' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -459,6 +560,29 @@ const ManufacturerDashboard = () => {
                         }}>
                           {seller.isBanned ? 'Banned' : 'Active'}
                         </span>
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          onClick={() => { setEditingSeller(seller); setNewSeller({ ...newSeller, name: seller.name || '', phone: seller.phone || '', storeName: seller.storeName || '', storeAddress: { ...(seller.storeAddress || {}), street: seller.storeAddress?.street || '', city: seller.storeAddress?.city || '', state: seller.storeAddress?.state || '', pincode: seller.storeAddress?.pincode || '' } }); setShowAddSeller(true); }}
+                          title="Edit seller details"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', marginRight: 8 }}
+                        >
+                          <FiEdit size={16} />
+                        </button>
+                        <button
+                          onClick={() => toggleSellerBan(seller)}
+                          title={seller.isBanned ? 'Reinstate seller' : 'Block seller'}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: seller.isBanned ? 'var(--success)' : 'var(--danger)', marginRight: 8 }}
+                        >
+                          {seller.isBanned ? 'Reinstate' : 'Block'}
+                        </button>
+                        <button
+                          onClick={() => deleteSeller(seller)}
+                          title="Remove seller"
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                        >
+                          <FiTrash2 size={16} />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -669,11 +793,69 @@ const ManufacturerDashboard = () => {
         </div>
       )}
 
+      {showProfile && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(16,17,20,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 24, width: '100%', maxWidth: 520, maxHeight: '85vh', overflowY: 'auto' }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Company &amp; brands</h2>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Company name *</label>
+              <input className="input" value={profile.companyName} onChange={(e) => setProfile({ ...profile, companyName: e.target.value })} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Phone *</label>
+                <input className="input" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>GST number</label>
+                <input className="input" value={profile.gstNumber} onChange={(e) => setProfile({ ...profile, gstNumber: e.target.value })} />
+              </div>
+            </div>
+
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Brands you manufacture</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+              {profile.brands.length === 0 && (
+                <span style={{ fontSize: 13, color: '#8a929e' }}>No brands yet - add at least one before submitting products.</span>
+              )}
+              {profile.brands.map((b) => (
+                <span key={b} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 10px', borderRadius: 999, background: '#f1f3f6', fontSize: 13, fontWeight: 600 }}>
+                  {b}
+                  <button onClick={() => removeBrand(b)} title={`Remove ${b}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d13438', fontSize: 14, lineHeight: 1, padding: 0 }}>
+                    &times;
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                className="input"
+                placeholder="Add a brand and press Enter"
+                value={brandDraft}
+                onChange={(e) => setBrandDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addBrand(); } }}
+              />
+              <button onClick={addBrand} className="btn btn-outline">Add</button>
+            </div>
+            <p style={{ fontSize: 12, color: '#8a929e', margin: '8px 0 18px' }}>
+              Sellers you create can only list products under the brands you add here.
+            </p>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowProfile(false)} className="btn btn-outline">Cancel</button>
+              <button onClick={saveProfile} className="btn btn-primary">Save changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Seller Modal */}
       {showAddSeller && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>Add New Seller</h2>
+            <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>
+              {editingSeller ? `Edit ${editingSeller.storeName || editingSeller.name || 'Seller'}` : 'Add New Seller'}
+            </h2>
             
             <div style={{ display: 'grid', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -857,7 +1039,7 @@ const ManufacturerDashboard = () => {
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
-                onClick={handleAddSeller}
+                onClick={editingSeller ? saveSeller : handleAddSeller}
                 style={{ flex: 1, padding: '12px', background: '#f5576c', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
               >
                 Add Seller

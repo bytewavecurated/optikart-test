@@ -169,7 +169,7 @@ const ProductVerification = () => {
             {products.map((product) => (
               <div key={product._id} className="card">
                 <img
-                  src={product.images?.[0] || '/placeholder.png'}
+                  src={product.images?.[0] || '/placeholder.svg'}
                   alt={product.title}
                   style={{ width: '100%', height: '250px', objectFit: 'cover' }}
                 />

@@ -229,7 +229,7 @@ const LensConfiguration = () => {
           <div className="card" style={{ marginBottom: '20px', overflow: 'hidden' }}>
             <div style={{ display: 'flex', gap: '16px', padding: '20px', alignItems: 'center' }} className="product-info-row">
               <img
-                src={product.images?.[0] || '/placeholder-glasses.png'}
+                src={product.images?.[0] || '/placeholder.svg'}
                 alt={product.name}
                 style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--border-light)', flexShrink: 0 }}
               />

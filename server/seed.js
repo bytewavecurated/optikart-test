@@ -14,6 +14,7 @@ import ManufacturerSeller from './models/ManufacturerSeller.js';
 import Blog from './models/Blog.js';
 import DeliveryPartner from './models/DeliveryPartner.js';
 import StaffRole from './models/StaffRole.js';
+import SellerStock from './models/SellerStock.js';
 
 dotenv.config();
 
@@ -933,6 +934,83 @@ const seedDatabase = async () => {
     }
     console.log('Backfilled frameMaterial from materials list');
 
+    // Approve the seeded catalogue so it is visible on the storefront. Use the
+    // admin Product Verification screen to un-verify items and exercise that flow.
+    await Product.updateMany({}, { verificationStatus: 'verified', verifiedAt: new Date() });
+    console.log('Marked catalogue as verified');
+
+    // Give eyewear products real colour/size/price variants. Without these there
+    // is no per-variant stock to sell against, and the seller inventory screens
+    // have nothing to manage.
+    const VARIANT_PLAN = {
+      sunglasses: {
+        colors: [
+          { name: 'Black', hex: '#111111' },
+          { name: 'Tortoise', hex: '#8B5A2B' },
+          { name: 'Gold', hex: '#C9A227' }
+        ],
+        sizes: ['S', 'M', 'L'],
+        priceSteps: { S: -500, M: 0, L: 500 }
+      },
+      eyeglasses: {
+        colors: [
+          { name: 'Matte Black', hex: '#1c1c1c' },
+          { name: 'Crystal', hex: '#E8E8E8' },
+          { name: 'Rose Gold', hex: '#B76E79' }
+        ],
+        sizes: ['Small', 'Medium', 'Large'],
+        priceSteps: { Small: -400, Medium: 0, Large: 400 }
+      },
+      readingglasses: {
+        colors: [{ name: 'Black', hex: '#111111' }, { name: 'Blue', hex: '#2874f0' }],
+        sizes: ['Medium'],
+        priceSteps: { Medium: 0 }
+      },
+      sportseyewear: {
+        colors: [{ name: 'Neon Green', hex: '#39FF14' }, { name: 'Orange', hex: '#FF7F00' }],
+        sizes: ['One Size'],
+        priceSteps: { 'One Size': 0 }
+      },
+      kids: {
+        colors: [{ name: 'Pink', hex: '#FFB6C1' }, { name: 'Blue', hex: '#64B5F6' }],
+        sizes: ['XS', 'S'],
+        priceSteps: { XS: -200, S: 0 }
+      }
+    };
+
+    let variantised = 0;
+    for (const prod of products) {
+      if (prod.category === 'contactlenses') continue;
+      const plan = VARIANT_PLAN[prod.category];
+      if (!plan) continue;
+
+      const base = prod.discountedPrice || prod.price;
+      const variants = [];
+      for (const color of plan.colors) {
+        for (const size of plan.sizes) {
+          const step = plan.priceSteps[size] || 0;
+          variants.push({
+            color: color.name,
+            size,
+            gender: prod.gender || 'unisex',
+            price: Math.max(99, base + step),
+            originalPrice: Math.max(99, (prod.originalPrice || prod.price) + step),
+            stock: 8 + ((color.name.length + size.length) % 14),
+            sku: `${(prod.modelNumber || prod.title.slice(0, 6)).toString().replace(/\s+/g, '').toUpperCase()}-${color.name.split(' ')[0].slice(0, 3).toUpperCase()}-${size.slice(0, 3).toUpperCase()}`,
+            isActive: true
+          });
+        }
+      }
+
+      prod.variants = variants;
+      prod.colors = plan.colors.map((c) => ({ name: c.name, hexCode: c.hex, images: [] }));
+      prod.sizes = plan.sizes;
+      prod.stock = variants.reduce((sum, v) => sum + v.stock, 0);
+      await prod.save();
+      variantised += 1;
+    }
+    console.log(`Added colour/size variants to ${variantised} products`);
+
     // Seed references placeholder image paths; generate real PNG product
     // images so the marketplace never renders broken pictures.
     try {
@@ -1192,7 +1270,72 @@ const seedDatabase = async () => {
     console.log('Manufacturer seller login: rayban.retailer1@optikart.com / Retailer123@');
     console.log('Admin login: samedayopticians@gmail.com / Sameday123@');
     console.log('Test user logins: testuser@optikart.com / Test123@, demo@optikart.com / Demo123@');
-    console.log('Seller logins: opticalworld@gmail.com, visioncare@gmail.com, lensstudio@gmail.com, eyefashion@gmail.com / Seller123@');
+    const sellerEmails = sellers.map((s) => s.email).join(', ');
+
+    // One consolidated block: every seeded principal, where to sign in, and the
+    // password - so any panel can be opened without hunting through this file.
+    // Publish each seller's stock of every eyewear product they can fulfil, so
+    // proximity routing has real candidates to offer an order to.
+    await SellerStock.deleteMany({});
+    try {
+      const stockable = await Product.find({ isActive: true, category: { $ne: 'contactlenses' } })
+        .select('brand modelNumber category seller variants price discountedPrice').lean();
+      const rows = [];
+      for (const p of stockable) {
+        // Every seller except the owner also lists it, at a small price spread.
+        for (const sl of sellers) {
+          const idx = sellers.findIndex((x) => String(x._id) === String(sl._id));
+          const base = p.discountedPrice || p.price;
+          const selling = Math.max(99, base + (idx - 1) * 100);
+          rows.push({
+            seller: sl._id,
+            product: p._id,
+            brand: p.brand,
+            modelNumber: p.modelNumber || '',
+            category: p.category,
+            sellingPrice: selling,
+            mrp: p.price,
+            totalStock: (p.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0),
+            variants: (p.variants || []).map((v) => ({
+              color: v.color || '', size: v.size || '', stock: v.stock || 0, price: v.price || selling
+            })),
+            isListed: true
+          });
+        }
+      }
+      if (rows.length) await SellerStock.insertMany(rows, { ordered: false });
+      console.log(`Published ${rows.length} seller stock listings for routing`);
+    } catch (stockErr) {
+      console.log('Seller stock seeding note:', stockErr.message);
+    }
+
+    console.log([
+      '',
+      '================================================================',
+      '  DEMO LOGINS (seeded, development only)',
+      '================================================================',
+      '  Customer             http://localhost:3000/login',
+      '     demo@optikart.com  / Demo123@',
+      `  Seller               http://localhost:3000/seller/login`,
+      `     ${sellers[0]?.email || 'n/a'}  / Seller123@   (also: ${sellerEmails})`,
+      `  Admin                http://localhost:3000/admin/login`,
+      `     ${admin.email}  / Sameday123@`,
+      `  Staff                http://localhost:3000/staff/login`,
+      `     ${staffUser.email}  / Staff123@`,
+      `  Executive (delivery) http://localhost:3000/executive/login`,
+      `     ${executive.email}  / Executive123@`,
+      `  Manufacturer         http://localhost:3000/manufacturer/login`,
+      `     ${manufacturer.email}  / Manufacturer123@`,
+      `  Manufacturer seller  http://localhost:3000/manufacturer-seller/login`,
+      `     ${manufacturerSeller.email}  / Retailer123@`,
+      `  Delivery partner     http://localhost:3000/delivery-partner/login`,
+      `     ${deliveryPartner.email}  / Partner123@`,
+      '================================================================',
+      '  Seed test accounts skip the email OTP step in development.',
+      '  Set NODE_ENV=production (or AUTH_OTP_BYPASS=false) to require it.',
+      '================================================================',
+      ''
+    ].join('\n'));
 
   } catch (error) {
     console.error('Seed error:', error);

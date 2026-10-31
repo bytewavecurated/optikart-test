@@ -69,6 +69,8 @@ const sellerSchema = new mongoose.Schema({
   lockUntil: { type: Date },
   rating: { type: Number, default: 0, min: 0, max: 5 },
   totalSales: { type: Number, default: 0 },
+  // Cumulative platform commission charged on this seller's delivered orders.
+  totalCommissionEarned: { type: Number, default: 0 },
   totalProducts: { type: Number, default: 0 },
   returnRate: { type: Number, default: 0 },
   avgDeliveryTime: { type: Number, default: 0 },

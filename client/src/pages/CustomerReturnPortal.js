@@ -194,7 +194,7 @@ const CustomerReturnPortal = () => {
                   style={{ width: '20px', height: '20px' }}
                 />
                 <img
-                  src={item.product.images?.[0] || '/placeholder.png'}
+                  src={item.product.images?.[0] || '/placeholder.svg'}
                   alt={item.product.title}
                   style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
                 />

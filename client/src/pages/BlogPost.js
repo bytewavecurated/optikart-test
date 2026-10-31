@@ -87,7 +87,7 @@ const BlogPost = () => {
             <span>By {post.author?.name || 'OptiKart Team'}</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiClock size={12} /> {new Date(post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
-          <img src={post.coverImage || '/placeholder-blog.jpg'} alt={post.title} style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '8px', marginBottom: '24px' }} />
+          <img src={post.coverImage || '/placeholder.svg'} alt={post.title} style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '8px', marginBottom: '24px' }} />
           <div style={{ fontSize: '16px', lineHeight: 1.8, color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: post.content }} />
 
           <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>

@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import toast from 'react-hot-toast';
 import { wishlistItemsOf } from '../services/apiResponse.js';
+import BackButton from '../components/BackButton';
 
 const MAX_WISHLIST_LOGGED_IN = 30;
 const MAX_WISHLIST_GUEST = 3;
@@ -94,6 +95,7 @@ const Wishlist = () => {
       <div className="container page-wrapper">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
+            <BackButton />
             <h1 style={{ fontFamily: 'var(--font-heading)' }}>My Wishlist ({items.length}/{maxItems})</h1>
             {!isAuthenticated && (
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '8px' }}>
@@ -109,7 +111,7 @@ const Wishlist = () => {
             <div key={item._id} className="card">
               <Link to={`/product/${item.product._id}`}>
                 <img
-                  src={item.product.images?.[0] || '/placeholder.png'}
+                  src={item.product.images?.[0] || '/placeholder.svg'}
                   alt={item.product.title}
                   style={{ width: '100%', height: '280px', objectFit: 'cover' }}
                 />

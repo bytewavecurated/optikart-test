@@ -10,7 +10,7 @@ const orderItemSchema = new mongoose.Schema({
     cyl: Number,
     axis: Number
   },
-  quantity: { type: Number, required: true, min: 1 },
+  quantity: { type: Number, required: true, min: 1, max: 10 },
   price: { type: Number, required: true }
 });
 
@@ -21,7 +21,15 @@ const shippingAddressSchema = new mongoose.Schema({
   state: { type: String, required: true },
   pincode: { type: String, required: true },
   phone: { type: String, required: true },
-  email: { type: String }
+  email: { type: String },
+  /* Proximity routing needs a point; without these the distance to every seller
+     is unknown and no order can ever be routed by location. */
+  coordinates: {
+    type: [Number],   // [longitude, latitude]
+    default: undefined
+  },
+  lat: { type: Number },
+  lng: { type: Number }
 });
 
 const prescriptionSchema = new mongoose.Schema({
@@ -112,7 +120,11 @@ const orderSchema = new mongoose.Schema({
     at: { type: Date, default: Date.now }
   }],
   deliveryDistanceKm: { type: Number, default: 0 },
+  /* Rs. 59 per product line when the platform delivers the order itself, added
+     on top of miscellaneous charges. Shiprocket-fulfilled orders are instead
+     billed to the seller at the carrier's own rate. */
   deliveryFee: { type: Number, default: 0 },
+  selfDeliveryCharge: { type: Number, default: 0 },
   // Payout tracking
   payoutProcessed: { type: Boolean, default: false },
   deliveredAt: { type: Date }

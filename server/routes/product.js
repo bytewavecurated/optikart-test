@@ -71,7 +71,10 @@ router.get('/', optionalAuth, async (req, res) => {
       modelNumber, color, sellerCode, sort, hasOffer, seller: isSeller 
     } = req.query;
 
-    const query = { isActive: true };
+    // Only approved catalogue is publicly visible; sellers may list whatever
+    // they have been assigned, but it reaches shoppers after verification.
+    const VISIBLE = { isActive: true, verificationStatus: 'verified' };
+    const query = { ...VISIBLE };
 
     if (sellerCode) {
       // Public store link from the product page: resolve the seller by their
@@ -88,6 +91,23 @@ router.get('/', optionalAuth, async (req, res) => {
       query.$text = { $search: search };
     }
     if (category) query.category = normalizeCategory(category);
+
+    // Contact lenses are not frames: a browse filtered by gender, face shape,
+    // frame type or frame material is an eyewear browse, so lens products must
+    // never leak into it regardless of which entry point asked for it.
+    const isEyewearFacetBrowse = Boolean(
+      gender || frameShape || frameType || material || frameSize || frameColor || color
+    );
+    if (isEyewearFacetBrowse && !query.category) query.category = { $ne: 'contactlenses' };
+    if (isEyewearFacetBrowse && query.category === 'contactlenses') {
+      return res.json({
+        success: true,
+        products: [],
+        pagination: { total: 0, page: 1, limit: parseInt(limit), pages: 0 },
+        message: 'Contact lenses have no gender or frame attributes. Browse them from Contact Lenses.'
+      });
+    }
+
     if (brand) query.brand = brand;
     if (minPrice || maxPrice) {
       query.price = {};
@@ -249,7 +269,7 @@ router.get('/random', async (req, res) => {
   try {
     const { limit = 10, category } = req.query;
 
-    const query = { isActive: true };
+    const query = { isActive: true, verificationStatus: 'verified' };
     if (category) query.category = normalizeCategory(category);
 
     const count = await Product.countDocuments(query);

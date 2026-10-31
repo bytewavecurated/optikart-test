@@ -6,8 +6,10 @@ import { useAuth } from '../contexts/AuthContext';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { listOf } from '../services/apiResponse.js';
+import { FILTER_STATUSES } from '../utils/orderStatuses.js';
+import BackButton from '../components/BackButton';
 
-const STATUS_COLORS = { pending: '#ff9f00', confirmed: '#2874f0', shipped: '#2874f0', delivered: '#26a541', cancelled: '#ff6161', returned: '#878787' };
+const STATUS_COLORS = { pending: '#b06e00', confirmed: '#2874f0', packed: '#2874f0', picked_up: '#2874f0', in_transit: '#2874f0', delivered: '#1a7f4b', cancelled: '#d13438', return_requested: '#b06e00', returned: '#5c6470' };
 
 const UserOrders = () => {
   const [orderList, setOrderList] = useState([]);
@@ -51,9 +53,10 @@ const UserOrders = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
+          <BackButton />
           <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>My Orders</h1>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            {['all', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map((s) => (
+            {['all', ...FILTER_STATUSES].map((s) => (
               <button key={s} onClick={() => setFilter(s)} style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 500, border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`, background: filter === s ? 'var(--primary-light)' : '#fff', color: filter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize' }}>
                 {s}
               </button>
@@ -74,7 +77,7 @@ const UserOrders = () => {
               {orderList.map((order) => (
                 <Link key={order._id} to={`/orders/${order._id}`} className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', transition: 'box-shadow 0.2s' }}>
                   <div style={{ width: '60px', height: '60px', borderRadius: '8px', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <img src={order.items?.[0]?.product?.images?.[0] || '/placeholder-glasses.png'} alt="" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                    <img src={order.items?.[0]?.product?.images?.[0] || '/placeholder.svg'} alt="" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Order #{order._id.slice(-8).toUpperCase()}</div>

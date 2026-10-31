@@ -6,6 +6,7 @@ import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
+import BackButton from '../../components/BackButton';
 
 const SellerInventory = () => {
   const [products, setProducts] = useState([]);
@@ -241,6 +242,7 @@ const SellerInventory = () => {
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <BackButton />
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}><FiPackage style={{ marginRight: '8px', verticalAlign: 'middle' }} />Inventory Management</h1>
             {selectedCount > 0 && (
               <button onClick={() => setShowBulkUpdate(true)} className="btn btn-primary">
@@ -326,7 +328,7 @@ const SellerInventory = () => {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
                         <img
-                          src={product.image || product.images?.[0] || '/placeholder-glasses.png'}
+                          src={product.image || product.images?.[0] || '/placeholder.svg'}
                           alt=""
                           style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
                         />

@@ -11,10 +11,15 @@ import { listOf } from '../services/apiResponse.js';
 const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  // Filters arriving from the gender picker and the category rails.
+  const genderParam = searchParams.get('gender') || '';
+  const categoryParam = searchParams.get('category') || '';
+  const brandParam = searchParams.get('brand') || '';
+  const shapeParam = searchParams.get('frameShape') || '';
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
-  const [sort, setSort] = useState('relevance');
+  const [sort, setSort] = useState('popularity');
   const [priceRange, setPriceRange] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const { addSearchQuery } = useUserBehavior();
@@ -29,7 +34,13 @@ const SearchResults = () => {
       }
       
       try {
-        const params = { q: query, sort };
+        // The API's text-search parameter is `search`, not `q`.
+        const params = { sort, limit: 48 };
+        if (query) params.search = query;
+        if (genderParam) params.gender = genderParam;
+        if (categoryParam) params.category = categoryParam;
+        if (brandParam) params.brand = brandParam;
+        if (shapeParam) params.frameShape = shapeParam;
         if (priceRange !== 'all') {
           const [min, max] = priceRange.split('-').map(Number);
           if (min) params.minPrice = min;
@@ -45,7 +56,7 @@ const SearchResults = () => {
       }
     };
     fetchResults();
-  }, [query, sort, priceRange]);
+  }, [query, sort, priceRange, genderParam, categoryParam, brandParam, shapeParam]);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

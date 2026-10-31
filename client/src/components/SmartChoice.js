@@ -203,7 +203,7 @@ const SmartChoice = () => {
                   overflow: 'hidden'
                 }}>
                   <img
-                    src={product.images?.[0] || '/placeholder-glasses.png'}
+                    src={product.images?.[0] || '/placeholder.svg'}
                     alt={product.title}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />

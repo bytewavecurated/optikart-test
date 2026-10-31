@@ -1,15 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { admin as adminApi } from '../../services/api';
+import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { FiMapPin, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { listOf, oneOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 
+const shapeRow = (r) => ({
+  ...r,
+  _id: r.orderId || r._id,
+  orderNumber: r.orderNumber,
+  orderStatus: r.orderStatus,
+  assignmentStatus: r.status === 'admin_required' ? 'admin_required' : (r.status === 'seller_accepted' || r.status === 'admin_assigned' ? 'accepted' : 'pending_acceptance'),
+  assignmentDeadline: r.timeoutAt,
+  totalAmount: r.totalAmount,
+  createdAt: r.placedAt,
+  shippingAddress: r.destination,
+  candidates: r.candidates || []
+});
+
+const LABELS = {
+  routing: 'Finding seller',
+  seller_contacted: 'Awaiting answer',
+  admin_required: 'Needs admin',
+  accepted: 'Assigned',
+  all: 'All'
+};
+
 const OrderAssignment = () => {
-  const [orders, setOrders] = useState([]);
+  const [allOrders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('pending');
+  const [filter, setFilter] = useState('routing');
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -18,9 +41,9 @@ const OrderAssignment = () => {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await adminApi.getOrders({ assignmentStatus: filter, limit: 100 });
+      const res = await adminApi.getRoutingQueue({ status: filter === 'all' ? undefined : filter });
       if (res.data.success) {
-        setOrders(listOf(res.data));
+        setOrders((res.data.queue || []).map(shapeRow));
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -29,6 +52,25 @@ const OrderAssignment = () => {
       setLoading(false);
     }
   };
+
+  const assign = async (orderId, sellerId, storeName) => {
+    if (!window.confirm(`Send this order to ${storeName}?`)) return;
+    try {
+      await adminApi.assignOrderToSeller(orderId, sellerId, `Assigned by admin from the routing queue`);
+      toast.success(`${storeName} assigned`);
+      fetchOrders();
+    } catch (error) {
+      toastError(error, 'Could not assign this order');
+    }
+  };
+
+  const orders = useMemo(() => {
+    if (!search.trim()) return allOrders;
+    const q = search.toLowerCase();
+    return allOrders.filter((o) =>
+      [o.orderNumber, o.destination, ...(o.candidates || []).map((c) => `${c.storeName} ${c.phone}`)]
+        .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
+  }, [allOrders, search]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -69,7 +111,15 @@ const OrderAssignment = () => {
             <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading orders...</p>
           </div>
         </div>
-        <Footer />
+        <style>{`
+        .assign-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+        .candidate { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-white); }
+        .resp { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; background: var(--bg-subtle); color: var(--text-secondary); white-space: nowrap; }
+        .resp.r-pending { background: var(--brand-tint); color: var(--brand); }
+        .resp.r-accepted { background: var(--success-light); color: var(--success); }
+        .resp.r-rejected, .resp.r-timeout { background: var(--danger-light); color: var(--danger); }
+      `}</style>
+      <Footer />
       </>
     );
   }
@@ -86,9 +136,16 @@ const OrderAssignment = () => {
         {/* Filter Tabs */}
         <div className="card" style={{ padding: '16px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {['pending', 'pending_acceptance', 'admin_required', 'accepted'].map((status) => (
+            <input
+              className="input"
+              style={{ maxWidth: 260 }}
+              placeholder="Search order, address or seller"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {['routing', 'seller_contacted', 'admin_required', 'accepted', 'all'].map((status) => (
               <button
-                key={status}
+                key={LABELS[status] || status}
                 onClick={() => setFilter(status)}
                 className={`btn ${filter === status ? 'btn-primary' : 'btn-outline'}`}
                 style={{ textTransform: 'capitalize' }}
@@ -152,6 +209,40 @@ const OrderAssignment = () => {
                       <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{order.seller.email}</div>
                     )}
                   </div>
+                  {(order.candidates || []).length > 0 && (
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: 8 }}>
+                        Sellers who stock this item
+                      </div>
+                      <div className="assign-row">
+                        {order.candidates.map((c) => (
+                          <div key={c.sellerId} className="candidate">
+                            <div>
+                              <div style={{ fontSize: 13.5, fontWeight: 700 }}>
+                                {c.storeName}
+                                {c.distanceKm !== null && c.distanceKm !== undefined ? ` - ${c.distanceKm} km` : ''}
+                              </div>
+                              <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                                {[c.phone && `Call ${c.phone}`, c.rating ? `Rated ${c.rating}` : null, c.city].filter(Boolean).join(' / ')}
+                              </div>
+                            </div>
+                            <span className={`resp r-${c.response}`}>{(c.response || 'pending').replace('_', ' ')}</span>
+                            {c.response !== 'accepted' && (
+                              <button className="btn btn-quiet" style={{ padding: '6px 12px', fontSize: 12.5 }}
+                                onClick={() => assign(order._id, c.sellerId, c.storeName)}>
+                                Assign
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {order.status === 'admin_required' && (
+                        <p style={{ fontSize: 12.5, color: 'var(--danger)', margin: '8px 0 0' }}>
+                          No seller accepted within their window. Assign one directly, or call them using the contacts above.
+                        </p>
+                      )}
+                    </div>
+                  )}
                   {order.assignmentDistance && (
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Distance</div>

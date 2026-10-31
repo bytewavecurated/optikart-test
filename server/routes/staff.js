@@ -16,7 +16,7 @@ const objectId = (id) => new mongoose.Types.ObjectId(id);
 
 // GET /api/staff/overview
 // Counters for whichever queue the signed-in staff member owns.
-router.get('/overview', verifyStaff, async (req, res) => {
+router.get('/overview', verifyToken, verifyStaff, async (req, res) => {
   try {
     const role = req.staff ? req.staff.role : req.user.staffRole;
 
@@ -73,7 +73,7 @@ router.get('/overview', verifyStaff, async (req, res) => {
 });
 
 // GET /api/staff/orders - dispatch work list
-router.get('/orders', verifyStaff, async (req, res) => {
+router.get('/orders', verifyToken, verifyStaff, async (req, res) => {
   try {
     const { status, search, page = 1, limit = 25 } = req.query;
     const query = {};
@@ -103,7 +103,7 @@ router.get('/orders', verifyStaff, async (req, res) => {
 });
 
 // GET /api/staff/products - verification work list
-router.get('/products', verifyStaff, async (req, res) => {
+router.get('/products', verifyToken, verifyStaff, async (req, res) => {
   try {
     const { verification: v, brand, search, page = 1, limit = 25 } = req.query;
     const query = {};
@@ -134,7 +134,7 @@ router.get('/products', verifyStaff, async (req, res) => {
 });
 
 // GET /api/staff/blogs - content work list
-router.get('/blogs', verifyStaff, async (req, res) => {
+router.get('/blogs', verifyToken, verifyStaff, async (req, res) => {
   try {
     const { search } = req.query;
     const query = {};
@@ -152,7 +152,7 @@ router.get('/blogs', verifyStaff, async (req, res) => {
 });
 
 // GET /api/staff/returns - returns work list
-router.get('/returns', verifyStaff, async (req, res) => {
+router.get('/returns', verifyToken, verifyStaff, async (req, res) => {
   try {
     const { status, search } = req.query;
     const query = {};

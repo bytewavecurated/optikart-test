@@ -4,17 +4,21 @@ import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
 import Coupon from '../models/Coupon.js';
 import { verifyToken } from '../middleware/auth.js';
+import { deductStockForOrder, restoreStockForOrder, matchVariant } from '../services/stockMovement.js';
+import { startRouting } from '../services/orderProximity.js';
 import { orderValidation } from '../middleware/validate.js';
 import { sendOrderConfirmation, sendOrderStatusNotification } from '../services/email.js';
 
 const router = express.Router();
+
+// Rs. 59 per product line on platform-run deliveries.
+const SELF_DELIVERY_FEE_PER_ITEM = 59;
 
 router.post('/', verifyToken, orderValidation, async (req, res) => {
   try {
     const { items, shippingAddress, paymentMethod, couponCode, prescription } = req.body;
     const userId = req.user._id;
 
-    const productDetails = [];
     let subtotal = 0;
     const sellerItems = {};
 
@@ -28,11 +32,22 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         return res.status(400).json({ success: false, message: `Product "${product.title}" is no longer available.` });
       }
 
-      if (product.stock < item.quantity) {
-        return res.status(400).json({ success: false, message: `Insufficient stock for "${product.title}".` });
+      // Price and availability come from the exact colour/size the buyer chose,
+      // not just the product-level defaults.
+      const chosenVariant = matchVariant(product, item.variant || {});
+      const available = chosenVariant
+        ? (chosenVariant.stock || 0)
+        : (product.stock || 0);
+
+      if (available < item.quantity) {
+        const which = chosenVariant
+          ? ` (${[chosenVariant.color, chosenVariant.size].filter(Boolean).join(' / ')})`
+          : '';
+        return res.status(400).json({ success: false, message: `Insufficient stock for "${product.title}"${which}. Only ${available} available.` });
       }
 
-      const price = product.discountedPrice || product.price;
+      const variantPrice = chosenVariant ? (chosenVariant.discountedPrice || chosenVariant.price) : null;
+      const price = variantPrice || product.discountedPrice || product.price;
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
@@ -47,7 +62,6 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         price
       });
 
-      productDetails.push({ product, quantity: item.quantity });
     }
 
     let couponDiscount = 0;
@@ -98,13 +112,19 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
       const sellerItemCount = sellerItemsList.reduce((sum, item) => sum + item.quantity, 0);
       const sellerDeliveryCharge = sellerItemCount * 16;
       const sellerPlatformFee = Math.round(sellerSubtotal * 0.02);
+      // Charged to the customer up front for every order. If the platform ends up
+      // delivering it (instead of Shiprocket) a further flat Rs. 59 per product
+      // line is added, billed alongside the miscellaneous charges; that choice is
+      // only known once routing completes, so it is stored as a quote and applied
+      // by the delivery-fee recalculation at pickup time.
+      const sellerSelfDeliveryCharge = 0;
 
       let sellerCouponDiscount = 0;
       if (couponDiscount > 0) {
         sellerCouponDiscount = Math.round((couponDiscount * sellerSubtotal) / subtotal);
       }
 
-      const sellerTotal = sellerSubtotal + sellerDeliveryCharge + sellerPlatformFee - sellerCouponDiscount;
+      const sellerTotal = sellerSubtotal + sellerDeliveryCharge + sellerPlatformFee + sellerSelfDeliveryCharge - sellerCouponDiscount;
 
       // Calculate commission (3% of subtotal after discounts)
       const commissionPercentage = 3;
@@ -120,6 +140,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         subtotal: sellerSubtotal,
         deliveryCharge: sellerDeliveryCharge,
         platformFee: sellerPlatformFee,
+        selfDeliveryCharge: sellerSelfDeliveryCharge,
         totalAmount: sellerTotal,
         paymentMethod: paymentMethod || 'razorpay',
         paymentStatus: 'pending',
@@ -136,26 +157,18 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
 
       await order.save();
       orders.push(order);
-    }
 
-    for (const { product, quantity } of productDetails) {
-      product.stock -= quantity;
-      
-      // Also deduct from variant stock if variant info is available
-      const orderItem = items.find(i => i.product === product._id.toString());
-      if (orderItem && orderItem.variant && product.variants && product.variants.length > 0) {
-        const variantIndex = product.variants.findIndex(v => {
-          const colorMatch = !orderItem.variant.color || v.color === orderItem.variant.color;
-          const sizeMatch = !orderItem.variant.size || v.size === orderItem.variant.size;
-          return colorMatch && sizeMatch;
+      // Deduct the exact colour/size the buyer chose for this seller's stock.
+      const report = await deductStockForOrder(order, req.app.get('io'));
+      if (report.shortages.length) {
+        // Roll the whole checkout back rather than overselling.
+        await Promise.all(orders.map((o) => Order.updateOne({ _id: o._id }, { orderStatus: 'cancelled', cancellationReason: 'Stock unavailable at checkout' })));
+        await Promise.all(orders.map((o) => restoreStockForOrder(o, req.app.get('io'), { reason: 'checkout-rollback' })));
+        return res.status(409).json({
+          success: false,
+          message: 'Some items sold out while you were checking out. Please review your cart.'
         });
-        
-        if (variantIndex !== -1) {
-          product.variants[variantIndex].stock = Math.max(0, (product.variants[variantIndex].stock || 0) - quantity);
-        }
       }
-      
-      await product.save();
     }
 
     if (couponCode && couponDiscount > 0) {
@@ -177,6 +190,18 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
     );
 
     await sendOrderConfirmation(req.user.email, orders[0]);
+
+    // Hand each order to proximity routing: up to five nearby sellers who stock
+    // the exact configuration are offered it in turn. If nobody is nearby the
+    // order lands in the admin queue instead.
+    try {
+      for (const placed of orders) {
+        await startRouting(placed, req.app.get('io'));
+      }
+    } catch (routeErr) {
+      // Routing failure must never lose a placed order.
+      console.error('Order routing skipped:', routeErr.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -263,15 +288,15 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
 
     order.orderStatus = 'cancelled';
     order.cancellationReason = reason || 'Cancelled by user';
-    order.paymentStatus = 'refunded';
-
-    for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: item.quantity }
-      });
+    // Only money actually collected can be refunded; unpaid COD was never paid.
+    if (order.paymentStatus === 'completed') {
+      order.paymentStatus = 'refunded';
     }
 
     await order.save();
+
+    // Return the goods to the exact colour/size they came from.
+    await restoreStockForOrder(order, req.app.get('io'), { reason: 'cancellation' });
 
 
     try {

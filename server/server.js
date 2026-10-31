@@ -52,6 +52,8 @@ import deliveryRouteRoutes from './routes/deliveryRoute.js';
 import customerReturnsRoutes from './routes/customerReturns.js';
 import commissionRoutes from './routes/commission.js';
 import staffRoutes from './routes/staff.js';
+import { sweepExpiredOffers } from './services/orderProximity.js';
+import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
@@ -153,6 +155,7 @@ app.use('/api/delivery-route', deliveryRouteRoutes);
 app.use('/api/customer-returns', customerReturnsRoutes);
 app.use('/api/commission', commissionRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/seller-stock', sellerStockRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -202,26 +205,25 @@ app.set('io', io);
 
 // Serve static files from the React app build directory in production
 const clientBuildPath = path.join(__dirname, '../client/build');
-if (fs.existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath));
-  
-  // Handle React routing - send index.html for all non-API routes
-  app.get('*', (req, res) => {
-    // Don't serve index.html for API routes
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ success: false, message: 'API route not found.' });
-    }
-    res.sendFile(path.join(clientBuildPath, 'index.html'));
-  });
-} else {
-  // In development, just return 404 for non-API routes
-  app.use((req, res) => {
-    if (!req.path.startsWith('/api/')) {
-      return res.status(404).json({ success: false, message: 'Route not found. Frontend not built.' });
-    }
-    res.status(404).json({ success: false, message: 'API route not found.' });
-  });
-}
+const clientIndex = path.join(clientBuildPath, 'index.html');
+
+// Decide per request, not once at boot. If the build is produced after the
+// process starts (or is redeployed), a startup check would otherwise leave every
+// non-API route answering 404 until the next restart.
+app.use(express.static(clientBuildPath));
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ success: false, message: 'API route not found.' });
+  }
+  if (!fs.existsSync(clientIndex)) {
+    return res
+      .status(503)
+      .type('html')
+      .send('<h1>Frontend not built</h1><p>Run <code>npm run build</code> in <code>client/</code>, then reload. The API is healthy.</p>');
+  }
+  res.sendFile(clientIndex);
+});
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
@@ -280,7 +282,20 @@ const startServer = async () => {
     }
     
     httpServer.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`Server running on port ${PORT}`);
+
+      // Expire unanswered seller offers every minute so the 30-minute window is
+      // actually honoured: each lapse cascades to the next seller, and once all
+      // five have failed the order escalates to the admin queue.
+      const sweepTimer = setInterval(async () => {
+        try {
+          const swept = await sweepExpiredOffers(app.get('io'));
+          if (swept.swept) console.log(`Routing sweep expired ${swept.swept} offer(s)`);
+        } catch (e) {
+          console.error('Routing sweep failed:', e.message);
+        }
+      }, 60 * 1000);
+      sweepTimer.unref();
     });
   } catch (err) {
     console.error('❌ Startup error:', err.message);

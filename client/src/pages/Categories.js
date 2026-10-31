@@ -7,7 +7,7 @@ import {FiArrowRight} from 'react-icons/fi';
 const ALL_CATEGORIES = [
   { 
     name: 'Sunglasses', 
-    image: 'https://via.placeholder.com/300x300/2874f0/fff?text=Sunglasses', 
+    image: '/assets/face-1.svg', 
     link: '/category/sunglasses', 
     color: '#2874f0',
     description: 'Protect your eyes in style with our premium sunglasses collection',
@@ -15,7 +15,7 @@ const ALL_CATEGORIES = [
   },
   { 
     name: 'Eyeglasses', 
-    image: 'https://via.placeholder.com/300x300/ff9f00/fff?text=Eyeglasses', 
+    image: '/assets/face-2.svg', 
     link: '/category/eyeglasses', 
     color: '#ff9f00',
     description: 'Find the perfect frames for your prescription needs',
@@ -23,7 +23,7 @@ const ALL_CATEGORIES = [
   },
   { 
     name: 'Contact Lenses', 
-    image: 'https://via.placeholder.com/300x300/388e3c/fff?text=Contact+Lenses', 
+    image: '/assets/face-3.svg', 
     link: '/category/contact-lenses', 
     color: '#388e3c',
     description: 'Comfortable and clear vision with our contact lens range',
@@ -31,7 +31,7 @@ const ALL_CATEGORIES = [
   },
   { 
     name: 'Sports Eyewear', 
-    image: 'https://via.placeholder.com/300x300/e43f5a/fff?text=Sports', 
+    image: '/assets/face-4.svg', 
     link: '/category/sports', 
     color: '#e43f5a',
     description: 'Performance eyewear designed for athletes and active lifestyles',
@@ -39,7 +39,7 @@ const ALL_CATEGORIES = [
   },
   { 
     name: 'Kids Eyewear', 
-    image: 'https://via.placeholder.com/300x300/6c63ff/fff?text=Kids', 
+    image: '/assets/face-5.svg', 
     link: '/category/kids', 
     color: '#6c63ff',
     description: 'Durable and fun eyewear designed specifically for children',
@@ -47,7 +47,7 @@ const ALL_CATEGORIES = [
   },
   { 
     name: 'Reading Glasses', 
-    image: 'https://via.placeholder.com/300x300/00897b/fff?text=Reading', 
+    image: '/assets/face-1.svg', 
     link: '/category/reading', 
     color: '#00897b',
     description: 'Clear close-up vision for reading and detailed work',
@@ -55,7 +55,7 @@ const ALL_CATEGORIES = [
   },
   { 
     name: 'Computer Glasses', 
-    image: 'https://via.placeholder.com/300x300/9c27b0/fff?text=Computer', 
+    image: '/assets/face-1.svg', 
     link: '/category/computer', 
     color: '#9c27b0',
     description: 'Blue light blocking glasses for digital eye strain relief',
@@ -63,7 +63,7 @@ const ALL_CATEGORIES = [
   },
   { 
     name: 'Safety Eyewear', 
-    image: 'https://via.placeholder.com/300x300/ff5722/fff?text=Safety', 
+    image: '/assets/face-1.svg', 
     link: '/category/safety', 
     color: '#ff5722',
     description: 'Protective eyewear for industrial and workplace safety',

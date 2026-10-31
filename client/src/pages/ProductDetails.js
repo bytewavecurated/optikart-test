@@ -209,7 +209,7 @@ const ProductDetails = () => {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const images = currentImages?.length > 0 ? currentImages : (product?.images?.length > 0 ? product.images : ['/placeholder-glasses.png']);
+  const images = currentImages?.length > 0 ? currentImages : (product?.images?.length > 0 ? product.images : ['/placeholder.svg']);
   const seller = product.seller;
   const sellerSince = seller?.createdAt ? new Date(seller.createdAt).getFullYear() : null;
   const maskedGST = seller?.gstNumber ? `****${seller.gstNumber.slice(-4)}` : null;

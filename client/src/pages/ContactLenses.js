@@ -161,7 +161,7 @@ const ContactLenses = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
                 {browseItems.map((product) => (
                   <Link key={product._id} to={`/product/${product._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <img src={product.images?.[0] || '/placeholder.png'} alt={product.title} style={{ width: '100%', height: '200px', objectFit: 'contain' }} />
+                    <img src={product.images?.[0] || '/placeholder.svg'} alt={product.title} style={{ width: '100%', height: '200px', objectFit: 'contain' }} />
                     <div style={{ padding: '16px' }}>
                       <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{product.brand}</p>
                       <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{product.title}</h3>
@@ -322,7 +322,7 @@ const ContactLenses = () => {
                   {filteredLenses.map((lens) => (
                     <Link key={lens._id} to={`/product/${lens._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
                       <img
-                        src={lens.images?.[0] || '/placeholder.png'}
+                        src={lens.images?.[0] || '/placeholder.svg'}
                         alt={lens.title}
                         style={{ width: '100%', height: '250px', objectFit: 'cover' }}
                       />
@@ -351,7 +351,7 @@ const ContactLenses = () => {
             {solutions.map((solution) => (
               <Link key={solution._id} to={`/product/${solution._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <img
-                  src={solution.images?.[0] || '/placeholder.png'}
+                  src={solution.images?.[0] || '/placeholder.svg'}
                   alt={solution.title}
                   style={{ width: '100%', height: '250px', objectFit: 'cover' }}
                 />
@@ -377,7 +377,7 @@ const ContactLenses = () => {
             {accessories.map((accessory) => (
               <Link key={accessory._id} to={`/product/${accessory._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
                 <img
-                  src={accessory.images?.[0] || '/placeholder.png'}
+                  src={accessory.images?.[0] || '/placeholder.svg'}
                   alt={accessory.title}
                   style={{ width: '100%', height: '250px', objectFit: 'cover' }}
                 />

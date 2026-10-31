@@ -13,9 +13,13 @@ export const connectSocket = (token) => {
 
   socket = io(SOCKET_URL, {
     auth: { token },
-    transports: ['websocket', 'polling'],
+    // HTTP polling first, then upgrade to a websocket. Leading with the bare
+    // websocket fails outright behind proxies and on some networks, which used
+    // to leave seller alerts dead with only a console error to show for it.
+    transports: ['polling', 'websocket'],
+    upgrade: true,
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: 8,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });

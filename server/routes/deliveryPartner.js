@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import DeliveryPartner from '../models/DeliveryPartner.js';
+import Order from '../models/Order.js';
 import { verifyToken, verifyAdmin, verifyDeliveryPartner } from '../middleware/auth.js';
 import { sendOTP } from '../services/email.js';
 import {
@@ -142,7 +143,8 @@ router.post('/login', async (req, res) => {
     partner.lockUntil = null;
 
     // Check if this is a test credential - bypass OTP for testing
-    const testPartnerEmails = ['delivery@optikart.com'];
+    // Must match the account created by seed.js, so the printed login works.
+    const testPartnerEmails = ['suresh.partner@optikart.com'];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
     const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
@@ -474,6 +476,89 @@ router.put('/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
       message: 'Server error',
       error: error.message
     });
+  }
+});
+
+/**
+ * GET /api/delivery-partner/working
+ * Partners with live assignments: what each is carrying, from which seller,
+ * to which customer, and what they will earn. Supports search and status filters
+ * so the admin can find a specific delivery immediately.
+ */
+router.get('/working', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { search, status, partnerId } = req.query;
+
+    const orderFilter = {
+      assignedDeliveryPartner: { $ne: null },
+      orderStatus: { $in: ['picked_up', 'in_transit', 'confirmed', 'packed'] }
+    };
+    if (partnerId) orderFilter.assignedDeliveryPartner = partnerId;
+
+    const orders = await Order.find(orderFilter)
+      .sort({ updatedAt: -1 })
+      .limit(200)
+      .populate('assignedDeliveryPartner', 'name phone email vehicleType vehicleNumber status isAvailable rating')
+      .populate('seller', 'storeName phone city')
+      .populate('user', 'name phone email')
+      .lean();
+
+    let rows = orders.map((o) => ({
+      orderId: o._id,
+      orderNumber: o.orderNumber || o.orderId,
+      orderStatus: o.orderStatus,
+      partner: o.assignedDeliveryPartner,
+      seller: o.seller ? {
+        _id: o.seller._id,
+        storeName: o.seller.storeName,
+        phone: o.seller.phone,
+        city: o.seller.city
+      } : null,
+      customer: o.user ? {
+        _id: o.user._id,
+        name: o.user.name,
+        phone: o.user.phone,
+        email: o.user.email
+      } : null,
+      destination: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+      pickupLocation: o.pickupLocation || null,
+      deliveryLocation: o.deliveryLocation || null,
+      distanceKm: o.deliveryDistanceKm || 0,
+      earnings: o.deliveryFee || 0,
+      assignmentMode: o.deliveryAssignmentMode || 'none',
+      updatedAt: o.updatedAt
+    }));
+
+    if (status) rows = rows.filter((r) => r.orderStatus === status);
+    if (search) {
+      const q = String(search).toLowerCase();
+      rows = rows.filter((r) =>
+        [r.orderNumber, r.partner?.name, r.partner?.phone, r.seller?.storeName,
+         r.customer?.name, r.customer?.phone, r.destination]
+          .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
+    }
+
+    const byPartner = {};
+    rows.forEach((r) => {
+      const key = r.partner?._id || 'unassigned';
+      if (!byPartner[key]) {
+        byPartner[key] = { partner: r.partner, activeDeliveries: 0, expectedEarnings: 0 };
+      }
+      byPartner[key].activeDeliveries += 1;
+      byPartner[key].expectedEarnings += r.earnings || 0;
+    });
+
+    res.json({
+      success: true,
+      deliveries: rows,
+      partners: Object.values(byPartner).map((p) => ({
+        ...p,
+        expectedEarnings: Math.round(p.expectedEarnings * 100) / 100
+      }))
+    });
+  } catch (error) {
+    console.error('Working partners error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 

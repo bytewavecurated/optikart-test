@@ -41,3 +41,6 @@ server/uploads/
 
 # Local test/build artifacts
 client/build/
+
+# Local in-memory Mongo helper used during development
+server/.mongo.mjs

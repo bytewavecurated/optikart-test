@@ -277,6 +277,16 @@ export const admin = {
   createBanner: (formData) => api.post('/banners', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   updateBanner: (id, formData) => api.put(`/banners/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteBanner: (id) => api.delete(`/banners/${id}`),
+  // Order routing queue
+  getRoutingQueue: (params) => api.get('/order-routing/queue', { params }),
+  assignOrderToSeller: (orderId, sellerId, adminNotes) => api.post(`/order-routing/${orderId}/assign`, { sellerId, adminNotes }),
+  sweepRouting: () => api.post('/order-routing/sweep'),
+  getRoutingForOrder: (orderId) => api.get(`/order-routing/${orderId}`),
+  // Seller stock listings
+  getMyStock: (params) => api.get('/seller-stock', { params }),
+  listStock: (data) => api.post('/seller-stock', data),
+  updateStock: (id, data) => api.put(`/seller-stock/${id}`, data),
+
   // Return Analytics
   getPendingProducts: (params) => api.get("/product-verification/pending", { params }),
   verifyProduct: (productId, data) => api.post(`/product-verification/${productId}/verify`, data),

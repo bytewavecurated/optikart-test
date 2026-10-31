@@ -646,6 +646,90 @@ router.post('/sellers/:sellerId/ban', verifyManufacturer, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Manufacturer's own account: profile and brand list.
+// Without these the brand chips and company details could never be corrected
+// after creation, which is what "already added brand is not editable" referred to.
+// ---------------------------------------------------------------------------
+
+router.get('/profile', verifyManufacturer, async (req, res) => {
+  try {
+    const me = await Manufacturer.findById(req.manufacturer._id).select('-password -loginOtp -loginOtpExpiry').lean();
+    res.json({ success: true, data: me });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.put('/profile', verifyManufacturer, async (req, res) => {
+  try {
+    const allowed = ['name', 'phone', 'companyName', 'gstNumber', 'panNumber', 'brands', 'address'];
+    const updates = {};
+    allowed.forEach((k) => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+
+    if (updates.brands !== undefined) {
+      const list = Array.isArray(updates.brands) ? updates.brands : String(updates.brands).split(',');
+      const cleaned = [...new Set(list.map((b) => String(b).trim()).filter(Boolean))];
+      if (cleaned.length === 0) {
+        return res.status(400).json({ success: false, message: 'At least one brand is required.' });
+      }
+      updates.brands = cleaned;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ success: false, message: 'Nothing to update.' });
+    }
+
+    const me = await Manufacturer.findByIdAndUpdate(req.manufacturer._id, updates, { new: true, runValidators: true })
+      .select('-password -loginOtp -loginOtpExpiry');
+    res.json({ success: true, message: 'Profile updated.', data: me });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Lift a ban on one of this manufacturer's sellers.
+router.post('/sellers/:sellerId/unban', verifyManufacturer, async (req, res) => {
+  try {
+    const manufacturerId = req.manufacturer._id;
+    const seller = await ManufacturerSeller.findOne({ _id: req.params.sellerId, manufacturer: manufacturerId });
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found under your manufacturer account.' });
+    }
+
+    seller.isBanned = false;
+    seller.banReason = '';
+    seller.bannedAt = null;
+    seller.isActive = true;
+    await seller.save();
+
+    res.json({ success: true, message: 'Seller reinstated.', data: seller });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Edit a seller's commercial details (store info, contact, address).
+router.put('/sellers/:sellerId', verifyManufacturer, async (req, res) => {
+  try {
+    const seller = await ManufacturerSeller.findOne({ _id: req.params.sellerId, manufacturer: req.manufacturer._id });
+    if (!seller) {
+      return res.status(404).json({ success: false, message: 'Seller not found under your manufacturer account.' });
+    }
+
+    const allowed = ['name', 'phone', 'storeName', 'storeDescription', 'storeAddress', 'gstNumber', 'panNumber'];
+    allowed.forEach((k) => { if (req.body[k] !== undefined) seller[k] = req.body[k]; });
+    if (req.body.storeAddress) {
+      seller.storeAddress = { ...seller.storeAddress, ...req.body.storeAddress };
+    }
+
+    await seller.save();
+    res.json({ success: true, message: 'Seller updated.', data: seller });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.post('/products/validate-bulk', verifyManufacturer, async (req, res) => {
   try {
     const { products } = req.body;

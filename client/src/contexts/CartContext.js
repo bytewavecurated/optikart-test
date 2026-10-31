@@ -6,6 +6,11 @@ import toast from 'react-hot-toast';
 const CartContext = createContext(null);
 
 const CART_KEY = 'optikart_cart';
+const DESELECT_KEY = 'optikart_cart_deselected';
+
+// Stable identity for a cart line, so selection survives reordering.
+export const lineKey = (item) =>
+  [item?.product?._id || item?.product || '', item?.variant?.color || '', item?.variant?.size || '', item?.variant?.lensType || ''].join('|');
 const COUPON_KEY = 'optikart_coupon';
 // Logged-in shoppers may hold up to 25 line items in the cart.
 const MAX_ITEMS = 25;
@@ -24,6 +29,16 @@ export const CartProvider = ({ children }) => {
     }
   });
 
+  // Which lines the shopper intends to buy. Defaults to everything selected so
+  // the common case needs no interaction.
+  const [deselected, setDeselectedRaw] = useState(() => {
+    try {
+      const raw = localStorage.getItem('optikart_cart_deselected');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [coupon, setCoupon] = useState(() => {
     try {
       const stored = localStorage.getItem(COUPON_KEY);
@@ -93,8 +108,36 @@ export const CartProvider = ({ children }) => {
   }, [isAuthenticated]);
 
   const removeFromCart = useCallback((index) => {
-    setItems((prevItems) => prevItems.filter((_, i) => i !== index));
+    setItems((prevItems) => {
+      const target = prevItems[index];
+      if (target) {
+        setDeselectedRaw((prev) => {
+          const next = new Set(prev);
+          next.delete(lineKey(target));
+          return next;
+        });
+      }
+      return prevItems.filter((_, i) => i !== index);
+    });
   }, []);
+
+  const isSelected = useCallback((item) => !deselected.has(lineKey(item)), [deselected]);
+
+  const toggleSelected = useCallback((item) => {
+    const key = lineKey(item);
+    setDeselectedRaw((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  const selectAll = useCallback(() => setDeselectedRaw(new Set()), []);
+
+  const clearSelection = useCallback(() => {
+    setDeselectedRaw(new Set(items.map(lineKey)));
+  }, [items]);
 
   const updateQuantity = useCallback((index, quantity) => {
     if (quantity < 1) return;
@@ -137,11 +180,25 @@ export const CartProvider = ({ children }) => {
     return items.reduce((sum, item) => sum + item.quantity, 0);
   }, [items]);
 
+  // Price of one line, honouring the colour/size actually chosen.
+  const linePrice = (item) => {
+    const p = item.product || {};
+    const variant = (p.variants || []).find((v) => {
+      const sel = item.variant || {};
+      const wanted = Object.entries(sel).filter(([, val]) => val !== undefined && val !== null && String(val) !== '');
+      if (wanted.length === 0) return false;
+      return wanted.every(([key, val]) =>
+        String(v[key] ?? '').trim().toLowerCase() === String(val).trim().toLowerCase());
+    });
+    const base = variant
+      ? (variant.discountedPrice || variant.price)
+      : (p.discountedPrice || p.price || 0);
+    const lens = item.lensConfig?.price || 0;
+    return base + lens;
+  };
+
   const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => {
-      const price = item.product.price || 0;
-      return sum + price * item.quantity;
-    }, 0);
+    return items.reduce((sum, item) => sum + linePrice(item) * item.quantity, 0);
   }, [items]);
 
   const deliveryCharges = useMemo(() => {
@@ -166,6 +223,42 @@ export const CartProvider = ({ children }) => {
     return 0;
   }, [coupon, subtotal]);
 
+  const selectedItems = useMemo(
+    () => items.filter((item) => !deselected.has(lineKey(item))),
+    [items, deselected]
+  );
+
+  const selectedSubtotal = useMemo(
+    () => selectedItems.reduce((sum, item) => sum + linePrice(item) * item.quantity, 0),
+    [selectedItems]
+  );
+
+  const selectedCount = useMemo(
+    () => selectedItems.reduce((sum, item) => sum + item.quantity, 0),
+    [selectedItems]
+  );
+
+  // Delivery is charged per selected line only.
+  const selectedDelivery = useMemo(
+    () => (selectedItems.length === 0 ? 0 : selectedItems.length * DELIVERY_CHARGE_PER_ITEM),
+    [selectedItems]
+  );
+
+  const selectedDiscount = useMemo(() => {
+    if (!coupon || selectedSubtotal === 0) return 0;
+    if (coupon.type === 'percentage') {
+      const calculated = (selectedSubtotal * coupon.value) / 100;
+      return coupon.maxDiscount ? Math.min(calculated, coupon.maxDiscount) : calculated;
+    }
+    if (coupon.type === 'flat') return Math.min(coupon.value, selectedSubtotal);
+    return 0;
+  }, [coupon, selectedSubtotal]);
+
+  const selectedTotal = useMemo(
+    () => Math.max(0, Math.round((selectedSubtotal + selectedDelivery - selectedDiscount) * 100) / 100),
+    [selectedSubtotal, selectedDelivery, selectedDiscount]
+  );
+
   const total = useMemo(() => {
     const calculated = subtotal + deliveryCharges - discount;
     return Math.max(calculated, 0);
@@ -182,6 +275,17 @@ export const CartProvider = ({ children }) => {
     addToCart,
     removeFromCart,
     updateQuantity,
+    linePrice,
+    isSelected,
+    toggleSelected,
+    selectAll,
+    clearSelection,
+    selectedItems,
+    selectedSubtotal,
+    selectedCount,
+    selectedTotal,
+    selectedDelivery,
+    MAX_ITEMS,
     clearCart,
     applyCoupon,
     removeCoupon,
