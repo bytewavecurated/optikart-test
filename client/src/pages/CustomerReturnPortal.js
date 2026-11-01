@@ -14,6 +14,9 @@ const CustomerReturnPortal = () => {
   const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState([]);
   const [reason, setReason] = useState('');
+  // 'return' refunds, 'exchange' replaces - only offered where every selected
+  // line is exchangeable, since a seller can disable it per product listing.
+  const [requestType, setRequestType] = useState('return');
   const [description, setDescription] = useState('');
   const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -89,7 +92,8 @@ const CustomerReturnPortal = () => {
         orderId,
         items: selectedItems,
         reason,
-        description
+        description,
+        type: requestType
       };
 
       const res = await returnsApi.create(returnData);
@@ -117,6 +121,12 @@ const CustomerReturnPortal = () => {
       setSubmitting(false);
     }
   };
+
+  // An exchange is only offered when every selected line allows one; a seller can
+  // turn exchange off per product listing.
+  const exchangeBlocked = (eligibility?.lineWindows || [])
+    .filter((l) => (selectedItems || []).some((sel) => String(sel.productId || sel.product) === String(l.product)))
+    .some((l) => l.exchangeable === false);
 
   if (loading) {
     return (
@@ -147,6 +157,19 @@ const CustomerReturnPortal = () => {
             {eligibility?.daysSinceDelivery && (
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
                 Days since delivery: {eligibility.daysSinceDelivery} / {eligibility.returnWindowDays}
+                {Array.isArray(eligibility.lineWindows) && eligibility.lineWindows.length > 0 && (
+                  <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
+                    {eligibility.lineWindows.filter((l) => l.returnable).map((l, i) => (
+                      <div key={l.product || i} style={{ fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          {l.returnWindowDays === 0 ? 'Final sale' : `${Math.max(0, l.returnWindowDays - (eligibility.daysSinceDelivery || 0))} day(s) left`}
+                          {l.exchangeable ? '' : ' - no exchange'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </p>
             )}
             <button onClick={() => navigate('/orders')} className="btn btn-primary">
@@ -232,6 +255,40 @@ const CustomerReturnPortal = () => {
             onChange={(e) => setReason(e.target.value)}
             style={{ marginBottom: '16px' }}
           >
+          <div style={{ marginTop: 14 }}>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: .5, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              What would you like to do?
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {[
+                { value: 'return', title: 'Return for refund', desc: 'Send the item back and be refunded to the original payment method.' },
+                { value: 'exchange', title: 'Exchange', desc: 'Swap for another size or colour of the same product.' }
+              ].map((opt) => {
+                const disabled = opt.value === 'exchange' && exchangeBlocked;
+                return (
+                  <label
+                    key={opt.value}
+                    title={disabled ? 'One or more selected items cannot be exchanged' : ''}
+                    style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, border: `1px solid ${requestType === opt.value ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: requestType === opt.value ? 'var(--brand-tint)' : 'var(--bg-white)', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1 }}
+                  >
+                    <input
+                      type="radio"
+                      name="requestType"
+                      value={opt.value}
+                      checked={requestType === opt.value}
+                      disabled={disabled}
+                      onChange={() => setRequestType(opt.value)}
+                      style={{ marginTop: 3, accentColor: 'var(--brand)' }}
+                    />
+                    <span>
+                      <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{opt.title}</span>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{opt.desc}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
             <option value="">Select a reason</option>
             <option value="Defective product">Defective product</option>
             <option value="Wrong item received">Wrong item received</option>

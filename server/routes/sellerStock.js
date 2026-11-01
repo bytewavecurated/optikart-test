@@ -1,7 +1,11 @@
 import express from 'express';
 import SellerStock from '../models/SellerStock.js';
 import Product from '../models/Product.js';
-import { verifySeller } from '../middleware/auth.js';
+import { verifyAnySeller, verifyToken, verifyAdmin } from '../middleware/auth.js';
+import {
+  proposePriceChange, decidePriceChange, listPriceChangeStates,
+  overridePriceChange, WORKING_DAYS
+} from '../services/priceChangeAcceptance.js';
 
 const router = express.Router();
 
@@ -10,7 +14,7 @@ const router = express.Router();
  * discount they set, and the colour/size quantities they hold. Order routing
  * chooses sellers from these rows, so an inaccurate listing means fewer offers.
  */
-router.get('/', verifySeller, async (req, res) => {
+router.get('/', verifyAnySeller, async (req, res) => {
   try {
     const { brand, category, listed, search } = req.query;
     const filter = { seller: req.seller._id };
@@ -50,9 +54,9 @@ router.get('/', verifySeller, async (req, res) => {
 });
 
 /** Choose a product from the verified catalogue and list it at the seller's price. */
-router.post('/', verifySeller, async (req, res) => {
+router.post('/', verifyAnySeller, async (req, res) => {
   try {
-    const { productId, sellingPrice, variants = [], isReturnable, isExchangeable, isListed } = req.body;
+    const { productId, sellingPrice, variants = [], isReturnable, isExchangeable, isListed, sellsWithPower, powerLensTypes } = req.body;
 
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
@@ -90,7 +94,9 @@ router.post('/', verifySeller, async (req, res) => {
         variants: cleanVariants,
         isReturnable: isReturnable !== false,
         isExchangeable: isExchangeable !== false,
-        isListed: isListed !== false
+        isListed: isListed !== false,
+        sellsWithPower: !!sellsWithPower && !!product?.poweredOptionsAvailable,
+        powerLensTypes: Array.isArray(powerLensTypes) ? powerLensTypes : []
       },
       { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
     ).lean();
@@ -102,13 +108,113 @@ router.post('/', verifySeller, async (req, res) => {
   }
 });
 
-/** Products this seller is allowed to list, grouped by brand. */
-router.get('/catalogue', verifySeller, async (req, res) => {
+
+/**
+ * The seller's own view of pending price proposals: what was offered, what it
+ * replaces, and how many working days remain before it lapses.
+ */
+router.get('/price-changes', verifyAnySeller, async (req, res) => {
   try {
-    const products = await Product.find({
+    const rows = await SellerStock.find({ seller: req.seller._id, 'pendingChange.status': 'awaiting_acceptance' })
+      .sort({ 'pendingChange.requestedAt': -1 })
+      .populate('product', 'title brand images')
+      .lean();
+    res.json({ success: true, data: rows.map((r) => ({
+      stockId: String(r._id),
+      product: r.product,
+      currentPrice: r.sellingPrice,
+      proposedPrice: r.pendingChange.sellingPrice,
+      requestedBy: r.pendingChange.requestedBy,
+      requestedAt: r.pendingChange.requestedAt,
+      expiresAt: r.pendingChange.expiresAt
+    })), workingDaysAllowed: WORKING_DAYS });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/** A seller accepting or declining one of their own proposals from the dashboard. */
+router.post('/price-changes/:stockId/decide', verifyAnySeller, async (req, res) => {
+  try {
+    const stock = await SellerStock.findOne({ _id: req.params.stockId, seller: req.seller._id });
+    if (!stock) return res.status(404).json({ success: false, message: 'Listing not found.' });
+    const result = await decidePriceChange({ stockId: String(stock._id), token: req.body.token, decision: req.body.decision });
+    if (!result.success) return res.status(400).json({ success: false, message: result.error });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/** Public confirmation endpoint used by the link in the email; the token is the authority. */
+router.post('/public/price-changes/:stockId/decide', async (req, res) => {
+  try {
+    const { token, decision } = req.body;
+    if (!token) return res.status(400).json({ success: false, message: 'A confirmation token is required.' });
+    if (!['accept', 'decline'].includes(decision)) return res.status(400).json({ success: false, message: 'Unknown decision.' });
+    const result = await decidePriceChange({ stockId: req.params.stockId, token, decision });
+    if (!result.success) return res.status(result.expired ? 410 : 400).json({ success: false, message: result.error, expired: !!result.expired });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/** Raise a proposal (admin or an authorised exec/staff), or list every state. */
+router.get('/admin/price-changes', verifyToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'admin' && req.user?.role !== 'staff') {
+      return res.status(403).json({ success: false, message: 'Not permitted.' });
+    }
+    const rows = await listPriceChangeStates({ sellerId: req.query.seller, status: req.query.status });
+    res.json({ success: true, data: rows, workingDaysAllowed: WORKING_DAYS });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/admin/price-changes/:stockId/propose', verifyToken, async (req, res) => {
+  try {
+    if (req.user?.role !== 'admin') return res.status(403).json({ success: false, message: 'Only the platform team can propose a price change.' });
+    const stock = await SellerStock.findById(req.params.stockId);
+    if (!stock) return res.status(404).json({ success: false, message: 'Listing not found.' });
+    const result = await proposePriceChange({
+      sellerStockId: stock._id,
+      sellerId: stock.seller,
+      product: { title: stock.modelNumber || stock.brand, brand: stock.brand },
+      newPrice: req.body.newPrice,
+      actorLabel: req.body.reason || 'OptiKart pricing'
+    });
+    if (!result.success) return res.status(400).json({ success: false, message: result.error });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/admin/price-changes/:stockId/override', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const result = await overridePriceChange({ stockId: req.params.stockId, adminId: req.user?._id, decision: req.body.decision || 'accept' });
+    if (!result.success) return res.status(400).json({ success: false, message: result.error });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/** Products this seller is allowed to list, grouped by brand. */
+router.get('/catalogue', verifyAnySeller, async (req, res) => {
+  try {
+    const filter = {
       isActive: true,
       verificationStatus: { $in: ['verified', null] }
-    })
+    };
+    // A retailer appointed by a manufacturer may only list that manufacturer's
+    // brands, which is what keeps the "already added brand" list meaningful.
+    const brands = req.seller?.allowedBrands || req.seller?.brands;
+    if (Array.isArray(brands) && brands.length > 0) filter.brand = { $in: brands };
+
+    const products = await Product.find(filter)
       .select('title brand category modelNumber price discountedPrice colors sizes images')
       .sort({ brand: 1, title: 1 })
       .lean();
@@ -130,12 +236,12 @@ router.get('/catalogue', verifySeller, async (req, res) => {
 });
 
 /** Update price, listing state or per-variant stock. */
-router.put('/:id', verifySeller, async (req, res) => {
+router.put('/:id', verifyAnySeller, async (req, res) => {
   try {
     const row = await SellerStock.findOne({ _id: req.params.id, seller: req.seller._id });
     if (!row) return res.status(404).json({ success: false, message: 'Listing not found.' });
 
-    const { sellingPrice, variants, isListed, isReturnable, isExchangeable } = req.body;
+    const { sellingPrice, variants, isListed, isReturnable, isExchangeable, sellsWithPower, powerLensTypes } = req.body;
 
     if (variants !== undefined) {
       row.variants = (Array.isArray(variants) ? variants : []).map((v) => ({
@@ -148,6 +254,19 @@ router.put('/:id', verifySeller, async (req, res) => {
     if (isListed !== undefined) row.isListed = !!isListed;
     if (isReturnable !== undefined) row.isReturnable = !!isReturnable;
     if (isExchangeable !== undefined) row.isExchangeable = !!isExchangeable;
+    if (sellsWithPower !== undefined) {
+      // A seller can only opt in if the maker declared the frame glazable.
+      if (sellsWithPower) {
+        // `row.product` may already be a populated object from an earlier read.
+        const pid = row.product?._id || row.product;
+        const p = await Product.findById(pid).select('poweredOptionsAvailable');
+        if (!p?.poweredOptionsAvailable) {
+          return res.status(400).json({ success: false, message: 'This product cannot be made with prescription lenses, so it cannot be sold with power.' });
+        }
+      }
+      row.sellsWithPower = !!sellsWithPower;
+    }
+    if (Array.isArray(powerLensTypes)) row.powerLensTypes = powerLensTypes;
     if (sellingPrice !== undefined) {
       const price = Number(sellingPrice);
       if (!Number.isFinite(price) || price <= 0) {
@@ -164,7 +283,7 @@ router.put('/:id', verifySeller, async (req, res) => {
   }
 });
 
-router.delete('/:id', verifySeller, async (req, res) => {
+router.delete('/:id', verifyAnySeller, async (req, res) => {
   try {
     const row = await SellerStock.findOneAndDelete({ _id: req.params.id, seller: req.seller._id });
     if (!row) return res.status(404).json({ success: false, message: 'Listing not found.' });

@@ -54,7 +54,7 @@ router.get('/eligibility/:orderId', verifyToken, async (req, res) => {
  */
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { orderId, items, reason, description } = req.body;
+    const { orderId, items, reason, description, type, images } = req.body;
     const userId = req.user.id;
 
     if (!orderId || !items || items.length === 0) {
@@ -64,7 +64,10 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    const result = await createCustomerReturnRequest(orderId, userId, items, reason, description);
+    // 'return' or 'exchange'; an exchange must additionally satisfy the
+    // product's exchangeable flag.
+    const requestType = ['return', 'exchange'].includes(type) ? type : 'return';
+    const result = await createCustomerReturnRequest(orderId, userId, items, reason, description, images, requestType);
 
     if (result.success) {
       res.status(201).json(result);

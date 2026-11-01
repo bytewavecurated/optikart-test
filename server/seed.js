@@ -294,7 +294,63 @@ const seedDatabase = async () => {
     });
     console.log("Manufacturer seller created:", manufacturerSeller.email);
 
-    const products = await Product.create([
+    // Products are declared below as plain data. The category rules now require
+    // frame material, kids sub-gender/age group and lens specifics, so the rows
+    // are enriched from the information already present before they are inserted.
+    const enrichProduct = (p) => {
+      const out = { ...p };
+      const firstMaterial = (p.materials && p.materials[0]) || '';
+      const MATERIAL = {
+        metal: 'metal', acetate: 'acetate', polycarbonate: 'polycarbonate',
+        'stainless steel': 'stainless-steel', tr90: 'tr90', titanium: 'titanium',
+        plastic: 'plastic', wood: 'wood'
+      };
+      // frameMaterial is only meaningful (and only required) for eyewear.
+      if (!out.frameMaterial && ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'].includes(out.category)) {
+        const key = String(firstMaterial).toLowerCase().trim();
+        out.frameMaterial = MATERIAL[key] || 'acetate';
+      }
+      if (out.category === 'kids' && !out.subGender) {
+        out.subGender = / boy|kid boy/i.test(p.title + ' ' + (p.description || '')) ? 'boys'
+          : /girl/i.test(p.title + ' ' + (p.description || '')) ? 'girls' : 'boys';
+      }
+      if (out.category === 'kids' && !out.ageGroup) out.ageGroup = '6-9';
+      if (out.gender === 'kids' && !out.subGender) out.subGender = 'boys';
+      if (out.gender === 'kids' && !out.ageGroup) out.ageGroup = '6-9';
+      if (out.category === 'contactlenses') {
+        out.contactLens = {
+          powerType: p.powerType || (Array.isArray(p.tags) && p.tags.includes('toric') ? 'toric'
+            : Array.isArray(p.tags) && p.tags.includes('multifocal') ? 'multifocal'
+            : /colour|color/i.test(p.title + (p.description || '')) ? 'none' : 'distance'),
+          allowsZeroPower: /colour|color/i.test(p.title + (p.description||'')) || p.powerType === 'none',
+          withPowerAvailable: !/combo|case|accessor/i.test(p.title),
+          lensesPerBox: p.lensesPerBox || (/30 lens/i.test(p.title) ? 30 : /24h|daily/i.test(p.title) ? 30 : 6),
+          replacementPeriod: p.replacementPeriod || (/daily|24h/i.test(p.title) ? 'daily' : /weekly/i.test(p.title) ? 'weekly' : 'monthly'),
+          diameter: p.diameter || 14.2,
+          baseCurve: p.baseCurve || 8.6,
+          waterContent: p.waterContent || 58,
+          isCosmetic: /colour|color|grey|gray|brown|green|blue/i.test(p.title + ' ' + (p.tags||[]).join(' ')),
+          colorTone: p.colorTone || '',
+          comboShades: Array.isArray(p.comboShades) ? p.comboShades : []
+        };
+      }
+      // Sunglasses and eyeglasses are prescription-capable so the powered
+      // browse node and the lens configurator have something to list.
+      if (out.category === 'eyeglasses') {
+        out.poweredOptionsAvailable = true;
+        out.prescriptionLensTypes = p.prescriptionLensTypes || ['single-vision', 'bifocal', 'progressive'];
+      }
+      if (out.category === 'sunglasses' && p.powered) {
+        out.poweredOptionsAvailable = true;
+        out.prescriptionLensTypes = p.prescriptionLensTypes || ['single-vision', 'bifocal', 'progressive'];
+      }
+      if (out.category === 'readingglasses') {
+        out.poweredOptionsAvailable = true;
+        out.prescriptionLensTypes = p.prescriptionLensTypes || ['reading'];
+      }
+      return out;
+    };
+    const productDocs = [
       {
         title: 'Ray-Ban Aviator Classic Sunglasses',
         description: 'Iconic aviator sunglasses with gold metal frame and green crystal lenses. UV400 protection. Lightweight and comfortable for all-day wear.',
@@ -906,7 +962,8 @@ const seedDatabase = async () => {
         gender: 'unisex',
         frameSize: 'small'
       }
-    ]);
+    ].map(enrichProduct);
+    const products = await Product.create(productDocs);
     console.log(`${products.length} products created`);
 
     // Seed data expresses the frame material as a `materials` list; the schema
@@ -934,10 +991,189 @@ const seedDatabase = async () => {
     }
     console.log('Backfilled frameMaterial from materials list');
 
+
     // Approve the seeded catalogue so it is visible on the storefront. Use the
     // admin Product Verification screen to un-verify items and exercise that flow.
     await Product.updateMany({}, { verificationStatus: 'verified', verifiedAt: new Date() });
     console.log('Marked catalogue as verified');
+
+    // Additional catalogue so every browse node has something to show:
+    // the three contact-lens power types, cosmetic colour lenses with and
+    // without power, a weekday colour combo, care solutions at several bottle
+    // sizes, accessories, and powered sunglasses.
+    const lensBrand = sellers.find((sl) => /lens|vision|care/i.test(sl.storeName)) || sellers[0];
+    const frameBrand = sellers[0];
+    const extraProducts = [
+      {
+        title: 'Aqualens Daily Clear Disposable (30 lenses)',
+        description: 'Daily disposable silicone-hydrogel single-vision lens. 30 lenses per box, one-day wear, high oxygen transmissibility.',
+        price: 2199, discountedPrice: 1899, originalPrice: 2199,
+        category: 'contactlenses', brand: 'Aqualens', powerType: 'distance',
+        images: ['/uploads/products/aqualens-daily-30.jpg'], stock: 60, gender: 'unisex',
+        tags: ['contact-lens', 'daily', 'clear'],
+        contactLens: { powerType: 'distance', allowsZeroPower: false, withPowerAvailable: true, SphereLeftMin: -10, SphereLeftMax: 2, lensesPerBox: 30, replacementPeriod: 'daily', waterContent: 55, diameter: 14.2, baseCurve: 8.5, isCosmetic: false }
+      },
+      {
+        title: 'SofLens 59 Toric (6 lenses per box)',
+        description: 'Monthly toric lens for astigmatism correction. Cylinder and axis values are required for both eyes.',
+        price: 1499, discountedPrice: 1299, originalPrice: 1499,
+        category: 'contactlenses', brand: 'Bausch + Lomb', powerType: 'toric',
+        images: ['/uploads/products/soflens-toric.jpg'], stock: 48, gender: 'unisex',
+        tags: ['contact-lens', 'toric', 'astigmatism'],
+        contactLens: { powerType: 'toric', allowsZeroPower: false, withPowerAvailable: true, SphereLeftMin: -9, SphereLeftMax: 0, cylinderMin: -2.75, cylinderMax: -0.75, axisMin: 10, axisMax: 180, lensesPerBox: 6, replacementPeriod: 'monthly', waterContent: 59, diameter: 14.5, baseCurve: 8.6, isCosmetic: false }
+      },
+      {
+        title: 'Aqualens 24h Multi-focal (30 lenses per box)',
+        description: 'Monthly multi-focal lens for clear near and distance vision. ADD power is required for each eye.',
+        price: 2899, discountedPrice: 2499, originalPrice: 2899,
+        category: 'contactlenses', brand: 'Aqualens', powerType: 'multifocal',
+        images: ['/uploads/products/aqualens-multifocal.jpg'], stock: 40, gender: 'unisex',
+        tags: ['contact-lens', 'multifocal', 'presbyopia'],
+        contactLens: { powerType: 'multifocal', allowsZeroPower: false, withPowerAvailable: true, SphereLeftMin: -6, SphereLeftMax: 4, additionMin: 0.75, additionMax: 2.5, lensesPerBox: 30, replacementPeriod: 'monthly', waterContent: 55, diameter: 14.2, baseCurve: 8.6, isCosmetic: false }
+      },
+      {
+        title: 'AquaColor Brown Cosmetic (Zero Power)',
+        description: 'Coloured cosmetic lens with a natural brown ring. No prescription needed for this option.',
+        price: 999, discountedPrice: 799, originalPrice: 999,
+        category: 'contactlenses', brand: 'AquaColor', powerType: 'none',
+        images: ['/uploads/products/aquacolor-brown.jpg'], stock: 80, gender: 'unisex',
+        tags: ['contact-lens', 'colour', 'cosmetic'],
+        contactLens: { powerType: 'none', allowsZeroPower: true, withPowerAvailable: false, lensesPerBox: 2, replacementPeriod: 'monthly', waterContent: 42, diameter: 14.2, baseCurve: 8.6, isCosmetic: true, colorTone: 'Brown' }
+      },
+      {
+        title: 'AquaColor Dusky Brown Coloured (With Power)',
+        description: 'Coloured lens available glazed to your prescription. Daily disposable candy pack.',
+        price: 1299, discountedPrice: 1099, originalPrice: 1299,
+        category: 'contactlenses', brand: 'AquaColor', powerType: 'distance',
+        images: ['/uploads/products/aquacolor-dusky.jpg'], stock: 54, gender: 'unisex',
+        tags: ['contact-lens', 'colour', 'powered'],
+        contactLens: { powerType: 'distance', allowsZeroPower: true, withPowerAvailable: true, SphereLeftMin: -8, SphereLeftMax: 0, lensesPerBox: 2, replacementPeriod: 'daily', waterContent: 45, diameter: 14.2, baseCurve: 8.7, isCosmetic: true, colorTone: 'Dusky Brown' }
+      },
+      {
+        title: 'AquaColor Candy Pack Combo - Spicy Grey, Stormy Gray, Misty Gray',
+        description: 'Three coloured lenses, one shade for each working day. Cosmetic only, no power selection.',
+        price: 1599, discountedPrice: 1299, originalPrice: 1599,
+        category: 'contactlenses', brand: 'AquaColor', powerType: 'none',
+        images: ['/uploads/products/aquacolor-combo.jpg'], stock: 40, gender: 'unisex',
+        tags: ['contact-lens', 'combo', 'colour'],
+        contactLens: {
+          powerType: 'none', allowsZeroPower: true, withPowerAvailable: false, lensesPerBox: 3,
+          replacementPeriod: 'daily', waterContent: 45, diameter: 14.2, baseCurve: 8.7,
+          isCosmetic: true, colorTone: 'Combo',
+          comboShades: [
+            { name: 'Spicy Grey', day: 'Monday' },
+            { name: 'Stormy Gray', day: 'Wednesday' },
+            { name: 'Misty Gray', day: 'Friday' }
+          ]
+        }
+      },
+      {
+        title: 'Aqualens Comfort Solution 120 ml',
+        description: 'Multipurpose disinfecting solution for soft and silicone-hydrogel lenses. Rinses, cleans, disinfects and stores.',
+        price: 349, discountedPrice: 299, originalPrice: 349,
+        category: 'solution', brand: 'Aqualens',
+        images: ['/uploads/products/solution-120.jpg'], stock: 200, gender: 'unisex',
+        tags: ['solution'],
+        solution: { volumeMl: 120, packPricing: [{ packSize: 1, price: 299 }, { packSize: 2, price: 549 }, { packSize: 3, price: 779 }], suitableFor: ['soft', 'silicone-hydrogel', 'coloured'], disinfects: true, volumePerBottle: '120 ml' }
+      },
+      {
+        title: 'Aqualens Comfort Solution 355 ml',
+        description: 'Large-format multipurpose solution with a twin finishing holder.',
+        price: 699, discountedPrice: 599, originalPrice: 699,
+        category: 'solution', brand: 'Aqualens',
+        images: ['/uploads/products/solution-355.jpg'], stock: 120, gender: 'unisex',
+        tags: ['solution'],
+        solution: { volumeMl: 355, packPricing: [{ packSize: 1, price: 599 }, { packSize: 2, price: 1099 }], suitableFor: ['soft', 'silicone-hydrogel'], disinfects: true, volumePerBottle: '355 ml' }
+      },
+      {
+        title: 'Aqualens Blue K1902 Designer Contact Lens Case',
+        description: 'Leatherette twin-compartment travel case with a magnetic lid and a built-in mirror.',
+        price: 499, discountedPrice: 399, originalPrice: 499,
+        category: 'accessories', brand: 'Aqualens',
+        images: ['/uploads/products/case-blue.jpg'], stock: 150, gender: 'unisex',
+        tags: ['accessories', 'case'],
+        accessory: { accessoryType: 'case', materialName: 'Faux leather', compartmentCount: 2, colours: ['Blue', 'Blush'] }
+      },
+      {
+        title: 'Vincent Chase VC Powered Aviator Sunglasses',
+        description: 'Metal aviator sunglasses the laboratory can glaze with single-vision, bifocal or progressive lenses — pick a tint and add your power at checkout.',
+        price: 3999, discountedPrice: 2999, originalPrice: 3999,
+        category: 'sunglasses', brand: 'Vincent Chase',
+        images: ['/uploads/products/vc-powered-aviator.jpg'], stock: 60,
+        gender: 'men', frameShape: 'Aviator', frameType: 'Full Rim', frameMaterial: 'metal',
+        frameColor: 'Gold', colours: [{ name: 'Gold', hexCode: '#C9A227', images: [] }], sizes: ['58 mm'], materials: ['Metal'], lensType: 'polarized',
+        poweredOptionsAvailable: true, prescriptionLensTypes: ['single-vision', 'bifocal', 'progressive'],
+        tags: ['sunglasses', 'polarized', 'powered']
+      },
+      {
+        title: 'Vincent Chase VC Round Powered Sunglasses - Women',
+        description: 'Round acetate sun frame offered with prescription glazing, including progressive lenses.',
+        price: 3499, discountedPrice: 2799, originalPrice: 3499,
+        category: 'sunglasses', brand: 'Vincent Chase',
+        images: ['/uploads/products/vc-powered-round.jpg'], stock: 48,
+        gender: 'women', frameShape: 'Round', frameType: 'Full Rim', frameMaterial: 'acetate',
+        frameColor: 'Tortoise', colours: [{ name: 'Tortoise', hexCode: '#8B5A2B', images: [] }], sizes: ['54 mm'], materials: ['Acetate'],
+        poweredOptionsAvailable: true, prescriptionLensTypes: ['single-vision', 'progressive'],
+        tags: ['sunglasses', 'powered']
+      },
+      {
+        title: 'Ola Kids Flex TR90 Frames - Boys',
+        description: 'Flexible TR90 kids frames with a soft nose pad, sized for younger wearers.',
+        price: 1499, discountedPrice: 1199, originalPrice: 1499,
+        category: 'kids', brand: 'Ola',
+        images: ['/uploads/products/ola-boys.jpg'], stock: 66,
+        gender: 'kids', subGender: 'boys', ageGroup: '6-9',
+        frameShape: 'Rectangle', frameType: 'Full Rim', frameMaterial: 'tr90', frameColor: 'Blue',
+        colours: [{ name: 'Blue', hexCode: '#2874f0', images: [] }], sizes: ['XS', 'S'], materials: ['TR90'],
+        tags: ['kids', 'boys']
+      },
+      {
+        title: 'Ola Kids Blossom Acetate - Girls',
+        description: 'Lightweight acetate frames for younger girls with a decorative temple.',
+        price: 1699, discountedPrice: 1349, originalPrice: 1699,
+        category: 'kids', brand: 'Ola',
+        images: ['/uploads/products/ola-girls.jpg'], stock: 54,
+        gender: 'kids', subGender: 'girls', ageGroup: '9-12',
+        frameShape: 'Cat Eye', frameType: 'Half Rim', frameMaterial: 'acetate', frameColor: 'Pink',
+        colours: [{ name: 'Pink', hexCode: '#FFB6C1', images: [] }], sizes: ['S', 'M'], materials: ['Acetate'],
+        tags: ['kids', 'girls']
+      },
+      {
+        title: 'ClearView Progressive Ready Glasses - Unisex',
+        description: 'Full-rim metal frame suitable for single-vision, bifocal or progressive lenses.',
+        price: 2799, discountedPrice: 2299, originalPrice: 2799,
+        category: 'eyeglasses', brand: 'ClearView',
+        images: ['/uploads/products/clearview-progressive.jpg'], stock: 40,
+        gender: 'unisex', frameShape: 'Geometric', frameType: 'Half Rim', frameMaterial: 'titanium',
+        frameColor: 'Silver', colours: [{ name: 'Silver', hexCode: '#C0C0C0', images: [] }], sizes: ['M', 'L'], materials: ['Titanium'],
+        poweredOptionsAvailable: true, prescriptionLensTypes: ['single-vision', 'bifocal', 'progressive'],
+        tags: ['eyeglasses', 'progressive']
+      }
+    ];
+
+    // Map the human-readable fields onto what the router filters on.
+    const createdExtras = [];
+    for (const p of extraProducts) {
+      const owner = p.category === 'contactlenses' || p.category === 'solution' || p.category === 'accessories' ? lensBrand : frameBrand;
+      const doc = {
+        ...p,
+        seller: owner._id,
+        verificationStatus: 'verified',
+        verifiedAt: new Date(),
+        // Consumables are hygiene-sealed: returnable only unopened, which the
+        // portal enforces via the shorter window rather than a blanket refusal.
+        returnWindowDays: p.category === 'solution' ? 0 : (p.category === 'contactlenses' || p.category === 'accessories' ? 3 : 7),
+        isReturnable: p.category !== 'solution',
+        brand: p.brand
+      };
+      delete doc.powerType;
+      try {
+        createdExtras.push(await Product.create(doc));
+      } catch (err) {
+        console.log(`Skipped "${p.title}": ${String(err.message).slice(0, 110)}`);
+      }
+    }
+    console.log(`Added ${createdExtras.length} catalog extensions (lens types, solution, accessories, powered frames)`);
 
     // Give eyewear products real colour/size/price variants. Without these there
     // is no per-variant stock to sell against, and the seller inventory screens
@@ -979,16 +1215,23 @@ const seedDatabase = async () => {
     };
 
     let variantised = 0;
-    for (const prod of products) {
+    // Includes the catalogue extensions above, which otherwise end up with no
+    // colour/size variants and can never satisfy a routed order.
+    for (const prod of [...products, ...createdExtras]) {
       if (prod.category === 'contactlenses') continue;
       const plan = VARIANT_PLAN[prod.category];
       if (!plan) continue;
+      // A row that already declares its own colours and sizes keeps them.
+      const colours = (prod.colors && prod.colors.length)
+        ? prod.colors.map((c) => ({ name: c.name || c, hex: c.hexCode }))
+        : plan.colors;
+      const sizes = (prod.sizes && prod.sizes.length) ? prod.sizes : plan.sizes;
 
       const base = prod.discountedPrice || prod.price;
       const variants = [];
-      for (const color of plan.colors) {
-        for (const size of plan.sizes) {
-          const step = plan.priceSteps[size] || 0;
+      for (const color of colours) {
+        for (const size of sizes) {
+          const step = plan.priceSteps[size] ?? plan.priceSteps[size.toUpperCase?.()] ?? 0;
           variants.push({
             color: color.name,
             size,
@@ -1003,8 +1246,8 @@ const seedDatabase = async () => {
       }
 
       prod.variants = variants;
-      prod.colors = plan.colors.map((c) => ({ name: c.name, hexCode: c.hex, images: [] }));
-      prod.sizes = plan.sizes;
+      prod.colors = colours.map((c) => ({ name: c.name, hexCode: c.hex || c.hexCode || '', images: [] }));
+      prod.sizes = sizes;
       prod.stock = variants.reduce((sum, v) => sum + v.stock, 0);
       await prod.save();
       variantised += 1;
@@ -1279,14 +1522,17 @@ const seedDatabase = async () => {
     await SellerStock.deleteMany({});
     try {
       const stockable = await Product.find({ isActive: true, category: { $ne: 'contactlenses' } })
-        .select('brand modelNumber category seller variants price discountedPrice').lean();
+        .select('brand modelNumber category seller variants price discountedPower discountedPrice poweredOptionsAvailable').lean();
       const rows = [];
       for (const p of stockable) {
-        // Every seller except the owner also lists it, at a small price spread.
+        // Every seller lists it, at a small price spread. Carrying the real
+        // colour/size variants is what lets routing match a buyer's chosen
+        // configuration to a shop that actually holds it.
         for (const sl of sellers) {
           const idx = sellers.findIndex((x) => String(x._id) === String(sl._id));
           const base = p.discountedPrice || p.price;
           const selling = Math.max(99, base + (idx - 1) * 100);
+          const isOwner = String(p.seller) === String(sl._id);
           rows.push({
             seller: sl._id,
             product: p._id,
@@ -1299,7 +1545,13 @@ const seedDatabase = async () => {
             variants: (p.variants || []).map((v) => ({
               color: v.color || '', size: v.size || '', stock: v.stock || 0, price: v.price || selling
             })),
-            isListed: true
+            isListed: true,
+            // Not every seller offers glazing; only some opt in, which is the
+            // point of the per-listing switch.
+            sellsWithPower: !!p.poweredOptionsAvailable && (idx % 2 === 0 || isOwner),
+            powerLensTypes: p.poweredOptionsAvailable && (idx % 2 === 0 || isOwner)
+              ? ['single-vision', 'progressive']
+              : []
           });
         }
       }

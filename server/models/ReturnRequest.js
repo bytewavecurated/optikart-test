@@ -32,7 +32,14 @@ const returnRequestSchema = new mongoose.Schema({
       required: true,
       min: 1
     },
-    reason: {
+    // 'return' refunds the buyer; 'exchange' replaces the item, so it must also
+  // satisfy the product's exchangeable flag.
+  requestType: { type: String, enum: ['return', 'exchange'], default: 'return' },
+  exchangeVariant: {
+    color: { type: String, default: '' },
+    size: { type: String, default: '' }
+  },
+  reason: {
       type: String,
       required: true
     },

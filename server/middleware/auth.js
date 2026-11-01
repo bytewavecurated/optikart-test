@@ -195,6 +195,54 @@ export const optionalAuth = async (req, res, next) => {
   }
 };
 
+/**
+ * Retailer appointed by a manufacturer. These accounts are their own document
+ * type (not Sellers), which is why routing to a retailer looks up this model too
+ * when resolving an offer.
+ */
+export const verifyManufacturerSeller = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+    }
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    const { default:ManufacturerSeller } = await import('../models/ManufacturerSeller.js');
+    const seller = await ManufacturerSeller.findById(decoded.id || decoded.sellerId);
+    if (!seller) return res.status(401).json({ success: false, message: 'Invalid token. Retailer not found.' });
+    if (seller.isActive === false) return res.status(403).json({ success: false, message: 'Account has been deactivated.' });
+    if (seller.isBanned) return res.status(403).json({ success: false, message: 'This retailer account is blocked.' });
+    req.manufacturerSeller = seller;
+    // Exposed as `seller` so stock routes can treat both kinds alike.
+    req.seller = seller;
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') return res.status(401).json({ success: false, message: 'Token has expired.' });
+    return res.status(401).json({ success: false, message: 'Invalid token.' });
+  }
+};
+
+/** Independent seller OR manufacturer-appointed retailer, whichever the token is. */
+export const verifyAnySeller = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+    }
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    const id = decoded.id || decoded.sellerId;
+    const own = await Seller.findById(id);
+    if (own && own.isActive !== false) { req.seller = own; req.sellerKind = 'seller'; return next(); }
+    const { default:ManufacturerSeller } = await import('../models/ManufacturerSeller.js');
+    const ms = await ManufacturerSeller.findById(id);
+    if (ms && ms.isActive !== false && !ms.isBanned) { req.seller = ms; req.sellerKind = 'manufacturerSeller'; return next(); }
+    return res.status(401).json({ success: false, message: 'Invalid token. No seller account matched.' });
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') return res.status(401).json({ success: false, message: 'Token has expired.' });
+    return res.status(401).json({ success: false, message: 'Invalid token.' });
+  }
+};
+
 export const verifyDeliveryPartner = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;

@@ -18,7 +18,7 @@ const SellerProducts = () => {
   const [stockFilter, setStockFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [formData, setFormData] = useState({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true });
+  const [formData, setFormData] = useState({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true, returnWindowDays: 7 });
   const [variants, setVariants] = useState([]);
   const [showVariantForm, setShowVariantForm] = useState(false);
   const [variantForm, setVariantForm] = useState({ color: '', size: '', gender: 'unisex', price: '', stock: '', sku: '' });
@@ -50,7 +50,7 @@ const SellerProducts = () => {
       }
       setShowForm(false);
       setEditingProduct(null);
-      setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true });
+      setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true, returnWindowDays: 7 });
       setVariants([]);
       fetchProducts();
     } catch (error) { toast.error(err.response?.data?.message || 'Failed to save'); }
@@ -69,7 +69,8 @@ const SellerProducts = () => {
       gender: product.gender || 'unisex', 
       frameSize: product.frameSize || 'medium',
       isReturnable: product.isReturnable !== false,
-      isExchangeable: product.isExchangeable !== false
+      isExchangeable: product.isExchangeable !== false,
+      returnWindowDays: Number.isFinite(product.returnWindowDays) ? product.returnWindowDays : 7
     });
     setVariants(product.variants || []);
     setShowForm(true);
@@ -216,7 +217,7 @@ const SellerProducts = () => {
         <div className="container page-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>My Products ({filtered.length})</h1>
-            <button onClick={() => { setShowForm(true); setEditingProduct(null); setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true }); setVariants([]); }} className="btn btn-primary"><FiPlus /> Add Product</button>
+            <button onClick={() => { setShowForm(true); setEditingProduct(null); setFormData({ name: '', brand: '', category: 'sunglasses', price: '', originalPrice: '', description: '', stock: '', gender: 'unisex', frameSize: 'medium', isReturnable: true, isExchangeable: true, returnWindowDays: 7 }); setVariants([]); }} className="btn btn-primary"><FiPlus /> Add Product</button>
           </div>
 
           <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
@@ -271,6 +272,23 @@ const SellerProducts = () => {
               </div>
 
               {/* Return & Exchange Policy */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--bg-secondary)' }}>
+                <label htmlFor="return-window" style={{ fontSize: 12.5, fontWeight: 600 }}>Return window</label>
+                <input
+                  id="return-window"
+                  className="input"
+                  type="number"
+                  min="0"
+                  max="60"
+                  style={{ width: 76 }}
+                  value={formData.returnWindowDays ?? 7}
+                  onChange={(e) => setFormData({ ...formData, returnWindowDays: Math.max(0, Math.min(60, Number(e.target.value) || 0)) })}
+                />
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  days after delivery. Set 0 for final sale &mdash; returns and exchanges are then refused for this product.
+                </span>
+              </div>
+
               <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                 <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Return & Exchange Policy</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

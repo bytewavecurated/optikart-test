@@ -52,6 +52,11 @@ and every login requires the emailed code again.
 - All catalogue starts `verified` so the storefront is populated. Un-verify rows from
   admin Product Verification to watch them disappear from `/products` and from the
   sellers' listable catalogue.
+- Two sellers per frame have `sellsWithPower` on and the rest off, so a prescription
+  order routes to the first but not the second - visible in admin Order Assignment.
+- One listing per seller is left with a proposal the platform raised, so
+  `/seller/stock` shows the pending price-change prompt without you having to
+  trigger one.
 
 ## If a login is rejected
 

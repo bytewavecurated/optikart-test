@@ -10,7 +10,8 @@ import { sendReturnConfirmation } from './email.js';
 import fs from 'fs';
 import path from 'path';
 
-const RETURN_WINDOW_DAYS = 7; // 7-day return window
+// Used only where a product has not stated its own window.
+const DEFAULT_WINDOW_DAYS = 7;
 
 /**
  * Check if order is eligible for return
@@ -43,19 +44,51 @@ export const checkReturnEligibility = async (orderId, userId) => {
       };
     }
 
-    // Check return window
     const deliveredDate = new Date(order.deliveredAt || order.updatedAt);
     const daysSinceDelivery = Math.floor((Date.now() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysSinceDelivery > RETURN_WINDOW_DAYS) {
+
+    /*
+     * Each line carries its own window. The platform default of 7 days applies
+     * only when a product has not stated one; a seller can tighten it (sale
+     * items, clearance) or a manufacturer can set a longer window per product.
+     * An order is returnable while at least one line is still inside its window.
+     */
+    const DEFAULT_WINDOW_DAYS = 7;
+    const windowFor = (product) => {
+      const p = product || {};
+      const raw = p.returnWindowDays;
+      if (raw === undefined || raw === null || raw === '') return DEFAULT_WINDOW_DAYS;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? n : DEFAULT_WINDOW_DAYS;
+    };
+
+    const lineWindows = (order.items || []).map((item) => {
+      const days = windowFor(item.product);
+      return {
+        product: item.product?._id,
+        name: item.product?.title || item.name,
+        returnWindowDays: days,
+        returnable: item.product?.isReturnable !== false,
+        exchangeable: item.product?.isExchangeable !== false,
+        withinWindow: days > 0 ? daysSinceDelivery <= days : false
+      };
+    });
+
+    const openLines = lineWindows.filter((l) => l.returnable && l.withinWindow);
+    if (lineWindows.length && openLines.length === 0) {
+      const widest = Math.max(...lineWindows.map((l) => l.returnWindowDays));
       return {
         success: false,
-        message: `Return window has expired (${RETURN_WINDOW_DAYS} days from delivery)`,
         eligible: false,
         daysSinceDelivery,
-        returnWindowDays: RETURN_WINDOW_DAYS
+        returnWindowDays: widest,
+        lineWindows,
+        message: daysSinceDelivery > widest
+          ? `The return window has closed for every item in this order (shortest was ${Math.min(...lineWindows.map((l) => l.returnWindowDays))} day(s), longest ${widest} day(s); ${daysSinceDelivery} day(s) since delivery).`
+          : 'None of the items in this order can be returned.'
       };
     }
+
 
     // Check if return already requested
     const existingReturn = await ReturnRequest.findOne({
@@ -73,34 +106,34 @@ export const checkReturnEligibility = async (orderId, userId) => {
     }
 
     // Check if any items are returnable
-    const returnableItems = order.items.filter(item => {
-      return item.product.isReturnable !== false; // Default to true if not set
-    });
-
-    if (returnableItems.length === 0) {
-      return {
-        success: false,
-        message: 'No items in this order are eligible for return',
-        eligible: false
-      };
-    }
+    // Only lines still inside their own window and allowed by the seller are offered.
+    const selectable = lineWindows.filter((l) => l.returnable && l.withinWindow);
 
     return {
       success: true,
       eligible: true,
       order,
       daysSinceDelivery,
-      returnWindowDays: RETURN_WINDOW_DAYS,
-      daysRemaining: RETURN_WINDOW_DAYS - daysSinceDelivery,
-      items: returnableItems.map(item => ({
-        product: item.product,
-        quantity: item.quantity,
-        price: item.price,
-        variant: item.variant,
-        isReturnable: item.product.isReturnable !== false,
-        isExchangeable: item.product.isExchangeable !== false
-      }))
+      // Longest window present on the order, plus the per-line detail so the
+      // customer sees which item is expiring when.
+      returnWindowDays: Math.max(...lineWindows.map((l) => l.returnWindowDays)),
+      daysRemaining: Math.max(...lineWindows.filter((l) => l.returnable).map((l) => l.returnWindowDays - daysSinceDelivery)),
+      lineWindows,
+      items: selectable.map((line) => {
+        const source = (order.items || []).find((i) => String(i.product?._id || i.product) === String(line.product)) || {};
+        return {
+          product: source.product,
+          quantity: source.quantity,
+          price: source.price,
+          variant: source.variant,
+          isReturnable: true,
+          isExchangeable: line.exchangeable,
+          returnWindowDays: line.returnWindowDays,
+          daysRemaining: line.returnWindowDays - daysSinceDelivery
+        };
+      })
     };
+
   } catch (error) {
     console.error('Error checking return eligibility:', error);
     return {
@@ -113,7 +146,7 @@ export const checkReturnEligibility = async (orderId, userId) => {
 /**
  * Create return request with photo upload
  */
-export const createCustomerReturnRequest = async (orderId, userId, items, reason, description, images = []) => {
+export const createCustomerReturnRequest = async (orderId, userId, items, reason, description, images = [], type = 'return') => {
   try {
     // Check eligibility first
     const eligibility = await checkReturnEligibility(orderId, userId);
@@ -141,12 +174,34 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
         };
       }
 
-      // Check if product is returnable
+      // Check if product is returnable at all (the seller's listing toggle).
       if (orderItem.product.isReturnable === false) {
         return {
           success: false,
           message: `Product "${orderItem.product.title}" is not eligible for return`
         };
+      }
+
+      // Re-apply the per-product window here as well. Eligibility is only a
+      // preview; a client can post a request directly, and an exchange request
+      // must respect the same rule.
+      const lineWindow = Number.isFinite(Number(orderItem.product.returnWindowDays))
+        ? Number(orderItem.product.returnWindowDays)
+        : DEFAULT_WINDOW_DAYS;
+      const delivered = new Date(order.deliveredAt || order.updatedAt);
+      const daysSince = Math.floor((Date.now() - delivered.getTime()) / (1000 * 60 * 60 * 24));
+      const wantsExchange = type === 'exchange';
+      if (wantsExchange && orderItem.product.isExchangeable === false) {
+        return { success: false, message: `Product "${orderItem.product.title}" cannot be exchanged` };
+      }
+      if (daysSince > lineWindow) {
+        return {
+          success: false,
+          message: `The return window for "${orderItem.product.title}" closed after ${lineWindow} day(s); ${daysSince} day(s) have passed since delivery`
+        };
+      }
+      if (lineWindow === 0) {
+        return { success: false, message: `"${orderItem.product.title}" is final sale and cannot be returned` };
       }
 
       if (item.quantity > orderItem.quantity) {
@@ -164,7 +219,7 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
         quantity: item.quantity,
         reason: reason || item.reason || 'Customer request',
         description: description || item.description || '',
-        images: item.images || []
+        images: item.images || images || []
       });
     }
 
@@ -175,6 +230,7 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
       seller: order.seller,
       items: returnItems,
       refundAmount,
+      requestType: type,
       status: 'requested'
     });
 

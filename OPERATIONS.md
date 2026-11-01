@@ -131,37 +131,21 @@ Stated plainly so nothing is mistaken for done.
 - Background geolocation for delivery partners while the app is closed (needs a PWA worker
   and a consent UI).
 
-### Rough edges and things I did not finish
-
-- Proximity routing needs coordinates. Sellers within 10 km of the delivery city are
-  offered the order; if a seller document has no `location`, they are treated as an
-  unknown-distance fallback candidate rather than a nearby one. Real distance
-  calculation needs the seller's store coordinates, which the sign-up form does not
-  capture yet - add `location` on seller registration to make radius filtering exact.
-- The Rs. 59 platform-delivery fee per order line is now computed on the order row
-  (`selfDeliveryCharge`) and folded into `totalAmount` when a partner is assigned,
-  but a customer who is quoted COD total before assignment will see that figure move
-  at the point of assignment. Surface a re-quote to the customer, or move the charge
-  to the seller payout ledger only, if that is unacceptable.
-- `product.stockMovementLog` is trimmed at 200 entries, so very old movements are
-  not auditable; use SellerPayout rows if long history is required.
-- Returns/exchanges restore stock only after the refund step, and there is no
-  per-product return window override - it is still the global delivery-date window.
-- `GET /api/products` applies the sponsored boost by issuing two queries; fold into one
-  aggregate before adding more facet filters.
-- Saved addresses have add/select in checkout but no edit or delete UI.
-
 ### Smaller rough edges worth knowing
 
-- The home page's "Stainless Steel" material chip can return no results on seed data because
-  no sample product carries that material; the filter itself works.
-- Saved-address book at checkout is read/write through the profile endpoint but has no edit
-  or delete UI yet - duplicates are avoided by comparing pincode plus street.
-- Cart state is authoritative in the browser (`CartContext`) while `server/routes/cart.js`
-  also persists a server cart; the checkout payload sends explicit line items, so orders are
-  correct, but the two carts are not reconciled and the server copy is what `/cart` history
-  reflects after a clear.
-- Return/exchange eligibility is evaluated per product against the delivery date; there is no
-  per-category override yet.
-- `GET /api/products` applies the sponsored-product boost by issuing two queries rather than
-  one, which is a needless extra round trip at scale.
+- Return and exchange eligibility is evaluated per line against that product's
+  `returnWindowDays`. A product with the field unset falls back to the platform's
+  7 days; there is no per-category default table yet.
+- Saved addresses have add and select at checkout, but no edit or delete UI.
+- Store location at seller sign-up is resolved from the PIN code unless the browser
+  is permitted to share a precise position. Two sellers in one city therefore sit at
+  the same distance; swap `services/geo.js` for a real geocoder if that clustering
+  matters in your market.
+- A combo lens is detected as "has at least one declared shade", not as a validated
+  Monday-to-Sunday set.
+- `GET /api/products` applies the sponsored boost with a second query, which is a
+  needless round trip at scale.
+- `product.stockMovementLog` keeps the last 200 movements; for longer history use
+  the order and SellerPayout records.
+- The manufacturer product form validates its mandatory attributes in the browser and
+  again in the schema, but the two lists are maintained separately and can drift.

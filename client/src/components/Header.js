@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Logo from './Logo';
+import { STOREFRONT_NAV } from '../utils/catalogTaxonomy';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,13 +55,9 @@ const Header = () => {
     setProfileDropdown(false);
   };
 
-  const categories = [
-    { name: 'Sunglasses', path: '/category/sunglasses' },
-    { name: 'Eyeglasses', path: '/category/eyeglasses' },
-    { name: 'Contact Lenses', path: '/category/contact-lenses' },
-    { name: 'Computer Glasses', path: '/category/computer-glasses' },
-    { name: 'Sports Eyewear', path: '/category/sports-eyewear' },
-  ];
+  // Shared with the browse page so the second-hand nav and the filter column
+  // can never list different shops.
+  const categories = STOREFRONT_NAV;
 
   const displayName = user?.name || seller?.storeName || seller?.businessName || 'Account';
 

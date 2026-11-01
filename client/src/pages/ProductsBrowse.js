@@ -6,6 +6,7 @@ import { listOf } from '../services/apiResponse.js';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
+import { resolveCategory, facetsForCategory, fixedFiltersFor, PRICE_RANGES } from '../utils/catalogTaxonomy';
 
 const SORT_OPTIONS = [
   { value: 'popularity', label: 'Popularity' },
@@ -16,21 +17,8 @@ const SORT_OPTIONS = [
   { value: 'discount', label: 'Discount' }
 ];
 
-const PRICE_BANDS = [
-  { label: 'Under Rs. 500', min: '', max: '500' },
-  { label: 'Rs. 500 to 1,000', min: '500', max: '1000' },
-  { label: 'Rs. 1,000 to 3,000', min: '1000', max: '3000' },
-  { label: 'Rs. 3,000 to 7,000', min: '3000', max: '7000' },
-  { label: 'Rs. 7,000 and above', min: '7000', max: '' }
-];
+const PRICE_BANDS = PRICE_RANGES;
 
-const FACET_GROUPS = [
-  { key: 'frameShape', label: 'Face Shape', optionsKey: 'frameShapes' },
-  { key: 'frameType', label: 'Frame Type', optionsKey: 'frameTypes' },
-  { key: 'material', label: 'Material', optionsKey: 'materials' },
-  { key: 'gender', label: 'Gender', optionsKey: 'genders' },
-  { key: 'frameSize', label: 'Frame Size', optionsKey: 'frameSizes' }
-];
 
 const chipStyle = (active) => ({
   display: 'block', padding: '9px 14px', borderRadius: '999px', fontSize: '13px',
@@ -42,6 +30,7 @@ const chipStyle = (active) => ({
 
 export default function ProductsBrowse() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { category: categorySlug } = useParams();
   const [items, setItems] = useState([]);
   const [facets, setFacets] = useState({ brands: [], frameShapes: [], frameTypes: [], materials: [], genders: [], frameSizes: [], frameColors: [] });
   const [loading, setLoading] = useState(true);
@@ -56,11 +45,17 @@ export default function ProductsBrowse() {
   const priceBand = searchParams.get('price') || '';
 
   // Every facet in the URL is read generically so links from the home page work.
+  // One descriptor drives the headline, the filters and the fixed constraints,
+  // so a powered-sunglasses list can never show rim-type facets meant for frames.
+  const descriptor = useMemo(() => resolveCategory(categorySlug || searchParams.get('category') || ''), [categorySlug, searchParams]);
+  const facetGroups = useMemo(() => facetsForCategory(descriptor), [descriptor]);
+  const fixedFilters = useMemo(() => fixedFiltersFor(descriptor), [descriptor]);
+
   const facetValues = useMemo(() => {
     const out = {};
-    FACET_GROUPS.forEach((f) => { out[f.key] = searchParams.get(f.key) || ''; });
+    facetGroups.forEach((f) => { out[f.key] = searchParams.get(f.key) || ''; });
     return out;
-  }, [searchParams]);
+  }, [searchParams, facetGroups]);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,9 +78,16 @@ export default function ProductsBrowse() {
       const params = { page, limit: 24, sort };
       if (brand) params.brand = brand;
       if (sellerCode) params.sellerCode = sellerCode;
-      if (category) params.category = category;
-      FACET_GROUPS.forEach((f) => {
-        if (facetValues[f.key]) params[f.key] = facetValues[f.key];
+      if (category && !descriptor?.category) params.category = category;
+      if (descriptor?.category) params.category = descriptor.category;
+      Object.entries(fixedFilters).forEach(([k, v]) => { params[k] = v; });
+      if (searchParams.get('powered') === 'true') params.powered = 'true';
+      facetGroups.forEach((f) => {
+        if (facetValues[f.key]) {
+          // Colour "clear" is the absence of the coloured filter, not a value.
+          if (f.key === 'colour' && facetValues[f.key] === 'clear') params.withPower = params.withPower;
+          else params[f.key] = facetValues[f.key];
+        }
       });
       if (priceBand) {
         const band = PRICE_BANDS.find((b) => b.label === priceBand);
@@ -109,7 +111,7 @@ export default function ProductsBrowse() {
     fetchProducts();
     setPage(1);
     return () => { cancelled = true; };
-  }, [brand, category, sort, priceBand, facetValues, sellerCode]);
+  }, [brand, category, sort, priceBand, facetValues, sellerCode, descriptor, fixedFilters, facetGroups, searchParams]);
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
@@ -154,8 +156,10 @@ export default function ProductsBrowse() {
         </div>
       </div>
 
-      {FACET_GROUPS.map((group) => {
-        const options = facets[group.optionsKey] || [];
+      {facetGroups.map((group) => {
+        // Dynamic facets read their values from the live facet response;
+        // fixed facets (correction type, age band, bottle size) are declared.
+        const options = group.optionsKey ? (facets[group.optionsKey] || []) : (group.values || []).map((o) => (typeof o === 'string' ? o : o.v));
         if (!options.length) return null;
         return (
           <div key={group.key}>

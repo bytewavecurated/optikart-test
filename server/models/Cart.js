@@ -1,19 +1,32 @@
 import mongoose from 'mongoose';
 
 const lensConfigSchema = new mongoose.Schema({
+  // 'spectacle' for the lens configurator on frames; 'contact-lens' for the
+  // per-eye power grid on loose lenses.
+  kind: { type: String, enum: ['spectacle', 'contact-lens'], default: 'spectacle' },
+  powerType: { type: String, enum: ['distance', 'toric', 'multifocal', 'none'], default: 'distance' },
+  withPower: { type: Boolean, default: true },
+  lensesPerBox: { type: Number, default: 1 },
+  boxesPerLine: { type: Boolean, default: false },
+  replacement: { type: String, default: '' },
+  colour: { type: String, default: '' },
   lensType: { type: String },
   lensPackage: { type: String },
   coating: { type: String },
   power: {
-    sphereLeft: { type: String, default: '' },
-    sphereRight: { type: String, default: '' },
-    cylLeft: { type: String, default: '' },
-    cylRight: { type: String, default: '' },
-    axisLeft: { type: String, default: '' },
-    axisRight: { type: String, default: '' },
-    addLeft: { type: String, default: '' },
-    addRight: { type: String, default: '' }
+    // Contact lenses store a per-eye object (sphere/cylinder/axis/addition);
+    // spectacle lenses continue to use the flat fields below.
+    type: mongoose.Schema.Types.Mixed,
+    default: null
   },
+  sphereLeft: { type: String, default: '' },
+  sphereRight: { type: String, default: '' },
+  cylLeft: { type: String, default: '' },
+  cylRight: { type: String, default: '' },
+  axisLeft: { type: String, default: '' },
+  axisRight: { type: String, default: '' },
+  addLeft: { type: String, default: '' },
+  addRight: { type: String, default: '' },
   prescriptionMethod: { type: String, enum: ['manual', 'upload', 'none'], default: 'none' },
   prescriptionFileUrl: { type: String, default: '' },
   prescriptionPrice: { type: Number, default: 0 }

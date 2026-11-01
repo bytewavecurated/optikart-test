@@ -108,6 +108,8 @@ export const auth = {
   // Prescriptions
   getPrescriptions: () => api.get('/auth/prescriptions'),
   addPrescription: (data) => api.post('/auth/prescriptions', data),
+  // Multipart variant used by the lens configurator; returns the stored URL.
+  uploadPrescriptionFile: (formData) => api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   updatePrescription: (id, data) => api.put(`/auth/prescriptions/${id}`, data),
   deletePrescription: (id) => api.delete(`/auth/prescriptions/${id}`),
   // Addresses
@@ -182,6 +184,7 @@ export const cart = {
   add: (productId, quantity = 1, variant = null) =>
     api.post('/cart/add', { productId, quantity, variant }),
   addWithLens: (payload) => api.post('/cart/add-lens', payload),
+  addContactLens: (payload) => api.post('/cart/add-contact-lens', payload),
   update: (data) => api.put('/cart/update', data),
   updateQuantity: (productId, quantity, variant = null) =>
     api.put('/cart/update', { productId, quantity, variant }),
@@ -284,8 +287,17 @@ export const admin = {
   getRoutingForOrder: (orderId) => api.get(`/order-routing/${orderId}`),
   // Seller stock listings
   getMyStock: (params) => api.get('/seller-stock', { params }),
+  getStockCatalogue: () => api.get('/seller-stock/catalogue'),
   listStock: (data) => api.post('/seller-stock', data),
   updateStock: (id, data) => api.put(`/seller-stock/${id}`, data),
+  deleteStock: (id) => api.delete(`/seller-stock/${id}`),
+  // Price-change acceptance: proposals expire after a working-day window.
+  getMyPriceChanges: () => api.get('/seller-stock/price-changes'),
+  decideMyPriceChange: (stockId, decision, token) => api.post(`/seller-stock/price-changes/${stockId}/decide`, { decision, token }),
+  decidePriceChangeByToken: (stockId, token, decision) => api.post(`/seller-stock/public/price-changes/${stockId}/decide`, { token, decision }),
+  adminPriceChanges: (params) => api.get('/seller-stock/admin/price-changes', { params }),
+  proposePriceChange: (stockId, newPrice, reason) => api.post(`/seller-stock/admin/price-changes/${stockId}/propose`, { newPrice, reason }),
+  overridePriceChange: (stockId, decision) => api.post(`/seller-stock/admin/price-changes/${stockId}/override`, { decision }),
 
   // Return Analytics
   getPendingProducts: (params) => api.get("/product-verification/pending", { params }),

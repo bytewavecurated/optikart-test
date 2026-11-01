@@ -34,16 +34,32 @@ const sellerStockSchema = new mongoose.Schema({
   isReturnable: { type: Boolean, default: true },
   isExchangeable: { type: Boolean, default: true },
   isListed: { type: Boolean, default: true },
-  // Price edits are emailed and only land once the seller accepts, so the
-  // pending figure is held here rather than applied to `sellingPrice`.
+  /*
+   * The seller's own decision about prescription sales. A frame the
+   * manufacturer declares as powered still does not have to be sold that way by
+   * every seller, and proximity routing only offers powered orders to sellers
+   * who opted in.
+   */
+  sellsWithPower: { type: Boolean, default: false },
+  powerLensTypes: [{ type: String, enum: ['single-vision', 'bifocal', 'progressive', 'reading'] }],
+  /*
+   * Price edits are emailed and only take effect once the seller accepts them,
+   * so the proposed figure is held here rather than applied to `sellingPrice`.
+   * The token on the record is what the emailed accept link carries.
+   */
   pendingChange: {
     sellingPrice: { type: Number, default: null },
     discountPercent: { type: Number, default: null },
+    requestedBy: { type: String, default: '' },
     requestedAt: { type: Date, default: null },
+    // Working-day deadline; the proposal lapses once it passes.
     expiresAt: { type: Date, default: null },
+    acceptToken: { type: String, default: '' },
+    status: { type: String, enum: ['none', 'awaiting_acceptance', 'accepted', 'declined', 'expired'], default: 'none' },
     acceptedAt: { type: Date, default: null },
     declinedAt: { type: Date, default: null },
-    status: { type: String, enum: ['none', 'awaiting_acceptance', 'accepted', 'declined', 'expired'], default: 'none' }
+    // The price that was in force when the proposal was raised, for display.
+    proposedFromPrice: { type: Number, default: null }
   }
 }, { timestamps: true });
 

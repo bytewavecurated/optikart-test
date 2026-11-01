@@ -317,6 +317,65 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   }, [clearAllState]);
 
+  /**
+   * Public seller sign-up. This was previously unwired: the registration screen
+   * called a function that did not exist, so a new seller could never join.
+   */
+  const sellerRegister = async (data) => {
+    try {
+      const response = await api.post('/seller/register', {
+        name: data.ownerName,
+        storeName: data.businessName,
+        storeDescription: data.storeDescription || '',
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        gstNumber: data.gstNumber || '',
+        panNumber: data.panNumber || '',
+        aadharNumber: data.aadharNumber || '',
+                // The store's position decides which orders can be routed here; the
+        // PIN code is resolved to coordinates server side, and browser
+        // coordinates are preferred when the applicant allows the map prompt.
+        storeAddress: {
+          street: data.street || '',
+          city: data.city || '',
+          state: data.state || '',
+          pincode: data.pincode || '',
+          country: 'India',
+          lat: data.lat,
+          lng: data.lng
+        },
+        bankAccount: data.bankAccount
+      });
+
+      const payload = response.data;
+      // Registration returns an OTP challenge; the seller verifies before the
+      // account is usable, so we hand the phone step back to the caller.
+      return {
+        success: true,
+        sellerId: payload.sellerId,
+        message: payload.message,
+        needsPhoneVerify: true
+      };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Registration failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
+  const verifySellerPhoneOTP = async (sellerId, otp) => {
+    try {
+      const { data } = await api.post('/seller/verify-phone', { sellerId, otp });
+      toast.success('Phone verified. You can now sign in.');
+      return { success: true, ...data };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Verification failed';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
   const sellerLogin = async (email, password) => {
     try {
       const response = await api.post('/seller/login', { email, password });
@@ -609,6 +668,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     sellerLogin,
     verifySellerLoginOTP,
+    sellerRegister,
+    verifySellerPhoneOTP,
     sellerLogout,
     staffLogin,
     verifyStaffLoginOTP,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiPackage, FiUsers, FiPlus, FiUpload, FiLogOut, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -30,7 +30,22 @@ const ManufacturerDashboard = () => {
     sizes: [],
     stock: 0,
     gender: 'unisex',
-    frameSize: 'medium'
+    frameSize: '',
+    frameShape: '',
+    frameType: '',
+    frameMaterial: '',
+    frameColor: '',
+    frameWidth: '',
+    frameWeight: '',
+    dimensions: '',
+    modelNumber: '',
+    productCode: '',
+    warranty: '',
+    subGender: '',
+    ageGroup: '',
+    poweredOptionsAvailable: false,
+    prescriptionLensTypes: [],
+    returnWindowDays: 7
   });
   const [newSeller, setNewSeller] = useState({
     name: '',
@@ -52,25 +67,33 @@ const ManufacturerDashboard = () => {
   const navigate = useNavigate();
 
   // Track unsaved changes
-  useEffect(() => {
-    const isProductFormDirty = Object.keys(newProduct).some(key => {
-      if (key === 'images') return newProduct.images.some(img => img !== '');
-      if (key === 'colors' || key === 'sizes') return newProduct[key].length > 0;
-      if (key === 'stock') return newProduct[key] !== 0;
-      if (key === 'category') return newProduct[key] !== 'sunglasses';
-      if (key === 'gender') return newProduct[key] !== 'unisex';
-      if (key === 'frameSize') return newProduct[key] !== 'medium';
-      return newProduct[key] !== '';
-    });
+  /*
+   * The old check compared a handful of fields against a hardcoded snapshot and
+   * counted the form dirty the moment it opened, because defaults such as
+   * category='sunglasses' and returnWindowDays=7 are not the empty string it
+   * tested for - which meant every navigation away raised a leave-page dialog.
+   * Dirty state is now tracked explicitly: set when the maker edits anything,
+   * cleared on open, save or cancel.
+   */
+  /*
+   * The guard used to compare a few fields against hardcoded empty strings, but
+   * the form now has meaningful defaults (category, return window, ...), so it
+   * considered the form dirty the instant it opened and raised a leave-page
+   * dialog on every navigation. Compare against the pristine form instead.
+   */
+  const pristineProduct = useRef(newProduct);
+  const pristineSeller = useRef(newSeller);
 
-    const isSellerFormDirty = Object.keys(newSeller).some(key => {
-      if (key === 'storeAddress') return Object.values(newSeller.storeAddress).some(val => val !== '');
-      if (key === 'bankDetails') return Object.values(newSeller.bankDetails).some(val => val !== '');
-      return newSeller[key] !== '';
-    });
-
-    setHasUnsavedChanges(isProductFormDirty || isSellerFormDirty);
+  const formsDirty = useMemo(() => {
+    const diff = (a, b) => JSON.stringify(a) !== JSON.stringify(b);
+    // newSeller holds nested objects; compare the same shape twice.
+    return diff(newProduct, pristineProduct.current) || diff(newSeller, pristineSeller.current);
   }, [newProduct, newSeller]);
+
+  useEffect(() => {
+    setHasUnsavedChanges(formsDirty);
+  }, [formsDirty]);
+
 
   // Warn before leaving with unsaved changes
   useEffect(() => {
@@ -194,6 +217,7 @@ const ManufacturerDashboard = () => {
         await handleAddSeller();
       }
       setShowAddSeller(false);
+      pristineSeller.current = newSeller;
       setEditingSeller(null);
       fetchSellers();
     } catch (err) {
@@ -252,13 +276,73 @@ const ManufacturerDashboard = () => {
     }
   };
 
+  const EYEWEAR_CATS = ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'];
+
+  /**
+   * Mirrors what the API and the schema require so the maker sees the whole
+   * list in one go instead of one error per save.
+   */
+  const validateProductForm = () => {
+    const isEyewear = EYEWEAR_CATS.includes(newProduct.category);
+    const missing = [];
+    if (!newProduct.title.trim()) missing.push('title');
+    if (!newProduct.description.trim()) missing.push('description');
+    if (!newProduct.price || Number(newProduct.price) <= 0) missing.push('price');
+    if (!newProduct.brand.trim()) missing.push('brand name');
+    if (!newProduct.modelNumber.trim()) missing.push('model number');
+    if (!newProduct.productCode.trim()) missing.push('product id / SKU code');
+    if (!(newProduct.images || []).some((i) => i.trim())) missing.push('at least one image (link or upload)');
+    if (isEyewear) {
+      if (!newProduct.frameShape) missing.push('frame shape / face shape');
+      if (!newProduct.frameType) missing.push('frame type');
+      if (!newProduct.frameMaterial) missing.push('frame material');
+      if (!newProduct.gender && newProduct.category !== 'kids') missing.push('gender');
+      if (!String(newProduct.frameSize).trim()) missing.push('frame size (type it, e.g. 54-16-135)');
+      if (!newProduct.frameWidth) missing.push('frame width (mm)');
+      if (!newProduct.frameWeight) missing.push('frame weight (g)');
+      if (!newProduct.dimensions.trim()) missing.push('frame dimensions (W x H x bridge x temple)');
+      if (!newProduct.frameColor) missing.push('frame colour');
+      if (newProduct.category === 'kids' || newProduct.gender === 'kids') {
+        if (!newProduct.subGender) missing.push('boys / girls');
+        if (!newProduct.ageGroup) missing.push('age group');
+      }
+    }
+    if (newProduct.poweredOptionsAvailable && newProduct.prescriptionLensTypes.length === 0) {
+      missing.push('prescription lens types offered');
+    }
+    return missing;
+  };
+
   const handleAddProduct = async () => {
+    const missing = validateProductForm();
+    if (missing.length) {
+      toast.error(`Add the required details first: ${missing.join(', ')}`, { duration: 9000 });
+      return;
+    }
     try {
       const productData = {
         ...newProduct,
         price: parseFloat(newProduct.price),
         stock: parseInt(newProduct.stock),
-        images: newProduct.images.filter(img => img.trim() !== '')
+        images: newProduct.images.filter(img => img.trim() !== ''),
+        frameShape: newProduct.frameShape,
+        frameType: newProduct.frameType,
+        frameMaterial: newProduct.frameMaterial,
+        frameColor: newProduct.frameColor,
+        frameWidth: Number(newProduct.frameWidth) || undefined,
+        frameWeight: Number(newProduct.frameWeight) || undefined,
+        dimensions: (() => {
+          const parts = String(newProduct.dimensions).split(/\s*[x\u00D7,]\s*/).filter(Boolean).map(Number);
+          return { width: parts[0], height: parts[1], bridge: parts[2], temple: parts[3] };
+        })(),
+        modelNumber: newProduct.modelNumber,
+        productCode: newProduct.productCode,
+        warranty: newProduct.warranty,
+        subGender: newProduct.subGender || undefined,
+        ageGroup: newProduct.ageGroup || undefined,
+        poweredOptionsAvailable: !!newProduct.poweredOptionsAvailable,
+        prescriptionLensTypes: newProduct.poweredOptionsAvailable ? newProduct.prescriptionLensTypes : [],
+        returnWindowDays: Number(newProduct.returnWindowDays)
       };
       
       // If category is kids, set the actual category based on kidsType
@@ -270,6 +354,7 @@ const ManufacturerDashboard = () => {
       await api.post('/manufacturer/products', productData);
       toast.success('Product added successfully');
       setShowAddProduct(false);
+      pristineProduct.current = newProduct;
       setNewProduct({
         title: '',
         description: '',
@@ -774,6 +859,82 @@ const ManufacturerDashboard = () => {
                 />
               </div>
             </div>
+
+              {/* Attributes every maker must supply: the storefront facets, the
+                  filter rails and the routing all read these fields. */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 18, marginTop: 6 }}>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>Frame specification</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Frame shape / face shape *</label>
+                    <select className="input" value={newProduct.frameShape} onChange={(e) => setNewProduct({ ...newProduct, frameShape: e.target.value })}>
+                      <option value="">Select</option>
+                      {['Rectangle','Cat Eye','Oval','Aviator','Geometric','Round','Square','Wayfarer','Browline','Oversized','Wraparound'].map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Frame type *</label>
+                    <select className="input" value={newProduct.frameType} onChange={(e) => setNewProduct({ ...newProduct, frameType: e.target.value })}>
+                      <option value="">Select</option>{['Full Rim','Half Rim','Rimless'].map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Frame material *</label>
+                    <select className="input" value={newProduct.frameMaterial} onChange={(e) => setNewProduct({ ...newProduct, frameMaterial: e.target.value })}>
+                      <option value="">Select</option>{['Acetate','Metal','Polycarbonate','Stainless Steel','TR90','Titanium','Plastic','Wood'].map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Frame colour *</label>
+                    <input className="input" value={newProduct.frameColor} onChange={(e) => setNewProduct({ ...newProduct, frameColor: e.target.value })} placeholder="Tortoise" /></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Frame size * <span style={{ fontWeight: 400, color: 'var(--text-light)' }}>(type it)</span></label>
+                    <input className="input" value={newProduct.frameSize} onChange={(e) => setNewProduct({ ...newProduct, frameSize: e.target.value })} placeholder="54-16-135" /></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Frame width (mm) *</label>
+                    <input className="input" type="number" value={newProduct.frameWidth} onChange={(e) => setNewProduct({ ...newProduct, frameWidth: e.target.value })} placeholder="135" /></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Frame weight (g) *</label>
+                    <input className="input" type="number" step="0.1" value={newProduct.frameWeight} onChange={(e) => setNewProduct({ ...newProduct, frameWeight: e.target.value })} placeholder="24.5" /></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Dimensions (W x H x bridge x temple) *</label>
+                    <input className="input" value={newProduct.dimensions} onChange={(e) => setNewProduct({ ...newProduct, dimensions: e.target.value })} placeholder="135 x 50 x 14 x 135" /></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Model number *</label>
+                    <input className="input" value={newProduct.modelNumber} onChange={(e) => setNewProduct({ ...newProduct, modelNumber: e.target.value })} placeholder="RB3025 001" /></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Product ID *</label>
+                    <input className="input" value={newProduct.productCode} onChange={(e) => setNewProduct({ ...newProduct, productCode: e.target.value })} placeholder="RB-3025-001-58" /></div>
+                  {(newProduct.category === 'kids') && (
+                    <>
+                      <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Boys / girls *</label>
+                        <select className="input" value={newProduct.subGender} onChange={(e) => setNewProduct({ ...newProduct, subGender: e.target.value })}>
+                          <option value="">Select</option><option value="boys">Boys</option><option value="girls">Girls</option>
+                        </select></div>
+                      <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Age group *</label>
+                        <select className="input" value={newProduct.ageGroup} onChange={(e) => setNewProduct({ ...newProduct, ageGroup: e.target.value })}>
+                          <option value="">Select</option>{['0-3','3-6','6-9','9-12','12-15'].map((v) => <option key={v} value={v}>{v} years</option>)}
+                        </select></div>
+                    </>
+                  )}
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Return window (days) *</label>
+                    <input className="input" type="number" min="0" max="60" value={newProduct.returnWindowDays} onChange={(e) => setNewProduct({ ...newProduct, returnWindowDays: e.target.value })} /></div>
+                  <div><label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 5 }}>Warranty</label>
+                    <input className="input" value={newProduct.warranty} onChange={(e) => setNewProduct({ ...newProduct, warranty: e.target.value })} placeholder="1 year manufacturer warranty" /></div>
+                </div>
+
+                <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 16, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={newProduct.poweredOptionsAvailable} onChange={(e) => setNewProduct({ ...newProduct, poweredOptionsAvailable: e.target.checked })} style={{ marginTop: 3, accentColor: 'var(--brand)' }} />
+                  <span>
+                    <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>Can be made with prescription lenses</span>
+                    <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)' }}>
+                      Only sellers who switch this on will receive powered orders, and buyers of powered sunglasses see "Choose lenses" instead of "Buy now".
+                    </span>
+                  </span>
+                </label>
+                {newProduct.poweredOptionsAvailable && (
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 10 }}>
+                    {['single-vision','bifocal','progressive','reading'].map((v) => {
+                      const on = newProduct.prescriptionLensTypes.includes(v);
+                      return (
+                        <label key={v} style={{ display: 'inline-flex', gap: 7, alignItems: 'center', fontSize: 13, cursor: 'pointer', textTransform: 'capitalize' }}>
+                          <input type="checkbox" checked={on} style={{ accentColor: 'var(--brand)' }}
+                            onChange={() => setNewProduct({ ...newProduct, prescriptionLensTypes: on ? newProduct.prescriptionLensTypes.filter((x) => x !== v) : [...newProduct.prescriptionLensTypes, v] })} />
+                          {v.replace('-', ' ')}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button

@@ -101,13 +101,31 @@ const sellerSchema = new mongoose.Schema({
     pincode: { type: String, default: '' },
     country: { type: String, default: 'India' }
   },
-  serviceRadius: { type: Number, default: 10 }, // in km
+  // How far from the store an order may be routed to this seller, in km.
+  serviceRadius: { type: Number, default: 10, min: 1, max: 50 },
+  // Denormalised for the "near you" lists and admin tables without a lookup.
+  city: { type: String, default: '' },
+  pincode: { type: String, default: '' },
+  // Whether the store position came from a map picker/PIN (usable for routing)
+  // or is still unset.
+  locationResolved: { type: Boolean, default: false },
+  locationSource: { type: String, default: '' },
 }, {
   timestamps: true
 });
 
 // Create 2dsphere index for location-based queries
 sellerSchema.index({ location: '2dsphere' });
+
+// Keep the routing flags in step with whatever wrote the coordinates.
+sellerSchema.pre('save', function (next) {
+  const coords = this.location?.coordinates;
+  const hasPoint = Array.isArray(coords) && coords.length === 2 && (coords[0] !== 0 || coords[1] !== 0);
+  this.locationResolved = hasPoint;
+  if (this.address?.city) this.city = this.address.city;
+  if (this.address?.pincode) this.pincode = this.address.pincode;
+  next();
+});
 
 sellerSchema.pre('save', function(next) {
   if (!this.sellerId) {

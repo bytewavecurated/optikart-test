@@ -53,6 +53,7 @@ import customerReturnsRoutes from './routes/customerReturns.js';
 import commissionRoutes from './routes/commission.js';
 import staffRoutes from './routes/staff.js';
 import { sweepExpiredOffers } from './services/orderProximity.js';
+import { sweepExpiredPriceChanges } from './services/priceChangeAcceptance.js';
 import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -287,6 +288,16 @@ const startServer = async () => {
       // Expire unanswered seller offers every minute so the 30-minute window is
       // actually honoured: each lapse cascades to the next seller, and once all
       // five have failed the order escalates to the admin queue.
+      // Expire price proposals whose 7-working-day window has elapsed, so a
+      // listing can never sit indefinitely in a half-applied state.
+      const priceSweep = setInterval(async () => {
+        try {
+          const r = await sweepExpiredPriceChanges();
+          if (r.expired) console.log(`Expired ${r.expired} unanswered price proposal(s)`);
+        } catch (e) { console.error('Price proposal sweep failed:', e.message); }
+      }, 60 * 60 * 1000);
+      priceSweep.unref();
+
       const sweepTimer = setInterval(async () => {
         try {
           const swept = await sweepExpiredOffers(app.get('io'));

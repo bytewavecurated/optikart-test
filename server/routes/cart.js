@@ -2,6 +2,7 @@ import express from 'express';
 import Cart, { MAX_CART_ITEMS } from '../models/Cart.js';
 import Product from '../models/Product.js';
 import { verifyToken } from '../middleware/auth.js';
+import { powerBoundsFor, validateContactLensPrescription } from '../services/contactLensRules.js';
 
 const router = express.Router();
 
@@ -122,6 +123,9 @@ router.post('/add-lens', verifyToken, async (req, res) => {
 
     const rx = lensConfiguration.prescription || {};
     const lensConfig = {
+      kind: 'spectacle',
+      powerType: 'distance',
+      withPower: true,
       lensType: lensConfiguration.lensType || '',
       lensPackage: lensConfiguration.material || '',
       coating: lensConfiguration.coating || '',
@@ -162,6 +166,121 @@ router.post('/add-lens', verifyToken, async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
+/**
+ * Add a contact-lens order with its prescription.
+ *
+ * Powers are validated against what this specific SKU is made in, so a request
+ * for a -9.00 sphere in a lens stocked only to -6.00 is rejected here rather
+ * than after payment. Zero power is only accepted where the product allows it
+ * (colour and cosmetic lenses), and box quantity is clamped to what the seller
+ * actually holds for the chosen parameters.
+ */
+router.post('/add-contact-lens', verifyToken, async (req, res) => {
+  try {
+    const {
+      productId,
+      quantity = 1,
+      withPower = true,
+      power = {},
+      lensesPerBox,
+      replacement,
+      colour,
+      prescriptionImage
+    } = req.body;
+
+    const product = await Product.findById(productId);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+    if (!product.isActive) return res.status(400).json({ success: false, message: 'Product is not available.' });
+    if (product.category !== 'contactlenses') {
+      return res.status(400).json({ success: false, message: 'This endpoint is for contact lenses. Use the lens configurator for spectacles.' });
+    }
+
+    const bounds = powerBoundsFor(product);
+    const wantsPower = !!withPower && bounds.powerType !== 'none' && bounds.withPowerAvailable;
+
+    if (!wantsPower && !bounds.allowsZeroPower && bounds.powerType !== 'none') {
+      return res.status(400).json({
+        success: false,
+        message: 'These are prescription lenses; a zero-power pair is not stocked for this product.'
+      });
+    }
+
+    let validatedPower = null;
+    if (wantsPower) {
+      const check = validateContactLensPrescription(power, bounds);
+      if (!check.valid) {
+        return res.status(400).json({ success: false, message: 'Check your prescription', errors: check.errors });
+      }
+      validatedPower = {
+        right: { sphere: Number(power.right?.sphere), cylinder: power.right?.cylinder === '' ? null : (power.right?.cylinder ?? null), axis: power.right?.axis ?? null, addition: power.right?.addition ?? null },
+        left: { sphere: Number(power.left?.sphere), cylinder: power.left?.cylinder === '' ? null : (power.left?.cylinder ?? null), axis: power.left?.axis ?? null, addition: power.left?.addition ?? null }
+      };
+    }
+
+    const box = Math.max(1, Number(lensesPerBox) || bounds.lensesPerBox || 6);
+    const boxes = Math.max(1, Math.min(20, Number(quantity) || 1));
+    const units = box * boxes;
+
+    if ((product.stock || 0) < units) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${product.stock || 0} lens${(product.stock || 0) === 1 ? '' : 'es'} in stock. ${boxes} box${boxes === 1 ? '' : 'es'} of ${box} needs ${units}.`
+      });
+    }
+
+    let cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) cart = new Cart({ user: req.user._id, items: [] });
+
+    const fingerprint = (p) => [p?.right?.sphere, p?.right?.cylinder, p?.right?.axis, p?.right?.addition, p?.left?.sphere, p?.left?.cylinder, p?.left?.axis, p?.left?.addition].map((v) => (v ?? '')).join(':');
+
+    const existing = cart.items.find((it) =>
+      String(it.product) === String(productId)
+      && it.lensConfig?.kind === 'contact-lens'
+      && fingerprint(it.lensConfig?.power) === fingerprint(validatedPower));
+
+    if (existing) {
+      const nextUnits = (existing.quantity || 1) * (existing.lensConfig?.boxesPerLine ? existing.lensConfig.lensesPerBox : 1);
+      if ((product.stock || 0) < nextUnits + units) {
+        return res.status(400).json({ success: false, message: 'Not enough stock to increase this box quantity.' });
+      }
+      existing.quantity += boxes;
+    } else {
+      if (cart.totalItems + boxes > MAX_CART_ITEMS) {
+        return res.status(400).json({ success: false, message: `Cart can have a maximum of ${MAX_CART_ITEMS} items.` });
+      }
+      cart.items.push({
+        product: productId,
+        variant: { color: colour || '', lensType: 'contact-lens' },
+        lensConfig: {
+          kind: 'contact-lens',
+          powerType: bounds.powerType,
+          withPower: wantsPower,
+          lensesPerBox: box,
+          boxesPerLine: true,
+          replacement: replacement || product.contactLens?.replacementPeriod || 'monthly',
+          colour: colour || product.contactLens?.colorTone || '',
+          power: validatedPower,
+          prescriptionFileUrl: typeof prescriptionImage === 'string' ? prescriptionImage : '',
+          prescriptionMethod: prescriptionImage ? 'upload' : (wantsPower ? 'manual' : 'none'),
+          // Contact lenses carry no extra lens cost; the box price is the product.
+          prescriptionPrice: 0
+        },
+        quantity: boxes,
+        price: product.discountedPrice || product.price
+      });
+    }
+
+    cart.totalItems = cart.items.reduce((s, item) => s + item.quantity, 0);
+    await cart.save();
+    cart = await Cart.findById(cart._id).populate('items.product', 'title images price discountedPrice stock brand');
+
+    res.json({ success: true, message: 'Added to cart.', cart, units });
+  } catch (error) {
+    console.error('Add contact lens to cart error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 router.put('/update', verifyToken, async (req, res) => {
   try {
     const { productId, variant, quantity } = req.body;

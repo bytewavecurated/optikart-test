@@ -92,7 +92,17 @@ export const findCandidates = async (order) => {
   const buyer = buyerPointFrom(order.shippingAddress);
 
   const productIds = (order.items || []).map((i) => i.product);
-  const stocks = await SellerStock.find({ product: { $in: productIds }, isListed: true })
+  // A lens-bearing order can only be met by sellers who sell with power;
+  // powered requests are otherwise invisible to the rest.
+  const isPoweredOrder = (order.items || []).some((i) => i.lensConfig && i.lensConfig.kind === 'spectacle'
+    ? (i.lensConfig.withPower !== false && i.lensConfig.power)
+    : false)
+    || order.items?.some((i) => i.variant?.lensType);
+
+  const stockFilter = { product: { $in: productIds }, isListed: true };
+  if (isPoweredOrder) stockFilter.sellsWithPower = true;
+
+  const stocks = await SellerStock.find(stockFilter)
     .populate({
       path: 'seller',
       select: 'name storeName phone email location city address isBanned isActive isVerified rating totalSales'
@@ -115,6 +125,8 @@ export const findCandidates = async (order) => {
       if (!stock.seller || stock.seller.isBanned || stock.seller.isActive === false) continue;
       if (String(stock.product?._id || stock.product) !== String(line.product)) continue;
       if (!sellerHoldsConfig(stock, wanted)) continue;
+      // A powered request needs a seller who opted in to prescription sales.
+      if (isPoweredOrder && !stock.sellsWithPower) continue;
 
       const sellerLoc = stock.seller.location?.coordinates?.length
         ? { lat: stock.seller.location.coordinates[1], lng: stock.seller.location.coordinates[0] }

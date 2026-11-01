@@ -455,7 +455,11 @@ const ProductDetails = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                     <FiRefreshCw size={20} style={{ color: product.isReturnable !== false ? 'var(--primary)' : 'var(--text-light)' }} />
                     <span style={{ fontSize: '11px', color: product.isReturnable !== false ? 'var(--text-secondary)' : 'var(--text-light)' }}>
-                      {product.isReturnable !== false ? '7-Day Return' : 'No Returns'}
+                      {product.isReturnable === false
+                        ? 'Final sale'
+                        : Number(product.returnWindowDays) > 0
+                          ? `${product.returnWindowDays}-Day Return`
+                          : '7-Day Return'}
                     </span>
                   </div>
                 </div>

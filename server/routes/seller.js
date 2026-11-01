@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
@@ -9,6 +10,7 @@ import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifySeller } from '../middleware/auth.js';
 import { sendOTP, sendOrderStatusNotification } from '../services/email.js';
 import { settleDeliveredOrder } from '../services/commissionTracking.js';
+import { buildLocation, resolvePincode } from '../services/geo.js';
 import { createOrder as createRazorpayOrder } from '../services/razorpay.js';
 
 const router = express.Router();
@@ -21,7 +23,7 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
   try {
     const {
       name, email, phone, password, gstNumber, aadharNumber, panNumber,
-      bankAccount, storeName, storeDescription
+      bankAccount, storeName, storeDescription, storeAddress, businessAddress
     } = req.body;
 
     const existingSeller = await Seller.findOne({
@@ -39,9 +41,29 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
 
     const phoneOtp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
+    // Store position is what proximity routing measures against, so it is
+    // derived here from the PIN code (or explicit browser coordinates) rather
+    // than left empty.
+    const addr = storeAddress || businessAddress || {};
+    const location = buildLocation({
+      lat: addr.lat ?? addr.latitude,
+      lng: addr.lng ?? addr.longitude,
+      pincode: addr.pincode
+    });
+    const resolved = resolvePincode(addr.pincode);
+
     const seller = new Seller({
       name, email, phone, password, gstNumber, aadharNumber, panNumber,
       bankAccount, storeName, storeDescription,
+      address: {
+        street: addr.street || '',
+        city: addr.city || resolved?.city || '',
+        state: addr.state || '',
+        pincode: addr.pincode || '',
+        country: addr.country || 'India'
+      },
+      pincode: addr.pincode || '',
+      location,
       phoneOtp,
       phoneOtpExpiry: new Date(Date.now() + 10 * 60 * 1000)
     });

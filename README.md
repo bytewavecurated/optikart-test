@@ -94,6 +94,31 @@ exercised without creating data first.
 
 ---
 
+## Contact lens flows
+
+Contact lenses are configured per correction type, because the numbers a prescription
+carries differ by lens:
+
+| Entry | What the customer gives |
+| --- | --- |
+| Distance power | Sphere per eye |
+| Toric / cylindrical | Sphere, cylinder and axis per eye |
+| Multi-focal | Sphere and ADD per eye |
+| Colour, zero power | Nothing; shade, base curve, diameter |
+| Colour, with power | Sphere per eye, plus the shade |
+| Colour combos | None - a shade per weekday, Buy Now |
+| Solution | Bottle volume and pack size, priced per pack |
+| Accessories | Case type, compartments, colour |
+
+Ranges come from the product (`contactLens.SphereLeftMin/Max`, cylinder and axis
+ranges, ADD range), so a -9.50 sphere in a lens stocked only to -9.00 is refused
+before payment with a message naming the eye and the limit. Zero power is offered
+only where `allowsZeroPower` is true, i.e. colour and cosmetic stock. The rules
+exist once per side: `client/src/utils/contactLensPowers.js` builds the pickers and
+`server/services/contactLensRules.js` decides, so a hand-crafted request cannot
+bypass either. Sunglasses that the maker declared glazable offer the same choice
+between Buy Now and the lens flow.
+
 ## Money model
 
 This is the part easiest to get wrong, so it is deliberately explicit.
@@ -139,6 +164,25 @@ lives on the `DeliveryPartner` document (`totalEarnings`, `totalWithdrawn`, `wit
   geometric, round, square, wayfarer), `frameType` (full rim, half rim, rimless) and
   `frameMaterial` (acetate, metal, polycarbonate, stainless steel, TR90, titanium). Bulk
   uploads go through validation that rejects mixed sunglasses/eyeglasses files.
+- **Browse taxonomy** lives in `client/src/utils/catalogTaxonomy.js`. One
+  description drives the nav, the filter rails and the routing constraints, so a
+  contact-lens list offers replacement period, box size and correction type and never
+  rim type. Sunglasses, eyeglasses, kids, solution, accessories and each contact-lens
+  correction type share this file.
+- **Powered eyewear** is a declaration, not a category. The manufacturer states
+  `poweredOptionsAvailable` and which prescription lens types the lab makes for that
+  frame; each seller then decides per listing whether to sell it with power
+  (`SellerStock.sellsWithPower`). A buyer of a powered-capable frame from an opted-in
+  seller sees the lens flow; everyone else sees Buy Now. Proximity routing offers a
+  prescription order only to sellers who opted in.
+- **Kids frames** carry `subGender` (boys/girls) and `ageGroup`, mandatory on single
+  add and on bulk upload, so the kids browse can split age and colour without
+  inventing another top-level category.
+- **Frame sizes are typed**, e.g. `54-16-135`, rather than a small/medium/large
+  picklist, so an optician reading a temple marking can find the same frame here.
+- **Bulk uploads must be one category per file.** A sheet mixing sunglasses with
+  eyeglasses is rejected outright, since the alternative is half a catalogue filed
+  under whichever category the importer guessed.
 - **Verification** is per product: `pending -> verified`, or `data_incorrect` so the
   manufacturer can amend and resubmit. Only verified listings appear on the marketplace.
 - **Sellers** (independent and manufacturer-appointed) decide which brand products they
@@ -249,7 +293,11 @@ Set the corresponding variables in `server/.env` to enable each one.
 
 ## Contributing
 
-Read [ARCHITECTURE.md](ARCHITECTURE.md) for the request/data flow and
-[OPERATIONS.md](OPERATIONS.md) for deployment and troubleshooting. Do not add
-"coming soon" placeholders: either wire a feature to real data or leave it out and note it
-in `OPERATIONS.md`.
+Read [ARCHITECTURE.md](ARCHITECTURE.md) for the request/data flow,
+[OPERATIONS.md](OPERATIONS.md) for deployment and troubleshooting,
+[LOGINS.md](LOGINS.md) for the seeded demo accounts and where each one signs in,
+and [RECOMMENDATIONS.md](RECOMMENDATIONS.md) for what to build next and why.
+
+Do not add "coming soon" placeholders: either wire a feature to real data, or leave
+it out and record it in `RECOMMENDATIONS.md` so the gap is deliberate rather than
+silent.

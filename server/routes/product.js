@@ -20,8 +20,16 @@ const CATEGORY_ALIASES = {
   sportseyewear: 'sportseyewear',
   'sports-eyewear': 'sportseyewear',
   sports: 'sportseyewear',
-  kids: 'kids'
+  kids: 'kids',
+  solution: 'solution',
+  'care-solutions': 'solution',
+  'lens-solution': 'solution',
+  solutions: 'solution',
+  accessories: 'accessories',
+  accessory: 'accessories'
 };
+
+const normalizeRegex = (value) => normalizedRegex(value) || value;
 
 const normalizeCategory = (value) => {
   if (!value) return value;
@@ -36,6 +44,20 @@ const normalizeCategory = (value) => {
 // The stored enums use inconsistent casing and spacing ('Cat Eye' vs 'cateye',
 // 'Full Rim' vs 'full-rim', 'Stainless Steel' vs 'stainless-steel'), so match
 // on a normalised pattern that accepts any of those spellings.
+
+const normalizeToken = (v) => String(v || '').toLowerCase().replace(/[\s]+/g, '').replace(/[-_]+/g, '');
+const normalizeArray = (v) => {
+  const token = normalizeToken(v);
+  const FORMS = {
+    blucut: ['bluCut', 'blucut', 'blue-cut'],
+    photochromic: ['photochromic'],
+    polarized: ['polarized'],
+    nonpowered: ['nonpowered'],
+    powered: ['powered']
+  };
+  return FORMS[token] || [v];
+};
+
 const normalizedRegex = (value) => {
   const clean = String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
   if (!clean) return null;
@@ -68,13 +90,20 @@ router.get('/', optionalAuth, async (req, res) => {
     const { 
       page = 1, limit = 20, search, category, brand, minPrice, maxPrice, 
       frameShape, frameType, material, frameColor, lensType, gender, frameSize,
-      modelNumber, color, sellerCode, sort, hasOffer, seller: isSeller 
+      modelNumber, color, sellerCode, sort, hasOffer, seller: isSeller,
+      // Contact lens and powered-eyewear dimensions.
+      powered, powerType, withPower, colour, combo, lensesPerBox, replacementPeriod,
+      subGender, ageGroup, prescriptionLensTypes, suitableFor, volumeMl, accessoryType,
+      use, waterContent, diameter, minPriceGte, excludeCategory
     } = req.query;
 
     // Only approved catalogue is publicly visible; sellers may list whatever
     // they have been assigned, but it reaches shoppers after verification.
     const VISIBLE = { isActive: true, verificationStatus: 'verified' };
     const query = { ...VISIBLE };
+    // All contact-lens sub-fields merge into one object; overwriting it per
+    // filter would let the last one win and silently drop the others.
+    const lensFilter = {};
 
     if (sellerCode) {
       // Public store link from the product page: resolve the seller by their
@@ -95,10 +124,52 @@ router.get('/', optionalAuth, async (req, res) => {
     // Contact lenses are not frames: a browse filtered by gender, face shape,
     // frame type or frame material is an eyewear browse, so lens products must
     // never leak into it regardless of which entry point asked for it.
+    // Only frame attributes make this an eyewear browse. Lens attributes
+    // (power type, box size, replacement) must not, or asking for daily toric
+    // lenses would be read as "eyewear without a frame shape" and exclude them.
     const isEyewearFacetBrowse = Boolean(
       gender || frameShape || frameType || material || frameSize || frameColor || color
     );
-    if (isEyewearFacetBrowse && !query.category) query.category = { $ne: 'contactlenses' };
+    // Solution and accessories never leak into an eyewear facet browse either.
+    const NON_EYEWEAR = { $nin: ['contactlenses', 'solution', 'accessories'] };
+    if (isEyewearFacetBrowse && !query.category) query.category = NON_EYEWEAR;
+    if (excludeCategory) query.category = { $ne: normalizeCategory(excludeCategory) };
+    if (subGender) query.subGender = subGender;
+    if (ageGroup) query.ageGroup = ageGroup;
+    if (modelNumber) query.modelNumber = new RegExp(String(modelNumber).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    if (prescriptionLensTypes) query.prescriptionLensTypes = normalizeRegex(prescriptionLensTypes);
+    if (replacementPeriod) lensFilter.replacementPeriod = normalizeRegex(replacementPeriod);
+    if (lensesPerBox) lensFilter.lensesPerBox = Number(lensesPerBox) || lensesPerBox;
+    if (waterContent) lensFilter.waterContent = Number(waterContent);
+    if (diameter) lensFilter.diameter = Number(diameter);
+    if (volumeMl) query['solution.volumeMl'] = Number(volumeMl);
+    if (suitableFor) query['solution.suitableFor'] = normalizeRegex(suitableFor);
+    if (accessoryType) query['accessory.accessoryType'] = normalizeRegex(accessoryType);
+
+    // Contact-lens power-type selection. `powerType=none|colour` is cosmetic.
+    if (powerType) {
+      const pt = normalizeToken(powerType);
+      if (pt === 'all' || pt === 'allpowers' || pt === 'all-powers') {
+        // no constraint beyond being a lens
+      } else if (pt === 'colour' || pt === 'color' || pt === 'cosmetic') {
+        lensFilter.isCosmetic = true;
+      } else {
+        lensFilter.powerType = pt;
+      }
+    }
+    if (colour === 'true') lensFilter.isCosmetic = true;
+    if (combo === 'true') query['contactLens.comboShades.0'] = { $exists: true };
+    if (withPower === 'true') lensFilter.withPowerAvailable = true;
+    if (withPower === 'false') lensFilter.allowsZeroPower = true;
+
+    // "powered" browse means frames the lab can glaze and a seller is
+    // *listed as selling with power*; both must hold.
+    if (powered === 'true') {
+      query.poweredOptionsAvailable = true;
+      query.category = query.category || { $in: ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'] };
+    }
+    if (use === 'computer') query.lensType = { $in: normalizeArray('blucut') };
+
     if (isEyewearFacetBrowse && query.category === 'contactlenses') {
       return res.json({
         success: true,
@@ -133,6 +204,11 @@ router.get('/', optionalAuth, async (req, res) => {
       query.seller = req.user._id || req.user.sellerId;
     }
 
+    // Applied here so every lensFilter assignment above is included.
+    // Dotted paths, not an object: a single nested subdocument compared as a
+    // whole object matches only documents identical in every field.
+    Object.entries(lensFilter).forEach(([k, v]) => { query[`contactLens.${k}`] = v; });
+
     let sortOption = { createdAt: -1 };
     if (sort === 'price_asc') sortOption = { price: 1 };
     else if (sort === 'price_desc') sortOption = { price: -1 };
@@ -142,6 +218,7 @@ router.get('/', optionalAuth, async (req, res) => {
     else if (sort === 'discount') sortOption = { discountedPrice: 1 };
 
     // Get sponsored products first (only 1 per search)
+    if (process.env.DEBUG_QUERIES) console.log('LIST QUERY:', JSON.stringify(query));
     const sponsoredProducts = await Product.find({ ...query, isSponsored: true })
       .populate('seller', 'storeName storeLogo rating sellerId createdAt')
       .limit(1);

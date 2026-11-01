@@ -26,6 +26,7 @@ const Coupons = lazy(() => import('./pages/admin/Coupons'));
 const BlogManagement = lazy(() => import('./pages/admin/BlogManagement'));
 const DeliveryManagement = lazy(() => import('./pages/admin/DeliveryManagement'));
 const ManageDeliveryPartners = lazy(() => import('./pages/admin/ManageDeliveryPartners'));
+const PriceChangeConfirm = lazy(() => import('./pages/account/PriceChangeConfirm'));
 const SaleEvents = lazy(() => import('./pages/admin/SaleEvents'));
 const BannerManagement = lazy(() => import('./pages/admin/BannerManagement'));
 const UserDetailView = lazy(() => import('./pages/admin/UserDetailView'));
@@ -83,6 +84,7 @@ const ManufacturerSellerLogin = lazy(() => import('./pages/manufacturerSeller/Ma
 const ManufacturerSellerDashboard = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerDashboard'));
 const FaceShapeGuide = lazy(() => import('./pages/FaceShapeGuide'));
 const SellerInventory = lazy(() => import('./pages/seller/SellerInventory'));
+const SellerStock = lazy(() => import('./pages/seller/SellerStock'));
 const SellerReturns = lazy(() => import('./pages/seller/SellerReturns'));
 const DeliveryPartnerLogin = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerLogin'));
 const DeliveryPartnerDashboard = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerDashboard'));
@@ -97,6 +99,7 @@ const ProductVerification = lazy(() => import('./pages/admin/ProductVerification
 const LensSelection = lazy(() => import('./pages/LensSelection'));
 const AdvancedSearch = lazy(() => import('./components/AdvancedSearch'));
 const ContactLenses = lazy(() => import('./pages/ContactLenses'));
+const ContactLensConfigure = lazy(() => import('./pages/contactLenses/ContactLensConfigure'));
 const DeliveryRouteOptimization = lazy(() => import('./pages/deliveryPartner/DeliveryRouteOptimization'));
 const CustomerReturnPortal = lazy(() => import('./pages/CustomerReturnPortal'));
 
@@ -206,6 +209,7 @@ function App() {
         <Route path="/seller/profile" element={<SellerRoute><SellerProfile /></SellerRoute>} />
         <Route path="/seller/payouts" element={<SellerRoute><SellerPayouts /></SellerRoute>} />
         <Route path="/seller/inventory" element={<SellerRoute><SellerInventory /></SellerRoute>} />
+        <Route path="/seller/stock" element={<SellerRoute><SellerStock /></SellerRoute>} />
         <Route path="/seller/returns" element={<SellerRoute><SellerReturns /></SellerRoute>} />
         <Route path="/seller/inventory-analytics" element={<SellerRoute><SellerInventoryAnalytics /></SellerRoute>} />
         <Route path="/seller/return-analytics" element={<SellerRoute><SellerReturnAnalytics /></SellerRoute>} />
@@ -259,8 +263,10 @@ function App() {
         <Route path="/search" element={<SearchResults />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/products" element={<ProductsBrowse />} />
-        <Route path="/category/:category" element={<CategoryPage />} />
+        <Route path="/category/:category" element={<ProductsBrowse />} />
+        <Route path="/price-change/:stockId" element={<PriceChangeConfirm />} />
         <Route path="/contact-lenses" element={<ContactLenses />} />
+        <Route path="/contact-lenses/configure/:productId" element={<ContactLensConfigure />} />
         <Route path="/brands" element={<AllBrands />} />
         <Route path="/blog" element={<BlogList />} />
         <Route path="/blog/:slug" element={<BlogPost />} />

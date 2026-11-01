@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import { registerValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifyToken } from '../middleware/auth.js';
+import { uploadPrescription } from '../middleware/upload.js';
 import { sendOTP, sendPasswordReset } from '../services/email.js';
 
 const router = express.Router();
@@ -398,6 +399,30 @@ router.get('/prescriptions', verifyToken, async (req, res) => {
     res.json({ success: true, prescriptions: user.prescriptions || [] });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/prescription-upload
+ * Accepts the prescription image or PDF and returns the stored URL, so the
+ * configurator can attach the file before saving the record.
+ */
+router.post('/prescription-upload', verifyToken, uploadPrescription, async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'Choose a prescription image or PDF to upload.' });
+    }
+    const url = `/uploads/prescriptions/${req.file.filename}`;
+    res.status(201).json({
+      success: true,
+      url,
+      fileUrl: url,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+  } catch (error) {
+    console.error('Prescription upload error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

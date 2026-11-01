@@ -4,7 +4,7 @@ import { deliveryPartner as deliveryApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
-import { FiMapPin, FiClock, FiDollarSign, FiNavigation, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
+import { FiAlertTriangle, FiCheckCircle, FiClock, FiDollarSign, FiMapPin, FiNavigation, FiTrendingUp } from 'react-icons/fi';
 import { oneOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 
@@ -62,7 +62,7 @@ const DeliveryRouteOptimization = () => {
 
         {/* Optimize Button */}
         <div className="card" style={{ padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
-          <FiRoute size={48} color="var(--primary)" style={{ marginBottom: '16px' }} />
+          <FiTrendingUp size={48} color="var(--primary)" style={{ marginBottom: '16px' }} />
           <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '12px' }}>Optimize Your Delivery Route</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>
             Get the most efficient route for your pending deliveries
@@ -83,7 +83,7 @@ const DeliveryRouteOptimization = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
               <div className="card" style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                  <FiRoute size={24} color="var(--primary)" />
+                  <FiTrendingUp size={24} color="var(--primary)" />
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Total Distance</span>
                 </div>
                 <div style={{ fontSize: '32px', fontWeight: 700 }}>{routeData.metrics.totalDistance} km</div>
