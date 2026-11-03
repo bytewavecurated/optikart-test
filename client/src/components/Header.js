@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMenu, FiX, FiChevronDown, FiCamera, FiMic } from 'react-icons/fi';
+import { Link, useNavigate, NavLink } from 'react-router-dom';
+import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMenu, FiX, FiChevronDown, FiCamera, FiMic, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -14,6 +14,9 @@ const Header = () => {
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [showLeftIndicator, setShowLeftIndicator] = useState(false);
   const [showRightIndicator, setShowRightIndicator] = useState(true);
+  // The arrow buttons only appear when the strip genuinely overflows; on a wide
+  // screen where every link fits they would be dead weight.
+  const [railOverflow, setRailOverflow] = useState(false);
   const categoryNavRef = useRef(null);
   const { user, seller, admin, isAuthenticated, logout, sellerLogout } = useAuth();
   const { totalItems } = useCart();
@@ -24,18 +27,34 @@ const Header = () => {
     const nav = categoryNavRef.current;
     if (!nav) return;
 
-    const handleScroll = () => {
+    const measure = () => {
       const { scrollLeft, scrollWidth, clientWidth } = nav;
       setShowLeftIndicator(scrollLeft > 0);
       setShowRightIndicator(scrollLeft < scrollWidth - clientWidth - 10);
+      setRailOverflow(scrollWidth > clientWidth + 10);
     };
 
-    nav.addEventListener('scroll', handleScroll);
-    // Initial check
-    handleScroll();
+    nav.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    // Webfonts settle after first paint and change the strip's width, so measure
+    // again shortly after mount instead of trusting the first pass.
+    measure();
+    const t = setTimeout(measure, 400);
 
-    return () => nav.removeEventListener('scroll', handleScroll);
+    return () => {
+      nav.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+      clearTimeout(t);
+    };
   }, []);
+
+  // One press moves roughly a screenful of links, which feels the same on a 13"
+  // laptop and a 34" monitor.
+  const scrollRail = (direction) => {
+    const nav = categoryNavRef.current;
+    if (!nav) return;
+    nav.scrollBy({ left: direction * Math.max(200, nav.clientWidth * 0.7), behavior: 'smooth' });
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -63,7 +82,7 @@ const Header = () => {
 
   return (
     <header style={{ background: 'var(--bg-dark)', position: 'sticky', top: 0, zIndex: 50 }}>
-      <div className="container header-row" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '16px' }}>
+      <div className="container header-row" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '28px' }}>
         {/* Logo */}
         <Link to="/" aria-label="OptiKart home" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
           <Logo variant="onDark" size={22} tagline />
@@ -146,7 +165,7 @@ const Header = () => {
         </form>
 
         {/* Desktop Nav */}
-        <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+        <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           {isAuthenticated ? (
             <div style={{ position: 'relative' }}>
               <button
@@ -285,32 +304,55 @@ const Header = () => {
         )}
       </AnimatePresence>
 
-      {/* Category sub-nav (desktop) */}
+      {/* Category sub-nav (desktop). Links are padded pills rather than bare text
+          on a 40px strip, and the rail scrolls by arrow on wide screens. */}
       <div className="hide-mobile" style={{ background: '#fff', borderTop: '1px solid var(--border)', position: 'relative' }}>
-        <div className="container" style={{ position: 'relative' }}>
-          <div 
+        <div className="container category-nav-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {railOverflow && (
+            <button
+              type="button"
+              onClick={() => scrollRail(-1)}
+              disabled={!showLeftIndicator}
+              aria-label="Scroll categories left"
+              className="rail-arrow"
+              style={{ opacity: showLeftIndicator ? 1 : 0.3 }}
+            >
+              <FiChevronLeft size={18} />
+            </button>
+          )}
+          <div
             ref={categoryNavRef}
-            className="category-nav-scroll" 
-            style={{ display: 'flex', alignItems: 'center', gap: '32px', height: '40px', overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none', scrollBehavior: 'smooth' }}
+            className="category-nav-scroll"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') { e.preventDefault(); scrollRail(1); }
+              if (e.key === 'ArrowLeft') { e.preventDefault(); scrollRail(-1); }
+            }}
+            style={{ display: 'flex', alignItems: 'center', gap: '2px', height: '46px', overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none', scrollBehavior: 'smooth', flex: 1, minWidth: 0 }}
           >
             {categories.map((cat) => (
-              <Link key={cat.path} to={cat.path} style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>
+              <NavLink key={cat.path} to={cat.path} className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>
                 {cat.name}
-              </Link>
+              </NavLink>
             ))}
-            <Link to="/brands" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>All Brands</Link>
-            <Link to="/virtual-tryon" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--primary)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>Virtual Try-On</Link>
-            <Link to="/prescription" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>Upload Prescription</Link>
-            <Link to="/coupons" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--secondary)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>Offers</Link>
-            <Link to="/blog" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>Blog</Link>
-            <Link to="/help" style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>Help</Link>
+            <NavLink to="/brands" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>All Brands</NavLink>
+            <NavLink to="/virtual-tryon" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Virtual Try-On</NavLink>
+            <NavLink to="/prescription" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Upload Prescription</NavLink>
+            <NavLink to="/coupons" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--secondary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Offers</NavLink>
+            <NavLink to="/blog" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Blog</NavLink>
+            <NavLink to="/help" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Help</NavLink>
           </div>
-          {/* Scroll indicators */}
-          {showLeftIndicator && (
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '40px', background: 'linear-gradient(to right, #fff 0%, rgba(255,255,255,0) 100%)', pointerEvents: 'none', zIndex: 1 }} />
-          )}
-          {showRightIndicator && (
-            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '40px', background: 'linear-gradient(to left, #fff 0%, rgba(255,255,255,0) 100%)', pointerEvents: 'none', zIndex: 1 }} />
+          {railOverflow && (
+            <button
+              type="button"
+              onClick={() => scrollRail(1)}
+              disabled={!showRightIndicator}
+              aria-label="Scroll categories right"
+              className="rail-arrow"
+              style={{ opacity: showRightIndicator ? 1 : 0.3 }}
+            >
+              <FiChevronRight size={18} />
+            </button>
           )}
         </div>
       </div>
@@ -362,6 +404,40 @@ const Header = () => {
       </AnimatePresence>
 
       <style>{`
+        /* Category rail: padded pills with a quiet hover, and round arrow buttons
+           that sit outside the scrolling strip. */
+        .cat-nav-link {
+          padding: 7px 13px;
+          border-radius: 999px;
+          transition: background-color .15s ease, color .15s ease;
+        }
+        .cat-nav-link:hover { background: var(--bg-secondary); }
+        .cat-nav-link.active {
+          background: var(--brand-tint);
+          color: var(--brand);
+          font-weight: 700;
+        }
+        .rail-arrow {
+          flex-shrink: 0;
+          width: 30px;
+          height: 30px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--border);
+          border-radius: 50%;
+          background: #fff;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: background-color .15s ease, color .15s ease;
+        }
+        .rail-arrow:hover:not(:disabled) { background: var(--bg-secondary); color: var(--text-primary); }
+        .rail-arrow:disabled { cursor: default; }
+        @media (min-width: 769px) {
+          .header-row { gap: 30px; }
+          .header-row .container { padding-left: 0; padding-right: 0; }
+          .category-nav-wrap { padding-top: 5px; padding-bottom: 5px; }
+        }
         /* The desktop nav and the category rail are marked .hide-mobile; without
            this rule they rendered on phones and forced a horizontal scrollbar. */
         @media (max-width: 768px) {

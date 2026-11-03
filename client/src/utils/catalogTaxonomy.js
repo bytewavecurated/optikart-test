@@ -12,11 +12,11 @@
 // Facets every eyewear browse offers.
 
 const PRICE_BANDS = [
-  { label: 'Under Rs. 1,000', min: '', max: '1000' },
-  { label: 'Rs. 1,000 - Rs. 2,500', min: '1000', max: '2500' },
-  { label: 'Rs. 2,500 - Rs. 5,000', min: '2500', max: '5000' },
-  { label: 'Rs. 5,000 - Rs. 10,000', min: '5000', max: '10000' },
-  { label: 'Over Rs. 10,000', min: '10000', max: '' }
+  { label: 'Under ₹1,000', min: '', max: '1000' },
+  { label: '₹1,000 - ₹2,500', min: '1000', max: '2500' },
+  { label: '₹2,500 - ₹5,000', min: '2500', max: '5000' },
+  { label: '₹5,000 - ₹10,000', min: '5000', max: '10000' },
+  { label: 'Over ₹10,000', min: '10000', max: '' }
 ];
 
 export const EYEWEAR_FACETS = [

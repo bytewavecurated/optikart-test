@@ -180,7 +180,7 @@ const DeliveryPartnerDashboard = () => {
     setWithdrawing(true);
     try {
       await deliveryApi.withdraw(amount);
-      toast.success(`Withdrawal of Rs. ${amount.toFixed(2)} requested successfully`);
+      toast.success(`Withdrawal of ₹${amount.toFixed(2)} requested successfully`);
       setWithdrawAmount('');
       setStats((prev) => ({ ...prev, totalEarnings: prev.totalEarnings - amount }));
     } catch (error) {
@@ -211,7 +211,7 @@ const DeliveryPartnerDashboard = () => {
     );
   }
 
-  const inr = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
   const statCards = [
     { label: "Today's Deliveries", value: stats.todayDeliveries ?? 0, icon: FiTruck },
@@ -415,7 +415,7 @@ const DeliveryPartnerDashboard = () => {
               <form onSubmit={handleWithdraw}>
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary, #555)', marginBottom: 6 }}>
-                    Amount (Rs.)
+                    Amount (₹)
                   </label>
                   <div style={{ position: 'relative' }}>
                     <FiDollarSign style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light, #999)' }} />
@@ -424,7 +424,7 @@ const DeliveryPartnerDashboard = () => {
                       type="number"
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
-                      placeholder="Minimum Rs. 50"
+                      placeholder="Minimum ₹50"
                       min="50"
                       step="1"
                       max={Math.floor(stats.availableBalance || 0)}
@@ -432,8 +432,8 @@ const DeliveryPartnerDashboard = () => {
                     />
                   </div>
                   <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-light, #999)', lineHeight: 1.5 }}>
-                    Available: Rs. {(stats.availableBalance || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                    {' - '}Rs. 3 fee per started Rs. 50, so Rs. {withdrawAmount && Number(withdrawAmount) >= 50
+                    Available: ₹{(stats.availableBalance || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    {' - '}₹3 fee per started ₹50, so ₹{withdrawAmount && Number(withdrawAmount) >= 50
                       ? Math.ceil(Number(withdrawAmount) / 50) * 3
                       : 0}
                     {' would be deducted. One withdrawal per day'}

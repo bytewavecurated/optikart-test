@@ -85,12 +85,7 @@ const GenderSelection = () => {
                   e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
                 }}
               >
-                <div style={{ 
-                  width: '100%', 
-                  height: '280px', 
-                  overflow: 'hidden',
-                  position: 'relative'
-                }}>
+                <div style={{ width: '100%', height: '280px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
                   <img
                     src={gender.image}
                     alt={gender.name}
@@ -103,28 +98,23 @@ const GenderSelection = () => {
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   />
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    background: `linear-gradient(to top, ${gender.color}dd, transparent)`,
-                    padding: '40px 20px 20px'
+                </div>
+                {/* The colour band sits under the photo instead of a gradient burnt
+                    over it, so a real photograph stays readable and the label never
+                    depends on the image's contrast. */}
+                <div style={{ padding: '14px 18px', background: '#fff', borderTop: `3px solid ${gender.color}` }}>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '19px',
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}>
-                    <h3 style={{ 
-                      margin: 0, 
-                      fontSize: '24px', 
-                      fontWeight: 700, 
-                      color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                    }}>
-                      <FiUser size={24} />
-                      {gender.name}
-                    </h3>
-                  </div>
+                    <FiUser size={19} style={{ color: gender.color }} />
+                    {gender.name}
+                  </h3>
                 </div>
               </div>
             ))}

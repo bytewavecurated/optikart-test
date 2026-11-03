@@ -228,19 +228,19 @@ const OrderDetail = () => {
                         </div>
                       )}
                     </div>
-                    <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }}>Rs. {money((it.price || 0) * (it.quantity || 1))}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap' }}>₹{money((it.price || 0) * (it.quantity || 1))}</div>
                   </div>
                 );
               })}
             </Card>
 
             <Card title="Payment summary" icon={<FiCreditCard size={16} />}>
-              <Row label="Item total" value={`Rs. ${money(order.subtotal)}`} />
-              {order.couponDiscount > 0 && <Row label={`Coupon${order.couponApplied ? ` (${order.couponApplied})` : ''}`} value={`- Rs. ${money(order.couponDiscount)}`} />}
-              <Row label={paidUpfront ? 'Delivery' : 'Delivery (payable on order)'} value={order.deliveryCharge ? `Rs. ${money(order.deliveryCharge)}` : 'Free'} />
-              <Row label="Platform fee" value={`Rs. ${money(order.platformFee)}`} />
+              <Row label="Item total" value={`₹${money(order.subtotal)}`} />
+              {order.couponDiscount > 0 && <Row label={`Coupon${order.couponApplied ? ` (${order.couponApplied})` : ''}`} value={`- ₹${money(order.couponDiscount)}`} />}
+              <Row label={paidUpfront ? 'Delivery' : 'Delivery (payable on order)'} value={order.deliveryCharge ? `₹${money(order.deliveryCharge)}` : 'Free'} />
+              <Row label="Platform fee" value={`₹${money(order.platformFee)}`} />
               <Row label="Paid via" value={order.paymentMethod === 'cod' ? 'Cash on delivery' : paidUpfront ? 'Prepaid' : 'Awaiting payment'} />
-              <Row label="Order total" value={`Rs. ${money(order.totalAmount)}`} strong />
+              <Row label="Order total" value={`₹${money(order.totalAmount)}`} strong />
             </Card>
           </div>
 

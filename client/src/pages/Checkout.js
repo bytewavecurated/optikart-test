@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiMapPin, FiCreditCard, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
@@ -63,7 +63,7 @@ const Checkout = () => {
       // Server answers { success, message, coupon: { code, discountType, discountValue, discount } }
       const applied = res.data.coupon || res.data.data || res.data;
       applyCoupon(applied);
-      toast.success(`Coupon applied! You saved Rs. ${applied.discount ?? ''}`.trim());
+      toast.success(`Coupon applied! You saved ₹${applied.discount ?? ''}`.trim());
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid coupon code');
     } finally {

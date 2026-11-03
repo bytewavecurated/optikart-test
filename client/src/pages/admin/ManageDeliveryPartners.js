@@ -211,8 +211,8 @@ export default function ManageDeliveryPartners() {
                         </td>
                         <td style={td}>{p.totalDeliveries ?? 0}</td>
                         <td style={td}>
-                          Rs. {Math.round(p.totalEarnings || 0).toLocaleString('en-IN')}
-                          <div style={{ fontSize: 12, color: 'var(--text-light)' }}>due Rs. {Math.round(p.pendingEarnings || 0).toLocaleString('en-IN')}</div>
+                          ₹{Math.round(p.totalEarnings || 0).toLocaleString('en-IN')}
+                          <div style={{ fontSize: 12, color: 'var(--text-light)' }}>due ₹{Math.round(p.pendingEarnings || 0).toLocaleString('en-IN')}</div>
                         </td>
                         <td style={td}>
                           <span className={`badge ${p.isBanned ? 'badge-soft-danger' : 'badge-soft-neutral'}`} style={{ padding: '3px 9px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>
@@ -252,7 +252,7 @@ export default function ManageDeliveryPartners() {
               {summary.map((s, i) => (
                 <div key={i} className="card-flat" style={{ padding: 14 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{s.partner?.name || 'Unassigned'}</div>
-                  <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{s.activeDeliveries} live · earns Rs. {Math.round(s.expectedEarnings).toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{s.activeDeliveries} live · earns ₹{Math.round(s.expectedEarnings).toLocaleString('en-IN')}</div>
                 </div>
               ))}
             </div>
@@ -275,7 +275,7 @@ export default function ManageDeliveryPartners() {
                         <td style={td}>{r.customer?.name}<div style={{ fontSize: 12, color: 'var(--text-light)' }}>{r.destination}</div></td>
                         <td style={{ ...td, textTransform: 'capitalize' }}>{r.orderStatus?.replace('_', ' ')}</td>
                         <td style={td}>{r.distanceKm || '-'}</td>
-                        <td style={td}>Rs. {Math.round(r.earnings || 0).toLocaleString('en-IN')}</td>
+                        <td style={td}>₹{Math.round(r.earnings || 0).toLocaleString('en-IN')}</td>
                       </tr>
                     ))}
                   </tbody>

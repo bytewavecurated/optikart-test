@@ -30,7 +30,7 @@ const AdminDashboard = () => {
     { label: 'Customers', value: (stats.totalUsers || 0).toLocaleString('en-IN'), icon: <FiUsers /> },
     { label: 'Sellers', value: (stats.totalSellers || 0).toLocaleString('en-IN'), sub: `${stats.verifiedSellers || 0} verified`, icon: <FiShoppingBag /> },
     { label: 'Orders', value: (stats.totalOrders || 0).toLocaleString('en-IN'), sub: `${stats.pendingOrders || 0} pending`, icon: <FiPackage /> },
-    { label: 'Revenue', value: `Rs. ${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, sub: `Avg order Rs. ${(stats.avgOrderValue || 0).toLocaleString('en-IN')}`, icon: <FiDollarSign /> },
+    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString('en-IN')}`, sub: `Avg order ₹${(stats.avgOrderValue || 0).toLocaleString('en-IN')}`, icon: <FiDollarSign /> },
   ];
 
   const quickLinks = [
@@ -241,7 +241,7 @@ const AdminDashboard = () => {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>
-                    Rs. {(o.totalAmount || 0).toLocaleString('en-IN')}
+                    ₹{(o.totalAmount || 0).toLocaleString('en-IN')}
                   </div>
                   <div style={{ fontSize: 12, color: '#757575', textTransform: 'capitalize' }}>
                     {(o.orderStatus || 'pending').replace(/_/g, ' ')}

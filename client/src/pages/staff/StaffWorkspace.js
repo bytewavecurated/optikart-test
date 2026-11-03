@@ -152,7 +152,7 @@ export default function StaffWorkspace({ view = 'overview' }) {
                     <td style={td}>{r.title}</td>
                     <td style={td}>{r.brand || '-'}</td>
                     <td style={td}>{r.storeName || r.seller?.storeName || '-'}</td>
-                    <td style={td}>Rs. {(r.discountedPrice || r.price || 0).toLocaleString('en-IN')}</td>
+                    <td style={td}>₹{(r.discountedPrice || r.price || 0).toLocaleString('en-IN')}</td>
                     <td style={td}>{String(r.verificationStatus || 'pending').replace(/_/g, ' ')}</td>
                   </>)}
                   {view === 'orders' && (<>
@@ -160,7 +160,7 @@ export default function StaffWorkspace({ view = 'overview' }) {
                     <td style={td}>{r.user?.name || '-'}<div style={{ fontSize: 12, color: 'var(--text-light)' }}>{r.user?.phone}</div></td>
                     <td style={td}>{r.seller?.storeName || '-'}</td>
                     <td style={td}>{String(r.orderStatus || '').replace(/_/g, ' ')}</td>
-                    <td style={td}>Rs. {(r.totalAmount || 0).toLocaleString('en-IN')}</td>
+                    <td style={td}>₹{(r.totalAmount || 0).toLocaleString('en-IN')}</td>
                     <td style={td}>{r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN') : '-'}</td>
                   </>)}
                   {view === 'returns' && (<>

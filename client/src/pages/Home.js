@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   FiTruck, FiShield, FiRefreshCw, FiHeadphones, FiArrowRight, FiTag, FiPercent,
   FiGift, FiEye, FiAward, FiStar, FiDroplet, FiSun, FiLayers,
-  FiBookOpen, FiActivity, FiSmile
+  FiBookOpen, FiActivity, FiSmile, FiZap, FiMonitor, FiTool, FiAperture, FiHexagon
 } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -28,24 +28,28 @@ const FRAME_TYPES = ['Full Rim', 'Half Rim', 'Rimless'];
 const FRAME_MATERIALS = ['Acetate', 'Metal', 'Polycarbonate', 'Stainless Steel', 'TR90', 'Titanium'];
 
 const CATEGORIES = [
-  { name: 'Sunglasses', slug: 'sunglasses', icon: <FiSun size={26} /> },
-  { name: 'Eyeglasses', slug: 'eyeglasses', icon: <FiEye size={26} /> },
-  { name: 'Contact Lenses', slug: 'contact-lenses', icon: <FiDroplet size={26} /> },
-  { name: 'Reading Glasses', slug: 'reading-glasses', icon: <FiBookOpen size={26} /> },
-  { name: 'Sports Eyewear', slug: 'sports-eyewear', icon: <FiActivity size={26} /> },
-  { name: 'Kids', slug: 'kids', icon: <FiSmile size={26} /> }
+  { name: 'Sunglasses', slug: 'sunglasses', icon: <FiSun size={18} /> },
+  { name: 'Eyeglasses', slug: 'eyeglasses', icon: <FiEye size={18} /> },
+  { name: 'Contact Lenses', slug: 'contact-lenses', icon: <FiDroplet size={18} /> },
+  { name: 'Reading Glasses', slug: 'reading-glasses', icon: <FiBookOpen size={18} /> },
+  { name: 'Sports Eyewear', slug: 'sports-eyewear', icon: <FiActivity size={18} /> },
+  { name: 'Powered Sunglasses', slug: 'powered-sunglasses', icon: <FiZap size={18} /> },
+  { name: 'Computer Glasses', slug: 'computer-glasses', icon: <FiMonitor size={18} /> },
+  { name: 'Lens Care', slug: 'solution', icon: <FiDroplet size={18} /> },
+  { name: 'Accessories', slug: 'accessories', icon: <FiTool size={18} /> },
+  { name: 'Kids', slug: 'kids', icon: <FiSmile size={18} /> }
 ];
 
 const OFFERS = [
   { title: 'Flat 50% off', subtitle: 'On premium sunglasses', tint: '#eef4fe', fg: '#1b5fc4', icon: <FiPercent size={20} />, link: '/category/sunglasses' },
   { title: 'Buy 1 get 1', subtitle: 'Selected eyeglasses', tint: '#f1f3f6', fg: '#14161a', icon: <FiGift size={20} />, link: '/category/eyeglasses' },
-  { title: 'From Rs. 299', subtitle: 'Contact lenses', tint: '#e8f5ee', fg: '#1a7f4b', icon: <FiDroplet size={20} />, link: '/category/contact-lenses' },
-  { title: 'Extra Rs. 200 off', subtitle: 'Use code EYE200', tint: '#fdf3e3', fg: '#b06e00', icon: <FiAward size={20} />, link: '/coupons' }
+  { title: 'From ₹299', subtitle: 'Contact lenses', tint: '#e8f5ee', fg: '#1a7f4b', icon: <FiDroplet size={20} />, link: '/category/contact-lenses' },
+  { title: 'Extra ₹200 off', subtitle: 'Use code EYE200', tint: '#fdf3e3', fg: '#b06e00', icon: <FiAward size={20} />, link: '/coupons' }
 ];
 
 
 const FEATURES = [
-  { icon: <FiTruck size={26} />, title: 'Free Delivery', desc: 'On orders above Rs. 999' },
+  { icon: <FiTruck size={26} />, title: 'Free Delivery', desc: 'On orders above ₹999' },
   { icon: <FiShield size={26} />, title: '100% Genuine', desc: 'Authentic products only' },
   { icon: <FiRefreshCw size={26} />, title: 'Easy Returns', desc: '7-day return policy' },
   { icon: <FiHeadphones size={26} />, title: '24/7 Support', desc: 'Dedicated help center' }
@@ -64,10 +68,16 @@ const viewAllLink = {
   borderRadius: '8px', background: 'var(--primary-light)'
 };
 
+/*
+ * Icon to the left of the label instead of stacked above it: a row of names scans
+ * far faster, and the chips stay readable when they wrap to one column on a phone.
+ */
 const chipLink = {
-  display: 'block', padding: '16px 12px', textAlign: 'center', textDecoration: 'none',
-  color: 'inherit', background: 'var(--bg-white)', border: '1px solid var(--border)',
-  borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s'
+  display: 'flex', alignItems: 'center', gap: '10px', padding: '13px 14px',
+  textAlign: 'left', textDecoration: 'none', color: 'inherit',
+  background: 'var(--bg-white)', border: '1px solid var(--border)',
+  borderRadius: 'var(--radius)', fontSize: '14px', fontWeight: 600,
+  transition: 'border-color .15s ease, background-color .15s ease, color .15s ease'
 };
 
 const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' };
@@ -143,11 +153,11 @@ const Home = () => {
             {sectionHeading('Shop by Category', 'Find exactly what you are looking for')}
             <Link to="/categories" style={viewAllLink}>All Categories <FiArrowRight size={16} /></Link>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
             {CATEGORIES.map((cat) => (
               <Link key={cat.slug} to={`/category/${cat.slug}`} className="home-chip card" style={chipLink}>
-                <span style={{ color: 'var(--primary)', display: 'block', marginBottom: 8 }}>{cat.icon}</span>
-                {cat.name}
+                <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}>{cat.icon}</span>
+                <span>{cat.name}</span>
               </Link>
             ))}
           </div>
@@ -197,7 +207,10 @@ const Home = () => {
             <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Pick the frame that suits you best</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
               {FACE_SHAPES.map((shape) => (
-                <Link key={shape} to={`/products?frameShape=${encodeURIComponent(shape)}`} className="home-chip card" style={chipLink}>{shape}</Link>
+                <Link key={shape} to={`/products?frameShape=${encodeURIComponent(shape)}`} className="home-chip card" style={chipLink}>
+                  <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}><FiAperture size={18} /></span>
+                  <span>{shape}</span>
+                </Link>
               ))}
             </div>
           </div>
@@ -208,7 +221,8 @@ const Home = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
               {FRAME_TYPES.map((type) => (
                 <Link key={type} to={`/products?frameType=${encodeURIComponent(type)}`} className="home-chip card" style={chipLink}>
-                  <FiLayers size={18} style={{ verticalAlign: 'middle', marginRight: 8, color: 'var(--primary)' }} />{type}
+                  <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}><FiLayers size={18} /></span>
+                  <span>{type}</span>
                 </Link>
               ))}
             </div>
@@ -219,7 +233,10 @@ const Home = () => {
             <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>The material decides the weight, feel and durability</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
               {FRAME_MATERIALS.map((mat) => (
-                <Link key={mat} to={`/products?material=${encodeURIComponent(mat)}`} className="home-chip card" style={chipLink}>{mat}</Link>
+                <Link key={mat} to={`/products?material=${encodeURIComponent(mat)}`} className="home-chip card" style={chipLink}>
+                  <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}><FiHexagon size={18} /></span>
+                  <span>{mat}</span>
+                </Link>
               ))}
             </div>
           </div>

@@ -166,7 +166,7 @@ const ContactLenses = () => {
                       <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{product.brand}</p>
                       <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{product.title}</h3>
                       <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{product.boxQuantity || product.quantity} lenses</p>
-                      <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>Buy Now: Rs. {product.discountedPrice || product.price}</div>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>Buy Now: ₹{product.discountedPrice || product.price}</div>
                     </div>
                   </Link>
                 ))}

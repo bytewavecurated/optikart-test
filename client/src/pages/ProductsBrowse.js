@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, useParams, Link } from 'react-router-dom';
 import { FiFilter, FiX, FiChevronDown } from 'react-icons/fi';
 import { products } from '../services/api';
 import { listOf } from '../services/apiResponse.js';
@@ -83,11 +83,7 @@ export default function ProductsBrowse() {
       Object.entries(fixedFilters).forEach(([k, v]) => { params[k] = v; });
       if (searchParams.get('powered') === 'true') params.powered = 'true';
       facetGroups.forEach((f) => {
-        if (facetValues[f.key]) {
-          // Colour "clear" is the absence of the coloured filter, not a value.
-          if (f.key === 'colour' && facetValues[f.key] === 'clear') params.withPower = params.withPower;
-          else params[f.key] = facetValues[f.key];
-        }
+        if (facetValues[f.key]) params[f.key] = facetValues[f.key];
       });
       if (priceBand) {
         const band = PRICE_BANDS.find((b) => b.label === priceBand);
@@ -129,9 +125,17 @@ export default function ProductsBrowse() {
 
   const activeCount = [brand, ...Object.values(facetValues), priceBand].filter(Boolean).length;
 
-  const heading = category
-    ? category.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) + ' Glasses'
-    : brand || (sellerCode ? 'Seller Store' : 'All Products');
+  /*
+   * The descriptor already carries the display name the taxonomy was built from,
+   * so /category/sports-eyewear headlines as "Sports Eyewear" instead of the slug
+   * with a hardcoded " Glasses" suffix bolted on.
+   */
+  const heading = (() => {
+    if (descriptor?.label || descriptor?.name) return descriptor.label || descriptor.name;
+    const raw = category || categorySlug;
+    if (raw) return raw.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    return brand || (sellerCode ? 'Seller Store' : 'All Products');
+  })();
 
   const filterPanel = (
     <div style={{ display: 'grid', gap: 22 }}>

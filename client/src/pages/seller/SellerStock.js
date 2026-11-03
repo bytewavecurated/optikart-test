@@ -10,7 +10,7 @@ import { FiSearch, FiPlus, FiTruck, FiCheck, FiX, FiTag, FiBox, FiAlertCircle } 
 
 const th = { padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, letterSpacing: .6, textTransform: 'uppercase', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td = { padding: '12px', fontSize: 13.5, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
-const inr = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
+const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
 const Stat = ({ label, value, hint }) => (
   <div className="card-flat" style={{ padding: '14px 16px' }}>

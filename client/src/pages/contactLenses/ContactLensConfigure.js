@@ -280,7 +280,7 @@ export default function ContactLensConfigure() {
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>Rs. {price.toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>₹{price.toLocaleString('en-IN')}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>per box of {box}</div>
           </div>
         </div>
@@ -320,7 +320,7 @@ export default function ContactLensConfigure() {
               </p>
               <OptionGrid columns="repeat(auto-fit, minmax(150px, 1fr))" value={box} onChange={setBox} options={boxOptions.length ? boxOptions : [{ value: cl.lensesPerBox || 6, label: `${cl.lensesPerBox || 6} lenses per box` }]} />
               <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '10px 0 0' }}>
-                Works out at about Rs. {Math.round(perLens).toLocaleString('en-IN')} per lens.
+                Works out at about ₹{Math.round(perLens).toLocaleString('en-IN')} per lens.
               </p>
             </section>
 
@@ -401,7 +401,7 @@ export default function ContactLensConfigure() {
               </div>
             ))}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 0', fontSize: 17, fontWeight: 800 }}>
-              <span>Total</span><span>Rs. {price.toLocaleString('en-IN')}</span>
+              <span>Total</span><span>₹{price.toLocaleString('en-IN')}</span>
             </div>
             <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', margin: '10px 0 0' }}>
               Contact lenses are hygiene-sealed. Once the box is opened it cannot be returned; an unopened box can be returned within {product.returnWindowDays ?? 7} days.
@@ -417,7 +417,7 @@ export default function ContactLensConfigure() {
             </button>
           ) : (
             <button className="btn btn-primary btn-lg" disabled={submitting} onClick={submit} style={{ minWidth: 200 }}>
-              {submitting ? 'Adding…' : `Add to cart - Rs. ${price.toLocaleString('en-IN')}`}
+              {submitting ? 'Adding…' : `Add to cart - ₹${price.toLocaleString('en-IN')}`}
             </button>
           )}
         </div>

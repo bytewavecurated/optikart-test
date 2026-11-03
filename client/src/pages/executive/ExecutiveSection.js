@@ -86,7 +86,7 @@ function DeliveriesView() {
                     {r.deliveryPartner ? `${r.deliveryPartner.name} (${r.deliveryPartner.phone})` : (r.trackingId ? `Shiprocket ${r.trackingId}` : 'Not assigned')}
                   </td>
                   <td style={td}>{STATUS_LABELS[r.orderStatus] || r.orderStatus}</td>
-                  <td style={td}>Rs. {(r.totalAmount || 0).toLocaleString('en-IN')}</td>
+                  <td style={td}>₹{(r.totalAmount || 0).toLocaleString('en-IN')}</td>
                 </tr>
               ))}
             </tbody>
@@ -126,7 +126,7 @@ function CustomersView() {
                 {filtered.map((c) => (
                   <tr key={c._id}>
                     <td style={td}>{c.name}</td><td style={td}>{c.phone || '-'}</td><td style={td}>{c.email || '-'}</td>
-                    <td style={td}>{c.orders}</td><td style={td}>Rs. {Math.round(c.spent).toLocaleString('en-IN')}</td>
+                    <td style={td}>{c.orders}</td><td style={td}>₹{Math.round(c.spent).toLocaleString('en-IN')}</td>
                     <td style={td}>{c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString('en-IN') : '-'}</td>
                   </tr>
                 ))}
@@ -163,8 +163,8 @@ function ReportsView() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
         {[
           { label: 'Orders handled', value: totalUnits },
-          { label: 'Revenue', value: `Rs. ${Math.round(data.totals.revenue).toLocaleString('en-IN')}` },
-          { label: 'Delivery fees', value: `Rs. ${Math.round(data.totals.deliveryFees).toLocaleString('en-IN')}` },
+          { label: 'Revenue', value: `₹${Math.round(data.totals.revenue).toLocaleString('en-IN')}` },
+          { label: 'Delivery fees', value: `₹${Math.round(data.totals.deliveryFees).toLocaleString('en-IN')}` },
           { label: 'Distance covered', value: `${data.totals.distanceKm} km` }
         ].map((c) => (
           <div key={c.label} className="card" style={{ padding: 20 }}>
@@ -179,7 +179,7 @@ function ReportsView() {
           <thead><tr><th style={th}>Status</th><th style={th}>Orders</th><th style={th}>Value</th></tr></thead>
           <tbody>
             {data.byStatus.map((s) => (
-              <tr key={s.status}><td style={td}>{STATUS_LABELS[s.status] || s.status}</td><td style={td}>{s.count}</td><td style={td}>Rs. {Math.round(s.amount).toLocaleString('en-IN')}</td></tr>
+              <tr key={s.status}><td style={td}>{STATUS_LABELS[s.status] || s.status}</td><td style={td}>{s.count}</td><td style={td}>₹{Math.round(s.amount).toLocaleString('en-IN')}</td></tr>
             ))}
           </tbody>
         </table>
@@ -190,7 +190,7 @@ function ReportsView() {
           <thead><tr><th style={th}>Date</th><th style={th}>Orders</th><th style={th}>Value</th></tr></thead>
           <tbody>
             {data.daily.map((d) => (
-              <tr key={d.date}><td style={td}>{d.date}</td><td style={td}>{d.count}</td><td style={td}>Rs. {Math.round(d.amount).toLocaleString('en-IN')}</td></tr>
+              <tr key={d.date}><td style={td}>{d.date}</td><td style={td}>{d.count}</td><td style={td}>₹{Math.round(d.amount).toLocaleString('en-IN')}</td></tr>
             ))}
           </tbody>
         </table>
