@@ -14,6 +14,7 @@ import ContactLensBrandSection from '../components/ContactLensBrandSection';
 import ProductCard from '../components/ProductCard';
 import LoadMore from '../components/LoadMore';
 import GenderSelection from '../components/GenderSelection';
+import { useHomeContent, iconFor } from '../services/homeContent';
 import { products } from '../services/api';
 import { useUserBehavior } from '../contexts/UserBehaviorContext';
 import api from '../services/api';
@@ -27,6 +28,11 @@ const FACE_SHAPES = ['Rectangle', 'Cat Eye', 'Oval', 'Aviator', 'Geometric', 'Ro
 const FRAME_TYPES = ['Full Rim', 'Half Rim', 'Rimless'];
 const FRAME_MATERIALS = ['Acetate', 'Metal', 'Polycarbonate', 'Stainless Steel', 'TR90', 'Titanium'];
 
+/*
+ * What shows when the administrator has changed nothing. The storefront-content
+ * record stores only the overrides, so the two cannot drift apart, and a failed
+ * content request still renders a complete home page.
+ */
 const CATEGORIES = [
   { name: 'Sunglasses', slug: 'sunglasses', icon: <FiSun size={18} /> },
   { name: 'Eyeglasses', slug: 'eyeglasses', icon: <FiEye size={18} /> },
@@ -83,6 +89,7 @@ const chipLink = {
 const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' };
 
 const Home = () => {
+  const content = useHomeContent();
   const [trending, setTrending] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
@@ -126,6 +133,36 @@ const Home = () => {
 
   const activeBrands = brandGroups.slice(0, 4);
 
+  /*
+   * Stored entries carry an icon *name* - only names already imported here are
+   * accepted - while the built-in defaults carry the element. Normalising here
+   * means each rail renders one shape either way.
+   */
+  const withIcon = (list) => (list || []).map((item) => {
+    if (item.icon && typeof item.icon !== 'string') return item;
+    const Icon = iconFor(item.icon);
+    return { ...item, icon: Icon ? <Icon size={18} /> : null };
+  });
+  const categories = content.categoryRail ? withIcon(content.categoryRail) : CATEGORIES;
+  const offers = content.promoTiles ? withIcon(content.promoTiles) : OFFERS;
+  const facetRails = [
+    {
+      key: 'faceShapeRail', title: content.heading('faceShape'), subtitle: content.heading('faceShapeSub'),
+      items: content.faceShapes || FACE_SHAPES, base: '/products?frameShape=', minWidth: '130px',
+      icon: <FiAperture size={18} />
+    },
+    {
+      key: 'frameTypeRail', title: content.heading('frameType'), subtitle: content.heading('frameTypeSub'),
+      items: content.frameTypes || FRAME_TYPES, base: '/products?frameType=', minWidth: '160px',
+      icon: <FiLayers size={18} />
+    },
+    {
+      key: 'materialRail', title: content.heading('material'), subtitle: content.heading('materialSub'),
+      items: content.frameMaterials || FRAME_MATERIALS, base: '/products?material=', minWidth: '150px',
+      icon: <FiHexagon size={18} />, last: true
+    }
+  ];
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
       <Header />
@@ -150,11 +187,11 @@ const Home = () => {
         {/* Categories */}
         <div className="container" style={{ maxWidth: 1400, marginTop: 32 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            {sectionHeading('Shop by Category', 'Find exactly what you are looking for')}
+            {sectionHeading(content.heading('categories'), content.heading('categoriesSub'))}
             <Link to="/categories" style={viewAllLink}>All Categories <FiArrowRight size={16} /></Link>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10 }}>
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <Link key={cat.slug} to={`/category/${cat.slug}`} className="home-chip card" style={chipLink}>
                 <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}>{cat.icon}</span>
                 <span>{cat.name}</span>
@@ -166,7 +203,7 @@ const Home = () => {
         {/* Offers */}
         <div className="container" style={{ maxWidth: 1400, marginTop: 32 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 16 }}>
-            {OFFERS.map((offer) => (
+            {offers.map((offer) => (
               <Link
                 key={offer.title}
                 to={offer.link}
@@ -196,50 +233,32 @@ const Home = () => {
           </div>
         </div>
 
+        {content.visible('gender') && (
+          <div className="container" style={{ maxWidth: 1400, marginTop: 36 }}>
+            <GenderSelection tiles={content.genderTiles} />
+          </div>
+        )}
+
+        {/*
+          Face shape / frame type / material come from one list, so a rail the
+          administrator switched off is absent from the page rather than painted
+          over, and the three blocks cannot drift apart.
+        */}
         <div className="container" style={{ maxWidth: 1400, marginTop: 36 }}>
-          <GenderSelection />
-        </div>
-
-        {/* Face shape / frame type / material */}
-        <div className="container" style={{ maxWidth: 1400, marginTop: 36 }}>
-          <div style={{ marginBottom: 36 }}>
-            <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.4px' }}>Shop by Face Shape</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Pick the frame that suits you best</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
-              {FACE_SHAPES.map((shape) => (
-                <Link key={shape} to={`/products?frameShape=${encodeURIComponent(shape)}`} className="home-chip card" style={chipLink}>
-                  <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}><FiAperture size={18} /></span>
-                  <span>{shape}</span>
-                </Link>
-              ))}
+          {facetRails.map((rail) => (content.visible(rail.key) ? (
+            <div key={rail.key} style={{ marginBottom: rail.last ? 0 : 36 }}>
+              <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.4px' }}>{rail.title}</h2>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>{rail.subtitle}</p>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(${rail.minWidth}, 1fr))`, gap: 12 }}>
+                {rail.items.map((value) => (
+                  <Link key={value} to={`${rail.base}${encodeURIComponent(value)}`} className="home-chip card" style={chipLink}>
+                    <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}>{rail.icon}</span>
+                    <span>{value}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-
-          <div style={{ marginBottom: 36 }}>
-            <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.4px' }}>Shop by Frame Type</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>Full rim, half rim and rimless constructions</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-              {FRAME_TYPES.map((type) => (
-                <Link key={type} to={`/products?frameType=${encodeURIComponent(type)}`} className="home-chip card" style={chipLink}>
-                  <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}><FiLayers size={18} /></span>
-                  <span>{type}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <h2 style={{ fontSize: 26, fontWeight: 800, margin: '0 0 4px', letterSpacing: '-0.4px' }}>Shop by Material</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 16px' }}>The material decides the weight, feel and durability</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
-              {FRAME_MATERIALS.map((mat) => (
-                <Link key={mat} to={`/products?material=${encodeURIComponent(mat)}`} className="home-chip card" style={chipLink}>
-                  <span style={{ color: 'var(--primary)', display: 'inline-flex', flexShrink: 0 }}><FiHexagon size={18} /></span>
-                  <span>{mat}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
+          ) : null))}
         </div>
 
         {/* Trending */}
@@ -252,7 +271,7 @@ const Home = () => {
             <div style={gridStyle}>{renderGrid(trending)}</div>
           </section>
 
-          <CategorySection />
+          <CategorySection title={content.heading('categories')} subtitle={content.heading('categoriesSub')} />
 
           {/* Deals */}
           <section style={{ margin: '44px 0' }}>

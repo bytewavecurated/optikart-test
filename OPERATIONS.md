@@ -119,6 +119,22 @@ On the client `ProtectedRoute` reads the role from the signed-in session, never
 from `localStorage.optikart_role`, which any tab can rewrite; the cached profile is
 restored only when it matches the stored role.
 
+## Editing the storefront without a deploy
+
+`GET /api/site-content/home` is public and returns only what an administrator has
+overridden; the home page merges it onto the defaults that live beside the
+components, so nothing is duplicated and a failed request still renders a full
+page. The admin screen is "Storefront Content" (`/admin/site-content`): headings and
+sub-headings, which rails show, the category / promo / gender tiles, and the face
+shape, frame type and material lists. `DELETE /api/site-content/home` clears it all.
+
+Writes are admin only, and each value is checked before anything is saved: icons
+must be one of the names the app already ships (so a stored value can never become
+markup), links must be an internal path or an `https://` URL, colours must be hex,
+lists are capped at 24 entries. Problems come back per field - `Category tiles item
+2: icon "NotARealIcon" is not one of ...` - because dropping a broken tile silently
+is how a promotion goes missing unnoticed.
+
 ## Troubleshooting
 
 `ERR_ERL_PERMISSIVE_TRUST_PROXY` in the server log

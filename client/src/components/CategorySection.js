@@ -103,13 +103,18 @@ const styles = {
   },
 };
 
-export default function CategorySection() {
+/**
+ * The heading is passed down from the home page: an administrator editing the
+ * "Shop by Category" wording should not find two copies of it, one changed and
+ * one still hardcoded in the component.
+ */
+export default function CategorySection({ title, subtitle }) {
   const scrollRef = useRef(null);
 
   return (
     <div style={styles.section}>
       <div style={styles.header}>
-        <h2 style={styles.title}>Shop by Category</h2>
+        <h2 style={styles.title}>{title || 'Shop by Category'}</h2>
         <Link to="/categories" style={styles.viewAll}>
           View All <FiChevronRight />
         </Link>

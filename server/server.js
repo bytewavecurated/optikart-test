@@ -55,6 +55,7 @@ import staffRoutes from './routes/staff.js';
 import { sweepExpiredOffers } from './services/orderProximity.js';
 import { sweepExpiredPriceChanges } from './services/priceChangeAcceptance.js';
 import { sweepExpiredPartnerOffers } from './services/partnerDispatch.js';
+import siteContentRoutes from './routes/siteContent.js';
 import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -156,6 +157,7 @@ app.use('/api/return-analytics', returnAnalyticsRoutes);
 app.use('/api/delivery-route', deliveryRouteRoutes);
 app.use('/api/customer-returns', customerReturnsRoutes);
 app.use('/api/commission', commissionRoutes);
+app.use('/api/site-content', siteContentRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/seller-stock', sellerStockRoutes);
 

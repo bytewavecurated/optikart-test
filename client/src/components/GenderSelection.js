@@ -3,30 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import {
   FiArrowLeft, FiArrowRight, FiDroplet, FiEye, FiMonitor, FiSun, FiUser } from 'react-icons/fi';
 
-const GenderSelection = () => {
+/*
+ * `tiles` comes from the storefront-content screen: name, colour rule, wording
+ * and photograph can all be replaced by an administrator. Anything left blank
+ * falls back to the defaults below, so a partial edit cannot break the block.
+ */
+const DEFAULT_GENDERS = [
+  { id: 'men', name: 'Men', image: '/assets/gen-men.svg', color: '#2874f0' },
+  { id: 'women', name: 'Women', image: '/assets/gen-women.svg', color: '#ff6161' },
+  { id: 'kids', name: 'Kids', image: '/assets/gen-kids.svg', color: '#ff9f00' }
+];
+
+const GenderSelection = ({ tiles }) => {
   const [selectedGender, setSelectedGender] = useState(null);
   const navigate = useNavigate();
 
-  const genders = [
-    {
-      id: 'men',
-      name: 'Men',
-      image: '/assets/gen-men.svg',
-      color: '#2874f0'
-    },
-    {
-      id: 'women',
-      name: 'Women',
-      image: '/assets/gen-women.svg',
-      color: '#ff6161'
-    },
-    {
-      id: 'kids',
-      name: 'Kids',
-      image: '/assets/gen-kids.svg',
-      color: '#ff9f00'
-    }
-  ];
+  const genders = (tiles && tiles.length)
+    ? tiles.map((tile, i) => ({
+        id: (tile.slug || tile.link || DEFAULT_GENDERS[i]?.id || `group-${i}`).replace(/^\//, '').split('?')[0],
+        name: tile.name || DEFAULT_GENDERS[i]?.name || 'Shop',
+        headline: tile.subtitle || '',
+        image: tile.image || DEFAULT_GENDERS[i]?.image || '',
+        color: tile.fg || DEFAULT_GENDERS[i]?.color || 'var(--brand)'
+      }))
+    : DEFAULT_GENDERS;
 
   const categories = [
     { id: 'eyeglasses', name: 'Eyeglasses', icon: <FiEye size={32} /> },
