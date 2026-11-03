@@ -485,6 +485,210 @@ router.put('/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
  * to which customer, and what they will earn. Supports search and status filters
  * so the admin can find a specific delivery immediately.
  */
+/*
+ * Availability is what puts a partner into the ranking pool at all. Without this
+ * endpoint the cascade could only ever use people an admin had flipped by hand,
+ * while the dashboard switch only repainted itself.
+ */
+router.put('/availability', verifyDeliveryPartner, async (req, res) => {
+  try {
+    const isAvailable = !!req.body.isAvailable;
+    await DeliveryPartner.findByIdAndUpdate(req.partner._id, { isAvailable });
+    res.json({
+      success: true,
+      isAvailable,
+      message: isAvailable ? 'You are now online for deliveries.' : 'You are offline.'
+    });
+  } catch (error) {
+    console.error('Partner availability error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/* Admin: who would be recommended for this order, and why. */
+router.get('/recommendations/:orderId', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { recommendPartners } = await import('../services/partnerDispatch.js');
+    const result = await recommendPartners(req.params.orderId, {
+      radiusKm: Number(req.query.radiusKm) || 12
+    });
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Recommendation lookup error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/* Admin: start or restart the offer cascade for an order. */
+router.post('/queue/offer/:orderId', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { offerQueue } = await import('../services/partnerDispatch.js');
+    const result = await offerQueue(req.params.orderId, req.app.get('io'));
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Partner queue error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/*
+ * The partner's own inbox: runs currently offered to them, with the distance,
+ * what the leg pays and how long they have to answer.
+ */
+router.get('/offers', verifyDeliveryPartner, async (req, res) => {
+  try {
+    const mine = await Order.find({ 'partnerQueue.partner': req.partner._id, partnerDecision: 'offering', assignedDeliveryPartner: null })
+      .sort({ partnerQueueDeadline: 1 }).limit(20)
+      .populate('seller', 'storeName phone address city location').lean();
+    const now = Date.now();
+    const offers = mine
+      .map((o) => {
+        const entry = (o.partnerQueue || []).find((q) => String(q.partner) === String(req.partner._id));
+        if (!entry || entry.response !== 'pending') return null;
+        // A window that has closed is no longer the partner's to take: listing it
+        // would let someone accept a delivery the admin already moved on from.
+        if (o.partnerQueueDeadline && new Date(o.partnerQueueDeadline).getTime() < now) return null;
+        return {
+          orderId: String(o._id),
+          orderNumber: o.orderNumber,
+          pickup: o.pickupLocation?.address || o.seller?.address?.street || o.seller?.storeName || '',
+          drop: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+          distanceKm: entry.distanceKm,
+          earning: o.deliveryFee || 0,
+          deadline: o.partnerQueueDeadline,
+          offeredAt: entry.offeredAt
+        };
+      })
+      .filter(Boolean);
+    res.json({ success: true, offers });
+  } catch (error) {
+    console.error('Partner offers lookup error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/* Partner answers an offer. Declining passes it to the next partner immediately. */
+router.post('/offers/:orderId/respond', verifyDeliveryPartner, async (req, res) => {
+  try {
+    const decision = req.body.decision === 'decline' ? 'decline' : 'accept';
+    const { acceptOffer, advanceQueue } = await import('../services/partnerDispatch.js');
+
+    if (decision === 'accept') {
+      const result = await acceptOffer(req.params.orderId, req.partner._id, req.app.get('io'));
+      if (!result.success) {
+        return res.status(400).json({ success: false, message: result.error, expired: !!result.expired });
+      }
+      return res.json({ success: true, message: 'Run accepted. Pickup details are on your dashboard.', ...result });
+    }
+
+    const order = await Order.findById(req.params.orderId).populate('seller', 'storeName address location');
+    const entry = (order?.partnerQueue || []).find((q) => String(q.partner) === String(req.partner._id));
+    if (!order || !entry) return res.status(404).json({ success: false, message: 'No such offer.' });
+    entry.response = 'rejected';
+    entry.respondedAt = new Date();
+    await order.save();
+    const next = await advanceQueue(order, req.app.get('io'));
+    res.json({ success: true, message: 'Declined.', next: next.offeredName || null, escalated: !!next.escalated });
+  } catch (error) {
+    console.error('Partner respond error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/*
+ * Runs that have left the seller's hands with nobody assigned, with the ranking
+ * we would have used. This is the queue the escalation email points at: once the
+ * partners have declined, the run has to land somewhere an admin can act on.
+ */
+router.get('/unassigned', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { recommendPartners } = await import('../services/partnerDispatch.js');
+    const orders = await Order.find({
+      orderStatus: { $in: ['confirmed', 'packed', 'picked_up', 'in_transit'] },
+      assignedDeliveryPartner: null
+    })
+      .sort({ updatedAt: -1 }).limit(40)
+      .populate('user', 'name phone')
+      .populate('seller', 'storeName phone address city location')
+      .lean();
+
+    const rows = [];
+    for (const o of orders) {
+      const rec = await recommendPartners(o._id).catch(() => ({ recommendations: [] }));
+      rows.push({
+        orderId: String(o._id),
+        orderNumber: o.orderNumber,
+        status: o.orderStatus,
+        partnerDecision: o.partnerDecision || '',
+        queueLength: (o.partnerQueue || []).length,
+        storeUnknown: !!rec.storeLocationUnknown,
+        leadKm: rec.leadKm,
+        customer: o.user?.name || 'Customer',
+        drop: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+        candidates: (rec.recommendations || []).map((r) => ({
+          partnerId: String(r.partnerId), name: r.name, phone: r.phone, distanceKm: r.distance, earning: r.earning
+        }))
+      });
+    }
+    res.json({ success: true, orders: rows, count: rows.length });
+  } catch (error) {
+    console.error('Unassigned orders lookup error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+/*
+ * Manual assignment. assignedBy records that a person chose this partner rather
+ * than the ranking, which is how we can tell later whether recommendations work.
+ */
+router.post('/assign', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { orderId, partnerId } = req.body || {};
+    if (!orderId || !partnerId) {
+      return res.status(400).json({ success: false, message: 'Both an order and a partner are required.' });
+    }
+    // A run longer than a local delivery is not a bicycle job at any price: at
+    // the ₹10/km partner rate a Mumbai-to-Kolkata parcel would pay ₹16,548, so
+    // the cap is enforced here as well as in the cascade. Send it by courier.
+    const { leadKm, PARTNER_MAX_LEAD_KM } = await import('../services/partnerDispatch.js');
+    const preview = await Order.findById(orderId).populate('seller', 'storeName address location');
+    const distance = preview ? await leadKm(preview) : null;
+    if (distance !== null && distance > PARTNER_MAX_LEAD_KM) {
+      return res.status(400).json({
+        success: false,
+        tooFar: true,
+        distanceKm: Math.round(distance * 100) / 100,
+        maxKm: PARTNER_MAX_LEAD_KM,
+        message: `${Math.round(distance)} km is beyond a partner delivery (${PARTNER_MAX_LEAD_KM} km). Send this one by courier instead.`
+      });
+    }
+
+    const result = await assignDeliveryPartner(orderId, partnerId, 'admin');
+    if (!result.success) return res.status(400).json({ success: false, message: result.error });
+
+    // The order now has a partner, so the offer queue on it is settled - leaving
+    // it "offering" would keep it in the other partners' inboxes as an
+    // assignable run.
+    const order = await Order.findById(orderId);
+    if (order && !order.assignedDeliveryPartner) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (order) {
+      order.partnerDecision = 'accepted';
+      order.partnerQueueDeadline = null;
+      (order.partnerQueue || []).forEach((q) => {
+        if ((q.response || 'pending') === 'pending') {
+          q.response = String(q.partner) === String(partnerId) ? 'accepted' : 'expired';
+          q.respondedAt = new Date();
+        }
+      });
+      await order.save();
+    }
+    res.json({ success: true, message: 'Partner assigned.' });
+  } catch (error) {
+    console.error('Manual partner assignment error:', error);
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 router.get('/working', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { search, status, partnerId } = req.query;

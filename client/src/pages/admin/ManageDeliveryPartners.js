@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../../services/api';
 import { listOf, oneOf } from '../../services/apiResponse.js';
 import { toastError, toastSuccess } from '../../services/errors.js';
-import { FiPlus, FiSearch, FiTruck, FiSlash, FiCheck, FiX } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTruck, FiSlash, FiCheck, FiX, FiMapPin } from 'react-icons/fi';
 
 const th = { padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td = { padding: '12px', fontSize: 13.5, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
@@ -25,6 +25,8 @@ export default function ManageDeliveryPartners() {
   const [created, setCreated] = useState(null);
   const [query, setQuery] = useState('');
   const [workingSearch, setWorkingSearch] = useState('');
+  const [unassigned, setUnassigned] = useState([]);
+  const [busy, setBusy] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
   const fetchPartners = useCallback(async () => {
@@ -48,16 +50,53 @@ export default function ManageDeliveryPartners() {
     }
   }, [workingSearch, statusFilter]);
 
+  const fetchUnassigned = useCallback(async () => {
+    try {
+      const res = await api.get('/delivery-partner/unassigned');
+      setUnassigned(res.data.orders || []);
+    } catch (err) {
+      toastError(err, 'Could not load orders waiting for a partner');
+    }
+  }, []);
+
+  const assignPartner = async (orderId, partnerId) => {
+    setBusy(`${orderId}:${partnerId}`);
+    try {
+      const res = await api.post('/delivery-partner/assign', { orderId, partnerId });
+      toastSuccess(res.data.message || 'Partner assigned');
+      await Promise.all([fetchUnassigned(), fetchWorking(), fetchPartners()]);
+    } catch (err) {
+      toastError(err, 'Assignment failed');
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const requeue = async (orderId) => {
+    setBusy(`requeue:${orderId}`);
+    try {
+      const res = await api.post(`/delivery-partner/queue/offer/${orderId}`);
+      toastSuccess(res.data.escalated
+        ? 'Re-checked: no partner is close enough, it stays with you.'
+        : 'Run offered to the nearest partners again.');
+    } catch (err) {
+      toastError(err, 'Could not re-run the recommendation');
+    } finally {
+      setBusy('');
+      fetchUnassigned();
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     const boot = async () => {
       setLoading(true);
-      await Promise.all([fetchPartners(), fetchWorking()]);
+      await Promise.all([fetchPartners(), fetchWorking(), fetchUnassigned()]);
       if (!cancelled) setLoading(false);
     };
     boot();
     return () => { cancelled = true; };
-  }, [fetchPartners, fetchWorking]);
+  }, [fetchPartners, fetchWorking, fetchUnassigned]);
 
   const filteredPartners = useMemo(() => {
     if (!query.trim()) return partners;
@@ -123,6 +162,9 @@ export default function ManageDeliveryPartners() {
         </button>
         <button className={tab === 'working' ? 'btn btn-primary' : 'btn btn-outline'} onClick={() => setTab('working')}>
           <FiSearch size={15} /> Working now ({working.length})
+        </button>
+        <button className={tab === 'waiting' ? 'btn btn-primary' : 'btn btn-outline'} onClick={() => setTab('waiting')}>
+          <FiTruck size={15} /> Waiting for a partner ({unassigned.length})
         </button>
       </div>
 
@@ -282,6 +324,86 @@ export default function ManageDeliveryPartners() {
                 </table>
               )}
           </div>
+        </>
+      )}
+          {/*
+        Runs that have left the seller with no partner attached. The cascade asks
+        the three nearest in turn; when they all decline or let the window close,
+        the order lands here with the ranking we computed, so a person can place
+        it instead of the parcel sitting unsent.
+      */}
+      {tab === 'waiting' && (
+        <>
+          {unassigned.length === 0 ? (
+            <div className="card-flat" style={{ padding: 28, textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <FiCheck size={28} color="var(--success)" />
+              <p style={{ margin: '10px 0 0' }}>Every packed order has a delivery partner. Nothing is waiting.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 14 }}>
+              {unassigned.map((o) => (
+                <div key={o.orderId} className="card-flat" style={{ padding: 16, borderLeft: '3px solid var(--warning)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700 }}>{o.orderNumber}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 3 }}>
+                        {o.customer} &rarr; {o.drop || 'address pending'} &middot; status {String(o.status).replace(/_/g, ' ')}
+                        {o.leadKm ? ` &middot; ${o.leadKm} km from the store` : ''}
+                      </div>
+                    </div>
+                    <span className="chip" style={{ fontSize: 12 }}>
+                      {o.partnerDecision === 'offering'
+                        ? `Offer window open (${o.queueLength} asked)`
+                        : o.partnerDecision === 'admin_required'
+                        ? (o.leadKm && o.leadKm > 60
+                            ? `${Math.round(o.leadKm)} km - too far for a partner, send by courier`
+                            : `${o.queueLength} partner(s) asked, none answered`)
+                        : o.storeUnknown ? 'Store position unknown' : 'Not offered yet'}
+                    </span>
+                  </div>
+
+                  {o.candidates?.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(215px, 1fr))', gap: 10, marginTop: 12 }}>
+                      {o.candidates.map((c) => (
+                        <div key={c.partnerId} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px' }}>
+                          <div style={{ fontSize: 13.5, fontWeight: 700 }}>{c.name}</div>
+                          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                            <FiMapPin size={12} /> {c.distanceKm} km &middot; {c.phone}
+                          </div>
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => assignPartner(o.orderId, c.partnerId)}
+                            disabled={busy === `${o.orderId}:${c.partnerId}`}
+                            style={{ marginTop: 8, padding: '6px 12px', fontSize: 13 }}
+                          >
+                            {busy === `${o.orderId}:${c.partnerId}` ? 'Assigning...' : 'Assign'}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '10px 0 0' }}>
+                      No partner is close enough to recommend
+                      {o.storeUnknown
+                        ? ' because this store has no saved position - set one on the Partners tab, or fix the store address.'
+                        : '. Assign anyone available from the Partners tab, or send it by courier.'}
+                    </p>
+                  )}
+
+                  <div style={{ marginTop: 12 }}>
+                    <button
+                      className="btn btn-outline"
+                      onClick={() => requeue(o.orderId)}
+                      disabled={busy === `requeue:${o.orderId}`}
+                      style={{ padding: '6px 12px', fontSize: 13 }}
+                    >
+                      <FiSearch size={13} /> {busy === `requeue:${o.orderId}` ? 'Re-checking...' : 'Re-run recommendations'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>

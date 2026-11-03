@@ -54,6 +54,7 @@ import commissionRoutes from './routes/commission.js';
 import staffRoutes from './routes/staff.js';
 import { sweepExpiredOffers } from './services/orderProximity.js';
 import { sweepExpiredPriceChanges } from './services/priceChangeAcceptance.js';
+import { sweepExpiredPartnerOffers } from './services/partnerDispatch.js';
 import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
@@ -307,6 +308,17 @@ const startServer = async () => {
         }
       }, 60 * 1000);
       sweepTimer.unref();
+
+      // Delivery partners are offered runs one at a time with a 30 minute
+      // window; this closes the windows nobody answered and moves to the next
+      // partner, escalating to the admin queue when the list runs out.
+      const partnerSweep = setInterval(async () => {
+        try {
+          const closed = await sweepExpiredPartnerOffers(app.get('io'));
+          if (closed) console.log(`Partner offers expired: ${closed}`);
+        } catch (e) { console.error('Partner offer sweep failed:', e.message); }
+      }, 60 * 1000);
+      partnerSweep.unref();
     });
   } catch (err) {
     console.error('❌ Startup error:', err.message);

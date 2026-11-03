@@ -56,12 +56,18 @@ const deliveryPartnerSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order'
   },
+  /*
+   * How the partner came by the run: the ranking, an explicit admin choice, a
+   * seller handing off, or the partner answering an offer themselves. Kept
+   * distinct so the working-partners table can tell whether the cascade is
+   * working or admins are assigning everything by hand.
+   */
   assignedBy: {
     type: String,
-    enum: ['auto', 'admin', 'seller'],
+    enum: ['auto', 'admin', 'seller', 'partner_accepted', 'recommended'],
     default: 'auto'
   },
-  // Withdrawals: one per day, flat Rs. 3 platform fee per started Rs. 50 slab.
+  // Withdrawals: one per day, flat ₹3 platform fee per started ₹50 slab.
   lastWithdrawalAt: { type: Date, default: null },
   totalWithdrawn: { type: Number, default: 0 },
   totalPlatformFees: { type: Number, default: 0 },

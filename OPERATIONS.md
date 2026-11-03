@@ -68,6 +68,47 @@ Log locations: stdout of `node server.js` for API and seed messages; in developm
 is terminal 1 and the SPA proxy logs requests in terminal 2. Browser console network errors
 name the failing path, which is the fastest way to tell an API 500 from a client shape bug.
 
+## Delivery dispatch, end to end
+
+1. A seller moves an order to `packed` (`PUT /api/seller/orders/:id/status`). That
+   transition fires `offerQueue` best-effort: any failure is logged, never
+   returned to the seller, because their action already succeeded.
+2. `recommendPartners` ranks available partners within 12 km of the store. If the
+   store has no usable position the order is marked for manual assignment instead
+   of being offered to nobody in particular.
+3. Up to three partners are offered the run one at a time, each with a 30-minute
+   window (`PARTNER_OFFER_WINDOW_MINUTES`). A decline advances immediately; a
+   window that lapses is closed by the `partnerSweep` timer in `server.js`.
+4. Accepting sets `assignedDeliveryPartner`, prices the leg at ₹10/km and books the
+   partner. Anything longer than `PARTNER_MAX_LEAD_KM` (60 km) is not a bicycle
+   run at any price: it is escalated to the admin as a courier job, and the manual
+   `/assign` route refuses it too.
+5. Nobody answered, or too far: the order appears under "Waiting for a partner" in
+   the admin's delivery-partner page with the ranking that was used, an Assign
+   button and a re-run button.
+6. Completing a delivery credits the partner ledger (`totalEarnings`,
+   `totalDeliveries`) and marks cash-on-delivery collected, which is what makes the
+   seller payout eligible.
+
+Diagnose with: `GET /api/delivery-partner/recommendations/:orderId` (who would be
+asked and why), `GET /api/delivery-partner/unassigned` (what is waiting),
+`GET /api/delivery-partner/offers` (what one partner currently sees), and
+`node scripts/dispatch_e2e.mjs` against a seeded database, which asserts the whole
+chain in 18 checks.
+
+## Who may reach what
+
+Each console is guarded by its own middleware (`verifySeller`, `verifyAdmin`,
+`verifyStaff`, `verifyExecutive`, `verifyManufacturer`, `verifyManufacturerSeller`,
+`verifyDeliveryPartner`) in `middleware/auth.js`. They check the token, that an
+account of that role exists for it, and that it is neither deactivated nor banned,
+answering 403 with the area that was refused. Upload routes authenticate *before*
+multer parses the body.
+
+On the client `ProtectedRoute` reads the role from the signed-in session, never
+from `localStorage.optikart_role`, which any tab can rewrite; the cached profile is
+restored only when it matches the stored role.
+
 ## Troubleshooting
 
 `ERR_ERL_PERMISSIVE_TRUST_PROXY` in the server log

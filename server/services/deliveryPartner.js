@@ -287,16 +287,29 @@ export const completeDelivery = async (orderId) => {
       console.error('Auto commission settlement after partner delivery:', settleErr.message);
     }
 
-    // Update partner
+    // Update partner: release the run and actually pay for it. The figure was
+    // calculated and returned to the client but never written to the ledger, so a
+    // partner who delivered ten runs still saw ₹0 available to withdraw.
     const partner = await DeliveryPartner.findById(order.assignedDeliveryPartner);
+    const paid = Math.round(Number(earningsResult.earnings || 0) * 100) / 100;
     partner.currentOrder = null;
     partner.isAvailable = true;
+    partner.totalDeliveries = (partner.totalDeliveries || 0) + 1;
+    partner.totalEarnings = Math.round(((partner.totalEarnings || 0) + paid) * 100) / 100;
     await partner.save();
+
+    // Cash collected at the door is only "paid" once the partner says so. The
+    // seller route sets this too, but a partner completing directly left the
+    // order looking unpaid, which held up the seller's payout.
+    if (order.paymentMethod === 'cod') {
+      order.paymentStatus = 'completed';
+      await order.save();
+    }
 
     return {
       success: true,
       order,
-      earnings: earningsResult.earnings
+      earnings: paid
     };
   } catch (error) {
     console.error('Error completing delivery:', error);

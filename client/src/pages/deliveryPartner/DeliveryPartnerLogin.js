@@ -35,24 +35,20 @@ const DeliveryPartnerLogin = () => {
       if (!validate()) return;
       setLoading(true);
       try {
-        const response = await deliveryApi.login(email, password);
-        const data = response.data;
-
-        if (data.success) {
-          if (data.requiresOTP) {
-            setPartnerId(data.partnerId);
-            setStep(2);
-            toast.success('OTP sent to your email');
-          } else if (data.token) {
-            // The session belongs to the auth context, not to a couple of
-            // localStorage writes made from this page, otherwise React still
-            // believes nobody signed in and the dashboard guard bounces back here.
-            await partnerLogin(email, password);
-            toast.success('Login successful!');
-            navigate('/delivery-partner/dashboard');
-          }
+        // One sign-in attempt, through the context: the session has to be set in
+        // React state, not just written into localStorage, or the dashboard
+        // guard bounces a freshly signed-in partner back to this page. Asking the
+        // server twice also meant a second OTP could be triggered.
+        const result = await partnerLogin(email, password);
+        if (result.requiresOTP) {
+          setPartnerId(result.partnerId);
+          setStep(2);
+          toast.success('OTP sent to your email');
+        } else if (result.success) {
+          toast.success('Login successful!');
+          navigate('/delivery-partner/dashboard');
         } else {
-          toast.error(data.message || 'Login failed');
+          toast.error(result.message || 'Login failed');
         }
       } catch (error) {
         toast.error(error.response?.data?.message || 'Login failed. Please try again.');

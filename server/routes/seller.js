@@ -393,6 +393,21 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
       console.error('Order status email skipped:', mailErr.message);
     }
 
+    /*
+     * A packed parcel is ready to move, so this is where the run goes out to
+     * nearby partners. It fires after the reply is sent and only ever logs its
+     * failures: a seller must never see their status update fail because the
+     * dispatch system had a problem.
+     */
+    if (status === 'packed' && order.deliveryAssignmentMode !== 'self') {
+      const { offerQueue } = await import('../services/partnerDispatch.js');
+      setTimeout(() => {
+        offerQueue(order._id, req.app.get('io'))
+          .then((r) => { if (!r.success && r.error) console.error('Partner cascade for', order.orderNumber, ':', r.error); })
+          .catch((e) => console.error('Partner cascade threw for', order.orderNumber, ':', e.message));
+      }, 0);
+    }
+
     res.json({
       success: true,
       message: `Order status updated to ${status}.`,

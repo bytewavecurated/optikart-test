@@ -103,6 +103,21 @@ const orderSchema = new mongoose.Schema({
   assignedExecutive: { type: mongoose.Schema.Types.ObjectId, ref: 'Executive', default: null },
   assignedDeliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner', default: null },
   deliveryAssignmentMode: { type: String, enum: ['shiprocket', 'self', 'none'], default: 'none' },
+  /*
+   * The recommendation cascade keeps its own state on the order, so "who was
+   * asked, who answered, who is next" survives a restart and can be read by the
+   * partner and the admin from the same record.
+   */
+  partnerQueue: [{
+    partner: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner' },
+    distanceKm: { type: Number },
+    offeredAt: { type: Date, default: null },
+    respondedAt: { type: Date, default: null },
+    response: { type: String, enum: ['pending', 'accepted', 'rejected', 'expired'], default: 'pending' }
+  }],
+  partnerCurrentIndex: { type: Number, default: 0 },
+  partnerDecision: { type: String, enum: ['', 'offering', 'accepted', 'admin_required'], default: '' },
+  partnerQueueDeadline: { type: Date, default: null },
   pickupLocation: {
     name: { type: String, default: '' },
     address: { type: String, default: '' },

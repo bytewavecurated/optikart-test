@@ -58,6 +58,11 @@ const DeliveryPartnerDashboard = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [locationSharing, setLocationSharing] = useState(false);
   const [activeDeliveries, setActiveDeliveries] = useState([]);
+  const [offers, setOffers] = useState([]);
+  const [answering, setAnswering] = useState('');
+  // /me carries no money, so the summary rows used to print figures the server
+  // never sent. These come from /payment/earnings instead.
+  const [earnings, setEarnings] = useState({ week: 0, month: 0, totalDeliveries: 0 });
   const [availabilityBusy, setAvailabilityBusy] = useState(false);
   const [stats, setStats] = useState({
     todayDeliveries: 0,
@@ -98,6 +103,23 @@ const DeliveryPartnerDashboard = () => {
       });
 
       setActiveDeliveries(partnerData.activeDeliveries || []);
+
+      const offersResponse = await deliveryApi.getOffers();
+      setOffers(offersResponse.data.offers || []);
+
+      const [week, month] = await Promise.all([
+        deliveryApi.getEarnings('week'),
+        deliveryApi.getEarnings('month')
+      ]);
+      // /payment/earnings answers under a `data` envelope like the rest of this
+      // API, so reading the body directly would always have produced zeros.
+      const wk = week.data.data || week.data;
+      const mt = month.data.data || month.data;
+      setEarnings({
+        week: wk.totalEarnings ?? 0,
+        month: mt.totalEarnings ?? 0,
+        totalDeliveries: mt.totalDeliveries ?? 0
+      });
     } catch (error) {
       if (error.response?.status === 401) {
         localStorage.removeItem('optikart_token');
@@ -144,6 +166,32 @@ const DeliveryPartnerDashboard = () => {
       setAvailabilityBusy(false);
     }
   };
+
+  const respondToOffer = async (offer, decision) => {
+    setAnswering(offer.orderId);
+    try {
+      const res = await deliveryApi.respondToOffer(offer.orderId, decision);
+      toast.success(res.data.message || (decision === 'accept' ? 'Run accepted' : 'Offer declined'));
+      setOffers((list) => list.filter((o) => o.orderId !== offer.orderId));
+      if (decision === 'accept') fetchDashboardData();
+    } catch (error) {
+      toastError(error, 'That offer is no longer available');
+      setOffers((list) => list.filter((o) => o.orderId !== offer.orderId));
+    } finally {
+      setAnswering('');
+    }
+  };
+
+  /*
+   * Drives the offer countdown. The interval only exists while offers are
+   * outstanding, so an idle dashboard costs nothing.
+   */
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!offers.length) return undefined;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [offers.length]);
 
   const handleToggleLocation = async () => {
     const newStatus = !locationSharing;
@@ -331,6 +379,60 @@ const DeliveryPartnerDashboard = () => {
           </button>
         </div>
 
+        {/*
+            Runs offered to this partner. Each card states the pick-up, the drop,
+            the distance, what the leg pays and how long is left to answer -
+            nobody should have to accept a delivery they have to guess at.
+        */}
+        {offers.length > 0 && (
+          <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '24px', overflow: 'hidden', borderLeft: '4px solid var(--primary)' }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Delivery offers for you</h2>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Answer before the timer runs out or the next partner is asked</span>
+            </div>
+            <div style={{ display: 'grid', gap: '12px', padding: '16px 24px' }}>
+              {offers.map((o) => {
+                const msLeft = o.deadline ? new Date(o.deadline).getTime() - now : null;
+                const mins = msLeft === null ? null : Math.max(0, Math.floor(msLeft / 60000));
+                const secs = msLeft === null ? null : Math.max(0, Math.floor((msLeft % 60000) / 1000));
+                const expired = msLeft === 0;
+                return (
+                  <div key={o.orderId} style={{ border: '1px solid #e5e7eb', borderRadius: 10, padding: '14px 16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 15, fontWeight: 700 }}>{o.orderNumber}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Pick up:</span> {o.pickup || 'Store address pending'}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Drop:</span> {o.drop || 'Address pending'}
+                        </div>
+                        <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 13, flexWrap: 'wrap' }}>
+                          <span>{o.distanceKm != null ? `${o.distanceKm} km to the store` : 'Distance varies'}</span>
+                          <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{inr(o.earning)} for the run</span>
+                          {msLeft !== null && !expired && (
+                            <span style={{ color: msLeft < 5 * 60000 ? 'var(--danger, #d93025)' : 'var(--text-secondary)' }}>
+                              {mins}m {String(secs).padStart(2, '0')}s left
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <button onClick={() => respondToOffer(o, 'decline')} disabled={answering === o.orderId} className="btn btn-outline" style={{ padding: '8px 14px', fontSize: 13.5 }}>
+                          No thanks
+                        </button>
+                        <button onClick={() => respondToOffer(o, 'accept')} disabled={answering === o.orderId || expired} className="btn btn-primary" style={{ padding: '8px 18px', fontSize: 13.5 }}>
+                          {answering === o.orderId ? 'Working...' : expired ? 'Offer expired' : 'Accept run'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }} className="delivery-dashboard-grid">
           <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -363,7 +465,7 @@ const DeliveryPartnerDashboard = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                         <div>
                           <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
-                            Order #{delivery.orderId?.slice(-8) || delivery.orderId}
+                            Order {delivery.orderNumber || `#${String(delivery.orderId || '').slice(-8)}`}
                           </span>
                           <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-dark, #212121)', fontWeight: 500 }}>
                             {delivery.customerName}
@@ -413,22 +515,25 @@ const DeliveryPartnerDashboard = () => {
               <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Earnings Summary</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#e8f5e9', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Today</span>
+                  <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Completed today</span>
                   <span style={{ fontSize: '18px', fontWeight: 700, color: '#4caf50' }}>
-                    ${(stats.todayDeliveries * (partner?.deliveryCharge || 5)).toFixed(2)}
+                    {stats.completedToday || 0}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#e3f2fd', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>This Week</span>
-                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#2196f3' }}>${stats.weeklyEarnings.toFixed(2)}</span>
+                  <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Last 7 days</span>
+                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#2196f3' }}>{inr(earnings.week)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#fff3e0', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>This Month</span>
-                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#ff9800' }}>${stats.monthlyEarnings.toFixed(2)}</span>
+                  <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Last 30 days</span>
+                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#ff9800' }}>{inr(earnings.month)}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f3e5f5', borderRadius: '8px' }}>
                   <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Available Balance</span>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>${stats.totalEarnings.toFixed(2)}</span>
+                  {/* This printed totalEarnings under the label "Available
+                      Balance", so it could never agree with the withdrawal form
+                      sitting next to it. */}
+                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>{inr(stats.availableBalance)}</span>
                 </div>
               </div>
             </div>
