@@ -4,8 +4,15 @@ Deploy, diagnose, and what is knowingly left undone.
 
 ## Configuration
 
-All runtime configuration is `server/.env`. Values are never committed; keep
-`server/.env` out of version control and out of images.
+All runtime configuration is `server/.env`.
+
+`server/.env` **was committed** in this repository's history, with values that look live
+(AWS, Azure Face, OpenAI/Google Vision keys, the JWT secret and an Atlas URI). It is now
+untracked and ignored, and `server/.env.example` holds placeholders instead - but anything
+already pushed stays in history, so treat those credentials as exposed and rotate them.
+A history rewrite is a separate, deliberate decision because it rewrites shared state.
+
+Keep `server/.env` out of version control and out of images.
 
 ### Required
 
@@ -14,6 +21,7 @@ All runtime configuration is `server/.env`. Values are never committed; keep
 | `MONGODB_URI` | local `mongodb://localhost:27017/optikart` or an Atlas SRV string |
 | `JWT_SECRET` | long random string; changing it invalidates every session |
 | `PORT` | 5000 by default |
+| `SEED_ON_BOOT` | `auto` \| `true` \| `false`; the seed deletes the collections it owns, so `auto` only runs it on an empty database |
 | `FRONTEND_URL` | exact browser origin; must match for CORS and Socket.IO |
 
 ### Environment
@@ -62,6 +70,8 @@ name. Treat that as a required deployment step, not an optional one.
 | API alive | `curl -s localhost:5000/api/health` |
 | Seeded logins work | `POST /api/auth/login` with a seeded account |
 | Frontend served | `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` |
+| Delivery dispatch | `node scripts/dispatch_e2e.mjs` (18 assertions, needs seeded logins) |
+| Catalogue and role access | `node scripts/catalog_access_e2e.mjs` (27 assertions) |
 | Websocket up | connect, then look for `Client connected` in the server log |
 
 Log locations: stdout of `node server.js` for API and seed messages; in development the API

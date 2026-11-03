@@ -163,15 +163,9 @@ router.post('/verify-login-otp', async (req, res) => {
 });
 
 // Get Executive Profile
-router.get('/me', async (req, res) => {
+router.get('/me', verifyExecutive, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const executive = await Executive.findById(decoded.id);
+    const executive = await Executive.findById(req.executive._id);
     
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
@@ -188,15 +182,9 @@ router.get('/me', async (req, res) => {
 });
 
 // Get Executive Dashboard Stats
-router.get('/dashboard', async (req, res) => {
+router.get('/dashboard', verifyExecutive, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const executive = await Executive.findById(decoded.id);
+    const executive = await Executive.findById(req.executive._id);
     
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
@@ -236,15 +224,9 @@ router.get('/dashboard', async (req, res) => {
 });
 
 // Get Executive Staff
-router.get('/staff', async (req, res) => {
+router.get('/staff', verifyExecutive, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const executive = await Executive.findById(decoded.id);
+    const executive = await Executive.findById(req.executive._id);
     
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
@@ -266,15 +248,9 @@ router.get('/staff', async (req, res) => {
 });
 
 // Add Executive Staff
-router.post('/staff', async (req, res) => {
+router.post('/staff', verifyExecutive, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const executive = await Executive.findById(decoded.id);
+    const executive = await Executive.findById(req.executive._id);
     
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
@@ -310,15 +286,9 @@ router.post('/staff', async (req, res) => {
 });
 
 // Delete Executive Staff
-router.delete('/staff/:id', async (req, res) => {
+router.delete('/staff/:id', verifyExecutive, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const executive = await Executive.findById(decoded.id);
+    const executive = await Executive.findById(req.executive._id);
     
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
@@ -342,15 +312,9 @@ router.delete('/staff/:id', async (req, res) => {
 });
 
 // Get Department Data
-router.get('/department-data', async (req, res) => {
+router.get('/department-data', verifyExecutive, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided.' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const executive = await Executive.findById(decoded.id);
+    const executive = await Executive.findById(req.executive._id);
     
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });

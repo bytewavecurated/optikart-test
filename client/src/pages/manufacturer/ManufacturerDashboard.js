@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPackage, FiUsers, FiPlus, FiUpload, FiLogOut, FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
+import { FiPackage, FiUsers, FiPlus, FiUpload, FiLogOut, FiEdit, FiTrash2, FiEye, FiCamera, FiX } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -82,6 +82,71 @@ const ManufacturerDashboard = () => {
    * dialog on every navigation. Compare against the pristine form instead.
    */
   const pristineProduct = useRef(newProduct);
+
+  const MAX_PRODUCT_IMAGES = 10;
+  const imageInputRef = useRef(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageUrlDraft, setImageUrlDraft] = useState('');
+
+  const currentImages = () => (newProduct.images || []).filter((u) => String(u || '').trim());
+  const setImageList = (list) => setNewProduct((p) => ({ ...p, images: list.length ? list : [''] }));
+
+  const handleImageFiles = async (e) => {
+    const picked = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!picked.length) return;
+
+    const room = MAX_PRODUCT_IMAGES - currentImages().length;
+    if (room <= 0) {
+      toast.error(`A product can carry at most ${MAX_PRODUCT_IMAGES} images`);
+      return;
+    }
+    const usable = picked.filter((file) => file.type.startsWith('image/'));
+    if (!usable.length) {
+      toast.error('Only image files can be uploaded');
+      return;
+    }
+    if (usable.length > room) toast(`Adding ${room} of ${picked.length} selected photos (limit ${MAX_PRODUCT_IMAGES})`);
+
+    const fd = new FormData();
+    usable.slice(0, room).forEach((file) => fd.append('images', file));
+
+    setUploadingImages(true);
+    try {
+      const res = await api.post('/manufacturer/products/upload-images', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const urls = res.data.urls || [];
+      setImageList([...currentImages(), ...urls]);
+      if (res.data.rejected?.length) toast.error(res.data.rejected.join('; '));
+      if (urls.length) toast.success(`${urls.length} image${urls.length === 1 ? '' : 's'} added`);
+    } catch (err) {
+      toastError(err, 'Image upload failed');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeProductImage = (idx) => {
+    const next = currentImages();
+    next.splice(idx, 1);
+    setImageList(next);
+  };
+
+  const addImageUrl = () => {
+    const url = imageUrlDraft.trim();
+    if (!url) return;
+    if (!/^https?:\/\/\S+$/.test(url)) {
+      toast.error('Enter the full link, starting with http:// or https://');
+      return;
+    }
+    if (currentImages().length >= MAX_PRODUCT_IMAGES) {
+      toast.error(`A product can carry at most ${MAX_PRODUCT_IMAGES} images`);
+      return;
+    }
+    setImageList([...currentImages(), url]);
+    setImageUrlDraft('');
+  };
   const pristineSeller = useRef(newSeller);
 
   const formsDirty = useMemo(() => {
@@ -354,8 +419,7 @@ const ManufacturerDashboard = () => {
       await api.post('/manufacturer/products', productData);
       toast.success('Product added successfully');
       setShowAddProduct(false);
-      pristineProduct.current = newProduct;
-      setNewProduct({
+      const blankProduct = {
         title: '',
         description: '',
         price: '',
@@ -368,7 +432,12 @@ const ManufacturerDashboard = () => {
         stock: 0,
         gender: 'unisex',
         frameSize: 'medium'
-      });
+      };
+      // Snapshot what is actually rendered next. Keeping the submitted values as
+      // the "pristine" copy made the form look dirty the instant it emptied, so
+      // the leave-page warning fired on the following product.
+      setNewProduct(blankProduct);
+      pristineProduct.current = blankProduct;
       fetchProducts();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to add product');
@@ -828,13 +897,75 @@ const ManufacturerDashboard = () => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Image URLs (one per line)</label>
-                <textarea
-                  value={newProduct.images.join('\n')}
-                  onChange={(e) => setNewProduct({...newProduct, images: e.target.value.split('\n')})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px', minHeight: '80px' }}
-                  placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                  Product images
+                  <span style={{ fontWeight: 400, color: 'var(--text-light)', fontSize: 12.5 }}>
+                    {' '}- from this device, up to {MAX_PRODUCT_IMAGES} per product
+                  </span>
+                </label>
+
+                {/*
+                  Pictures are uploaded as soon as they are chosen, so the previews
+                  show the copy we actually serve and a rejected file is reported
+                  while the manufacturer is still on the form rather than after the
+                  product has been created with a dead link.
+                */}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={handleImageFiles}
                 />
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={uploadingImages || currentImages().length >= MAX_PRODUCT_IMAGES}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <FiCamera size={16} /> {uploadingImages ? 'Uploading...' : 'Add photos'}
+                  </button>
+                  {currentImages().length > 0 && (
+                    <button type="button" className="btn btn-outline" onClick={() => setImageList([])}>Clear all</button>
+                  )}
+                </div>
+
+                {currentImages().length > 0 && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 10, marginTop: 12 }}>
+                    {currentImages().map((url, idx) => (
+                      <div key={`${url}-${idx}`} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
+                        <img src={url} alt={`Product image ${idx + 1}`} style={{ width: '100%', height: 92, objectFit: 'cover', display: 'block' }} />
+                        {idx === 0 && (
+                          <span style={{ position: 'absolute', left: 0, bottom: 0, background: 'var(--brand)', color: '#fff', fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderTopRightRadius: 8 }}>
+                            COVER
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          aria-label={`Remove image ${idx + 1}`}
+                          onClick={() => removeProductImage(idx)}
+                          style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.55)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <FiX size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <input
+                    type="text"
+                    value={imageUrlDraft}
+                    onChange={(e) => setImageUrlDraft(e.target.value)}
+                    placeholder="...or paste an image link"
+                    style={{ flex: 1, padding: '9px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13.5 }}
+                  />
+                  <button type="button" className="btn btn-outline" onClick={addImageUrl}>Add link</button>
+                </div>
               </div>
 
               <div>

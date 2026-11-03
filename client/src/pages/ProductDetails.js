@@ -189,6 +189,31 @@ const ProductDetails = () => {
     );
   }
 
+  /*
+   * Older records carry their name only under `title` - the seed path used
+   * insertMany, which skips schema validators - so the heading, the breadcrumb
+   * and the image descriptions fall back to whichever field this record has
+   * rather than printing nothing at all.
+   */
+  const productTitle = product?.name || product?.title || 'This product';
+
+  /*
+   * A variant's distinguishing attribute is stored as `size` (the magnification,
+   * e.g. +1.5) on reading glasses and as `power` on powered frames. The chip only
+   * looked at `power`, so all ten options printed the identical "Power: N/A" and
+   * a buyer could not tell the strengths apart, or which one they had chosen.
+   */
+  const variantLabel = (variant, idx) => {
+    if (variant.label) return variant.label;
+    const strength = variant.power ?? variant.size;
+    const colour = variant.color || variant.colour;
+    if (strength && colour) return `${colour} \u00b7 ${strength}`;
+    if (strength) return `Power: ${strength}`;
+    if (colour) return colour;
+    return `Option ${idx + 1}`;
+  };
+
+
   if (!product) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -226,7 +251,7 @@ const ProductDetails = () => {
             {' / '}
             <span>{product.brand}</span>
             {' / '}
-            <span style={{ color: 'var(--text-primary)' }}>{product.name}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{productTitle}</span>
           </nav>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }} className="product-detail-grid">
@@ -234,7 +259,7 @@ const ProductDetails = () => {
               <Carousel showThumbs={false} autoPlay infiniteLoop showStatus={false}>
                 {images.map((img, idx) => (
                   <div key={idx} style={{ background: '#fafafa', borderRadius: '8px', overflow: 'hidden' }}>
-                    <img src={img} alt={`${product.name} - ${idx + 1}`} style={{ width: '100%', height: '400px', objectFit: 'contain' }} />
+                    <img src={img} alt={`${productTitle} - ${idx + 1}`} style={{ width: '100%', height: '400px', objectFit: 'contain' }} />
                   </div>
                 ))}
               </Carousel>
@@ -251,7 +276,7 @@ const ProductDetails = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="card" style={{ padding: '20px' }}>
                 <span className="badge badge-success" style={{ marginBottom: '8px' }}>{product.brand}</span>
-                <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>{product.name}</h1>
+                <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>{productTitle}</h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                   {avgRating > 0 && (
                     <>
@@ -391,6 +416,8 @@ const ProductDetails = () => {
                     {product.variants.map((variant, idx) => (
                       <button
                         key={idx}
+                        disabled={variant.stock === 0}
+                        title={variant.stock === 0 ? 'Out of stock' : undefined}
                         onClick={() => setSelectedVariant(variant)}
                         style={{
                           padding: '8px 16px',
@@ -400,10 +427,11 @@ const ProductDetails = () => {
                           color: selectedVariant === variant ? 'var(--primary)' : 'var(--text-primary)',
                           fontWeight: 500,
                           fontSize: '13px',
-                          cursor: 'pointer',
+                          cursor: variant.stock === 0 ? 'not-allowed' : 'pointer',
+                          opacity: variant.stock === 0 ? 0.45 : 1,
                         }}
                       >
-                        {variant.label || `Power: ${variant.power || 'N/A'}`}
+                        {variantLabel(variant, idx)}
                       </button>
                     ))}
                   </div>

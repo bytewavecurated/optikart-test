@@ -4,6 +4,7 @@ import otpGenerator from 'otp-generator';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 import Product from '../models/Product.js';
 import { sendOTP } from '../services/email.js';
+import { verifyManufacturerSeller } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -155,7 +156,7 @@ router.post('/verify-login-otp', async (req, res) => {
 });
 
 // Get Manufacturer Seller Profile
-router.get('/me', async (req, res) => {
+router.get('/me', verifyManufacturerSeller, async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
@@ -163,7 +164,7 @@ router.get('/me', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const seller = await ManufacturerSeller.findById(decoded.id);
+    const seller = await ManufacturerSeller.findById(req.manufacturerSeller._id);
     
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
@@ -180,12 +181,10 @@ router.get('/me', async (req, res) => {
 });
 
 // Get Available Products from Manufacturer
-router.get('/available-products', async (req, res) => {
+router.get('/available-products', verifyManufacturerSeller, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const seller = await ManufacturerSeller.findById(decoded.id);
+    const seller = await ManufacturerSeller.findById(req.manufacturerSeller._id);
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
     }
@@ -206,12 +205,10 @@ router.get('/available-products', async (req, res) => {
 });
 
 // Toggle Product (Add/Remove from seller inventory)
-router.post('/products/:id/toggle', async (req, res) => {
+router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const seller = await ManufacturerSeller.findById(decoded.id);
+    const seller = await ManufacturerSeller.findById(req.manufacturerSeller._id);
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
     }
@@ -224,7 +221,7 @@ router.post('/products/:id/toggle', async (req, res) => {
     // Check if seller already has this product
     const existingProduct = await Product.findOne({
       manufacturerProduct: manufacturerProduct._id,
-      seller: decoded.id
+      seller: req.manufacturerSeller._id
     });
 
     if (existingProduct) {
@@ -243,8 +240,8 @@ router.post('/products/:id/toggle', async (req, res) => {
         ...manufacturerProduct.toObject(),
         _id: undefined,
         manufacturerProduct: manufacturerProduct._id,
-        manufacturerSellerId: decoded.id,
-        seller: decoded.id,
+        manufacturerSellerId: req.manufacturerSeller._id,
+        seller: req.manufacturerSeller._id,
         price: req.body.price || manufacturerProduct.price,
         discountedPrice: req.body.discountedPrice || manufacturerProduct.discountedPrice,
         stock: req.body.stock || 0,
@@ -269,13 +266,11 @@ router.post('/products/:id/toggle', async (req, res) => {
 });
 
 // Get Seller's Products
-router.get('/products', async (req, res) => {
+router.get('/products', verifyManufacturerSeller, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const products = await Product.find({ 
-      manufacturerSellerId: decoded.id
+      manufacturerSellerId: req.manufacturerSeller._id
     }).sort({ createdAt: -1 });
 
     res.json({

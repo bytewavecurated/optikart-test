@@ -18,7 +18,7 @@ export const verifyToken = async (req, res, next) => {
 
     const user = await User.findById(decoded.id || decoded.userId);
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid token. User not found.' });
+      return res.status(403).json({ success: false, message: 'Your sign-in is not a customer account. Use the console link in the header.' });
     }
 
     if (!user.isActive) {
@@ -103,7 +103,7 @@ export const verifySeller = async (req, res, next) => {
 
     const seller = await Seller.findById(decoded.id || decoded.sellerId);
     if (!seller) {
-      return res.status(401).json({ success: false, message: 'Invalid token. Seller not found.' });
+      return res.status(403).json({ success: false, message: 'This area is for seller accounts. Your session is a different type of account.' });
     }
 
     if (!seller.isActive) {
@@ -153,6 +153,11 @@ export const verifyStaff = async (req, res, next) => {
     req.user.permissions = staff.permissions;
     next();
   } catch (error) {
+    // A malformed or expired token is an authentication failure, not a crash;
+    // answering 500 made clients discard a perfectly good session.
+    if (error && (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError')) {
+      return res.status(401).json({ success: false, message: error.name === 'TokenExpiredError' ? 'Token has expired.' : 'Invalid token.' });
+    }
     return res.status(500).json({ success: false, message: 'Server error during staff verification.', error: error.message });
   }
 };
@@ -209,7 +214,7 @@ export const verifyManufacturerSeller = async (req, res, next) => {
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
     const { default:ManufacturerSeller } = await import('../models/ManufacturerSeller.js');
     const seller = await ManufacturerSeller.findById(decoded.id || decoded.sellerId);
-    if (!seller) return res.status(401).json({ success: false, message: 'Invalid token. Retailer not found.' });
+    if (!seller) return res.status(403).json({ success: false, message: 'This area is for retailer (manufacturer-seller) accounts. Your session is a different type of account.' });
     if (seller.isActive === false) return res.status(403).json({ success: false, message: 'Account has been deactivated.' });
     if (seller.isBanned) return res.status(403).json({ success: false, message: 'This retailer account is blocked.' });
     req.manufacturerSeller = seller;
@@ -255,7 +260,7 @@ export const verifyDeliveryPartner = async (req, res, next) => {
 
     const partner = await DeliveryPartner.findById(decoded.id || decoded.partnerId);
     if (!partner) {
-      return res.status(401).json({ success: false, message: 'Invalid token. Delivery partner not found.' });
+      return res.status(403).json({ success: false, message: 'This area is for delivery partner accounts. Your session is a different type of account.' });
     }
 
     if (!partner.isActive) {
@@ -289,7 +294,7 @@ export const verifyManufacturer = async (req, res, next) => {
 
     const manufacturer = await Manufacturer.findById(decoded.id || decoded.manufacturerId);
     if (!manufacturer) {
-      return res.status(401).json({ success: false, message: 'Invalid token. Manufacturer not found.' });
+      return res.status(403).json({ success: false, message: 'This area is for manufacturer accounts. Your session is a different type of account.' });
     }
 
     if (!manufacturer.isActive) {
@@ -323,7 +328,7 @@ export const verifyExecutive = async (req, res, next) => {
 
     const executive = await Executive.findById(decoded.id || decoded.executiveId);
     if (!executive) {
-      return res.status(401).json({ success: false, message: 'Invalid token. Executive not found.' });
+      return res.status(403).json({ success: false, message: 'This area is for executive accounts. Your session is a different type of account.' });
     }
 
     if (!executive.isActive) {

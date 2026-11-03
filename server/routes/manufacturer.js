@@ -66,6 +66,116 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
 
 
 
+/*
+ * Sheet cells and form fields carry the size printed on the temple
+ * (52-17-140), while the schema keeps a coarse bucket. Derive the bucket from the
+ * lens width and keep the measurement in dimensions, rather than rejecting a
+ * manufacturer's own numbers with an enum error.
+ */
+const FRAME_SIZE_BUCKETS = [['extra-large', 59], ['large', 55], ['medium', 51]];
+/*
+ * The schema lists frameShape/frameType/... as enumerations, and a manufacturer's
+ * spreadsheet spells them however the shop spells them ("Square", "Full Rim",
+ * "cat eye"). Comparing case-insensitively and with separators removed accepts the
+ * word the shop wrote instead of failing the row on punctuation, but a value that
+ * matches nothing is reported as that row's problem rather than thrown as a 500
+ * that loses the whole file.
+ */
+const ENUM_ALIASES = {
+  frameShape: 'frameShape',
+  frameType: 'frameType',
+  frameMaterial: 'frameMaterial',
+  gender: 'gender'
+};
+
+const enumsOf = (Model, path) => (Model.schema.path(path)?.options?.enum) || [];
+
+const matchEnum = (Model, path, value) => {
+  const allowed = enumsOf(Model, path);
+  const raw = String(value ?? '').trim();
+  if (!raw) return { value: raw, unknown: false };
+  if (allowed.includes(raw)) return { value: raw, unknown: false };
+  const loose = raw.toLowerCase().replace(/[\s_-]/g, '');
+  const hit = allowed.find((a) => String(a).toLowerCase().replace(/[\s_-]/g, '') === loose);
+  return hit !== undefined ? { value: hit, unknown: false } : { value: raw, unknown: true };
+};
+
+const frameSizeBucket = (raw) => {
+  const lens = Number(String(raw ?? '').split(/[-\u00D7x\s,]+/)[0]);
+  if (!Number.isFinite(lens) || lens <= 0) return 'medium';
+  for (const [bucket, min] of FRAME_SIZE_BUCKETS) if (lens >= min) return bucket;
+  return 'small';
+};
+const measureFromSize = (raw) => {
+  const [lens, bridge, temple] = String(raw ?? '').split(/[-\u00D7x\s,]+/).map(Number);
+  return { lens, bridge, temple };
+};
+
+/*
+ * Device photo upload for a single product. The form accepted only image URLs,
+ * so a shop holding real photographs had nowhere to put them. Files arrive as
+ * multipart, are checked for type and size, and go into uploads/products under
+ * the same naming convention storeRemoteImages() already uses.
+ */
+const imageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024, files: 10 }
+});
+
+const looksLikeImage = (buf) => {
+  if (!buf || buf.length < 12) return false;
+  const head = buf.subarray(0, 12);
+  const isJpeg = head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff;
+  const isPng = head.subarray(0, 8).toString('hex') === '89504e470d0a1a0a';
+  const isGif = head.subarray(0, 3).toString('ascii') === 'GIF';
+  const isWebp = head.subarray(0, 4).toString('ascii') === 'RIFF' && head.subarray(8, 12).toString('ascii') === 'WEBP';
+  const isAvif = head.subarray(4, 12).toString('ascii').includes('avif');
+  return isJpeg || isPng || isGif || isWebp || isAvif;
+};
+
+const EXT_BY_MIME = {
+  'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png',
+  'image/gif': '.gif', 'image/webp': '.webp', 'image/avif': '.avif'
+};
+
+router.post('/products/upload-images', verifyManufacturer, imageUpload.array('images', 10), async (req, res) => {
+  try {
+    if (!req.files || !req.files.length) {
+      return res.status(400).json({ success: false, message: 'No image files were received.' });
+    }
+    const fsMod = await import('fs');
+    const pathMod = await import('path');
+    const urlMod = await import('url');
+    const { fileURLToPath } = urlMod;
+    const dir = pathMod.join(pathMod.dirname(fileURLToPath(import.meta.url)), '..', 'uploads', 'products');
+    fsMod.mkdirSync(dir, { recursive: true });
+
+    const saved = [];
+    const rejected = [];
+    for (const file of req.files) {
+      if (!looksLikeImage(file.buffer)) {
+        rejected.push(`"${file.originalname}" is not a picture we can use (accepted: JPG, PNG, GIF, WebP, AVIF)`);
+        continue;
+      }
+      const ext = EXT_BY_MIME[file.mimetype] || '.jpg';
+      const safe = `mfg-${req.manufacturer._id}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      fsMod.writeFileSync(pathMod.join(dir, safe), file.buffer);
+      saved.push(`/uploads/products/${safe}`);
+    }
+
+    if (!saved.length) {
+      return res.status(400).json({ success: false, message: rejected.join('; ') || 'None of the files you picked were pictures.' });
+    }
+    res.status(201).json({ success: true, urls: saved, rejected });
+  } catch (error) {
+    if (error && error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ success: false, message: 'Each image must be 8 MB or smaller.' });
+    }
+    console.error('Product image upload error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Image upload failed.' });
+  }
+});
+
 const upload = multer({ dest: 'uploads/' });
 
 const generateManufacturerToken = (manufacturerId) => {
@@ -216,7 +326,7 @@ router.post('/verify-login-otp', async (req, res) => {
 });
 
 // Get Manufacturer Profile
-router.get('/me', async (req, res) => {
+router.get('/me', verifyManufacturer, async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
@@ -224,7 +334,7 @@ router.get('/me', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const manufacturer = await Manufacturer.findById(decoded.id);
+    const manufacturer = await Manufacturer.findById(req.manufacturer._id);
     
     if (!manufacturer) {
       return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
@@ -241,14 +351,28 @@ router.get('/me', async (req, res) => {
 });
 
 // Add Product (Manufacturer)
-router.post('/products', async (req, res) => {
+router.post('/products', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
+    // The measured size ("54-16-135") is normalised into the schema's bucket, and
+    // the numbers themselves are kept where the product page reads them.
+    const incoming = { ...req.body };
+    const measured = String(incoming.frameSize ?? '').trim();
+    if (measured && !['small', 'medium', 'large', 'extra-large'].includes(measured.toLowerCase())) {
+      incoming.frameSize = frameSizeBucket(measured);
+      const { lens, bridge, temple } = measureFromSize(measured);
+      const dims = incoming.dimensions && typeof incoming.dimensions === 'object' ? incoming.dimensions : {};
+      incoming.dimensions = {
+        width: Number.isFinite(dims.width) ? dims.width : lens,
+        height: Number.isFinite(dims.height) ? dims.height : undefined,
+        bridge: Number.isFinite(dims.bridge) ? dims.bridge : bridge,
+        temple: Number.isFinite(dims.temple) ? dims.temple : temple
+      };
+    }
+
     const productData = {
-      ...req.body,
-      manufacturer: decoded.id,
+      ...incoming,
+      manufacturer: req.manufacturer._id,
       isManufacturerProduct: true
     };
 
@@ -267,13 +391,11 @@ router.post('/products', async (req, res) => {
 });
 
 // Get Manufacturer Products
-router.get('/products', async (req, res) => {
+router.get('/products', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const products = await Product.find({ 
-      manufacturer: decoded.id,
+      manufacturer: req.manufacturer._id,
       isDiscontinued: false
     }).sort({ createdAt: -1 });
 
@@ -288,14 +410,12 @@ router.get('/products', async (req, res) => {
 });
 
 // Update Product
-router.put('/products/:id', async (req, res) => {
+router.put('/products/:id', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const product = await Product.findOne({ 
       _id: req.params.id,
-      manufacturer: decoded.id
+      manufacturer: req.manufacturer._id
     });
 
     if (!product) {
@@ -317,14 +437,12 @@ router.put('/products/:id', async (req, res) => {
 });
 
 // Discontinue Product
-router.post('/products/:id/discontinue', async (req, res) => {
+router.post('/products/:id/discontinue', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const product = await Product.findOne({ 
       _id: req.params.id,
-      manufacturer: decoded.id
+      manufacturer: req.manufacturer._id
     });
 
     if (!product) {
@@ -333,7 +451,7 @@ router.post('/products/:id/discontinue', async (req, res) => {
 
     product.isDiscontinued = true;
     product.discontinuedAt = new Date();
-    product.discontinuedBy = decoded.id;
+    product.discontinuedBy = req.manufacturer._id;
     await product.save();
 
     // Remove from all seller dashboards
@@ -353,14 +471,12 @@ router.post('/products/:id/discontinue', async (req, res) => {
 });
 
 // Re-continue Product
-router.post('/products/:id/recontinue', async (req, res) => {
+router.post('/products/:id/recontinue', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const product = await Product.findOne({ 
       _id: req.params.id,
-      manufacturer: decoded.id
+      manufacturer: req.manufacturer._id
     });
 
     if (!product) {
@@ -383,10 +499,8 @@ router.post('/products/:id/recontinue', async (req, res) => {
 });
 
 // Bulk Upload Products via Spreadsheet
-router.post('/products/bulk-upload', upload.single('file'), async (req, res) => {
+router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
@@ -405,10 +519,13 @@ router.post('/products/bulk-upload', upload.single('file'), async (req, res) => 
     const categoriesSeen = new Set();
     const list = (v, map) => String(v ?? '').split('|').map((x) => map ? map(x) : x.trim()).filter(Boolean);
 
-    for (let i = 1; i < data.length; i++) {
+    // sheet_to_json() already uses the first spreadsheet line as the column
+    // names, so data[0] is a real product row. Starting at 1 silently dropped the
+    // first row of every upload while still replying "success".
+    for (let i = 0; i < data.length; i++) {
       const row = data[i];
       if (!row || Object.values(row).every((v) => v === '' || v === undefined || v === null)) continue;
-      const line = i + 1; // spreadsheet row, including the header line
+      const line = i + 2; // spreadsheet row: the header is line 1
 
       // Column names are matched loosely so a sheet exported from Excel with
       // spaces or capital letters still loads.
@@ -450,7 +567,11 @@ router.post('/products/bulk-upload', upload.single('file'), async (req, res) => 
         if (!String(get('framesize', 'size') ?? '').trim()) missing.push('frameSize');
         if (!String(get('framewidth') ?? '').trim()) missing.push('frameWidth');
         if (!String(get('frameweight') ?? '').trim()) missing.push('frameWeight');
-        if (!String(get('framedimensions', 'dimensions') ?? '').trim()) missing.push('dimensions');
+        const sizeParts = measureFromSize(get('framesize', 'size'));
+        const dimGiven = String(get('framedimensions', 'dimensions') ?? '').trim()
+          || (sizeParts.lens && sizeParts.temple)
+          || ['width', 'height', 'bridge', 'temple'].every((k) => Number(String(get('dim' + k) ?? '')) > 0);
+        if (!dimGiven) missing.push('dimensions (one string like 54 x 52 x 16 x 145, or the four dimWidth/dimHeight/dimBridge/dimTemple columns)');
         if (!String(get('framecolor', 'color', 'colours') ?? '').trim()) missing.push('frameColor');
         if (/^kids$/.test(category) || String(genderRaw).toLowerCase() === 'kids') {
           if (!String(get('subgender', 'boygirl') ?? '').trim()) missing.push('subGender (boys or girls)');
@@ -475,7 +596,19 @@ router.post('/products/bulk-upload', upload.single('file'), async (req, res) => 
       categoriesSeen.add(category);
 
       const dimRaw = String(get('framedimensions', 'dimensions') ?? '');
-      const num = (v) => { const n = Number(String(v).replace(/[^0-9.\-]/g, '')); return Number.isFinite(n) ? n : undefined; };
+      // An empty spreadsheet cell arrives as '', and Number('') is 0 - so blank
+      // measurements used to be stored as zero widths and zero temples.
+      const num = (v) => {
+        const raw = String(v ?? '').trim();
+        if (!raw) return undefined;
+        const n = Number(raw.replace(/[^0-9.\-]/g, ''));
+        if (!Number.isFinite(n) || n === 0) return undefined;
+        return n;
+      };
+      const first = (...vals) => {
+        for (const v of vals) { const n = num(v); if (n !== undefined) return n; }
+        return undefined;
+      };
 
       products.push({
         title,
@@ -496,18 +629,30 @@ router.post('/products/bulk-upload', upload.single('file'), async (req, res) => 
         frameMaterial: String(get('framematerial', 'material')).trim(),
         frameColor: String(get('framecolor', 'color', 'colours')).trim(),
         // Frame size is typed by the manufacturer, not chosen from three labels.
-        frameSize: String(get('framesize', 'size')).trim(),
+        frameSize: frameSizeBucket(get('framesize', 'size')),
         sizes: list(get('sizes')),
         frameWidth: num(get('framewidth')),
         frameWeight: num(get('frameweight')),
         materials: list(get('materials', 'material')),
         colors: list(get('colors', 'colours')).map((c) => ({ name: c })),
-        dimensions: {
-          width: num(get('dimwidth') ?? dimRaw.split(/\s*[x\u00D7]\s*/)[0]),
-          height: num(get('dimheight') ?? dimRaw.split(/\s*[x\u00D7]\s*/)[1]),
-          bridge: num(get('dimbridge')),
-          temple: num(get('dimtemple'))
-        },
+        /*
+         * The measurement is written on the temple as lens - bridge - temple and
+         * sheets express it either as one "54 x 52 x 16 x 145" string or as four
+         * columns. The old code read a composite only for width/height and
+         * expected columns for bridge/temple, so the last two numbers of a normal
+         * sheet vanished silently.
+         */
+        dimensions: (() => {
+          const parts = dimRaw.split(/\s*(?:[x\u00D7]|[-,])\s*/).filter((p) => String(p).trim() !== '');
+          const four = parts.length >= 4;
+          const fromSize = measureFromSize(get('framesize', 'size'));
+          return {
+            width: first(get('dimwidth'), four ? parts[0] : undefined, fromSize.lens),
+            height: first(get('dimheight'), four ? parts[1] : undefined),
+            bridge: first(get('dimbridge'), four ? parts[2] : parts[1], fromSize.bridge),
+            temple: first(get('dimtemple'), four ? parts[3] : parts[2], fromSize.temple)
+          };
+        })(),
         images: imageField.split('|').map((u) => u.trim()).filter(Boolean),
         // Powered declaration from the sheet, validated on save.
         poweredOptionsAvailable: ['true', 'yes', 'y', '1'].includes(String(get('powered', 'withpower', 'poweredoptionsavailable') ?? '').toLowerCase()),
@@ -563,12 +708,47 @@ router.post('/products/bulk-upload', upload.single('file'), async (req, res) => 
       } catch (imgErr) {
         errors.push(`${p.title}: ${imgErr.message}`);
       }
-      p.manufacturer = decoded.id;
+      p.manufacturer = req.manufacturer._id;
       p.isManufacturerProduct = true;
       stored.push(p);
     }
     if (errors.length) {
       return res.status(400).json({ success: false, message: 'Some image links could not be fetched. Nothing was saved.', errors: errors.slice(0, 20) });
+    }
+
+    /*
+     * Every row is checked against the schema before anything is written, and
+     * failures name the row and the word that did not match. insertMany skips
+     * validators, which is how a sheet could be rejected with a bare "Server
+     * error" after the whole batch was already lost - and how `name` used to be
+     * left empty for imported rows.
+     */
+    const rowProblems = [];
+    for (const [index, p] of products.entries()) {
+      for (const field of Object.keys(ENUM_ALIASES)) {
+        const path = ENUM_ALIASES[field];
+        if (p[field] === undefined) continue;
+        const matched = matchEnum(Product, path, p[field]);
+        if (matched.unknown) {
+          rowProblems.push(`${p.title || `row ${index + 1}`}: ${field} "${p[field]}" is not one of ${enumsOf(Product, path).join(', ')}`);
+        }
+        p[field] = matched.value;
+      }
+      if (p.title && !p.name) p.name = p.title;
+
+      const invalid = new Product(p).validateSync();
+      if (invalid) {
+        rowProblems.push(`${p.title || `row ${index + 1}`}: ${Object.entries(invalid.errors)
+          .map(([k, v]) => `${k} - ${v.message.replace(/^Path \`.*?\` is invalid: /, '')}`)
+          .join('; ')}`);
+      }
+    }
+    if (rowProblems.length) {
+      return res.status(400).json({
+        success: false,
+        message: `${rowProblems.length} row(s) need attention before the file can be imported. Nothing was saved.`,
+        errors: rowProblems.slice(0, 20)
+      });
     }
 
     const createdProducts = await Product.insertMany(products);
@@ -585,15 +765,13 @@ router.post('/products/bulk-upload', upload.single('file'), async (req, res) => 
 });
 
 // Add Manufacturer Seller
-router.post('/sellers', async (req, res) => {
+router.post('/sellers', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const sellerData = {
       ...req.body,
-      manufacturer: decoded.id,
-      createdBy: decoded.id
+      manufacturer: req.manufacturer._id,
+      createdBy: req.manufacturer._id
     };
 
     const seller = new ManufacturerSeller(sellerData);
@@ -614,13 +792,11 @@ router.post('/sellers', async (req, res) => {
 });
 
 // Get Manufacturer Sellers
-router.get('/sellers', async (req, res) => {
+router.get('/sellers', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const sellers = await ManufacturerSeller.find({ 
-      manufacturer: decoded.id
+      manufacturer: req.manufacturer._id
     }).sort({ createdAt: -1 });
 
     res.json({
@@ -634,10 +810,8 @@ router.get('/sellers', async (req, res) => {
 });
 
 // Bulk Upload Manufacturer Sellers
-router.post('/sellers/bulk-upload', upload.single('file'), async (req, res) => {
+router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
@@ -678,7 +852,7 @@ router.post('/sellers/bulk-upload', upload.single('file'), async (req, res) => {
           pincode: row.pincode || ''
         },
         manufacturerCode: row.manufacturerCode,
-        manufacturer: decoded.id,
+        manufacturer: req.manufacturer._id,
         gstNumber: row.gstNumber,
         panNumber: row.panNumber,
         bankDetails: {
@@ -687,7 +861,7 @@ router.post('/sellers/bulk-upload', upload.single('file'), async (req, res) => {
           bankName: row.bankName,
           branchName: row.branchName
         },
-        createdBy: decoded.id
+        createdBy: req.manufacturer._id
       };
 
       sellers.push(sellerData);
@@ -720,14 +894,12 @@ router.post('/sellers/bulk-upload', upload.single('file'), async (req, res) => {
 });
 
 // Ban Manufacturer Seller
-router.post('/sellers/:id/ban', async (req, res) => {
+router.post('/sellers/:id/ban', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const seller = await ManufacturerSeller.findOne({ 
       _id: req.params.id,
-      manufacturer: decoded.id
+      manufacturer: req.manufacturer._id
     });
 
     if (!seller) {
@@ -737,7 +909,7 @@ router.post('/sellers/:id/ban', async (req, res) => {
     seller.isBanned = true;
     seller.banReason = req.body.reason || '';
     seller.bannedAt = new Date();
-    seller.bannedBy = decoded.id;
+    seller.bannedBy = req.manufacturer._id;
     await seller.save();
 
     res.json({
@@ -751,15 +923,13 @@ router.post('/sellers/:id/ban', async (req, res) => {
 });
 
 // Add Manufacturer Staff
-router.post('/staff', async (req, res) => {
+router.post('/staff', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const staffData = {
       ...req.body,
-      manufacturer: decoded.id,
-      createdBy: decoded.id
+      manufacturer: req.manufacturer._id,
+      createdBy: req.manufacturer._id
     };
 
     const staff = new ManufacturerStaff(staffData);
@@ -777,13 +947,11 @@ router.post('/staff', async (req, res) => {
 });
 
 // Get Manufacturer Staff
-router.get('/staff', async (req, res) => {
+router.get('/staff', verifyManufacturer, async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     const staff = await ManufacturerStaff.find({ 
-      manufacturer: decoded.id
+      manufacturer: req.manufacturer._id
     }).sort({ createdAt: -1 });
 
     res.json({

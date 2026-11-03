@@ -112,6 +112,14 @@ const accessorySchema = new mongoose.Schema({
 
 const productSchema = new mongoose.Schema({
   title: { type: String, required: [true, 'Title is required'], trim: true },
+  /*
+   * Order line snapshots, cart rows, the comparison table, the lens
+   * configurator and several admin screens read `product.name`. The field did
+   * not exist, so the product page rendered an empty heading, an empty
+   * breadcrumb and image descriptions with nothing in them. It mirrors `title`
+   * on save - a virtual would not survive the lean() queries these routes use.
+   */
+  name: { type: String, trim: true },
   description: { type: String, required: [true, 'Description is required'] },
   price: { type: Number, required: [true, 'Price is required'], min: 0 },
   discountedPrice: { type: Number, min: 0 },
@@ -127,7 +135,17 @@ const productSchema = new mongoose.Schema({
     ]
   },
   brand: { type: String, required: [true, 'Brand is required'], trim: true },
-  seller: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true },
+  /*
+   * A seller owns a normal listing, but a manufacturer registers a catalogue
+   * entry before any shop has agreed to stock it. Requiring the seller there
+   * made the manufacturer "add single product" form fail every time it was
+   * submitted, so the requirement is conditional on the document type.
+   */
+  seller: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Seller',
+    required: function () { return !this.isManufacturerProduct; }
+  },
   colors: [colorSchema],
   sizes: [String],
   variants: [variantSchema],
@@ -319,6 +337,32 @@ productSchema.pre('save', function(next) {
 });
 
 productSchema.index({ title: 'text', description: 'text', brand: 'text', tags: 'text' });
+
+productSchema.pre('validate', function mirrorNameFromTitle() {
+  const title = (this.title || '').trim();
+  if (title) this.name = title;
+});
+
+productSchema.pre('save', function keepNameInStepWithEdits() {
+  if (this.isModified('title') && this.title) this.name = this.title;
+});
+
+productSchema.post('init', function backfillMissingName(doc) {
+  if (!doc.name && doc.title) doc.name = doc.title;
+});
+
+/**
+ * Records written before `name` existed have nothing in it, and the routes that
+ * answer with lean() documents bypass the hook above, so existing rows are
+ * filled in place. Idempotent.
+ */
+productSchema.statics.fillMissingNames = async function fillMissingNames() {
+  const res = await this.updateMany(
+    { title: { $exists: true, $nin: [null, ''] }, $or: [{ name: { $exists: false } }, { name: null }, { name: '' }] },
+    [{ $set: { name: '$title' } }]
+  );
+  return res.modifiedCount ?? 0;
+};
 
 const Product = mongoose.model('Product', productSchema);
 export default Product;

@@ -274,11 +274,36 @@ const startServer = async () => {
     });
     console.log('✅ Connected to MongoDB');
     
-    // Run seed script
+    // Seed script.
+    //
+    // The seed deletes the collections it owns before writing its fixtures, so
+    // running it on every boot against a populated database - the Atlas URI in
+    // .env, for example - erases real accounts and real orders. It now runs when
+    // the database looks empty, when SEED_ON_BOOT=true forces it, and never when
+    // SEED_ON_BOOT=false.
     try {
       const { seedDatabase } = await import('./seed.js');
-      await seedDatabase();
-      console.log('✅ Database seeded successfully');
+      const { default: User } = await import('./models/User.js');
+      const flag = String(process.env.SEED_ON_BOOT || 'auto').toLowerCase();
+      const existing = await User.estimatedDocumentCount();
+      if (flag === 'false' || flag === '0') {
+        console.log('Seed skipped (SEED_ON_BOOT=false).');
+      } else if (flag === 'true' || flag === '1') {
+        await seedDatabase();
+        console.log('✅ Database seeded (forced by SEED_ON_BOOT=true)');
+      } else if (existing === 0) {
+        await seedDatabase();
+        console.log('✅ Database seeded (empty database detected)');
+      } else {
+        console.log('Seed skipped: ' + existing + ' user record(s) already exist. Set SEED_ON_BOOT=true to reseed, which deletes the seeded collections first.');
+      }
+      // Catalogue rows created before products carried a `name` are filled from
+      // their title; idempotent, so it costs one query per restart.
+      try {
+        const { default: Product } = await import('./models/Product.js');
+        const filled = await Product.fillMissingNames();
+        if (filled) console.log(`Filled product names: ${filled}`);
+      } catch (bfErr) { console.log('Name backfill note:', bfErr.message); }
     } catch (seedErr) {
       console.log('ℹ️  Seed note:', seedErr.message);
     }

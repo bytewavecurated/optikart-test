@@ -54,11 +54,14 @@ Copy `server/.env.example` to `server/.env` and fill in real values. Everything 
 needs to boot is `MONGODB_URI`, `JWT_SECRET` and `PORT`; the payment, shipping and email
 blocks stay optional in development (see [External services](#external-services)).
 
-Two settings are worth reading before deploying:
+These settings change behaviour rather than credentials:
 
 - `TRUST_PROXY_HOPS` - how many reverse proxies sit in front. In production the default
   is `1`. Leave it at `0`/unset for direct local connections; never set Express
   `trust proxy` to `true`, because that lets clients spoof the IP the rate limiter keys on.
+- `SEED_ON_BOOT` - `auto` by default; the table in Seed and start below spells out the
+  three modes. Forcing it wipes the seeded collections, so point `MONGODB_URI` at a scratch
+  database before you do.
 - `AUTH_OTP_BYPASS` - seeded test accounts may skip the email OTP step. This only applies
   when `NODE_ENV` is not `production`. Each role keeps an allow-list in its route module and
   it must match `server/seed.js`, or the printed login quietly demands an OTP that never arrives.
@@ -67,9 +70,16 @@ Two settings are worth reading before deploying:
 
 ### Seed and start
 
-The seed runs automatically on boot and is idempotent: it clears the collections it owns,
-creates demo accounts, publishes catalogue data and writes placeholder product images into
-`server/uploads/products`.
+The seed creates demo accounts, publishes catalogue data and writes placeholder product
+images into `server/uploads/products`. It **deletes the collections it owns first**, so it
+is not something to run against data you care about: on boot it now seeds only when the
+database looks empty, and logs why it skipped otherwise.
+
+| `SEED_ON_BOOT` | Behaviour |
+| --- | --- |
+| `auto` (default) | seed when there are no users yet; skip and say so when there are |
+| `true` | seed regardless, deleting the seeded collections first |
+| `false` | never seed, even against an empty database |
 
 ```bash
 # terminal 1 - API on :5000

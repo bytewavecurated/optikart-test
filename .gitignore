@@ -7,6 +7,10 @@ client/build/
 
 # Environment variables
 .env
+# The API env file holds live-looking AWS/Azure/OpenAI keys and the Atlas URI.
+# It was committed before this rule existed, so it needs an explicit untrack:
+#   git rm --cached server/.env
+server/.env
 .env.local
 .env.production
 
