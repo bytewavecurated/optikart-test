@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiKey, FiTruck } from 'react-icons/fi';
 import { toastError } from '../../services/errors.js';
 import Logo from '../../components/Logo';
+import { useAuth } from '../../contexts/AuthContext';
 
 const DeliveryPartnerLogin = () => {
   const [step, setStep] = useState(1);
@@ -16,6 +17,7 @@ const DeliveryPartnerLogin = () => {
   const [partnerId, setPartnerId] = useState(null);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+  const { partnerLogin, partnerVerifyOTP } = useAuth();
 
   const validate = () => {
     const newErrors = {};
@@ -42,8 +44,10 @@ const DeliveryPartnerLogin = () => {
             setStep(2);
             toast.success('OTP sent to your email');
           } else if (data.token) {
-            localStorage.setItem('optikart_token', data.token);
-            localStorage.setItem('optikart_role', 'deliveryPartner');
+            // The session belongs to the auth context, not to a couple of
+            // localStorage writes made from this page, otherwise React still
+            // believes nobody signed in and the dashboard guard bounces back here.
+            await partnerLogin(email, password);
             toast.success('Login successful!');
             navigate('/delivery-partner/dashboard');
           }
@@ -70,8 +74,7 @@ const DeliveryPartnerLogin = () => {
       const data = response.data;
 
       if (data.success && data.token) {
-        localStorage.setItem('optikart_token', data.token);
-        localStorage.setItem('optikart_role', 'deliveryPartner');
+        await partnerVerifyOTP(partnerId, otp);
         toast.success('Login successful!');
         navigate('/delivery-partner/dashboard');
       } else {

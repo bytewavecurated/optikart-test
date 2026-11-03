@@ -38,6 +38,22 @@ const UserProfile = () => {
     }
   }, [isAuthenticated]);
 
+  /*
+   * formData seeds itself from the session, which is still empty on the first
+   * render because the stored session is restored asynchronously - so landing on
+   * /profile directly showed blank name and phone fields for accounts that had
+   * both. Re-seed when the account arrives, but only while nothing has been typed,
+   * so an edit in progress is never clobbered.
+   */
+  useEffect(() => {
+    if (!user) return;
+    setFormData((prev) => (
+      prev.name || prev.phone
+        ? prev
+        : { name: user.name || '', email: user.email || '', phone: user.phone || '' }
+    ));
+  }, [user]);
+
   const fetchAddresses = async () => {
     setLoadingAddresses(true);
     try {

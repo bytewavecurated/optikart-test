@@ -82,9 +82,42 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
+      /*
+       * The stored profile and the stored role are separate localStorage keys, and
+       * signing in to another role without signing out overwrote one but not the
+       * other. Restoring whatever blob was lying there under the new role is how a
+       * manufacturer's account ended up rendered inside the staff panel. Trust the
+       * cache only when the account in it is the kind the role claims - positive
+       * evidence only, because "has no storeName" is also true of a manufacturer.
+       */
+      const matches = (obj) => {
+        const r = obj?.role || obj?.accountType || '';
+        switch (role) {
+          case 'user': return r === '' || r === 'customer' || r === 'user';
+          case 'staff': return r === 'staff' || r === 'admin';
+          case 'admin': return r === 'admin';
+          case 'seller': return r === 'seller' || (!!obj?.storeName && r !== 'manufacturer');
+          case 'manufacturer': return r === 'manufacturer' || (!!obj?.companyName && !obj?.storeName);
+          case 'manufacturerSeller': return r === 'retailer' || r === 'manufacturerSeller';
+          case 'deliveryPartner': return r === 'deliveryPartner' || (!!obj?.vehicleType && !obj?.storeName);
+          case 'executive': return r === 'executive' || (!!obj?.department && !obj?.storeName);
+          default: return false;
+        }
+      };
+
+      let userDataCache = userData;
+      if (userDataCache) {
+        let parsed = null;
+        try { parsed = JSON.parse(userDataCache); } catch { parsed = null; }
+        if (parsed && !matches(parsed)) {
+          localStorage.removeItem(USER_KEY);
+          userDataCache = null;
+        }
+      }
+
       // First, try to load user data from localStorage
-      if (userData) {
-        const parsedData = JSON.parse(userData);
+      if (userDataCache) {
+        const parsedData = JSON.parse(userDataCache);
         if (role === 'staff') {
           setStaff(parsedData);
         } else if (role === 'seller') {
@@ -304,6 +337,56 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message };
     }
   };
+
+  /*
+   * The partner console signed in by writing localStorage from its own page
+   * component - no other role did that, and no React state was ever set. Any
+   * guard that asked "who is this session?" instead of "what string is in
+   * storage?" bounced a freshly signed-in partner straight back to the login
+   * page.
+   */
+  const partnerSession = useCallback((data) => {
+    const profile = data.partner || data.deliveryPartner || data.data || {};
+    localStorage.setItem(TOKEN_KEY, data.token);
+    localStorage.setItem(ROLE_KEY, 'deliveryPartner');
+    localStorage.setItem(USER_KEY, JSON.stringify(profile));
+    setSessionExpiry('deliveryPartner');
+    setDeliveryPartner(profile);
+    setIsAuthenticated(true);
+    connectSocket(data.token);
+    return profile;
+  }, [setSessionExpiry]);
+
+  const partnerLogin = useCallback(async (email, password) => {
+    try {
+      const response = await api.post('/delivery-partner/login', { email, password });
+      const data = response.data;
+      if (data.requiresOTP) {
+        return { success: true, requiresOTP: true, partnerId: data.partnerId || data.id };
+      }
+      if (!data.token) return { success: false, message: 'Unexpected response from the server.' };
+      return { success: true, partner: partnerSession(data) };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'Login failed' };
+    }
+  }, [partnerSession]);
+
+  const partnerVerifyOTP = useCallback(async (partnerId, otp) => {
+    try {
+      const response = await api.post('/delivery-partner/verify-login-otp', { partnerId, otp });
+      const data = response.data;
+      if (!data.token) return { success: false, message: data.message || 'OTP verification failed' };
+      partnerSession(data);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || 'OTP verification failed' };
+    }
+  }, [partnerSession]);
+
+  const partnerLogout = useCallback(() => {
+    clearAllState();
+    toast.success('Logged out successfully');
+  }, [clearAllState]);
 
   const staffLogout = useCallback(() => {
     api.post('/auth/logout').catch(() => {});
@@ -651,8 +734,40 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   }, [clearAllState]);
 
+  /*
+   * Every role login shares one `isAuthenticated` flag, so signing in as a
+   * seller or a delivery partner made the storefront header claim a customer was
+   * logged in - offering My Profile / Orders / Wishlist against an account that
+   * does not exist. The roles are exclusive by construction, so a session
+   * belongs to exactly one of them.
+   */
+  const activeRole = seller ? 'seller'
+    : admin ? 'admin'
+    : staff ? 'staff'
+    : executive ? 'executive'
+    : manufacturer ? 'manufacturer'
+    : manufacturerSeller ? 'manufacturerSeller'
+    : deliveryPartner ? 'deliveryPartner'
+    : user ? 'customer'
+    : null;
+
+  const isCustomerAuthenticated = isAuthenticated && activeRole === 'customer';
+
+  const roleConsole = {
+    seller: { label: 'Seller Console', path: '/seller/dashboard' },
+    admin: { label: 'Admin Panel', path: '/admin' },
+    staff: { label: 'Staff Workspace', path: '/staff' },
+    executive: { label: 'Executive Desk', path: '/executive/dashboard' },
+    manufacturer: { label: 'Manufacturer Portal', path: '/manufacturer/dashboard' },
+    manufacturerSeller: { label: 'Manufacturer-Seller Portal', path: '/manufacturer-seller/dashboard' },
+    deliveryPartner: { label: 'Partner Dashboard', path: '/delivery-partner/dashboard' }
+  }[activeRole] || null;
+
   const value = {
     user,
+    activeRole,
+    isCustomerAuthenticated,
+    roleConsole,
     seller,
     admin,
     staff,
@@ -670,6 +785,9 @@ export const AuthProvider = ({ children }) => {
     verifySellerLoginOTP,
     sellerRegister,
     verifySellerPhoneOTP,
+    partnerLogin,
+    partnerVerifyOTP,
+    partnerLogout,
     sellerLogout,
     staffLogin,
     verifyStaffLoginOTP,

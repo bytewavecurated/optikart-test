@@ -18,7 +18,8 @@ const Header = () => {
   // screen where every link fits they would be dead weight.
   const [railOverflow, setRailOverflow] = useState(false);
   const categoryNavRef = useRef(null);
-  const { user, seller, admin, isAuthenticated, logout, sellerLogout } = useAuth();
+  const { user, seller, admin, isAuthenticated, isCustomerAuthenticated, activeRole, roleConsole,
+    logout, sellerLogout, staffLogout, adminLogout, executiveLogout, manufacturerLogout, manufacturerSellerLogout, partnerLogout } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
 
@@ -61,6 +62,24 @@ const Header = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  // One button for whichever console is open. Each role keeps its own logout
+  // because they clear different keys and re-point different sockets.
+  const signOutRole = () => {
+    const byRole = {
+      seller: sellerLogout,
+      admin: adminLogout,
+      staff: staffLogout,
+      executive: executiveLogout,
+      manufacturer: manufacturerLogout,
+      manufacturerSeller: manufacturerSellerLogout,
+      deliveryPartner: partnerLogout
+    };
+    const fn = byRole[activeRole];
+    if (typeof fn === 'function') fn();
+    else logout();
+    navigate('/');
   };
 
   const handleLogout = () => {
@@ -166,7 +185,7 @@ const Header = () => {
 
         {/* Desktop Nav */}
         <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {isAuthenticated ? (
+          {isCustomerAuthenticated ? (
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setProfileDropdown(!profileDropdown)}
@@ -195,7 +214,7 @@ const Header = () => {
                       overflow: 'hidden',
                     }}
                   >
-                    {user && (
+                    {isCustomerAuthenticated && (
                       <>
                         <Link to="/profile" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>My Profile</Link>
                         <Link to="/orders" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>Orders</Link>
@@ -219,6 +238,30 @@ const Header = () => {
               <FiUser size={16} />
               Login
             </Link>
+          )}
+
+          {/*
+            A staff, seller, manufacturer, executive or partner session is not a
+            shopping session. Rather than fake a customer account, the bar offers
+            the way back into their own console and out of it.
+          */}
+          {roleConsole && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Link
+                to={roleConsole.path}
+                title={`Signed in as ${activeRole}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '7px 12px', border: '1px solid rgba(255,255,255,0.45)', borderRadius: '4px', textDecoration: 'none', whiteSpace: 'nowrap' }}
+              >
+                <FiUser size={15} />
+                {roleConsole.label}
+              </Link>
+              <button
+                onClick={signOutRole}
+                style={{ color: 'rgba(255,255,255,0.85)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', padding: '7px 8px', whiteSpace: 'nowrap' }}
+              >
+                Sign out
+              </button>
+            </div>
           )}
 
           <Link to="/wishlist" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>

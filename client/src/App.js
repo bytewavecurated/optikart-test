@@ -110,20 +110,25 @@ const LoadingFallback = () => (
 );
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, seller, admin, staff, executive, manufacturer, manufacturerSeller, deliveryPartner, loading } = useAuth();
-  const role = localStorage.getItem('optikart_role');
-  const token = localStorage.getItem('optikart_token');
+  const {
+    isAuthenticated, activeRole, user, seller, admin, staff, executive,
+    manufacturer, manufacturerSeller, deliveryPartner, loading
+  } = useAuth();
 
   // Wait for auth initialization to complete
   if (loading) {
     return <LoadingFallback />;
   }
 
-  // Check if user has valid token in localStorage
-  const hasValidToken = token && role;
-
-  // Check authentication - either from state or localStorage
-  const isAuth = isAuthenticated || hasValidToken;
+  /*
+   * The role used to be read straight from localStorage, and any page could put
+   * whatever it liked in that key: writing optikart_role="staff" while signed in
+   * as a manufacturer was enough to walk into the staff panel. The role now comes
+   * from the identity the server returned at sign-in, and a session with no
+   * identity behind it is treated as signed out.
+   */
+  const sessionExists = !!(user || seller || admin || staff || executive || manufacturer || manufacturerSeller || deliveryPartner);
+  const isAuth = isAuthenticated && sessionExists;
 
   if (!isAuth) {
     // Determine redirect based on current path
@@ -146,15 +151,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 
   if (allowedRoles) {
     // Check if user has the required role
-    const hasRole = allowedRoles.some(r => {
-      if (r === 'user' && (user || role === 'user')) return true;
-      if (r === 'seller' && (seller || role === 'seller')) return true;
-      if (r === 'admin' && (admin || role === 'admin')) return true;
-      if (r === 'staff' && (staff || role === 'staff')) return true;
-      if (r === 'executive' && (executive || role === 'executive')) return true;
-      if (r === 'manufacturer' && (manufacturer || role === 'manufacturer')) return true;
-      if (r === 'manufacturerSeller' && (manufacturerSeller || role === 'manufacturerSeller')) return true;
-      if (r === 'deliveryPartner' && (deliveryPartner || role === 'deliveryPartner')) return true;
+    // 'user' is also satisfied by an admin or staff session, because those people
+    // browse the storefront too; nothing else crosses over.
+    const hasRole = allowedRoles.some((r) => {
+      if (r === activeRole) return true;
+      if (r === 'user' && activeRole === 'customer') return true;
       return false;
     });
 
@@ -187,6 +188,14 @@ const SellerRoute = ({ children }) => (
 
 const AdminRoute = ({ children }) => (
   <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
+);
+
+/*
+ * The account pages had no guard at all: signed out, /profile still painted the
+ * profile shell - empty, but present - instead of asking for a sign-in.
+ */
+const UserRoute = ({ children }) => (
+  <ProtectedRoute allowedRoles={['user']}>{children}</ProtectedRoute>
 );
 
 const StaffRoute = ({ children }) => (
@@ -256,10 +265,10 @@ function App() {
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
-        <Route path="/orders" element={<UserOrders />} />
-        <Route path="/orders/:id" element={<OrderDetail />} />
-        <Route path="/wishlist" element={<Wishlist />} />
-        <Route path="/profile" element={<UserProfile />} />
+        <Route path="/orders" element={<UserRoute><UserOrders /></UserRoute>} />
+        <Route path="/orders/:id" element={<UserRoute><OrderDetail /></UserRoute>} />
+        <Route path="/wishlist" element={<UserRoute><Wishlist /></UserRoute>} />
+        <Route path="/profile" element={<UserRoute><UserProfile /></UserRoute>} />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/products" element={<ProductsBrowse />} />

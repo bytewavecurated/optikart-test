@@ -345,6 +345,10 @@ export const deliveryPartner = {
   updateLocation: (latitude, longitude) => api.post('/delivery-partner/location', { latitude, longitude }),
   completeDelivery: (orderId) => api.post(`/delivery-partner/complete/${orderId}`),
   withdraw: (amount) => api.post('/delivery-partner/withdraw', { amount }),
+  setAvailability: (isAvailable) => api.put('/delivery-partner/availability', { isAvailable }),
+  getOffers: () => api.get('/delivery-partner/offers'),
+  respondToOffer: (orderId, decision) => api.post(`/delivery-partner/offers/${orderId}/respond`, { decision }),
+  getEarnings: (period) => api.get('/delivery-partner/payment/earnings', { params: { period } }),
   // Route optimization
   optimizeRoute: () => api.get('/delivery-route/optimize'),
   getRouteUpdates: (lat, lon) => api.get('/delivery-route/updates', { params: { lat, lon } }),

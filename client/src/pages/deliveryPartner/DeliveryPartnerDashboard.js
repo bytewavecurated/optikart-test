@@ -4,6 +4,7 @@ import { deliveryPartner as deliveryApi } from '../../services/api';
 import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useAuth } from '../../contexts/AuthContext';
 import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation, FiCreditCard } from 'react-icons/fi';
 import { toastError } from '../../services/errors.js';
 
@@ -57,6 +58,7 @@ const DeliveryPartnerDashboard = () => {
   const [isOnline, setIsOnline] = useState(false);
   const [locationSharing, setLocationSharing] = useState(false);
   const [activeDeliveries, setActiveDeliveries] = useState([]);
+  const [availabilityBusy, setAvailabilityBusy] = useState(false);
   const [stats, setStats] = useState({
     todayDeliveries: 0,
     totalEarnings: 0,
@@ -68,13 +70,20 @@ const DeliveryPartnerDashboard = () => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
   const navigate = useNavigate();
+  const { logout, activeRole, loading: authLoading } = useAuth();
 
   const fetchDashboardData = useCallback(async () => {
     try {
       const meResponse = await deliveryApi.getMe();
-      const partnerData = meResponse.data.data || {};
+      /*
+       * /me answers with the counters on the envelope and the person's own record
+       * under `partner`, so reading only one of the two produced "Welcome, Partner"
+       * and an availability switch that ignored the stored flag.
+       */
+      const body = meResponse.data.data || {};
+      const partnerData = { ...(body.partner || {}), ...body };
       setPartner(partnerData);
-      setIsOnline(partnerData.isOnline || false);
+      setIsOnline(partnerData.isOnline === true || partnerData.isAvailable === true);
       setLocationSharing(partnerData.locationSharing || false);
 
       setStats({
@@ -103,23 +112,36 @@ const DeliveryPartnerDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const token = localStorage.getItem('optikart_token');
-    const role = localStorage.getItem('optikart_role');
-    if (!token || role !== 'deliveryPartner') {
+    // The stored session is restored asynchronously, so checking the role before
+    // that finishes bounced every partner back to the login page.
+    if (authLoading) return;
+    // Follow the session the server confirmed, not the role string in storage.
+    if (activeRole !== 'deliveryPartner') {
       navigate('/delivery-partner/login');
       return;
     }
     fetchDashboardData();
-  }, [fetchDashboardData, navigate]);
+  }, [activeRole, authLoading, fetchDashboardData, navigate]);
 
+  /*
+   * Availability is what puts a partner into the recommendation pool, so this
+   * switch has to reach the server - it used to only repaint the button, and a
+   * partner who believed they were online received no offers. The catch also
+   * referenced an `error` binding that does not exist, which threw a second error
+   * while handling the first.
+   */
   const handleToggleOnline = async () => {
+    const newStatus = !isOnline;
+    setAvailabilityBusy(true);
     try {
-      const newStatus = !isOnline;
+      await deliveryApi.setAvailability(newStatus);
       setIsOnline(newStatus);
-      toast.success(newStatus ? 'You are now online' : 'You are now offline');
-    } catch {
-      toastError(error, "Failed to update status");
-      setIsOnline(isOnline);
+      setPartner((p) => ({ ...p, isAvailable: newStatus }));
+      toast.success(newStatus ? 'You are online - you will receive nearby runs' : 'You are offline');
+    } catch (e) {
+      toastError(e, 'Could not change your availability');
+    } finally {
+      setAvailabilityBusy(false);
     }
   };
 
@@ -190,9 +212,9 @@ const DeliveryPartnerDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('optikart_token');
-    localStorage.removeItem('optikart_role');
-    toast.success('Logged out successfully');
+    // Clearing only localStorage left the partner object live in context, so the
+    // storefront kept showing a signed-in session after logout.
+    logout();
     navigate('/delivery-partner/login');
   };
 
@@ -239,6 +261,7 @@ const DeliveryPartnerDashboard = () => {
               <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary, #555)' }}>Status:</span>
               <button
                 onClick={handleToggleOnline}
+                disabled={availabilityBusy}
                 style={{
                   padding: '8px 20px',
                   borderRadius: '20px',

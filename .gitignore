@@ -44,3 +44,6 @@ client/build/
 
 # Local in-memory Mongo helper used during development
 server/.mongo.mjs
+
+# browser automation scratch output
+.playwright-cli/
