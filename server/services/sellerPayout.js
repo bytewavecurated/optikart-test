@@ -225,6 +225,70 @@ export const getSellerPayoutHistory = async (sellerId, limit = 20) => {
 };
 
 /**
+ * The figures a seller reads their payout screen for.
+ *
+ * Previously the page listed payout rows and said nothing about the money that
+ * matters day to day: what has actually been earned on delivered orders, how much
+ * has been promised in a payout run, what has reached the bank, and therefore what
+ * is still outstanding. A shop cannot reconcile a statement it cannot total.
+ *
+ * Earned is taken from the per-order settlement the commission tracker already
+ * writes (`netAmountToSeller`), so the statement and the payout run are computed
+ * from one number rather than two that can disagree.
+ */
+export const getSellerPayoutLedger = async (sellerId, limit = 24) => {
+  const Order = (await import('../models/Order.js')).default;
+  const SellerPayout = (await import('../models/SellerPayout.js')).default;
+
+  const rows = await Order.find({ seller: sellerId, orderStatus: 'delivered' })
+    .select('orderNumber deliveredAt totalAmount commissionAmount netAmountToSeller paymentMethod paymentStatus')
+    .sort({ deliveredAt: -1 })
+    .lean();
+
+  const payouts = await SellerPayout.find({ seller: sellerId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  const round = (n) => Math.round((n || 0) * 100) / 100;
+  const earned = round(rows.reduce((sum, o) => sum + (o.netAmountToSeller || 0), 0));
+  const grossSales = round(rows.reduce((sum, o) => sum + (o.totalAmount || 0), 0));
+  const commission = round(rows.reduce((sum, o) => sum + (o.commissionAmount || 0), 0));
+
+  const by = (statuses) => payouts.filter((p) => statuses.includes(p.status));
+  const sumNet = (list) => round(list.reduce((a, p) => a + (p.netAmount || 0), 0));
+
+  const paidRows = by(['completed']);
+  const promisedRows = by(['pending', 'processing']);
+  const failedRows = by(['failed']);
+  const paid = sumNet(paidRows);
+  const promised = sumNet(promisedRows);
+
+  // Cash the buyer handed the courier that has not been marked collected is not
+  // the platform's to pay out yet, so it is shown rather than counted as earned.
+  const codUncollected = round(rows
+    .filter((o) => o.paymentMethod === 'cod' && o.paymentStatus !== 'completed')
+    .reduce((sum, o) => sum + (o.netAmountToSeller || 0), 0));
+
+  return {
+    earnings: earned,
+    grossSales,
+    commission,
+    paid,
+    promised,
+    failed: sumNet(failedRows),
+    failedCount: failedRows.length,
+    outstanding: round(Math.max(0, earned - paid - promised)),
+    deliveredOrders: rows.length,
+    codUncollected,
+    lastPayoutAt: paidRows[0]?.completedAt || paidRows[0]?.processedAt || null,
+    latestDeliveredAt: rows[0]?.deliveredAt || null,
+    payouts,
+    recentDeliveries: rows.slice(0, 10)
+  };
+};
+
+/**
  * Get all payouts (admin)
  */
 export const getAllPayouts = async (filters = {}, limit = 50) => {

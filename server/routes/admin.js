@@ -13,6 +13,62 @@ import Manufacturer from '../models/Manufacturer.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 
 const router = express.Router();
+/*
+ * The coupon form used to post field names the model never had (`type`,
+ * `value`, `minOrder`) and omitted a required `validFrom`, so creating a coupon
+ * from the admin panel always failed - and failed as a 500 "Server error",
+ * because mongoose raised the validation and the handler had no branch for it.
+ * Fields are named against the model here and a rejected value comes back as
+ * that field plus the reason.
+ */
+const COUPON_TYPES = ['percentage', 'fixed'];
+
+function couponFromBody(body = {}, { partial = false } = {}) {
+  const out = {};
+  const errors = [];
+  const has = (k) => body[k] !== undefined && body[k] !== null && body[k] !== '';
+
+  if (!partial || has('code')) {
+    if (!has('code')) errors.push({ field: 'code', message: 'Coupon code is required' });
+    else out.code = String(body.code).trim().toUpperCase();
+  }
+  if (!partial || has('discountType')) {
+    const t = String(body.discountType || '').trim();
+    if (!COUPON_TYPES.includes(t)) {
+      errors.push({ field: 'discountType', message: `Discount type must be ${COUPON_TYPES.join(' or ')}` });
+    } else out.discountType = t;
+  }
+  if (!partial || has('discountValue')) {
+    const v = Number(body.discountValue);
+    if (!Number.isFinite(v) || v <= 0) errors.push({ field: 'discountValue', message: 'Discount value must be a number above zero' });
+    else if (out.discountType === 'percentage' && v > 100) errors.push({ field: 'discountValue', message: 'A percentage discount cannot exceed 100' });
+    else out.discountValue = v;
+  }
+  ['minOrderAmount', 'maxDiscount', 'usageLimit'].forEach((k) => {
+    if (!has(k)) return;
+    const n = Number(body[k]);
+    if (!Number.isFinite(n) || n < 0) errors.push({ field: k, message: `${k} must be zero or more` });
+    else out[k] = n;
+  });
+  ['validFrom', 'validUntil'].forEach((k) => {
+    if (!partial || has(k)) {
+      const d = new Date(body[k]);
+      if (Number.isNaN(d.getTime())) errors.push({ field: k, message: `${k} must be a real date` });
+      else out[k] = d;
+    }
+  });
+  if (out.validFrom && out.validUntil && out.validUntil <= out.validFrom) {
+    errors.push({ field: 'validUntil', message: 'The coupon would expire before it starts' });
+  }
+  if (has('description')) out.description = String(body.description).slice(0, 300);
+  if (has('isActive')) out.isActive = !!body.isActive;
+  if (Array.isArray(body.applicableCategories)) {
+    out.applicableCategories = body.applicableCategories.map((c) => String(c).trim().toLowerCase()).filter(Boolean);
+  }
+  return { out, errors };
+}
+
+
 
 // GET /api/admin/me - the signed-in administrator's own profile.
 router.get('/me', verifyToken, verifyAdmin, async (req, res) => {
@@ -414,33 +470,59 @@ router.get('/coupons', verifyToken, verifyAdmin, async (req, res) => {
 
 router.post('/coupons', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const coupon = new Coupon(req.body);
-    coupon.code = coupon.code.toUpperCase();
-    await coupon.save();
-
+    const { out, errors } = couponFromBody(req.body);
+    if (errors.length) {
+      return res.status(400).json({ success: false, message: 'Fix the highlighted fields.', errors });
+    }
+    const clash = await Coupon.findOne({ code: out.code });
+    if (clash) {
+      return res.status(409).json({ success: false, message: `The code ${out.code} already exists.`, errors: [{ field: 'code', message: 'already in use' }] });
+    }
+    const coupon = await Coupon.create(out);
     res.status(201).json({ success: true, message: 'Coupon created.', coupon });
   } catch (error) {
+    if (error && error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Fix the highlighted fields.',
+        errors: Object.entries(error.errors).map(([field, e]) => ({ field, message: e.message }))
+      });
+    }
     console.error('Create coupon error:', error);
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+    res.status(500).json({ success: false, message: 'The coupon could not be saved.', error: error.message });
   }
 });
 
 router.put('/coupons/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { out, errors } = couponFromBody(req.body, { partial: true });
+    if (errors.length) {
+      return res.status(400).json({ success: false, message: 'Fix the highlighted fields.', errors });
+    }
+    // runValidators matters here: without it an edited coupon can be written
+    // into a state the model forbids, such as a 150 percent discount.
+    const coupon = await Coupon.findByIdAndUpdate(req.params.id, { $set: out }, { new: true, runValidators: true });
     if (!coupon) {
       return res.status(404).json({ success: false, message: 'Coupon not found.' });
     }
     res.json({ success: true, message: 'Coupon updated.', coupon });
   } catch (error) {
+    if (error && error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Fix the highlighted fields.',
+        errors: Object.entries(error.errors).map(([field, e]) => ({ field, message: e.message }))
+      });
+    }
     console.error('Update coupon error:', error);
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+    res.status(500).json({ success: false, message: 'The coupon could not be saved.', error: error.message });
   }
 });
 
 router.delete('/coupons/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    await Coupon.findByIdAndDelete(req.params.id);
+    const removed = await Coupon.findByIdAndDelete(req.params.id);
+    if (!removed) return res.status(404).json({ success: false, message: 'Coupon not found.' });
     res.json({ success: true, message: 'Coupon deleted.' });
   } catch (error) {
     console.error('Delete coupon error:', error);

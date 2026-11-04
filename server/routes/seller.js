@@ -660,14 +660,42 @@ router.post('/inventory-alerts/check', verifySeller, async (req, res) => {
 });
 
 // Seller Payouts
-import { getSellerPayoutHistory } from '../services/sellerPayout.js';
+import { getSellerPayoutLedger } from '../services/sellerPayout.js';
 
 router.get('/payouts/history', verifySeller, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
-    const payouts = await getSellerPayoutHistory(req.seller._id, limit);
-    res.json({ success: true, data: payouts });
+    const ledger = await getSellerPayoutLedger(req.seller._id, limit);
+    res.json({
+      success: true,
+      data: ledger.payouts,
+      payouts: ledger.payouts,
+      summary: {
+        earnings: ledger.earnings,
+        grossSales: ledger.grossSales,
+        commission: ledger.commission,
+        paid: ledger.paid,
+        promised: ledger.promised,
+        failed: ledger.failed,
+        failedCount: ledger.failedCount,
+        outstanding: ledger.outstanding,
+        deliveredOrders: ledger.deliveredOrders,
+        codUncollected: ledger.codUncollected,
+        lastPayoutAt: ledger.lastPayoutAt,
+        latestDeliveredAt: ledger.latestDeliveredAt
+      },
+      recentDeliveries: ledger.recentDeliveries,
+      // bankAccount is a subdocument, not a string, so pulling the whole thing
+      // onto the screen would have rendered [object Object] as the account number.
+      bank: {
+        accountNumber: req.seller.bankAccount?.accountNumber || '',
+        ifscCode: req.seller.bankAccount?.ifscCode || '',
+        bankName: req.seller.bankAccount?.bankName || '',
+        accountHolderName: req.seller.bankAccount?.accountHolderName || req.seller.storeName || ''
+      }
+    });
   } catch (error) {
+    console.error('Seller payout ledger error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });

@@ -7,81 +7,262 @@ import toast from 'react-hot-toast';
 import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 
+/*
+ * Field names follow server/models/Coupon.js. The previous form posted `type`,
+ * `value` and `minOrder`, offered a `flat` discount the schema calls `fixed`,
+ * and never sent the required `validFrom` - so no coupon had ever been created
+ * from this screen, and every row printed `undefined` for its terms.
+ */
+const EMPTY = {
+  code: '', description: '', discountType: 'percentage', discountValue: '',
+  minOrderAmount: '', maxDiscount: '', usageLimit: '', validFrom: '', validUntil: '', isActive: true
+};
+
+const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
+
+const dateOnly = (value) => (value ? new Date(value).toISOString().slice(0, 10) : '');
+
+/**
+ * Whether the code can actually be redeemed right now. "Active" alone is not an
+ * answer: a coupon past its end date or short of stock still reads as enabled in
+ * the database, and an operator enabling one and seeing no effect has no way to
+ * tell those apart.
+ */
+const liveState = (c, now = Date.now()) => {
+  if (!c.isActive) return { label: 'Disabled', tone: 'var(--text-light)' };
+  if (c.validFrom && new Date(c.validFrom).getTime() > now) {
+    return { label: `Starts ${dateOnly(c.validFrom)}`, tone: 'var(--brand)' };
+  }
+  if (c.validUntil && new Date(c.validUntil).getTime() < now) return { label: 'Expired', tone: 'var(--danger)' };
+  if (c.usageLimit && (c.usageCount || 0) >= c.usageLimit) return { label: 'Used up', tone: 'var(--danger)' };
+  return { label: 'Live', tone: 'var(--success)' };
+};
+
 const Coupons = () => {
-  const [couponList, setcouponList] = useState([]);
+  const [couponList, setCouponList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [formData, setFormData] = useState({ code: '', type: 'percentage', value: '', minOrder: '', maxDiscount: '', description: '', validUntil: '' });
+  const [formData, setFormData] = useState(EMPTY);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { fetchCoupons(); }, []);
+
   const fetchCoupons = async () => {
-    try { const res = await adminApi.getCoupons(); setcouponList(listOf(res.data)); } catch (error) { console.error(error); }
-    finally { setLoading(false); }
+    try {
+      const res = await adminApi.getCoupons();
+      setCouponList(listOf(res.data));
+    } catch (error) {
+      console.error(error);
+      toastError(error, 'Could not load coupons');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSave = async () => {
-    if (!formData.code || !formData.value) { toast.error('Fill required fields'); return; }
-    try {
-      if (editing) { await adminApi.updateCoupon(editing._id, formData); toast.success('Updated'); }
-      else { await adminApi.createCoupon(formData); toast.success('Created'); }
-      setShowForm(false); setEditing(null); setFormData({ code: '', type: 'percentage', value: '', minOrder: '', maxDiscount: '', description: '', validUntil: '' }); fetchCoupons();
-    } catch (error) { toastError(error, "Failed"); }
+  const set = (key, value) => {
+    setFormData((f) => ({ ...f, [key]: value }));
+    setFieldErrors((e) => {
+      if (!e[key]) return e;
+      const next = { ...e };
+      delete next[key];
+      return next;
+    });
   };
 
   const handleEdit = (coupon) => {
     setEditing(coupon);
-    setFormData({ code: coupon.code, type: coupon.type, value: coupon.value, minOrder: coupon.minOrder || '', maxDiscount: coupon.maxDiscount || '', description: coupon.description || '', validUntil: coupon.validUntil ? coupon.validUntil.split('T')[0] : '' });
+    setFormData({
+      code: coupon.code || '',
+      description: coupon.description || '',
+      discountType: coupon.discountType || 'percentage',
+      discountValue: coupon.discountValue ?? '',
+      minOrderAmount: coupon.minOrderAmount ?? '',
+      maxDiscount: coupon.maxDiscount ?? '',
+      usageLimit: coupon.usageLimit ?? '',
+      validFrom: dateOnly(coupon.validFrom),
+      validUntil: dateOnly(coupon.validUntil),
+      isActive: coupon.isActive !== false
+    });
+    setFieldErrors({});
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete?')) return;
-    try { await adminApi.deleteCoupon(id); toast.success('Deleted'); fetchCoupons(); } catch (error) { toastError(error, "Failed"); }
+  const openCreate = () => {
+    setEditing(null);
+    setFormData({ ...EMPTY, validFrom: dateOnly(new Date()), validUntil: dateOnly(new Date(Date.now() + 30 * 864e5)) });
+    setFieldErrors({});
+    setShowForm(true);
   };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setFieldErrors({});
+    try {
+      const payload = {
+        code: formData.code.trim().toUpperCase(),
+        description: formData.description,
+        discountType: formData.discountType,
+        discountValue: Number(formData.discountValue),
+        validFrom: formData.validFrom,
+        validUntil: formData.validUntil,
+        isActive: formData.isActive
+      };
+      if (formData.minOrderAmount !== '') payload.minOrderAmount = Number(formData.minOrderAmount);
+      if (formData.maxDiscount !== '') payload.maxDiscount = Number(formData.maxDiscount);
+      if (formData.usageLimit !== '') payload.usageLimit = Number(formData.usageLimit);
+
+      const res = editing
+        ? await adminApi.updateCoupon(editing._id, payload)
+        : await adminApi.createCoupon(payload);
+      toast.success(editing ? 'Coupon updated' : 'Coupon created');
+      setShowForm(false);
+      setEditing(null);
+      fetchCoupons();
+      return res;
+    } catch (error) {
+      const errs = error.response?.data?.errors;
+      if (Array.isArray(errs)) {
+        // Put each complaint next to the box that caused it rather than in a
+        // toast nobody can map back to a field.
+        setFieldErrors(Object.fromEntries(errs.map((e2) => [e2.field, e2.message])));
+      }
+      toastError(error, 'The coupon was not saved');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (coupon) => {
+    if (!window.confirm(`Delete ${coupon.code}? Orders that already used it keep their discount.`)) return;
+    try {
+      await adminApi.deleteCoupon(coupon._id);
+      toast.success('Coupon deleted');
+      fetchCoupons();
+    } catch (error) {
+      toastError(error, 'Could not delete the coupon');
+    }
+  };
+
+  const label = (text, required) => (
+    <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 5, color: 'var(--text-secondary)' }}>
+      {text}{required && ' *'}
+    </label>
+  );
+
+  const field = (key, title, extra = {}) => (
+    <div>
+      {label(title, extra.required)}
+      <input className="input" id={`coupon-${key}`} value={formData[key]} onChange={(e) => set(key, e.target.value)} {...extra} />
+      {fieldErrors[key] && <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--danger)' }}>{fieldErrors[key]}</p>}
+    </div>
+  );
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: 10 }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Coupons ({couponList.length})</h1>
-            <button onClick={() => { setShowForm(true); setEditing(null); setFormData({ code: '', type: 'percentage', value: '', minOrder: '', maxDiscount: '', description: '', validUntil: '' }); }} className="btn btn-primary"><FiPlus /> Add Coupon</button>
+            <button onClick={openCreate} className="btn btn-primary"><FiPlus /> Add Coupon</button>
           </div>
+          <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-secondary)' }}>
+            A code applies at checkout to every seller unless categories are restricted. Expired or fully used codes stay listed so the history is not silently rewritten.
+          </p>
+
           {showForm && (
-            <div className="card" style={{ padding: '24px', marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>{editing ? 'Edit' : 'Create'} Coupon</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div className="input-group"><label>Code *</label><input className="input" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} placeholder="e.g. SAVE20" /></div>
-                <div className="input-group"><label>Type</label><select className="input" value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}><option value="percentage">Percentage</option><option value="flat">Flat</option></select></div>
-                <div className="input-group"><label>Value *</label><input className="input" type="number" value={formData.value} onChange={(e) => setFormData({ ...formData, value: e.target.value })} /></div>
-                <div className="input-group"><label>Min Order</label><input className="input" type="number" value={formData.minOrder} onChange={(e) => setFormData({ ...formData, minOrder: e.target.value })} /></div>
-                <div className="input-group"><label>Max Discount</label><input className="input" type="number" value={formData.maxDiscount} onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })} /></div>
-                <div className="input-group"><label>Valid Until</label><input className="input" type="date" value={formData.validUntil} onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })} /></div>
-                <div className="input-group" style={{ gridColumn: 'span 2' }}><label>Description</label><input className="input" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} /></div>
+            <div className="card-flat" style={{ padding: 20, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px' }}>{editing ? `Edit ${editing.code}` : 'New coupon'}</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
+                <div>
+                  {label('Code *', true)}
+                  <input className="input" id="coupon-code" value={formData.code} onChange={(e) => set('code', e.target.value.toUpperCase())} placeholder="SAVE20" />
+                  {fieldErrors.code && <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--danger)' }}>{fieldErrors.code}</p>}
+                </div>
+                <div>
+                  {label('Discount type')}
+                  <select className="input" id="coupon-discountType" value={formData.discountType} onChange={(e) => set('discountType', e.target.value)}>
+                    <option value="percentage">Percentage off</option>
+                    <option value="fixed">Fixed amount off</option>
+                  </select>
+                  {fieldErrors.discountType && <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--danger)' }}>{fieldErrors.discountType}</p>}
+                </div>
+                {field('discountValue', formData.discountType === 'percentage' ? 'Percent off *' : 'Amount off (₹) *', { type: 'number', min: 1, required: true })}
+                {field('minOrderAmount', 'Minimum order (₹)', { type: 'number', min: 0 })}
+                {field('maxDiscount', formData.discountType === 'percentage' ? 'Maximum discount (₹)' : 'Cap (₹)', { type: 'number', min: 0 })}
+                {field('usageLimit', 'Redemption limit (0 = unlimited)', { type: 'number', min: 0 })}
+                {field('validFrom', 'Starts *', { type: 'date', required: true })}
+                {field('validUntil', 'Ends *', { type: 'date', required: true })}
+                <div>
+                  {label('Short description')}
+                  <input className="input" id="coupon-description" value={formData.description} onChange={(e) => set('description', e.target.value)} placeholder="Shown to shoppers on the coupon card" />
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                <button onClick={handleSave} className="btn btn-primary">{editing ? 'Update' : 'Create'}</button>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 13.5 }}>
+                <input type="checkbox" id="coupon-isActive" checked={formData.isActive} onChange={(e) => set('isActive', e.target.checked)} />
+                Enabled
+              </label>
+              <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                <button onClick={handleSave} disabled={saving} className="btn btn-primary">{saving ? 'Saving…' : (editing ? 'Update coupon' : 'Create coupon')}</button>
                 <button onClick={() => { setShowForm(false); setEditing(null); }} className="btn btn-outline">Cancel</button>
               </div>
             </div>
           )}
-          {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : (
-            <div className="card">
+
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div>
+          ) : couponList.length === 0 ? (
+            <div className="empty-state">
+              <h3>No coupons yet</h3>
+              <p style={{ color: 'var(--text-secondary)' }}>Create one and shoppers can apply it at checkout.</p>
+            </div>
+          ) : (
+            <div className="card-flat" style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Code', 'Type', 'Value', 'Min Order', 'Valid Until', 'Actions'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                <thead>
+                  <tr>
+                    {['Code', 'Discount', 'Conditions', 'Window', 'Used', 'State', 'Actions'].map((h) => (
+                      <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
                 <tbody>
-                  {couponList.map((c) => (
-                    <tr key={c._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'var(--primary)' }}>{c.code}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', textTransform: 'capitalize' }}>{c.type}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600 }}>{c.type === 'percentage' ? `${c.value}%` : `₹${c.value}`}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px' }}>{c.minOrder ? `₹${c.minOrder}` : '-'}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px' }}>{c.validUntil ? new Date(c.validUntil).toLocaleDateString() : '-'}</td>
-                      <td style={{ padding: '12px 16px' }}><div style={{ display: 'flex', gap: '6px' }}><button onClick={() => handleEdit(c)} className="btn btn-outline btn-sm"><FiEdit2 size={12} /></button><button onClick={() => handleDelete(c._id)} className="btn btn-danger btn-sm"><FiTrash2 size={12} /></button></div></td>
-                    </tr>
-                  ))}
+                  {couponList.map((c) => {
+                    const state = liveState(c);
+                    return (
+                      <tr key={c._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--primary)' }}>{c.code}</div>
+                          {c.description && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{c.description}</div>}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: 14, fontWeight: 600 }}>
+                          {c.discountType === 'percentage' ? `${c.discountValue}%` : money(c.discountValue)}
+                          {c.discountType === 'percentage' && c.maxDiscount ? <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: 12 }}> up to {money(c.maxDiscount)}</span> : ''}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                          {c.minOrderAmount ? `min ${money(c.minOrderAmount)}` : 'no minimum'}
+                          {(c.applicableCategories || []).length > 0 && ` · ${c.applicableCategories.join(', ')}`}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          {dateOnly(c.validFrom)} → {dateOnly(c.validUntil)}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: 13 }}>
+                          {c.usageCount || 0}{c.usageLimit ? ` / ${c.usageLimit}` : ''}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: state.tone }}>{state.label}</span>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => handleEdit(c)} className="btn btn-outline btn-sm" aria-label={`Edit ${c.code}`}><FiEdit2 size={12} /></button>
+                            <button onClick={() => handleDelete(c)} className="btn btn-outline btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} aria-label={`Delete ${c.code}`}><FiTrash2 size={12} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
