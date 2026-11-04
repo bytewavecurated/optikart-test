@@ -2,6 +2,8 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import User from '../models/User.js';
+import Prescription from '../models/Prescription.js';
+import { submitForVerification } from '../services/prescriptionVerification.js';
 import { registerValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifyToken } from '../middleware/auth.js';
@@ -104,7 +106,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     user.lockUntil = null;
 
     // Check if this is a test credential - bypass OTP for testing
-    const testEmails = ['testuser@optikart.com', 'demo@optikart.com', 'samedayopticians@gmail.com', 'priya.staff@optikart.com'];
+    const testEmails = ['testuser@optikart.com', 'demo@optikart.com', 'samedayopticians@gmail.com', 'priya.staff@optikart.com', 'meera.staff@optikart.com'];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
     const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
@@ -426,32 +428,103 @@ router.post('/prescription-upload', verifyToken, uploadPrescription, async (req,
   }
 });
 
+/*
+ * The customer form keeps one power block per eye with short keys, while the
+ * structured Prescription record uses the clinical names. Mapping happens here so
+ * the queue shows what the shopper entered rather than an empty row.
+ */
+const num = (v) => {
+  // Compute the string once: `String(undefined)` is "undefined", which is not
+  // empty and parses to NaN - so a missing number was being saved as 0.00 and
+  // the "give us a document or the numbers" guard never fired.
+  const raw = v === undefined || v === null ? '' : String(v).trim();
+  if (!raw) return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+};
+
+const toEye = (eye = {}) => ({
+  sphere: num(eye.sph ?? eye.sphere),
+  cylinder: num(eye.cyl ?? eye.cylinder),
+  axis: num(eye.axis),
+  addition: num(eye.add ?? eye.addition)
+});
+
+const hasPower = (eyePower = {}) =>
+  ['rightEye', 'leftEye'].some((k) => {
+    const e = eyePower?.[k] || {};
+    return num(e.sph ?? e.sphere) !== undefined;
+  });
+
+const mapType = (t) => ({
+  single_vision: 'single-vision', singlevision: 'single-vision', bifocal: 'bifocal',
+  progressive: 'progressive', reading: 'reading', computer: 'computer'
+}[String(t || '').toLowerCase().replace(/[\s_-]/g, '')] || 'single-vision');
+
 router.post('/prescriptions', verifyToken, async (req, res) => {
   try {
-    const { fileUrl, prescriptionType, lensType, notes, eyePower } = req.body;
-    
-    if (!fileUrl) {
-      return res.status(400).json({ success: false, message: 'Prescription file is required.' });
+    const { fileUrl, prescriptionType, lensType, notes, eyePower, patientName, doctorName } = req.body;
+
+    if (!fileUrl && !hasPower(eyePower)) {
+      return res.status(400).json({ success: false, message: 'Upload the prescription document, or enter the numbers from it.' });
     }
 
     const user = await User.findById(req.user._id);
-    
+
     const prescription = {
-      fileUrl,
+      fileUrl: fileUrl || '',
       prescriptionType: prescriptionType || 'single_vision',
       lensType: lensType || '',
       notes: notes || '',
       eyePower: eyePower || {},
       uploadedAt: new Date()
     };
-    
+
     user.prescriptions.push(prescription);
+    const savedLine = user.prescriptions[user.prescriptions.length - 1];
     await user.save();
-    
-    res.status(201).json({ 
-      success: true, 
-      message: 'Prescription saved successfully.',
-      prescription: user.prescriptions[user.prescriptions.length - 1]
+
+    /*
+     * Saving onto the account makes the numbers visible to the customer and to
+     * checkout, but nobody was ever *checking* them - and for prescription
+     * lenses, an unchecked number is a safety problem, not a preference. The
+     * structured record is what the verification queue reads, so each save now
+     * also raises a Prescription and puts it in that queue.
+     */
+    let verification = null;
+    try {
+      const created = await Prescription.create({
+        user: user._id,
+        patientName: patientName || user.name,
+        doctorName: doctorName || '',
+        rightEye: toEye(eyePower?.rightEye),
+        leftEye: toEye(eyePower?.leftEye),
+        pd: Number(eyePower?.pd) || undefined,
+        type: mapType(prescriptionType),
+        fileUrl: fileUrl || '',
+        notes: notes || ''
+      });
+      const submitted = await submitForVerification(String(created._id), String(user._id));
+      verification = submitted.verification || null;
+      if (verification) {
+        savedLine.verificationId = verification._id;
+        savedLine.verificationStatus = verification.status;
+        await user.save();
+      }
+    } catch (verifyErr) {
+      // The customer's saved prescription must not be lost because the checking
+      // side had a problem, so this is reported rather than thrown.
+      console.error('Prescription could not enter the verification queue:', verifyErr.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: verification
+        ? 'Prescription saved and sent for verification.'
+        : 'Prescription saved. It could not be queued for verification - contact support.',
+      prescription: savedLine,
+      verificationId: verification?._id || null,
+      verificationStatus: verification?.status || null
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });

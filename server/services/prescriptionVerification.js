@@ -159,6 +159,31 @@ export const submitForVerification = async (prescriptionId, userId) => {
 /**
  * Approve prescription verification
  */
+/*
+ * Push a decision back onto the prescription line the customer saved on their
+ * account, so their list can show "approved" or "rejected - reason" instead of a
+ * row that looks unchanged forever. Both decisions go through here so the two
+ * paths cannot drift.
+ */
+async function recordDecision(verification, status, note) {
+  try {
+    const User = (await import('../models/User.js')).default;
+    await User.updateMany(
+      { 'prescriptions.verificationId': verification._id },
+      {
+        $set: {
+          'prescriptions.$.verificationStatus': status,
+          'prescriptions.$.verificationNote': note || ''
+        }
+      }
+    );
+  } catch (error) {
+    // The decision itself is already stored on the verification record; failing
+    // to decorate the saved line must not undo a checked prescription.
+    console.error('Could not update the saved prescription line:', error.message);
+  }
+}
+
 export const approveVerification = async (verificationId, adminId, notes = '') => {
   try {
     const verification = await PrescriptionVerification.findById(verificationId)
@@ -176,7 +201,9 @@ export const approveVerification = async (verificationId, adminId, notes = '') =
 
     // Update prescription status
     verification.prescription.verificationStatus = 'approved';
+    verification.prescription.isValidated = true;
     await verification.prescription.save();
+    await recordDecision(verification, 'approved', notes);
 
     return {
       success: true,
@@ -212,6 +239,7 @@ export const rejectVerification = async (verificationId, adminId, reason) => {
     // Update prescription status
     verification.prescription.verificationStatus = 'rejected';
     await verification.prescription.save();
+    await recordDecision(verification, 'rejected', reason);
 
     return {
       success: true,

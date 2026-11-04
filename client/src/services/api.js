@@ -445,3 +445,15 @@ export const manufacturers = {
   getById: (id) => api.get(`/manufacturers/${id}`),
   getProducts: (id) => api.get(`/manufacturers/${id}/products`),
 };
+
+/**
+ * The prescription verification queue. Staff with the doc_verifier role and
+ * admins only - a customer upload needs a human read before anyone glazes a
+ * lens to it.
+ */
+export const prescriptionVerification = {
+  pending: () => api.get('/prescription-verification/pending'),
+  all: (params) => api.get('/prescription-verification', { params }),
+  approve: (id, notes) => api.post(`/prescription-verification/${id}/approve`, { notes }),
+  reject: (id, reason) => api.post(`/prescription-verification/${id}/reject`, { reason })
+};

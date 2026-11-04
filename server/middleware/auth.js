@@ -180,6 +180,41 @@ export const verifyStaffPermission = (requiredPermission) => {
   };
 };
 
+/**
+ * Prescription checking is an operation that has to reach a real queue.
+ *
+ * `doc_verifier` is already a staff role the admin screen can create and the
+ * sidebar already switches on, but every verification route demanded admin
+ * account: the person hired to read prescriptions had no screen to open, so
+ * uploads sat unverified forever. Admins keep access; a doc_verifier gains it
+ * through their own StaffRole record. Nothing else qualifies.
+ */
+export const verifyPrescriptionVerifier = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Authentication required.' });
+    }
+    if (req.user.role === 'admin') {
+      return next();
+    }
+    const staff = await StaffRole.findOne({ email: req.user.email, isActive: true }).lean();
+    if (!staff) {
+      return res.status(403).json({ success: false, message: 'This queue is for prescription verifiers. Ask an administrator for the doc_verifier role.' });
+    }
+    if (!['doc_verifier', 'admin'].includes(staff.role)) {
+      return res.status(403).json({ success: false, message: `Your staff role (${staff.role}) cannot verify prescriptions.` });
+    }
+    req.staff = staff;
+    next();
+  } catch (error) {
+    if (error && (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError')) {
+      return res.status(401).json({ success: false, message: 'Token has expired. Please sign in again.' });
+    }
+    console.error('Prescription verifier check failed:', error);
+    return res.status(500).json({ success: false, message: 'Server error during verifier check.', error: error.message });
+  }
+};
+
 export const optionalAuth = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;

@@ -259,6 +259,7 @@ function App() {
           <Route path="blogs/manage" element={<StaffWorkspace view="blogs" />} />
           <Route path="support" element={<StaffWorkspace view="overview" />} />
           <Route path="support/tickets" element={<StaffWorkspace view="returns" />} />
+          <Route path="prescriptions" element={<StaffWorkspace view="prescriptions" />} />
           <Route path="products" element={<StaffWorkspace view="overview" />} />
           <Route path="products/manage" element={<StaffWorkspace view="products" />} />
           <Route path="orders" element={<StaffWorkspace view="overview" />} />

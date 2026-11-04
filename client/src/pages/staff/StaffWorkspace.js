@@ -4,6 +4,7 @@ import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { FiFileText, FiPackage, FiShoppingBag, FiHeadphones, FiSearch, FiCheckCircle } from 'react-icons/fi';
+import PrescriptionQueue from './PrescriptionQueue';
 
 const th = { padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td = { padding: '12px', fontSize: 14, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
@@ -13,7 +14,8 @@ const VIEW_LABELS = {
   blogs: ['Blog Management', 'Draft and published content'],
   products: ['Product Management', 'Listings awaiting verification'],
   orders: ['Order Management', 'Dispatch and delivery queue'],
-  returns: ['Support Tickets', 'Customer returns in progress']
+  returns: ['Support Tickets', 'Customer returns in progress'],
+  prescriptions: ['Prescription Checks', 'Uploads waiting for a human read before lenses are cut']
 };
 
 export default function StaffWorkspace({ view = 'overview' }) {
@@ -31,6 +33,7 @@ export default function StaffWorkspace({ view = 'overview' }) {
       setLoading(true);
       try {
         let res;
+        if (view === 'prescriptions') { setData({}); setLoading(false); return; }
         if (view === 'blogs') res = await api.get('/staff/blogs', { params: { search } });
         else if (view === 'products') res = await api.get('/staff/products', { params: { search, verification: statusFilter } });
         else if (view === 'orders') res = await api.get('/staff/orders', { params: { search, status: statusFilter } });
@@ -73,6 +76,9 @@ export default function StaffWorkspace({ view = 'overview' }) {
             </p>
           )}
         </div>
+        {/* The queue searches and filters itself, so the generic toolbar would
+            offer controls that do nothing there. */}
+        {view === 'prescriptions' ? null : (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ position: 'relative' }}>
             <FiSearch size={15} style={{ position: 'absolute', left: 11, top: 13, color: 'var(--text-light)' }} />
@@ -87,9 +93,14 @@ export default function StaffWorkspace({ view = 'overview' }) {
             </select>
           )}
         </div>
+        )}
       </div>
 
-      {loading ? (
+      {view === 'prescriptions' ? (
+        // The queue brings its own card, filters and actions; the workspace
+        // header above still names the page and who is signed in.
+        <PrescriptionQueue />
+      ) : loading ? (
         <div className="card" style={{ padding: 50, textAlign: 'center' }}><div className="spinner" /></div>
       ) : view === 'overview' ? (
         <div>

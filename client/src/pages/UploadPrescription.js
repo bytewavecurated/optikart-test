@@ -342,10 +342,31 @@ const UploadPrescription = () => {
                           </span>
                         )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-light)', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-light)', marginBottom: '6px', flexWrap: 'wrap' }}>
                         <FiCalendar size={12} />
                         <span>Uploaded: {formatDate(rx.uploadedAt)}</span>
+                        {/* Whether anyone has actually checked the numbers yet -
+                            a pair of lenses gets ground to them. */}
+                        {rx.verificationStatus && (
+                          <span
+                            title={rx.verificationNote || undefined}
+                            style={{
+                              fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, textTransform: 'capitalize',
+                              color: rx.verificationStatus === 'approved' ? 'var(--success)'
+                                : rx.verificationStatus === 'rejected' ? 'var(--danger)' : 'var(--warning)',
+                              background: rx.verificationStatus === 'approved' ? 'var(--success-light)'
+                                : rx.verificationStatus === 'rejected' ? 'var(--danger-light)' : '#fdf3e3'
+                            }}
+                          >
+                            {rx.verificationStatus === 'approved' ? 'checked' : rx.verificationStatus === 'rejected' ? 'not accepted' : 'waiting for check'}
+                          </span>
+                        )}
                       </div>
+                      {rx.verificationStatus === 'rejected' && rx.verificationNote && (
+                        <p style={{ margin: '2px 0 0', fontSize: 12.5, color: 'var(--danger)' }}>
+                          Why it was not accepted: {rx.verificationNote}
+                        </p>
+                      )}
                       {rx.notes && <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>{rx.notes}</p>}
                       {rx.eyePower && (rx.eyePower.rightEye?.sph || rx.eyePower.leftEye?.sph) && (
                         <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>

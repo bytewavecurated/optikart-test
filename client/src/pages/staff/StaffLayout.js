@@ -30,7 +30,13 @@ const StaffLayout = () => {
           { label: 'Dashboard', path: '/staff', icon: <FiHome /> },
           { label: 'Returns and Tickets', path: '/staff/support/tickets', icon: <FiHeadphones /> },
         ];
+      // A doc verifier checks prescription uploads; sending them to the product
+      // list meant the queue they were hired for had no door into it.
       case 'doc_verifier':
+        return [
+          { label: 'Dashboard', path: '/staff', icon: <FiHome /> },
+          { label: 'Prescription checks', path: '/staff/prescriptions', icon: <FiFileText /> },
+        ];
       case 'seller_manager':
         return [
           { label: 'Dashboard', path: '/staff', icon: <FiHome /> },

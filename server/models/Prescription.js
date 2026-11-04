@@ -30,6 +30,12 @@ const prescriptionSchema = new mongoose.Schema({
     default: 'single-vision'
   },
   fileUrl: { type: String },
+  /*
+   * Both writers below already assigned this field, but it was never declared -
+   * mongoose dropped an unknown path silently, so the record's own status never
+   * changed even after a human decision was recorded.
+   */
+  verificationStatus: { type: String, default: 'pending' },
   isValidated: { type: Boolean, default: false },
   validatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   validatedAt: { type: Date },

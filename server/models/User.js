@@ -12,7 +12,10 @@ const addressSchema = new mongoose.Schema({
 });
 
 const prescriptionSchema = new mongoose.Schema({
-  fileUrl: { type: String, required: true },
+  // The route requires a document *or* typed powers, so a saved record without a
+  // file is legitimate; keeping `required` here rejected the typed-only case
+  // twice over and surfaced it as a 500 instead of the route's clearer 400.
+  fileUrl: { type: String, default: '' },
   prescriptionType: { type: String, enum: ['single_vision', 'bifocal', 'progressive', 'contact_lens'] },
   lensType: { type: String },
   notes: { type: String, default: '' },
@@ -21,7 +24,16 @@ const prescriptionSchema = new mongoose.Schema({
     rightEye: { sph: String, cyl: String, axis: String },
     pd: String
   },
-  uploadedAt: { type: Date, default: Date.now }
+  uploadedAt: { type: Date, default: Date.now },
+  /*
+   * Which verification record this saved line produced, and what became of it.
+   * Without the link, a customer's list could not show whether a prescription
+   * had been checked, and matching records by upload time or file name would be
+   * a guess that silently attaches the wrong decision to the wrong entry.
+   */
+  verificationId: { type: mongoose.Schema.Types.ObjectId, ref: 'PrescriptionVerification' },
+  verificationStatus: { type: String, default: 'pending' },
+  verificationNote: { type: String, default: '' }
 });
 
 const userSchema = new mongoose.Schema({

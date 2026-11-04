@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken, verifyAdmin } from '../middleware/auth.js';
+import { verifyToken, verifyAdmin, verifyPrescriptionVerifier } from '../middleware/auth.js';
 import {
   submitForVerification,
   approveVerification,
@@ -86,7 +86,7 @@ router.get('/user', verifyToken, async (req, res) => {
  * GET /api/prescription-verification/pending
  * Get all pending verifications (admin)
  */
-router.get('/pending', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/pending', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
   try {
     const result = await getPendingVerifications();
 
@@ -115,7 +115,7 @@ router.get('/pending', verifyToken, verifyAdmin, async (req, res) => {
  * GET /api/prescription-verification
  * Get all verifications (admin)
  */
-router.get('/', verifyToken, verifyAdmin, async (req, res) => {
+router.get('/', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
   try {
     const { status, user } = req.query;
     const filters = {};
@@ -150,7 +150,7 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
  * POST /api/prescription-verification/:id/approve
  * Approve prescription verification (admin)
  */
-router.post('/:id/approve', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/:id/approve', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
@@ -184,18 +184,16 @@ router.post('/:id/approve', verifyToken, verifyAdmin, async (req, res) => {
  * POST /api/prescription-verification/:id/reject
  * Reject prescription verification (admin)
  */
-router.post('/:id/reject', verifyToken, verifyAdmin, async (req, res) => {
+router.post('/:id/reject', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
   try {
     const { id } = req.params;
-    const { reason } = req.body;
-    const adminId = req.user.id;
-
+    const reason = String(req.body?.reason || '').trim();
+    // A rejection with no reason cannot be acted on: the customer has to know
+    // whether to re-upload, wear old glasses, or see an optometrist.
     if (!reason) {
-      return res.status(400).json({
-        success: false,
-        message: 'Rejection reason is required'
-      });
+      return res.status(400).json({ success: false, message: 'A rejection needs a short reason for the customer.' });
     }
+    const adminId = req.user.id;
 
     const result = await rejectVerification(id, adminId, reason);
 

@@ -13,6 +13,7 @@ and every login requires the emailed code again.
 | Customer (2nd) | http://localhost:3000/login | `testuser@optikart.com` | `Test123@` |
 | Admin | http://localhost:3000/admin/login | `samedayopticians@gmail.com` | `Sameday123@` |
 | Staff (seller manager) | http://localhost:3000/staff/login | `priya.staff@optikart.com` | `Staff123@` |
+| Staff (prescription checks) | http://localhost:3000/staff/login | `meera.staff@optikart.com` | `Staff123@` |
 | Seller | http://localhost:3000/seller/login | `opticalworld@gmail.com` | `Seller123@` |
 | Seller (has catalogue) | http://localhost:3000/seller/login | `visioncare@gmail.com` | `Seller123@` |
 | Seller | http://localhost:3000/seller/login | `lensstudio@gmail.com` | `Seller123@` |
@@ -30,7 +31,7 @@ and every login requires the emailed code again.
 | --- | --- | --- |
 | Customer | `/` | Cart with 25-item cap and per-line selection; order tracking on `/orders/:id` |
 | Admin | `/admin` | Orders, Product Verification, Order Assignment, Delivery Partners, Return Analytics |
-| Staff | `/staff` | Queue scoped to `seller_manager`: products awaiting verification |
+| Staff (products) | `/staff` | Queue scoped to `seller_manager`: products awaiting verification |
 | Seller | `/seller/dashboard` | Inventory shows colour/size stock and price; payouts; commission |
 | Executive | `/executive/dashboard` | Deliveries with customer and seller detail, reports, delivery journey |
 | Manufacturer | `/manufacturer/dashboard` | Company and brand editing, seller block/reinstate/edit, pending products |

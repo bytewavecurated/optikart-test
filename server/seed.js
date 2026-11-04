@@ -306,6 +306,26 @@ const seedDatabase = async () => {
     });
     console.log("Staff account created:", staffRole.email);
 
+    // A second staff member who checks prescriptions. Without this account the
+    // verification queue has no reachable audience in a fresh install: creating
+    // one from the admin screen issues a password that then needs an email OTP,
+    // so the demo could never be walked through.
+    const verifierUser = await User.create({
+      name: 'Meera Iyer',
+      email: 'meera.staff@optikart.com',
+      password: 'Staff123@',
+      phone: '9876543245',
+      role: 'staff'
+    });
+    const verifierRole = await StaffRole.create({
+      admin: admin._id,
+      email: verifierUser.email,
+      name: verifierUser.name,
+      role: 'doc_verifier',
+      permissions: ['prescriptions:read', 'prescriptions:decide']
+    });
+    console.log("Staff account created:", verifierRole.email);
+
     // Create test manufacturer
     const manufacturer = await Manufacturer.create({
       name: "Ray-Ban Admin",
