@@ -129,6 +129,23 @@ const orderSchema = new mongoose.Schema({
     lat: { type: Number },
     lng: { type: Number }
   },
+  /*
+   * What the partner found at the door. A courier who cannot hand over a parcel
+   * needs somewhere to record it that the operations desk already reads; without
+   * it the run simply sits "in progress" and nobody learns why.
+   */
+  deliveryIssue: {
+    // The allowed reasons are checked where the report is written
+    // (routes/delivery-partner). Listing them as a schema enum here would put an
+    // invalid value on every order created before a partner ever reports
+    // anything, because the subdocument defaults to an empty type.
+    type: { type: String, trim: true, maxlength: 40 },
+    note: { type: String, default: '', maxlength: 400 },
+    reportedAt: { type: Date },
+    reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner' },
+    resolvedAt: { type: Date },
+    resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  },
   deliveryJourney: [{
     status: { type: String },
     note: { type: String, default: '' },

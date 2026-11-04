@@ -1,13 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { executive as executiveApi } from '../../services/api';
 import { listOf, oneOf } from '../../services/apiResponse.js';
+import toast from 'react-hot-toast';
+import { toastError } from '../../services/errors.js';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
-import { FiTruck, FiArrowLeft, FiMapPin, FiClock, FiPackage } from 'react-icons/fi';
+import { FiTruck, FiArrowLeft, FiMapPin, FiClock, FiPackage, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 
 const th = { padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td = { padding: '12px', fontSize: 14, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
+
+/*
+ * The reasons a courier can report from the door; the same list the partner
+ * console offers, so what is written and what is read cannot drift.
+ */
+const ISSUE_LABELS = {
+  customer_unreachable: 'customer not reachable',
+  wrong_address: 'address did not match',
+  refused: 'refused at the door',
+  damaged: 'parcel damaged',
+  other: 'issue reported'
+};
 
 const STATUS_LABELS = {
   pending: 'Pending', confirmed: 'Confirmed', packed: 'Packed',
@@ -28,15 +42,40 @@ function DeliveriesView() {
   const [status, setStatus] = useState('');
   const [query, setQuery] = useState('');
 
-  useEffect(() => {
+  const [onlyIssues, setOnlyIssues] = useState(false);
+  const [clearing, setClearing] = useState('');
+
+  const load = useCallback(() => {
     executiveApi.getAssignedDeliveries()
       .then((res) => setRows(listOf(res.data)))
-      .catch((e) => console.error(e))
+      .catch((e) => toastError(e, 'Could not load the delivery queue'))
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => { load(); }, [load]);
+
+  /*
+   * A courier who cannot finish a run reports it from the door. The desk has to
+   * see that, act on it, and record the action; without this the run simply looks
+   * stuck and nobody learns why.
+   */
+  const resolveIssue = async (row) => {
+    setClearing(row._id);
+    try {
+      const res = await executiveApi.resolveDeliveryIssue(row._id);
+      toast.success(res.data.message || 'Report marked resolved');
+      load();
+    } catch (e) {
+      toastError(e, 'Could not mark that report resolved');
+    } finally {
+      setClearing('');
+    }
+  };
+
+  const openIssues = rows.filter((r) => r.deliveryIssue && !r.deliveryIssue.resolved).length;
   const filtered = rows.filter((r) => {
     if (status && r.orderStatus !== status) return false;
+    if (onlyIssues && !(r.deliveryIssue && !r.deliveryIssue.resolved)) return false;
     if (!query) return true;
     const q = query.toLowerCase();
     return [r.orderId, r.customer?.name, r.customer?.email, r.seller?.storeName, r.deliveryPartner?.name]
@@ -52,6 +91,10 @@ function DeliveriesView() {
           <option value="">All statuses</option>
           {Object.keys(STATUS_LABELS).map((k) => <option key={k} value={k}>{STATUS_LABELS[k]}</option>)}
         </select>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, color: 'var(--text-secondary)' }}>
+          <input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} />
+          Only runs with an open report{openIssues > 0 ? ` (${openIssues})` : ''}
+        </label>
       </div>
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
@@ -63,14 +106,14 @@ function DeliveriesView() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead><tr>
               <th style={th}>Order</th><th style={th}>Customer</th><th style={th}>Seller / pickup</th>
-              <th style={th}>Items</th><th style={th}>Partner</th><th style={th}>Status</th><th style={th}>Amount</th>
+              <th style={th}>Items</th><th style={th}>Partner</th><th style={th}>Status</th><th style={th}>Amount</th><th style={th}>Partner report</th>
             </tr></thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={r._id}>
                   <td style={td}>
                     <Link to={`/executive/delivery/${r._id}`} style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
-                      {r.orderId || r._id}
+                      {r.orderNumber || r.orderId || `#${String(r._id).slice(-8).toUpperCase()}`}
                     </Link>
                   </td>
                   <td style={td}>
@@ -87,6 +130,37 @@ function DeliveriesView() {
                   </td>
                   <td style={td}>{STATUS_LABELS[r.orderStatus] || r.orderStatus}</td>
                   <td style={td}>₹{(r.totalAmount || 0).toLocaleString('en-IN')}</td>
+                  <td style={td}>
+                    {r.deliveryIssue ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 260 }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+                          fontSize: 12, fontWeight: 700, padding: '3px 8px', borderRadius: 4,
+                          background: r.deliveryIssue.resolved ? 'var(--success-light)' : 'var(--danger-light)',
+                          color: r.deliveryIssue.resolved ? 'var(--success)' : 'var(--danger)'
+                        }}>
+                          <FiAlertTriangle size={12} /> {ISSUE_LABELS[r.deliveryIssue.type] || r.deliveryIssue.type}
+                        </span>
+                        {r.deliveryIssue.note && (
+                          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{r.deliveryIssue.note}</span>
+                        )}
+                        {r.deliveryIssue.resolved
+                          ? <span style={{ fontSize: 12, color: 'var(--text-light)' }}>resolved</span>
+                          : (
+                            <button
+                              className="btn btn-outline"
+                              style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: 12.5 }}
+                              onClick={() => resolveIssue(r)}
+                              disabled={clearing === r._id}
+                            >
+                              <FiCheck size={12} /> {clearing === r._id ? 'Saving…' : 'Mark resolved'}
+                            </button>
+                          )}
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: 12.5, color: 'var(--text-light)' }}>—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

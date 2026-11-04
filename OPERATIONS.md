@@ -70,7 +70,8 @@ name. Treat that as a required deployment step, not an optional one.
 | API alive | `curl -s localhost:5000/api/health` |
 | Seeded logins work | `POST /api/auth/login` with a seeded account |
 | Frontend served | `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` |
-| Delivery dispatch | `node scripts/dispatch_e2e.mjs` (18 assertions, needs seeded logins) |
+| Delivery dispatch | `node scripts/dispatch_e2e.mjs` (21 assertions, needs seeded logins) |
+| Partner report and payout loop | `node scripts/partner_flow_e2e.mjs` (18 assertions) |
 | Catalogue and role access | `node scripts/catalog_access_e2e.mjs` (27 assertions) |
 | Websocket up | connect, then look for `Client connected` in the server log |
 
@@ -104,7 +105,25 @@ Diagnose with: `GET /api/delivery-partner/recommendations/:orderId` (who would b
 asked and why), `GET /api/delivery-partner/unassigned` (what is waiting),
 `GET /api/delivery-partner/offers` (what one partner currently sees), and
 `node scripts/dispatch_e2e.mjs` against a seeded database, which asserts the whole
-chain in 18 checks.
+chain in 21 checks.
+
+The demo data carries **three** partners at different distances from the seeded Bandra
+stores (Bandra 0.2 km, Andheri 5.9 km, Thane beyond the 12 km radius). With a single
+partner none of this is observable - ranking, the radius, and cascading to a second
+courier all need more than one person in the pool - and the newly seeded logins must
+also be added to the OTP skip-list in `routes/deliveryPartner.js`, or their printed
+password silently demands a code that never arrives.
+
+### A partner reporting from the door
+
+`POST /api/delivery-partner/report/:orderId` accepts `customer_unreachable`,
+`wrong_address`, `refused`, `damaged`, `other`. The reason must be from that list and
+`other` requires a note, because an empty "something went wrong" is not actionable.
+The report lands on `order.deliveryIssue` **and** in `deliveryJourney`, so it shows up
+in the customer timeline, the order detail screen and the delivery desk, where
+`PUT /api/executive/deliveries/:id/issue/resolve` clears it. Only the partner holding
+the run can raise it, and clearing an already-cleared report is refused instead of
+appending a second "resolved" entry as if work had been done.
 
 ## Who may reach what
 

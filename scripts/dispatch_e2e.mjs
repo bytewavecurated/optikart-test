@@ -87,6 +87,18 @@ async function main() {
   check('partner sees exactly the local run', offers.length === 1 && offers[0].orderId === String(local),
     offers.map((o) => `${o.orderNumber} ${o.distanceKm}km`).join(', '));
 
+  // The queue is built by distance from the store, so a partner has to be asked
+  // before a further one - and with only one partner seeded, none of that is
+  // testable, which is why the demo data carries three.
+  const ranked = await call(`/delivery-partner/recommendations/${local}`, { token: admin });
+  const recs = ranked.json?.recommendations || [];
+  const names = recs.map((r) => `${r.name}:${r.distance}`);
+  check('ranking offers several partners', recs.length >= 2, names.join(', '));
+  check('distances ascend down the list',
+    recs.every((r, i, a) => i === 0 || a[i - 1].distance <= r.distance), names.join(', '));
+  check('a partner beyond the radius is excluded',
+    !recs.some((r) => /Ramesh/.test(r.name)), names.join(', ') || 'none ranked');
+
   if (offers.length) {
     const accepted = await call(`/delivery-partner/offers/${offers[0].orderId}/respond`, { token: partner, body: { decision: 'accept' } });
     check('partner accepts the run', accepted.json?.success === true, accepted.json?.message || accepted.text?.slice(0, 80));

@@ -114,7 +114,7 @@ export const getDeliveryPartnerEarnings = async (partnerId, period = 'month') =>
       assignedDeliveryPartner: partnerId,
       orderStatus: 'delivered',
       deliveredAt: { $gte: startDate }
-    }).select('deliveredAt totalAmount deliveryFee deliveryDistanceKm orderId').lean();
+    }).select('deliveredAt totalAmount deliveryFee deliveryDistanceKm orderId orderNumber').lean();
 
     const gross = delivered.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
     const distance = delivered.reduce((sum, o) => sum + (o.deliveryDistanceKm || 0), 0);
@@ -131,8 +131,11 @@ export const getDeliveryPartnerEarnings = async (partnerId, period = 'month') =>
           : 0,
         platformFees,
         netEarnings: Math.round((gross - platformFees) * 100) / 100,
+        // The order number, not just the id: a partner reconciling a week of runs
+        // reads the number printed on the parcel.
         deliveries: delivered.map((o) => ({
           orderId: o.orderId,
+          orderNumber: o.orderNumber,
           deliveredAt: o.deliveredAt,
           fee: o.deliveryFee || 0,
           distanceKm: o.deliveryDistanceKm || 0

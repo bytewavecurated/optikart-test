@@ -416,7 +416,10 @@ router.get('/deliveries/assigned', verifyExecutive, async (req, res) => {
 
     const deliveries = orders.map((o) => ({
       _id: o._id,
-      orderId: o.orderId,
+      // `orderId` was never a field on an order, so the desk queue identified
+      // every run as undefined and fell back to rendering the raw hex id.
+      orderId: o.orderNumber || String(o._id),
+      orderNumber: o.orderNumber,
       orderStatus: o.orderStatus,
       assignmentStatus: o.assignmentStatus,
       paymentStatus: o.paymentStatus,
@@ -425,6 +428,13 @@ router.get('/deliveries/assigned', verifyExecutive, async (req, res) => {
       deliveryFee: o.deliveryFee || 0,
       deliveryDistanceKm: o.deliveryDistanceKm || 0,
       deliveryAssignmentMode: o.deliveryAssignmentMode || 'none',
+      // A run the partner flagged from the door; the desk triages these first.
+      deliveryIssue: o.deliveryIssue?.type ? {
+        type: o.deliveryIssue.type,
+        note: o.deliveryIssue.note || '',
+        reportedAt: o.deliveryIssue.reportedAt,
+        resolved: Boolean(o.deliveryIssue.resolvedAt)
+      } : null,
       trackingId: o.shiprocketTrackingId || '',
       trackingUrl: o.shiprocketTrackingUrl || '',
       createdAt: o.createdAt,
@@ -449,7 +459,7 @@ router.get('/deliveries/assigned', verifyExecutive, async (req, res) => {
       deliveryLocation: o.deliveryLocation || null,
       deliveryJourney: o.deliveryJourney || [],
       items: (o.items || []).map((it) => ({
-        name: it.name,
+        name: it.name || it.product?.title || it.product?.name || 'Item',
         quantity: it.quantity,
         price: it.price,
         image: it.product?.images?.[0] || '',
@@ -481,7 +491,8 @@ router.get('/deliveries/:id', verifyExecutive, async (req, res) => {
       success: true,
       data: {
         _id: order._id,
-        orderId: order.orderId,
+        orderId: order.orderNumber || String(order._id),
+        orderNumber: order.orderNumber,
         orderStatus: order.orderStatus,
         paymentStatus: order.paymentStatus,
         totalAmount: order.totalAmount,
@@ -496,7 +507,7 @@ router.get('/deliveries/:id', verifyExecutive, async (req, res) => {
         trackingId: order.shiprocketTrackingId || '',
         trackingUrl: order.shiprocketTrackingUrl || '',
         items: (order.items || []).map((it) => ({
-          name: it.name, quantity: it.quantity, price: it.price,
+          name: it.name || it.product?.title || it.product?.name || 'Item', quantity: it.quantity, price: it.price,
           image: it.product?.images?.[0] || '', lensConfig: it.lensConfig || null
         }))
       }
@@ -545,6 +556,33 @@ router.put('/deliveries/:id/status', verifyExecutive, async (req, res) => {
 });
 
 // Customers served by this executive (distinct buyers on their orders).
+/*
+ * Clearing a partner's report once the desk have resolved it (re-dispatched, refund
+ * agreed, address corrected). Without this the flag sits on the order forever and
+ * the queue fills with runs nobody can un-stick.
+ */
+router.put('/deliveries/:id/issue/resolve', verifyExecutive, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (!order.deliveryIssue?.type) return res.status(400).json({ success: false, message: 'No open report on this run.' });
+    // Clearing is a one-way action: without this a second click appends another
+    // "resolved" entry to the timeline as if something had been done.
+    if (order.deliveryIssue.resolvedAt) {
+      return res.status(400).json({ success: false, message: 'That report was already marked resolved.' });
+    }
+    order.deliveryIssue.resolvedAt = new Date();
+    order.deliveryIssue.resolvedBy = req.executive?._id || null;
+    order.deliveryJourney = order.deliveryJourney || [];
+    order.deliveryJourney.push({ status: order.orderStatus, note: 'Reported issue marked resolved', at: new Date() });
+    await order.save();
+    res.json({ success: true, message: 'Marked resolved.' });
+  } catch (error) {
+    console.error('Resolve delivery issue error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.get('/customers', verifyExecutive, async (req, res) => {
   try {
     const orders = await Order.find({ assignedExecutive: req.executive._id })

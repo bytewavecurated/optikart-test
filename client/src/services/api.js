@@ -348,6 +348,7 @@ export const deliveryPartner = {
   setAvailability: (isAvailable) => api.put('/delivery-partner/availability', { isAvailable }),
   getOffers: () => api.get('/delivery-partner/offers'),
   respondToOffer: (orderId, decision) => api.post(`/delivery-partner/offers/${orderId}/respond`, { decision }),
+  reportIssue: (orderId, type, note) => api.post(`/delivery-partner/report/${orderId}`, { type, note }),
   getEarnings: (period) => api.get('/delivery-partner/payment/earnings', { params: { period } }),
   // Route optimization
   optimizeRoute: () => api.get('/delivery-route/optimize'),
@@ -435,6 +436,7 @@ export const executive = {
   getAssignedDeliveries: () => api.get('/executive/deliveries/assigned'),
   getDeliveryDetails: (id) => api.get(`/executive/deliveries/${id}`),
   updateDeliveryStatus: (id, status) => api.put(`/executive/deliveries/${id}/status`, { status }),
+  resolveDeliveryIssue: (id) => api.put(`/executive/deliveries/${id}/issue/resolve`),
 };
 
 // Manufacturers API (public)

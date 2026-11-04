@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation, FiCreditCard } from 'react-icons/fi';
+import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation, FiCreditCard, FiAlertTriangle } from 'react-icons/fi';
 import { toastError } from '../../services/errors.js';
 
 /**
@@ -60,6 +60,10 @@ const DeliveryPartnerDashboard = () => {
   const [activeDeliveries, setActiveDeliveries] = useState([]);
   const [offers, setOffers] = useState([]);
   const [answering, setAnswering] = useState('');
+  const [reporting, setReporting] = useState('');
+  const [reportType, setReportType] = useState('customer_unreachable');
+  const [reportNote, setReportNote] = useState('');
+  const [payoutHistory, setPayoutHistory] = useState({ deliveries: [], withdrawals: [] });
   // /me carries no money, so the summary rows used to print figures the server
   // never sent. These come from /payment/earnings instead.
   const [earnings, setEarnings] = useState({ week: 0, month: 0, totalDeliveries: 0 });
@@ -115,6 +119,7 @@ const DeliveryPartnerDashboard = () => {
       // API, so reading the body directly would always have produced zeros.
       const wk = week.data.data || week.data;
       const mt = month.data.data || month.data;
+      setPayoutHistory({ deliveries: mt.deliveries || [], withdrawals: body.partner?.withdrawals || body.withdrawals || [] });
       setEarnings({
         week: wk.totalEarnings ?? 0,
         month: mt.totalEarnings ?? 0,
@@ -192,6 +197,33 @@ const DeliveryPartnerDashboard = () => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [offers.length]);
+
+  /*
+   * A courier needs to say "nobody answered the door" from the doorstep, not
+   * phone the office and wait. The note lands on the order's delivery timeline,
+   * which the operations desk already reads.
+   */
+  const REPORT_REASONS = [
+    ['customer_unreachable', 'Customer not reachable'],
+    ['wrong_address', 'Address did not match'],
+    ['refused', 'Parcel refused at the door'],
+    ['damaged', 'Parcel damaged'],
+    ['other', 'Something else']
+  ];
+
+  const submitReport = async (delivery) => {
+    setReporting(delivery.orderId);
+    try {
+      const res = await deliveryApi.reportIssue(delivery.orderId, reportType, reportNote);
+      toast.success(res.data.message || 'Reported to the operations desk');
+      setReporting('');
+      setReportNote('');
+      fetchDashboardData();
+    } catch (error) {
+      toastError(error, 'Could not send the report');
+      setReporting('');
+    }
+  };
 
   const handleToggleLocation = async () => {
     const newStatus = !locationSharing;
@@ -482,11 +514,14 @@ const DeliveryPartnerDashboard = () => {
                         <RouteRow kind="Pick up" place={delivery.pickup} />
                         <RouteRow kind="Drop" place={delivery.drop} />
                       </div>
+                      {/* Two actions on the same run: hand it over, or say why
+                          you could not. */}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button
                         onClick={() => handleCompleteDelivery(delivery.orderId)}
                         className="btn btn-primary"
                         style={{
-                          width: '100%',
+                          flex: '1 1 190px',
                           padding: '10px',
                           background: 'var(--primary)',
                           color: '#fff',
@@ -503,7 +538,47 @@ const DeliveryPartnerDashboard = () => {
                       >
                         <FiCheckCircle size={14} /> Mark Delivered
                       </button>
-                    </div>
+                      <button
+                        onClick={() => setReporting(reporting === delivery.orderId ? '' : delivery.orderId)}
+                        className="btn btn-outline"
+                        style={{ padding: '8px 12px', fontSize: 13, flex: '0 0 auto' }}
+                      >
+                        <FiAlertTriangle size={14} /> {reporting === delivery.orderId ? 'Close' : 'Report a problem'}
+                      </button>
+                      </div>
+                    {reporting === delivery.orderId && (
+                      <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, padding: 12, background: 'var(--bg-secondary, #fafafa)' }}>
+                        <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>What happened?</label>
+                        <select
+                          className="input"
+                          value={reportType}
+                          onChange={(e) => setReportType(e.target.value)}
+                          style={{ width: '100%', marginBottom: 8, padding: '9px 10px', fontSize: 13.5 }}
+                        >
+                          {REPORT_REASONS.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
+                        </select>
+                        <textarea
+                          className="input"
+                          rows={2}
+                          value={reportNote}
+                          onChange={(e) => setReportNote(e.target.value.slice(0, 400))}
+                          placeholder="Anything the desk should know - door code, second attempt time, who refused"
+                          style={{ width: '100%', padding: '9px 10px', fontSize: 13.5, fontFamily: 'inherit', marginBottom: 8 }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-light)' }}>Goes on the order timeline for the operations desk.</span>
+                          <button
+                            onClick={() => submitReport(delivery)}
+                            disabled={reporting === `sending:${delivery.orderId}` || (reportType === 'other' && !reportNote.trim())}
+                            className="btn btn-primary"
+                            style={{ padding: '7px 14px', fontSize: 13 }}
+                          >
+                            {reportType === 'other' && !reportNote.trim() ? 'Add a note first' : 'Send report'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   ))}
                 </div>
               )}
@@ -536,6 +611,55 @@ const DeliveryPartnerDashboard = () => {
                   <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>{inr(stats.availableBalance)}</span>
                 </div>
               </div>
+            </div>
+
+            {/*
+                Earnings a partner can audit: each finished run with its distance
+                and payout, then the withdrawals that were paid out. Without this
+                the only number available is a total, which cannot be checked
+                against a week of work.
+            */}
+            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+              <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Recent deliveries</h2>
+              <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--text-secondary)' }}>Last 30 days</p>
+              {payoutHistory.deliveries.length === 0 ? (
+                <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: 0 }}>No completed runs in this window yet.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table-clean" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+                    <thead>
+                      <tr>
+                        {['Order', 'Delivered', 'Distance', 'Payout'].map((h) => (
+                          <th key={h} style={{ textAlign: 'left', fontSize: 11, fontWeight: 700, letterSpacing: .5, textTransform: 'uppercase', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', padding: '8px 10px', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payoutHistory.deliveries.slice(0, 15).map((d, i) => (
+                        <tr key={d.orderId || i}>
+                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', fontWeight: 600 }}>{d.orderNumber || String(d.orderId || '').slice(-8).toUpperCase()}</td>
+                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>{d.deliveredAt ? new Date(d.deliveredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}</td>
+                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>{d.distanceKm ? `${d.distanceKm} km` : '-'}</td>
+                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', fontWeight: 600 }}>{inr(d.fee)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {payoutHistory.withdrawals.length > 0 && (
+                <>
+                  <h3 style={{ margin: '18px 0 8px', fontSize: 14.5, fontWeight: 700 }}>Withdrawals</h3>
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+                    {payoutHistory.withdrawals.slice(0, 8).map((w, i) => (
+                      <li key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-light)', paddingBottom: 6 }}>
+                        <span>{w.at ? new Date(w.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'} {w.payoutId ? `· ${w.payoutId}` : ''}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{inr(w.netPaid ?? w.amount)} <span style={{ fontWeight: 400 }}>({w.status || 'processed'})</span></span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
 
             <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>

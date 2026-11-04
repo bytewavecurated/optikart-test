@@ -143,8 +143,14 @@ router.post('/login', async (req, res) => {
     partner.lockUntil = null;
 
     // Check if this is a test credential - bypass OTP for testing
-    // Must match the account created by seed.js, so the printed login works.
-    const testPartnerEmails = ['suresh.partner@optikart.com'];
+    // Must match the accounts created by seed.js, so the logins printed at boot
+    // and listed in LOGINS.md actually work - a seeded partner left out of this
+    // list is told its password is an OTP that never arrives.
+    const testPartnerEmails = [
+      'suresh.partner@optikart.com',
+      'anjali.partner@optikart.com',
+      'ramesh.partner@optikart.com'
+    ];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
     const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
@@ -600,6 +606,64 @@ router.post('/offers/:orderId/respond', verifyDeliveryPartner, async (req, res) 
  * we would have used. This is the queue the escalation email points at: once the
  * partners have declined, the run has to land somewhere an admin can act on.
  */
+/*
+ * A partner reporting something they cannot fix themselves: nobody answers the
+ * door, the address is wrong, the parcel was refused or damaged. The note goes
+ * both into the delivery timeline the operations desk already reads and into a
+ * flagged field, so the run stops looking merely "in progress".
+ */
+const ISSUE_TYPES = ['customer_unreachable', 'wrong_address', 'refused', 'damaged', 'other'];
+const ISSUE_LABELS = {
+  customer_unreachable: 'customer not reachable',
+  wrong_address: 'address did not match',
+  refused: 'parcel refused at the door',
+  damaged: 'parcel damaged',
+  other: 'issue reported'
+};
+
+router.post('/report/:orderId', verifyDeliveryPartner, async (req, res) => {
+  try {
+    const type = String(req.body?.type || '');
+    const note = String(req.body?.note || '').trim().slice(0, 400);
+    if (!ISSUE_TYPES.includes(type)) {
+      return res.status(400).json({ success: false, message: 'Pick one of: ' + ISSUE_TYPES.join(', ') });
+    }
+    if (type === 'other' && !note) {
+      return res.status(400).json({ success: false, message: 'Describe the problem so the desk can act on it.' });
+    }
+
+    const order = await Order.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (String(order.assignedDeliveryPartner || '') !== String(req.partner._id)) {
+      return res.status(403).json({ success: false, message: 'That run is not assigned to you.' });
+    }
+    if (order.orderStatus === 'delivered' || order.orderStatus === 'returned') {
+      return res.status(400).json({ success: false, message: 'This run is already closed.' });
+    }
+
+    order.deliveryIssue = {
+      type,
+      note,
+      reportedAt: new Date(),
+      reportedBy: req.partner._id,
+      resolvedAt: null,
+      resolvedBy: null
+    };
+    order.deliveryJourney = order.deliveryJourney || [];
+    order.deliveryJourney.push({
+      status: order.orderStatus,
+      note: `Partner reported: ${ISSUE_LABELS[type]}${note ? ' - ' + note : ''}`,
+      at: new Date()
+    });
+    await order.save();
+
+    res.json({ success: true, message: 'Reported. The operations desk can see it on this order.' });
+  } catch (error) {
+    console.error('Partner issue report error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.get('/unassigned', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { recommendPartners } = await import('../services/partnerDispatch.js');

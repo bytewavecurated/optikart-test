@@ -174,3 +174,17 @@ routinely what the delivery partner actually uses.
   more dangerous than none because it invites use.
 - Replace the remaining `console.log` boot output with one structured logger
   before there is staging to debug, so production and development logs match.
+
+## Executive staff endpoints have no screen
+
+`GET/POST/DELETE /api/executive/staff` exist and are guarded, but nothing in the client
+calls them: an executive's own staff records (`ExecutiveStaff`) can only be created
+against an interface nobody uses, while the admin Staff screen manages a different model
+(`User` with role `staff`). Either the desk grows a Team section or those routes should be
+removed; leaving both invites staff logins that no interface can reach.
+
+## The cart is browser-local
+
+`optikart_cart` in localStorage is the cart of record. `/api/cart` is fully implemented
+(add, list, clear, lens and contact-lens variants) but `CartContext` never calls it, so a
+cart does not follow a customer to another device and the server's totals are advisory.

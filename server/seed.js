@@ -227,6 +227,67 @@ const seedDatabase = async () => {
     });
     console.log("Delivery partner created:", deliveryPartner.email);
 
+    /*
+     * One partner cannot demonstrate the dispatch rules. The cascade ranks the
+     * available partners near a store and offers the run to the closest first, and
+     * a run that starts far from everyone is supposed to go to the admin instead -
+     * none of that is testable, reviewable or even reachable with a single record,
+     * so the demo data carries three partners at different distances from the
+     * seeded Mumbai stores.
+     */
+    const extraPartners = [
+      {
+        name: "Anjali Verma",
+        email: "anjali.partner@optikart.com",
+        phone: "9876543234",
+        vehicleNumber: "MH13CD5678",
+        licenseNumber: "MH1320200045678",
+        aadharNumber: "123412341235",
+        panNumber: "ABCDE1234G",
+        accountNumber: "987654321099",
+        branchName: "Andheri West",
+        currentLocation: { latitude: 19.1197, longitude: 72.8464 }
+      },
+      {
+        name: "Ramesh Nair",
+        email: "ramesh.partner@optikart.com",
+        phone: "9876543235",
+        vehicleNumber: "MH14EF9012",
+        licenseNumber: "MH1420200078901",
+        aadharNumber: "123412341236",
+        panNumber: "ABCDE1234H",
+        accountNumber: "987654321100",
+        branchName: "Thane East",
+        // Thane is outside the 12 km search radius around the Bandra stores, so
+        // this partner is the control that proves the radius is applied.
+        currentLocation: { latitude: 19.1972, longitude: 72.9722 }
+      }
+    ];
+    for (const p of extraPartners) {
+      const created = await DeliveryPartner.create({
+        name: p.name,
+        email: p.email,
+        password: "Partner123@",
+        phone: p.phone,
+        vehicleType: "bike",
+        vehicleNumber: p.vehicleNumber,
+        licenseNumber: p.licenseNumber,
+        aadharNumber: p.aadharNumber,
+        panNumber: p.panNumber,
+        bankDetails: {
+          accountNumber: p.accountNumber,
+          ifscCode: "HDFC0001234",
+          bankName: "HDFC Bank",
+          branchName: p.branchName
+        },
+        isActive: true,
+        isVerified: true,
+        status: "online",
+        currentLocation: p.currentLocation
+      });
+      console.log("Delivery partner created:", created.email);
+    }
+
     // Staff accounts: a User (role 'staff') plus a StaffRole with the same
     // email, which is what verifyStaff looks up.
     const staffUser = await User.create({
