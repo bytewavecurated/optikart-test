@@ -25,7 +25,7 @@ const ManageUsers = () => {
       const res = await adminApi.getUsers(params);
       setUsers(listOf(res.data));
       setTotalPages(res.data.totalPages || 1);
-    } catch (error) { console.error(err); }
+    } catch (error) { console.error(error); }
     finally { setLoading(false); }
   }, []);
 

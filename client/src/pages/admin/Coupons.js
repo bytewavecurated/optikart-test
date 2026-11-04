@@ -16,7 +16,7 @@ const Coupons = () => {
 
   useEffect(() => { fetchCoupons(); }, []);
   const fetchCoupons = async () => {
-    try { const res = await adminApi.getCoupons(); setcouponList(listOf(res.data)); } catch (error) { console.error(err); }
+    try { const res = await adminApi.getCoupons(); setcouponList(listOf(res.data)); } catch (error) { console.error(error); }
     finally { setLoading(false); }
   };
 

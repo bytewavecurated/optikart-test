@@ -16,7 +16,7 @@ const BlogManagement = () => {
 
   useEffect(() => { fetchPosts(); }, []);
   const fetchPosts = async () => {
-    try { const res = await blogApi.getAll(); setPosts(listOf(res.data)); } catch (error) { console.error(err); toastError(error, "Failed to load posts"); }
+    try { const res = await blogApi.getAll(); setPosts(listOf(res.data)); } catch (error) { console.error(error); toastError(error, "Failed to load posts"); }
     finally { setLoading(false); }
   };
 

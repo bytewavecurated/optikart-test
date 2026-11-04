@@ -39,7 +39,7 @@ const SellerReturns = () => {
       const res = await sellerApi.getReturns();
       setReturns(listOf(res.data));
     } catch (error) {
-      console.error(err);
+      console.error(error);
       toastError(error, "Failed to load returns");
     } finally {
       setLoading(false);

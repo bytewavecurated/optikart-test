@@ -30,7 +30,7 @@ const ManageExecutives = () => {
       const res = await adminApi.getExecutives();
       setExecutives(listOf(res.data));
     } catch (error) {
-      console.error(err);
+      console.error(error);
       toastError(error, "Failed to fetch executives");
     } finally {
       setLoading(false);

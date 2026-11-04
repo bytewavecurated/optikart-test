@@ -33,7 +33,7 @@ const SellerProducts = () => {
     try {
       const res = await productsApi.getAll({ seller: true, limit: 500 });
       setProductsList(listOf(res.data));
-    } catch (error) { console.error(err); }
+    } catch (error) { console.error(error); }
     finally { setLoading(false); }
   };
 

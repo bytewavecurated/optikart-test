@@ -33,7 +33,7 @@ const SellerInventory = () => {
       setProducts(listOf(res.data));
     } catch (error) {
       toastError(error, "Failed to load inventory");
-      console.error(err);
+      console.error(error);
     } finally {
       setLoading(false);
     }

@@ -31,7 +31,7 @@ const SellerDetailView = () => {
       setProducts(listOf(productsRes.data));
       setOrders(listOf(ordersRes.data));
     } catch (error) {
-      console.error(err);
+      console.error(error);
       toastError(error, "Failed to load seller details");
     } finally {
       setLoading(false);

@@ -28,7 +28,7 @@ const UserDetailView = () => {
       setUser(oneOf(userRes.data, "user"));
       setOrders(listOf(ordersRes.data));
     } catch (error) {
-      console.error(err);
+      console.error(error);
       toastError(error, "Failed to load user details");
     } finally {
       setLoading(false);

@@ -32,7 +32,7 @@ const ManageManufacturers = () => {
       const res = await adminApi.getManufacturers();
       setManufacturers(listOf(res.data));
     } catch (error) {
-      console.error(err);
+      console.error(error);
       toastError(error, "Failed to fetch manufacturers");
     } finally {
       setLoading(false);

@@ -22,7 +22,7 @@ const ChatbotManagement = () => {
       const res = await chatbot.getKnowledgeBase();
       setKnowledgeBase(oneOf(res.data) || {});
     } catch (error) {
-      console.error(err);
+      console.error(error);
       toastError(error, "Failed to load knowledge base");
     } finally {
       setLoading(false);

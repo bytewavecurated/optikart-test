@@ -27,7 +27,7 @@ const ManageSellers = () => {
       const res = await adminApi.getSellers(params);
       setSellers(listOf(res.data));
       setTotalPages(res.data.totalPages || 1);
-    } catch (error) { console.error(err); }
+    } catch (error) { console.error(error); }
     finally { setLoading(false); }
   }, []);
 
