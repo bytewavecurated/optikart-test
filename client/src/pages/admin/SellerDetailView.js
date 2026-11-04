@@ -123,7 +123,7 @@ const SellerDetailView = () => {
           <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--secondary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--secondary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>
                   {(seller.storeName || 'S')[0].toUpperCase()}
                 </div>
                 <div>
@@ -131,12 +131,12 @@ const SellerDetailView = () => {
                   <p style={{ fontSize: '13px', color: 'var(--text-light)' }}>Seller ID: {seller.sellerId || seller._id}</p>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                     {seller.isVerified && (
-                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#e8f5e9', color: '#2e7d32', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <FiCheckCircle size={12} /> Verified
                       </span>
                     )}
                     {avgRating > 0 && (
-                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#fff3e0', color: '#e65100', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <FiStar size={12} /> {avgRating.toFixed(1)}
                       </span>
                     )}
@@ -171,17 +171,17 @@ const SellerDetailView = () => {
             </div>
 
             {seller.isBanned && (
-              <div style={{ background: '#ffebee', border: '1px solid #ef5350', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: '#c62828', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Banned</p>
-                <p style={{ color: '#c62828', fontSize: '12px' }}>Reason: {seller.banReason || 'No reason provided'}</p>
-                <p style={{ color: '#c62828', fontSize: '12px' }}>Banned on: {new Date(seller.bannedAt).toLocaleDateString()}</p>
+              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+                <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Banned</p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Reason: {seller.banReason || 'No reason provided'}</p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Banned on: {new Date(seller.bannedAt).toLocaleDateString()}</p>
               </div>
             )}
 
             {seller.isShadowBanned && !seller.isBanned && (
-              <div style={{ background: '#fff3e0', border: '1px solid #ff9800', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: '#e65100', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Shadow Banned</p>
-                <p style={{ color: '#e65100', fontSize: '12px' }}>Seller can still access the platform but with limited visibility</p>
+              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+                <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Shadow Banned</p>
+                <p style={{ color: 'var(--warning)', fontSize: '12px' }}>Seller can still access the platform but with limited visibility</p>
               </div>
             )}
 

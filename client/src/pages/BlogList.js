@@ -134,7 +134,7 @@ const BlogList = () => {
                 {visiblePosts.map((post) => (
                   <Link key={post._id} to={`/blog/${post.slug}`} className="card" style={{ overflow: 'hidden', transition: 'box-shadow 0.2s', textDecoration: 'none' }}>
                     <div style={{ width: '100%', height: '180px', background: `var(--brand)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ color: '#fff', fontSize: '32px', fontWeight: 700, opacity: 0.3 }}>{(post.category || 'BLOG').charAt(0)}</span>
+                      <span style={{ color: 'var(--text-white)', fontSize: '32px', fontWeight: 700, opacity: 0.3 }}>{(post.category || 'BLOG').charAt(0)}</span>
                     </div>
                     <div style={{ padding: '16px' }}>
                       <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '12px', background: 'var(--primary-light, #e3f0ff)', color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase' }}>{post.category}</span>

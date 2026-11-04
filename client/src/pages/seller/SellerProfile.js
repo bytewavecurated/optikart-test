@@ -31,7 +31,7 @@ const SellerProfile = () => {
           <div style={{ maxWidth: '700px' }}>
             <div className="card" style={{ padding: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>{(formData.businessName || 'S').charAt(0).toUpperCase()}</div>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>{(formData.businessName || 'S').charAt(0).toUpperCase()}</div>
                 <div><h3 style={{ fontSize: '18px', fontWeight: 600 }}>{formData.businessName}</h3><p style={{ fontSize: '13px', color: 'var(--text-light)' }}>Status: <span className="badge badge-success">Active</span></p></div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

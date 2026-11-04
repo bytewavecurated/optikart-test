@@ -4,9 +4,9 @@ import { FiStar, FiTrendingUp, FiClock, FiRefreshCw, FiMessageSquare, FiAward, F
 const styles = {
   container: {
     fontFamily: "var(--font-body)",
-    background: '#fff',
+    background: 'var(--bg-white)',
     borderRadius: '4px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    boxShadow: 'var(--shadow)',
     overflow: 'hidden',
   },
   header: {
@@ -31,12 +31,12 @@ const styles = {
     justifyContent: 'center',
     fontSize: '20px',
     fontWeight: 700,
-    color: '#fff',
+    color: 'var(--text-white)',
   },
   sellerName: {
     fontSize: '18px',
     fontWeight: 700,
-    color: '#fff',
+    color: 'var(--text-white)',
   },
   sellerSince: {
     fontSize: '12px',
@@ -53,29 +53,29 @@ const styles = {
     fontWeight: 700,
   },
   badgeExcellent: {
-    background: '#ff9f00',
-    color: '#fff',
+    background: 'var(--warning)',
+    color: 'var(--text-white)',
   },
   badgeGood: {
-    background: '#388e3c',
-    color: '#fff',
+    background: 'var(--success)',
+    color: 'var(--text-white)',
   },
   badgeAverage: {
     background: '#f57c00',
-    color: '#fff',
+    color: 'var(--text-white)',
   },
   ratingSection: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: '1px solid var(--bg-subtle)',
     gap: '24px',
   },
   ratingBig: {
     fontSize: '48px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     lineHeight: 1,
   },
   ratingMeta: {
@@ -90,7 +90,7 @@ const styles = {
   },
   totalRatings: {
     fontSize: '13px',
-    color: '#888',
+    color: 'var(--text-light)',
   },
   metrics: {
     display: 'grid',
@@ -99,7 +99,7 @@ const styles = {
   },
   metric: {
     padding: '16px 20px',
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: '1px solid var(--bg-subtle)',
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
@@ -119,7 +119,7 @@ const styles = {
   },
   metricLabel: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-light)',
     marginBottom: '2px',
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
@@ -127,7 +127,7 @@ const styles = {
   metricValue: {
     fontSize: '18px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
   },
   metricTrend: {
     fontSize: '11px',
@@ -138,7 +138,7 @@ const styles = {
     marginTop: '2px',
   },
   trendUp: {
-    color: '#388e3c',
+    color: 'var(--success)',
   },
   trendDown: {
     color: '#e43f5a',
@@ -146,7 +146,7 @@ const styles = {
   progressBar: {
     width: '100%',
     height: '4px',
-    background: '#f0f0f0',
+    background: 'var(--bg-subtle)',
     borderRadius: '2px',
     marginTop: '6px',
     overflow: 'hidden',
@@ -158,18 +158,18 @@ const styles = {
   },
   footer: {
     padding: '16px 20px',
-    background: '#fafafa',
+    background: 'var(--bg-page)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   footerText: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-light)',
   },
   viewDetails: {
     fontSize: '13px',
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontWeight: 600,
     textDecoration: 'none',
     display: 'flex',

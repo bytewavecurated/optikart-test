@@ -17,6 +17,7 @@
   --danger: #d13438;
   --danger-light: #fdecec;
   --warning: #b06e00;
+  --warning-light: #fdf3e3;
   --info: var(--brand);
 
   /* Neutrals: a calm grey ramp instead of competing surfaces. */

@@ -142,11 +142,11 @@ const SaleEvents = () => {
   const now = new Date();
 
   const getStatus = (event) => {
-    if (!event.isActive) return { label: 'Inactive', color: '#999' };
+    if (!event.isActive) return { label: 'Inactive', color: 'var(--text-light)' };
     const start = new Date(event.startDate);
     const end = new Date(event.endDate);
-    if (now < start) return { label: 'Upcoming', color: '#ff9f00' };
-    if (now > end) return { label: 'Ended', color: '#999' };
+    if (now < start) return { label: 'Upcoming', color: 'var(--warning)' };
+    if (now > end) return { label: 'Ended', color: 'var(--text-light)' };
     return { label: 'Active', color: '#26a541' };
   };
 
@@ -161,7 +161,7 @@ const SaleEvents = () => {
           </div>
 
           {activeEvents.length > 0 && (
-            <div style={{ background: 'var(--brand)', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px', color: '#fff' }}>
+            <div style={{ background: 'var(--brand)', borderRadius: '8px', padding: '16px 20px', marginBottom: '20px', color: 'var(--text-white)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                 <FiAlertCircle size={18} />
                 <span style={{ fontWeight: 700, fontSize: '15px' }}>Active Sale Events</span>
@@ -276,7 +276,7 @@ const SaleEvents = () => {
                         <td style={{ padding: '12px 16px', fontSize: '13px' }}>{new Date(event.startDate).toLocaleDateString()}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px' }}>{new Date(event.endDate).toLocaleDateString()}</td>
                         <td style={{ padding: '12px 16px' }}>
-                          <span style={{ background: status.color, color: '#fff', fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '3px' }}>{status.label}</span>
+                          <span style={{ background: status.color, color: 'var(--text-white)', fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '3px' }}>{status.label}</span>
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: '13px' }}>{event.affectedProducts ?? '—'}</td>
                         <td style={{ padding: '12px 16px' }}>

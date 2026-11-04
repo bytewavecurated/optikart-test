@@ -11,7 +11,7 @@ const STATUS_COLORS = {
   requested: { bg: '#fff3cd', color: '#856404' },
   approved: { bg: '#cce5ff', color: '#004085' },
   picked_up: { bg: '#e2d5f1', color: '#5a2d82' },
-  received: { bg: '#ffe0b2', color: '#e65100' },
+  received: { bg: '#ffe0b2', color: 'var(--warning)' },
   completed: { bg: '#d4edda', color: '#155724' },
   rejected: { bg: '#f8d7da', color: '#721c24' },
 };
@@ -206,10 +206,10 @@ const SellerReturns = () => {
   };
 
   const statCards = [
-    { label: 'Total Returns', value: stats.total, icon: <FiPackage />, color: '#2874f0', bg: '#e8f0fe' },
-    { label: 'Pending Approval', value: stats.pending, icon: <FiFilter />, color: '#ff9f00', bg: '#fff3e0' },
+    { label: 'Total Returns', value: stats.total, icon: <FiPackage />, color: 'var(--brand)', bg: '#e8f0fe' },
+    { label: 'Pending Approval', value: stats.pending, icon: <FiFilter />, color: 'var(--warning)', bg: 'var(--warning-light)' },
     { label: 'In Progress', value: stats.inProgress, icon: <FiEye />, color: '#5a2d82', bg: '#f3e5f5' },
-    { label: 'Completed / Refunded', value: stats.completed, icon: <FiCheck />, color: '#26a541', bg: '#e8f5e9' },
+    { label: 'Completed / Refunded', value: stats.completed, icon: <FiCheck />, color: '#26a541', bg: 'var(--success-light)' },
   ];
 
   const statusFilters = ['all', 'requested', 'approved', 'picked_up', 'received', 'completed', 'rejected'];
@@ -276,7 +276,7 @@ const SellerReturns = () => {
                 <tbody>
                   {filtered.map((ret) => {
                     const isExpanded = expandedId === ret._id;
-                    const statusStyle = STATUS_COLORS[ret.status] || { bg: '#eee', color: '#333' };
+                    const statusStyle = STATUS_COLORS[ret.status] || { bg: '#eee', color: 'var(--text-primary)' };
                     return (
                       <React.Fragment key={ret._id}>
                         <tr
@@ -318,7 +318,7 @@ const SellerReturns = () => {
                                     <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Return Items</h4>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                       {ret.items?.map((item, idx) => (
-                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'var(--bg-white)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                                           <img src={item.product?.images?.[0] || item.image || '/placeholder.svg'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px', background: '#f8f8f8' }} />
                                           <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '13px', fontWeight: 500 }}>{item.product?.name || item.name || 'Product'}</div>
@@ -340,18 +340,18 @@ const SellerReturns = () => {
                                   <div>
                                     <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Return Details</h4>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: '#fff', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-white)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
                                         <span style={{ color: 'var(--text-light)' }}>Reason</span>
                                         <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{ret.reason || '—'}</span>
                                       </div>
                                       {ret.description && (
-                                        <div style={{ padding: '8px 12px', background: '#fff', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                                        <div style={{ padding: '8px 12px', background: 'var(--bg-white)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
                                           <span style={{ color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>Description</span>
                                           <span style={{ fontSize: '13px' }}>{ret.description}</span>
                                         </div>
                                       )}
                                       {ret.adminNotes && (
-                                        <div style={{ padding: '8px 12px', background: '#fff', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                                        <div style={{ padding: '8px 12px', background: 'var(--bg-white)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
                                           <span style={{ color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>Admin Notes</span>
                                           <span style={{ fontSize: '13px' }}>{ret.adminNotes}</span>
                                         </div>

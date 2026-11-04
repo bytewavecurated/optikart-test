@@ -258,7 +258,7 @@ const ProductDetails = () => {
             <div className="card" style={{ padding: '16px' }}>
               <Carousel showThumbs={false} autoPlay infiniteLoop showStatus={false}>
                 {images.map((img, idx) => (
-                  <div key={idx} style={{ background: '#fafafa', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div key={idx} style={{ background: 'var(--bg-page)', borderRadius: '8px', overflow: 'hidden' }}>
                     <img src={img} alt={`${productTitle} - ${idx + 1}`} style={{ width: '100%', height: '400px', objectFit: 'contain' }} />
                   </div>
                 ))}
@@ -548,7 +548,7 @@ const ProductDetails = () => {
                       <tbody>
                         {Object.entries(product.specifications).map(([key, value]) => (
                           <tr key={key} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', width: '30%', background: '#fafafa' }}>{key}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', width: '30%', background: 'var(--bg-page)' }}>{key}</td>
                             <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)' }}>{value}</td>
                           </tr>
                         ))}
@@ -581,7 +581,7 @@ const ProductDetails = () => {
                           <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 500, width: '16px', textAlign: 'right' }}>{star}</span>
                             <FiStar size={12} style={{ color: '#f5a623' }} />
-                            <div style={{ flex: 1, height: '8px', background: '#f0f0f0', borderRadius: '4px', overflow: 'hidden' }}>
+                            <div style={{ flex: 1, height: '8px', background: 'var(--bg-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
                               <div style={{ width: `${pct}%`, height: '100%', background: star >= 4 ? '#4caf50' : star === 3 ? '#ffc107' : '#f44336', borderRadius: '4px', transition: 'width 0.3s' }} />
                             </div>
                             <span style={{ fontSize: '12px', color: 'var(--text-light)', width: '32px', textAlign: 'right' }}>{count}</span>

@@ -21,7 +21,7 @@ const th = { padding: '10px 12px', textAlign: 'left', fontSize: 11.5, fontWeight
 const td = { padding: '12px', fontSize: 13.5, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
 
 const STATUS_TONE = {
-  pending: { color: 'var(--warning)', bg: '#fdf3e3' },
+  pending: { color: 'var(--warning)', bg: 'var(--warning-light)' },
   needs_review: { color: 'var(--danger)', bg: 'var(--danger-light)' },
   approved: { color: 'var(--success)', bg: 'var(--success-light)' },
   rejected: { color: 'var(--text-secondary)', bg: 'var(--bg-subtle)' }

@@ -40,7 +40,7 @@ const HelpCenter = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div style={{ background: 'var(--primary)', padding: '40px 16px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>How can we help you?</h1>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-white)', marginBottom: '8px' }}>How can we help you?</h1>
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', marginBottom: '24px' }}>Find answers to common questions</p>
           <div style={{ maxWidth: '500px', margin: '0 auto', position: 'relative' }}>
             <FiSearch style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '18px' }} />

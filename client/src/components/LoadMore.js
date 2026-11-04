@@ -10,13 +10,13 @@ const styles = {
     fontFamily: "var(--font-body)",
   },
   button: {
-    background: '#fff',
+    background: 'var(--bg-white)',
     border: '1px solid #c2c2c2',
     borderRadius: '4px',
     padding: '12px 48px',
     fontSize: '15px',
     fontWeight: 600,
-    color: '#2874f0',
+    color: 'var(--brand)',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -27,19 +27,19 @@ const styles = {
   },
   buttonHover: {
     background: '#f0f6ff',
-    borderColor: '#2874f0',
+    borderColor: 'var(--brand)',
   },
   buttonDisabled: {
-    background: '#f5f5f5',
-    color: '#999',
+    background: 'var(--bg-subtle)',
+    color: 'var(--text-light)',
     cursor: 'not-allowed',
-    borderColor: '#e0e0e0',
+    borderColor: 'var(--border)',
   },
   spinner: {
     display: 'inline-block',
     width: '18px',
     height: '18px',
-    border: '2px solid #e0e0e0',
+    border: '2px solid var(--border)',
     borderTopColor: '#2874f0',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
@@ -47,7 +47,7 @@ const styles = {
   text: {
     marginTop: '12px',
     fontSize: '13px',
-    color: '#888',
+    color: 'var(--text-light)',
   },
 };
 

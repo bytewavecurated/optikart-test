@@ -71,9 +71,9 @@ const Revenue = () => {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {[
-                  { label: 'Total Revenue', value: `₹${(revenue?.total || 0).toLocaleString()}`, icon: <FiDollarSign />, color: '#26a541', bg: '#e8f5e9' },
-                  { label: 'Platform Fees', value: `₹${(revenue?.platformFees || 0).toLocaleString()}`, icon: <FiTrendingUp />, color: '#2874f0', bg: '#e8f0fe' },
-                  { label: 'Seller Payouts', value: `₹${(revenue?.sellerPayouts || 0).toLocaleString()}`, icon: <FiShoppingBag />, color: '#ff9f00', bg: '#fff3e0' },
+                  { label: 'Total Revenue', value: `₹${(revenue?.total || 0).toLocaleString()}`, icon: <FiDollarSign />, color: '#26a541', bg: 'var(--success-light)' },
+                  { label: 'Platform Fees', value: `₹${(revenue?.platformFees || 0).toLocaleString()}`, icon: <FiTrendingUp />, color: 'var(--brand)', bg: '#e8f0fe' },
+                  { label: 'Seller Payouts', value: `₹${(revenue?.sellerPayouts || 0).toLocaleString()}`, icon: <FiShoppingBag />, color: 'var(--warning)', bg: 'var(--warning-light)' },
                   { label: 'Orders', value: revenue?.orderCount || 0, icon: <FiShoppingBag />, color: '#ff6161', bg: '#fce4ec' },
                 ].map((card) => (
                   <div key={card.label} className="card" style={{ padding: '20px' }}>

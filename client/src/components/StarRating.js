@@ -23,11 +23,11 @@ const styles = {
   ratingText: {
     fontSize: '14px',
     fontWeight: 600,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   countText: {
     fontSize: '13px',
-    color: '#888',
+    color: 'var(--text-light)',
   },
 };
 
@@ -75,7 +75,7 @@ function StarIcon({ fill, size, color, hoverColor, onMouseEnter, onMouseLeave, o
         <FiStar
           size={size}
           style={{
-            color: '#ddd',
+            color: 'var(--border)',
             position: 'absolute',
             top: 0,
             left: 0,
@@ -107,7 +107,7 @@ function StarIcon({ fill, size, color, hoverColor, onMouseEnter, onMouseLeave, o
     <FiStar
       size={size}
       style={{
-        color: '#ddd',
+        color: 'var(--border)',
         cursor: interactive ? 'pointer' : 'default',
         transition: 'all 0.15s',
       }}

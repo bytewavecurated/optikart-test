@@ -86,7 +86,7 @@ const DeliveryManagement = () => {
                           <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>#{d.orderId?.slice(-8).toUpperCase() || '-'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{d.customerName || '-'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{d.address ? `${d.address.city}, ${d.address.state}` : '-'}</td>
-                          <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[d.status] || 'var(--text-light)', color: '#fff', textTransform: 'capitalize' }}>{d.status}</span></td>
+                          <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[d.status] || 'var(--text-light)', color: 'var(--text-white)', textTransform: 'capitalize' }}>{d.status}</span></td>
                           <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{d.updatedAt ? new Date(d.updatedAt).toLocaleString() : '-'}</td>
                         </tr>
                       ))}
@@ -103,7 +103,7 @@ const DeliveryManagement = () => {
                           <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>#{p.orderId?.slice(-8).toUpperCase() || '-'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.seller?.businessName || '-'}</td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.pickupDate ? new Date(p.pickupDate).toLocaleDateString() : '-'}</td>
-                          <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[p.status] || 'var(--text-light)', color: '#fff', textTransform: 'capitalize' }}>{p.status}</span></td>
+                          <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[p.status] || 'var(--text-light)', color: 'var(--text-white)', textTransform: 'capitalize' }}>{p.status}</span></td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.address?.city || '-'}</td>
                         </tr>
                       ))}

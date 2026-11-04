@@ -648,7 +648,7 @@ const LensConfiguration = () => {
                   </div>
                 )}
 
-                <div style={{ padding: '20px', borderRadius: '8px', background: 'var(--bg-dark)', color: '#fff' }}>
+                <div style={{ padding: '20px', borderRadius: '8px', background: 'var(--bg-dark)', color: 'var(--text-white)' }}>
                   <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '12px', opacity: 0.7 }}>Price Breakdown</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
@@ -729,7 +729,7 @@ const LensConfiguration = () => {
                   borderRadius: '8px',
                   border: 'none',
                   background: saving ? 'var(--border)' : 'var(--primary)',
-                  color: '#fff',
+                  color: 'var(--text-white)',
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: saving ? 'not-allowed' : 'pointer',

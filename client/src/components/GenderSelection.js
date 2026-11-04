@@ -9,9 +9,9 @@ import {
  * falls back to the defaults below, so a partial edit cannot break the block.
  */
 const DEFAULT_GENDERS = [
-  { id: 'men', name: 'Men', image: '/assets/gen-men.svg', color: '#2874f0' },
+  { id: 'men', name: 'Men', image: '/assets/gen-men.svg', color: 'var(--brand)' },
   { id: 'women', name: 'Women', image: '/assets/gen-women.svg', color: '#ff6161' },
-  { id: 'kids', name: 'Kids', image: '/assets/gen-kids.svg', color: '#ff9f00' }
+  { id: 'kids', name: 'Kids', image: '/assets/gen-kids.svg', color: 'var(--warning)' }
 ];
 
 const GenderSelection = ({ tiles }) => {
@@ -50,7 +50,7 @@ const GenderSelection = ({ tiles }) => {
   };
 
   return (
-    <section style={{ padding: '40px 0', background: '#fff' }}>
+    <section style={{ padding: '40px 0', background: 'var(--bg-white)' }}>
       <div className="container">
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>
@@ -72,17 +72,17 @@ const GenderSelection = ({ tiles }) => {
                   cursor: 'pointer',
                   borderRadius: '16px',
                   overflow: 'hidden',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  boxShadow: 'var(--shadow-lg)',
                   transition: 'transform 0.2s, box-shadow 0.2s',
-                  background: '#fff'
+                  background: 'var(--bg-white)'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
                 }}
               >
                 <div style={{ width: '100%', height: '280px', overflow: 'hidden', background: 'var(--bg-secondary)' }}>
@@ -102,7 +102,7 @@ const GenderSelection = ({ tiles }) => {
                 {/* The colour band sits under the photo instead of a gradient burnt
                     over it, so a real photograph stays readable and the label never
                     depends on the image's contrast. */}
-                <div style={{ padding: '14px 18px', background: '#fff', borderTop: `3px solid ${gender.color}` }}>
+                <div style={{ padding: '14px 18px', background: 'var(--bg-white)', borderTop: `3px solid ${gender.color}` }}>
                   <h3 style={{
                     margin: 0,
                     fontSize: '19px',
@@ -152,7 +152,7 @@ const GenderSelection = ({ tiles }) => {
                   onClick={() => handleCategorySelect(category.id)}
                   style={{
                     padding: '24px',
-                    background: '#fff',
+                    background: 'var(--bg-white)',
                     border: '2px solid var(--border)',
                     borderRadius: '12px',
                     cursor: 'pointer',

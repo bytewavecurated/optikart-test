@@ -172,7 +172,7 @@ const SmartChoice = () => {
               gap: '8px',
               padding: '10px 20px',
               background: 'var(--primary)',
-              color: '#fff',
+              color: 'var(--text-white)',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',

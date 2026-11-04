@@ -47,10 +47,10 @@ const CATEGORIES = [
 ];
 
 const OFFERS = [
-  { title: 'Flat 50% off', subtitle: 'On premium sunglasses', tint: '#eef4fe', fg: '#1b5fc4', icon: <FiPercent size={20} />, link: '/category/sunglasses' },
-  { title: 'Buy 1 get 1', subtitle: 'Selected eyeglasses', tint: '#f1f3f6', fg: '#14161a', icon: <FiGift size={20} />, link: '/category/eyeglasses' },
-  { title: 'From ₹299', subtitle: 'Contact lenses', tint: '#e8f5ee', fg: '#1a7f4b', icon: <FiDroplet size={20} />, link: '/category/contact-lenses' },
-  { title: 'Extra ₹200 off', subtitle: 'Use code EYE200', tint: '#fdf3e3', fg: '#b06e00', icon: <FiAward size={20} />, link: '/coupons' }
+  { title: 'Flat 50% off', subtitle: 'On premium sunglasses', tint: 'var(--brand-tint)', fg: 'var(--brand-dark)', icon: <FiPercent size={20} />, link: '/category/sunglasses' },
+  { title: 'Buy 1 get 1', subtitle: 'Selected eyeglasses', tint: 'var(--bg-subtle)', fg: 'var(--text-primary)', icon: <FiGift size={20} />, link: '/category/eyeglasses' },
+  { title: 'From ₹299', subtitle: 'Contact lenses', tint: 'var(--success-light)', fg: 'var(--success)', icon: <FiDroplet size={20} />, link: '/category/contact-lenses' },
+  { title: 'Extra ₹200 off', subtitle: 'Use code EYE200', tint: 'var(--warning-light)', fg: 'var(--warning)', icon: <FiAward size={20} />, link: '/coupons' }
 ];
 
 

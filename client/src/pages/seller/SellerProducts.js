@@ -191,10 +191,10 @@ const SellerProducts = () => {
   const getOfferBadge = (product) => {
     if (!product.offer || product.offer.type === 'none') return null;
     if (product.offer.type === 'bogo') {
-      return <span style={{ background: '#26a541', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', whiteSpace: 'nowrap' }}>BOGO</span>;
+      return <span style={{ background: '#26a541', color: 'var(--text-white)', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', whiteSpace: 'nowrap' }}>BOGO</span>;
     }
     if (product.offer.type === 'percentage') {
-      return <span style={{ background: '#26a541', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', whiteSpace: 'nowrap' }}>{product.offer.percentage}% OFF</span>;
+      return <span style={{ background: '#26a541', color: 'var(--text-white)', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', whiteSpace: 'nowrap' }}>{product.offer.percentage}% OFF</span>;
     }
     return null;
   };

@@ -9,7 +9,7 @@ const ALL_CATEGORIES = [
     name: 'Sunglasses', 
     image: '/assets/face-1.svg', 
     link: '/category/sunglasses', 
-    color: '#2874f0',
+    color: 'var(--brand)',
     description: 'Protect your eyes in style with our premium sunglasses collection',
     count: '500+ Products'
   },
@@ -17,7 +17,7 @@ const ALL_CATEGORIES = [
     name: 'Eyeglasses', 
     image: '/assets/face-2.svg', 
     link: '/category/eyeglasses', 
-    color: '#ff9f00',
+    color: 'var(--warning)',
     description: 'Find the perfect frames for your prescription needs',
     count: '800+ Products'
   },
@@ -25,7 +25,7 @@ const ALL_CATEGORIES = [
     name: 'Contact Lenses', 
     image: '/assets/face-3.svg', 
     link: '/category/contact-lenses', 
-    color: '#388e3c',
+    color: 'var(--success)',
     description: 'Comfortable and clear vision with our contact lens range',
     count: '200+ Products'
   },
@@ -88,12 +88,12 @@ const styles = {
   title: {
     fontSize: '32px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     marginBottom: '12px',
   },
   subtitle: {
     fontSize: '16px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   grid: {
     display: 'grid',
@@ -104,10 +104,10 @@ const styles = {
     padding: '0 24px',
   },
   card: {
-    background: '#fff',
+    background: 'var(--bg-white)',
     borderRadius: '8px',
     overflow: 'hidden',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    boxShadow: 'var(--shadow)',
     transition: 'all 0.3s',
     textDecoration: 'none',
     color: 'inherit',
@@ -137,7 +137,7 @@ const styles = {
     padding: '20px',
   },
   count: {
-    color: '#fff',
+    color: 'var(--text-white)',
     fontSize: '14px',
     fontWeight: 600,
   },
@@ -147,19 +147,19 @@ const styles = {
   name: {
     fontSize: '20px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     marginBottom: '8px',
   },
   description: {
     fontSize: '14px',
-    color: '#666',
+    color: 'var(--text-secondary)',
     lineHeight: 1.5,
     marginBottom: '16px',
   },
   link: {
     display: 'inline-flex',
     alignItems: 'center',
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontSize: '14px',
     fontWeight: 600,
     gap: '4px',

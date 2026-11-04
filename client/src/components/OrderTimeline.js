@@ -13,10 +13,10 @@ const STEPS = [
 const styles = {
   container: {
     fontFamily: "var(--font-body)",
-    background: '#fff',
+    background: 'var(--bg-white)',
     borderRadius: '4px',
     padding: '24px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    boxShadow: 'var(--shadow)',
   },
   header: {
     display: 'flex',
@@ -27,11 +27,11 @@ const styles = {
   title: {
     fontSize: '18px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
   },
   orderId: {
     fontSize: '13px',
-    color: '#888',
+    color: 'var(--text-light)',
     fontWeight: 500,
   },
   timeline: {
@@ -44,14 +44,14 @@ const styles = {
     top: '12px',
     bottom: '12px',
     width: '2px',
-    background: '#e0e0e0',
+    background: 'var(--border)',
   },
   lineProgress: {
     position: 'absolute',
     left: '15px',
     top: '12px',
     width: '2px',
-    background: '#2874f0',
+    background: 'var(--brand)',
     transition: 'height 0.5s ease',
   },
   step: {
@@ -78,19 +78,19 @@ const styles = {
     transition: 'all 0.3s',
   },
   iconCompleted: {
-    background: '#2874f0',
-    color: '#fff',
+    background: 'var(--brand)',
+    color: 'var(--text-white)',
   },
   iconCurrent: {
-    background: '#fff',
-    color: '#2874f0',
-    border: '3px solid #2874f0',
-    boxShadow: '0 0 0 4px rgba(40,116,240,0.15)',
+    background: 'var(--bg-white)',
+    color: 'var(--brand)',
+    border: '3px solid var(--brand)',
+    boxShadow: 'var(--shadow-focus)',
   },
   iconPending: {
-    background: '#f5f5f5',
+    background: 'var(--bg-subtle)',
     color: '#bbb',
-    border: '2px solid #e0e0e0',
+    border: '2px solid var(--border)',
   },
   stepContent: {
     flex: 1,
@@ -101,17 +101,17 @@ const styles = {
     marginBottom: '2px',
   },
   stepLabelCompleted: {
-    color: '#212121',
+    color: 'var(--text-primary)',
   },
   stepLabelCurrent: {
-    color: '#2874f0',
+    color: 'var(--brand)',
   },
   stepLabelPending: {
-    color: '#999',
+    color: 'var(--text-light)',
   },
   stepDesc: {
     fontSize: '13px',
-    color: '#888',
+    color: 'var(--text-light)',
     marginBottom: '4px',
   },
   stepDate: {
@@ -125,13 +125,13 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '4px',
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontSize: '13px',
     fontWeight: 600,
     textDecoration: 'none',
     marginTop: '16px',
     padding: '8px 16px',
-    border: '1px solid #2874f0',
+    border: '1px solid var(--brand)',
     borderRadius: '4px',
     transition: 'all 0.2s',
   },
@@ -141,7 +141,7 @@ const styles = {
     background: '#f0f6ff',
     borderRadius: '4px',
     fontSize: '14px',
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontWeight: 500,
     display: 'flex',
     alignItems: 'center',

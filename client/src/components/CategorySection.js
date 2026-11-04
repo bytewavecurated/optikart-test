@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { FiChevronRight } from 'react-icons/fi';
 
 const CATEGORIES = [
-  { name: 'Sunglasses', image: '/assets/face-1.svg', link: '/category/sunglasses', color: '#2874f0' },
-  { name: 'Eyeglasses', image: '/assets/face-1.svg', link: '/category/eyeglasses', color: '#ff9f00' },
-  { name: 'Contact Lenses', image: '/assets/face-3.svg', link: '/category/contact-lenses', color: '#388e3c' },
+  { name: 'Sunglasses', image: '/assets/face-1.svg', link: '/category/sunglasses', color: 'var(--brand)' },
+  { name: 'Eyeglasses', image: '/assets/face-1.svg', link: '/category/eyeglasses', color: 'var(--warning)' },
+  { name: 'Contact Lenses', image: '/assets/face-3.svg', link: '/category/contact-lenses', color: 'var(--success)' },
   { name: 'Sports', image: '/assets/face-1.svg', link: '/category/sports', color: '#e43f5a' },
   { name: 'Kids', image: '/assets/face-5.svg', link: '/category/kids', color: '#6c63ff' },
   { name: 'Reading', image: '/assets/face-1.svg', link: '/category/reading', color: '#00897b' },
@@ -15,11 +15,11 @@ const CATEGORIES = [
 
 const styles = {
   section: {
-    background: '#fff',
+    background: 'var(--bg-white)',
     margin: '16px 0',
     padding: '20px 24px',
     borderRadius: '4px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    boxShadow: 'var(--shadow)',
     fontFamily: "var(--font-body)",
   },
   header: {
@@ -31,10 +31,10 @@ const styles = {
   title: {
     fontSize: '22px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
   },
   viewAll: {
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontWeight: 600,
     fontSize: '14px',
     textDecoration: 'none',
@@ -66,7 +66,7 @@ const styles = {
     height: '120px',
     borderRadius: '50%',
     overflow: 'hidden',
-    border: '3px solid #f1f3f6',
+    border: '3px solid var(--bg-subtle)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -80,7 +80,7 @@ const styles = {
   name: {
     fontSize: '14px',
     fontWeight: 600,
-    color: '#333',
+    color: 'var(--text-primary)',
     textAlign: 'center',
   },
   viewMore: {
@@ -92,14 +92,14 @@ const styles = {
     borderRadius: '50%',
     width: '120px',
     height: '120px',
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontWeight: 600,
     fontSize: '13px',
     textDecoration: 'none',
     transition: 'all 0.2s',
     textAlign: 'center',
     lineHeight: '1.3',
-    background: '#fff',
+    background: 'var(--bg-white)',
   },
 };
 

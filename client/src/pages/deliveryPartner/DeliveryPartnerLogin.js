@@ -106,10 +106,10 @@ const DeliveryPartnerLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className={`input ${errors.email ? 'input-error' : ''}`}
-                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
-              {errors.email && <span style={{ color: '#f44336', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.email}</span>}
+              {errors.email && <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.email}</span>}
             </div>
 
             <div style={{ marginBottom: '24px' }}>
@@ -122,7 +122,7 @@ const DeliveryPartnerLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className={`input ${errors.password ? 'input-error' : ''}`}
-                  style={{ width: '100%', padding: '12px 40px 12px 40px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 40px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
                 />
                 <button
                   type="button"
@@ -132,14 +132,14 @@ const DeliveryPartnerLogin = () => {
                   {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                 </button>
               </div>
-              {errors.password && <span style={{ color: '#f44336', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.password}</span>}
+              {errors.password && <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.password}</span>}
             </div>
 
             <button
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-block btn-lg"
-              style={{ width: '100%', padding: '14px', background: loading ? '#9e9e9e' : 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
+              style={{ width: '100%', padding: '14px', background: loading ? '#9e9e9e' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
@@ -160,7 +160,7 @@ const DeliveryPartnerLogin = () => {
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter 6-digit OTP"
                   className="input"
-                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '18px', fontWeight: 600, letterSpacing: '8px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '18px', fontWeight: 600, letterSpacing: '8px', boxSizing: 'border-box' }}
                   maxLength={6}
                   autoFocus
                 />
@@ -171,7 +171,7 @@ const DeliveryPartnerLogin = () => {
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-block btn-lg"
-              style={{ width: '100%', padding: '14px', background: loading ? '#9e9e9e' : 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
+              style={{ width: '100%', padding: '14px', background: loading ? '#9e9e9e' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
             >
               {loading ? 'Verifying...' : 'Verify & Login'}
             </button>

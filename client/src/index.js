@@ -23,9 +23,9 @@ root.render(
               toastOptions={{
                 duration: 3000,
                 style: {
-                  background: '#fff',
-                  color: '#212121',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                  background: 'var(--bg-white)',
+                  color: 'var(--text-primary)',
+                  boxShadow: 'var(--shadow-lg)',
                   borderRadius: '4px',
                   fontSize: '14px',
                 },

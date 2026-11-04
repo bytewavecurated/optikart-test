@@ -43,7 +43,7 @@ const Careers = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <div style={{ background: 'var(--primary)', borderRadius: 'var(--radius-lg)', padding: '48px 32px', textAlign: 'center', marginBottom: '32px', color: '#fff' }}>
+          <div style={{ background: 'var(--primary)', borderRadius: 'var(--radius-lg)', padding: '48px 32px', textAlign: 'center', marginBottom: '32px', color: 'var(--text-white)' }}>
             <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '12px' }}>Join the OptiKart Team</h1>
             <p style={{ fontSize: '16px', opacity: 0.9, maxWidth: '600px', margin: '0 auto 20px' }}>Help us revolutionize how India buys eyewear. We're looking for passionate people who want to make a difference.</p>
             <a href="mailto:careers@optikart.com" className="btn btn-secondary btn-lg">View Open Positions</a>

@@ -188,7 +188,7 @@ const UserProfile = () => {
             {/* Sidebar */}
             <div className="card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700, marginBottom: '12px' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700, marginBottom: '12px' }}>
                   {(user?.name || 'U').charAt(0).toUpperCase()}
                 </div>
                 <h3 style={{ fontSize: '16px', fontWeight: 600 }}>{user?.name}</h3>
@@ -323,7 +323,7 @@ const UserProfile = () => {
                       {addresses.map((addr) => (
                         <div key={addr._id} style={{ padding: '16px', border: `1px solid ${addr.isDefault ? 'var(--primary)' : 'var(--border)'}`, borderRadius: '8px', position: 'relative', background: addr.isDefault ? 'var(--primary-light, #f0f6ff)' : '#fff' }}>
                           {addr.isDefault && (
-                            <span style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', background: 'var(--primary)', color: '#fff', borderRadius: '3px', textTransform: 'uppercase' }}>Default</span>
+                            <span style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', background: 'var(--primary)', color: 'var(--text-white)', borderRadius: '3px', textTransform: 'uppercase' }}>Default</span>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
                             <div style={{ flex: 1 }}>
@@ -340,11 +340,11 @@ const UserProfile = () => {
                               <button onClick={() => handleEditAddress(addr)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
                                 <FiEdit2 size={12} /> Edit
                               </button>
-                              <button onClick={() => handleDeleteAddress(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: '#fff', border: '1px solid var(--danger)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: 'var(--danger)' }}>
+                              <button onClick={() => handleDeleteAddress(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-white)', border: '1px solid var(--danger)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: 'var(--danger)' }}>
                                 <FiTrash2 size={12} /> Delete
                               </button>
                               {!addr.isDefault && (
-                                <button onClick={() => handleSetDefault(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: '#fff', border: '1px solid var(--primary)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: 'var(--primary)' }}>
+                                <button onClick={() => handleSetDefault(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-white)', border: '1px solid var(--primary)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: 'var(--primary)' }}>
                                   <FiCheck size={12} /> Default
                                 </button>
                               )}

@@ -86,7 +86,7 @@ const UserOrders = () => {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>₹{order.total}</div>
-                    <span className="badge" style={{ background: STATUS_COLORS[order.status] || 'var(--text-light)', color: '#fff', textTransform: 'capitalize' }}>{order.status}</span>
+                    <span className="badge" style={{ background: STATUS_COLORS[order.status] || 'var(--text-light)', color: 'var(--text-white)', textTransform: 'capitalize' }}>{order.status}</span>
                   </div>
                   <FiChevronRight style={{ color: 'var(--text-light)' }} />
                 </Link>

@@ -14,20 +14,20 @@ const LENS_OPTIONS = [
 const styles = {
   container: {
     fontFamily: "var(--font-body)",
-    background: '#fff',
+    background: 'var(--bg-white)',
     borderRadius: '4px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     padding: '24px',
   },
   title: {
     fontSize: '20px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     marginBottom: '4px',
   },
   subtitle: {
     fontSize: '14px',
-    color: '#888',
+    color: 'var(--text-light)',
     marginBottom: '24px',
   },
   dropzone: {
@@ -37,40 +37,40 @@ const styles = {
     textAlign: 'center',
     cursor: 'pointer',
     transition: 'all 0.2s',
-    background: '#fafafa',
+    background: 'var(--bg-page)',
     marginBottom: '20px',
   },
   dropzoneActive: {
-    borderColor: '#2874f0',
+    borderColor: 'var(--brand)',
     background: '#f0f6ff',
   },
   dropzoneIcon: {
     fontSize: '48px',
-    color: '#2874f0',
+    color: 'var(--brand)',
     marginBottom: '12px',
   },
   dropzoneText: {
     fontSize: '16px',
-    color: '#333',
+    color: 'var(--text-primary)',
     fontWeight: 500,
     marginBottom: '8px',
   },
   dropzoneSubtext: {
     fontSize: '13px',
-    color: '#888',
+    color: 'var(--text-light)',
   },
   orDivider: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
     margin: '16px 0',
-    color: '#888',
+    color: 'var(--text-light)',
     fontSize: '13px',
   },
   orLine: {
     flex: 1,
     height: '1px',
-    background: '#e0e0e0',
+    background: 'var(--border)',
   },
   cameraBtn: {
     display: 'flex',
@@ -81,8 +81,8 @@ const styles = {
     padding: '12px',
     border: '1px solid #c2c2c2',
     borderRadius: '4px',
-    background: '#fff',
-    color: '#333',
+    background: 'var(--bg-white)',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     fontWeight: 500,
     cursor: 'pointer',
@@ -100,7 +100,7 @@ const styles = {
   },
   previewIcon: {
     fontSize: '24px',
-    color: '#2874f0',
+    color: 'var(--brand)',
   },
   previewInfo: {
     flex: 1,
@@ -108,11 +108,11 @@ const styles = {
   previewName: {
     fontSize: '14px',
     fontWeight: 600,
-    color: '#333',
+    color: 'var(--text-primary)',
   },
   previewSize: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-light)',
   },
   removeBtn: {
     background: 'none',
@@ -125,7 +125,7 @@ const styles = {
   sectionTitle: {
     fontSize: '16px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     marginBottom: '12px',
     marginTop: '24px',
   },
@@ -137,25 +137,25 @@ const styles = {
   },
   lensCard: {
     padding: '16px',
-    border: '2px solid #e0e0e0',
+    border: '2px solid var(--border)',
     borderRadius: '4px',
     cursor: 'pointer',
     transition: 'all 0.2s',
     textAlign: 'center',
   },
   lensCardActive: {
-    borderColor: '#2874f0',
+    borderColor: 'var(--brand)',
     background: '#f0f6ff',
   },
   lensLabel: {
     fontSize: '14px',
     fontWeight: 600,
-    color: '#333',
+    color: 'var(--text-primary)',
     marginBottom: '4px',
   },
   lensDesc: {
     fontSize: '11px',
-    color: '#888',
+    color: 'var(--text-light)',
     lineHeight: '1.4',
   },
   powerGrid: {
@@ -165,14 +165,14 @@ const styles = {
     marginBottom: '24px',
   },
   eyeSection: {
-    background: '#fafafa',
+    background: 'var(--bg-page)',
     borderRadius: '4px',
     padding: '16px',
   },
   eyeTitle: {
     fontSize: '14px',
     fontWeight: 700,
-    color: '#333',
+    color: 'var(--text-primary)',
     marginBottom: '12px',
     display: 'flex',
     alignItems: 'center',
@@ -191,7 +191,7 @@ const styles = {
   },
   fieldLabel: {
     fontSize: '11px',
-    color: '#888',
+    color: 'var(--text-light)',
     fontWeight: 600,
     textTransform: 'uppercase',
   },
@@ -214,14 +214,14 @@ const styles = {
     gap: '4px',
   },
   success: {
-    color: '#388e3c',
+    color: 'var(--success)',
     fontSize: '13px',
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
     marginTop: '12px',
     padding: '10px',
-    background: '#e8f5e9',
+    background: 'var(--success-light)',
     borderRadius: '4px',
   },
 };

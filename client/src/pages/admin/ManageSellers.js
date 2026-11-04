@@ -105,11 +105,11 @@ const ManageSellers = () => {
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           {seller.isBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#ffebee', color: '#c62828' }}>Banned</span>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--danger-light)', color: 'var(--danger)' }}>Banned</span>
                           ) : seller.isShadowBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#fff3e0', color: '#e65100' }}>Shadow Banned</span>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)' }}>Shadow Banned</span>
                           ) : (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: '#e8f5e9', color: '#2e7d32' }}>Active</span>
+                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>
                           )}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
@@ -121,7 +121,7 @@ const ManageSellers = () => {
                             {seller.status !== 'rejected' && <button onClick={() => handleVerify(seller._id, 'rejected')} className="btn btn-danger btn-sm" title="Reject Seller"><FiX size={12} /></button>}
                             {!seller.isBanned && !seller.isShadowBanned && (
                               <>
-                                <button onClick={() => handleBan(seller._id, 'shadow')} className="btn btn-outline btn-sm" title="Shadow Ban" style={{ color: '#e65100', borderColor: '#e65100' }}>
+                                <button onClick={() => handleBan(seller._id, 'shadow')} className="btn btn-outline btn-sm" title="Shadow Ban" style={{ color: 'var(--warning)', borderColor: 'var(--warning)' }}>
                                   <FiEyeOff size={12} />
                                 </button>
                                 <button onClick={() => handleBan(seller._id, 'ban')} className="btn btn-danger btn-sm" title="Ban Seller">
@@ -130,7 +130,7 @@ const ManageSellers = () => {
                               </>
                             )}
                             {(seller.isBanned || seller.isShadowBanned) && (
-                              <button onClick={() => handleBan(seller._id, 'unban')} className="btn btn-outline btn-sm" title="Unban Seller" style={{ color: '#2e7d32', borderColor: '#2e7d32' }}>
+                              <button onClick={() => handleBan(seller._id, 'unban')} className="btn btn-outline btn-sm" title="Unban Seller" style={{ color: 'var(--success)', borderColor: 'var(--success)' }}>
                                 <FiEye size={12} />
                               </button>
                             )}

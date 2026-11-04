@@ -79,23 +79,23 @@ const ManufacturerSellerDashboard = () => {
   const myProductIds = myProducts.map(p => p.manufacturerProduct);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-subtle)' }}>
       {/* Header */}
-      <div style={{ background: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'var(--bg-white)', boxShadow: 'var(--shadow-sm)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: '#212121' }}>My Inventory</h1>
-          <p style={{ margin: '4px 0 0', color: '#757575', fontSize: '14px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>My Inventory</h1>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
             {manufacturerSeller?.storeName} | ID: {manufacturerSeller?.manufacturerSellerId}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ margin: 0, fontWeight: '600', color: '#212121' }}>{manufacturerSeller?.name}</p>
-            <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#757575' }}>{manufacturerSeller?.email}</p>
+            <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-primary)' }}>{manufacturerSeller?.name}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>{manufacturerSeller?.email}</p>
           </div>
           <button
             onClick={handleLogout}
-            style={{ padding: '8px 16px', background: '#f44336', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ padding: '8px 16px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <FiLogOut /> Logout
           </button>
@@ -105,45 +105,45 @@ const ManufacturerSellerDashboard = () => {
       {/* Stats */}
       <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ width: '48px', height: '48px', background: '#e3f2fd', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2196f3' }}>
                 <FiPackage size={24} />
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: '14px', color: '#757575' }}>Available Products</p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: '#212121' }}>{availableProducts.length}</h3>
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>Available Products</p>
+                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)' }}>{availableProducts.length}</h3>
               </div>
             </div>
           </div>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', background: '#e8f5e9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4caf50' }}>
+              <div style={{ width: '48px', height: '48px', background: 'var(--success-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)' }}>
                 <FiPackage size={24} />
               </div>
               <div>
-                <p style={{ margin: 0, fontSize: '14px', color: '#757575' }}>My Products</p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: '#212121' }}>{myProducts.length}</h3>
+                <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>My Products</p>
+                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)' }}>{myProducts.length}</h3>
               </div>
             </div>
           </div>
         </div>
 
         {/* Available Products from Manufacturer */}
-        <div style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px', color: '#212121' }}>
+        <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px', color: 'var(--text-primary)' }}>
             Available Products from Manufacturer
           </h2>
 
           {availableProducts.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#757575', padding: '40px' }}>No products available from your manufacturer yet.</p>
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>No products available from your manufacturer yet.</p>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
               {availableProducts.map((product) => {
                 const isInInventory = myProductIds.includes(product._id);
                 
                 return (
-                  <div key={product._id} style={{ background: '#f9f9f9', borderRadius: '12px', padding: '16px', border: isInInventory ? '2px solid #4caf50' : '2px solid #e0e0e0' }}>
+                  <div key={product._id} style={{ background: '#f9f9f9', borderRadius: '12px', padding: '16px', border: isInInventory ? '2px solid var(--success)' : '2px solid var(--border)' }}>
                     {product.images?.[0] && (
                       <img 
                         src={product.images[0]} 
@@ -151,13 +151,13 @@ const ManufacturerSellerDashboard = () => {
                         style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }} 
                       />
                     )}
-                    <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: '#212121' }}>{product.title}</h3>
-                    <p style={{ fontSize: '14px', color: '#757575', marginBottom: '8px' }}>Brand: {product.brand}</p>
-                    <p style={{ fontSize: '18px', fontWeight: '700', color: '#212121', marginBottom: '12px' }}>₹{product.price}</p>
-                    <p style={{ fontSize: '12px', color: '#757575', marginBottom: '16px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>{product.title}</h3>
+                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Brand: {product.brand}</p>
+                    <p style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>₹{product.price}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                       Colors: {product.colors?.map(c => c.name).join(', ') || 'N/A'}
                     </p>
-                    <p style={{ fontSize: '12px', color: '#757575', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                       Sizes: {product.sizes?.join(', ') || 'N/A'}
                     </p>
                     <button
@@ -166,7 +166,7 @@ const ManufacturerSellerDashboard = () => {
                         width: '100%',
                         padding: '12px',
                         background: isInInventory ? '#f44336' : '#4caf50',
-                        color: '#fff',
+                        color: 'var(--text-white)',
                         border: 'none',
                         borderRadius: '6px',
                         cursor: 'pointer',

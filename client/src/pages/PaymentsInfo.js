@@ -64,7 +64,7 @@ const PaymentsInfo = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {steps.map((step) => (
                   <div key={step.num} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', flexShrink: 0 }}>{step.num}</div>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', flexShrink: 0 }}>{step.num}</div>
                     <div>
                       <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '2px' }}>{step.title}</h4>
                       <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{step.desc}</p>

@@ -59,12 +59,12 @@ const StaffLayout = () => {
   const menuItems = getMenuItems();
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f1f3f6' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-subtle)' }}>
       {/* Sidebar */}
       <aside style={{
         width: sidebarOpen ? '240px' : '64px',
-        background: '#fff',
-        borderRight: '1px solid #e0e0e0',
+        background: 'var(--bg-white)',
+        borderRight: '1px solid var(--border)',
         transition: 'width 0.3s ease',
         display: 'flex',
         flexDirection: 'column',
@@ -76,7 +76,7 @@ const StaffLayout = () => {
         {/* Logo */}
         <div style={{
           padding: sidebarOpen ? '20px' : '20px 12px',
-          borderBottom: '1px solid #e0e0e0',
+          borderBottom: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: sidebarOpen ? 'space-between' : 'center',
@@ -84,8 +84,8 @@ const StaffLayout = () => {
         }}>
           {sidebarOpen && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '18px', fontWeight: 700, color: '#667eea' }}>OptiKart</span>
-              <span style={{ fontSize: '12px', color: '#666', background: '#f0f0f0', padding: '2px 8px', borderRadius: '4px' }}>Staff</span>
+              <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand)' }}>OptiKart</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>Staff</span>
             </div>
           )}
           <button
@@ -99,7 +99,7 @@ const StaffLayout = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#555'
+              color: 'var(--text-secondary)'
             }}
           >
             {sidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
@@ -136,12 +136,12 @@ const StaffLayout = () => {
         </nav>
 
         {/* User Info & Logout */}
-        <div style={{ padding: '12px 8px', borderTop: '1px solid #e0e0e0' }}>
+        <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)' }}>
           {sidebarOpen && staff && (
             <div style={{ padding: '8px 16px', marginBottom: '8px' }}>
               <p style={{ fontSize: '13px', fontWeight: 600, margin: 0 }}>{staff.name}</p>
-              <p style={{ fontSize: '11px', color: '#666', margin: 0 }}>{staff.email}</p>
-              <p style={{ fontSize: '10px', color: '#999', margin: '4px 0 0 0', textTransform: 'capitalize' }}>{staff.role?.replace('_', ' ')}</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>{staff.email}</p>
+              <p style={{ fontSize: '10px', color: 'var(--text-light)', margin: '4px 0 0 0', textTransform: 'capitalize' }}>{staff.role?.replace('_', ' ')}</p>
             </div>
           )}
           <button
@@ -179,8 +179,8 @@ const StaffLayout = () => {
       }}>
         {/* Top Bar */}
         <header style={{
-          background: '#fff',
-          borderBottom: '1px solid #e0e0e0',
+          background: 'var(--bg-white)',
+          borderBottom: '1px solid var(--border)',
           padding: '16px 24px',
           display: 'flex',
           alignItems: 'center',
@@ -190,11 +190,11 @@ const StaffLayout = () => {
           zIndex: 50
         }}>
           <BackButton label="Back to dashboard" />
-          <h1 style={{ fontSize: '20px', fontWeight: 600, color: '#212121', margin: 0 }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
             {menuItems.find(item => location.pathname === item.path)?.label || 'Staff Panel'}
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ fontSize: '13px', color: '#666' }}>{staff?.name || 'Staff'}</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff?.name || 'Staff'}</span>
           </div>
         </header>
 

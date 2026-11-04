@@ -44,9 +44,9 @@ const SellerDashboard = () => {
   }, []);
 
   const statCards = [
-    { label: 'Total Orders', value: stats.totalOrders, icon: <FiShoppingBag />, color: '#2874f0', bg: '#e8f0fe', link: '/seller/orders' },
-    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: <FiDollarSign />, color: '#26a541', bg: '#e8f5e9', link: '/seller/analytics' },
-    { label: 'Products', value: stats.totalProducts, icon: <FiPackage />, color: '#ff9f00', bg: '#fff3e0', link: '/seller/products' },
+    { label: 'Total Orders', value: stats.totalOrders, icon: <FiShoppingBag />, color: 'var(--brand)', bg: '#e8f0fe', link: '/seller/orders' },
+    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: <FiDollarSign />, color: '#26a541', bg: 'var(--success-light)', link: '/seller/analytics' },
+    { label: 'Products', value: stats.totalProducts, icon: <FiPackage />, color: 'var(--warning)', bg: 'var(--warning-light)', link: '/seller/products' },
     { label: 'Pending Orders', value: stats.pendingOrders, icon: <FiTrendingUp />, color: '#ff6161', bg: '#fce4ec', link: '/seller/orders' },
   ];
 

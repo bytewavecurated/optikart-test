@@ -7,9 +7,9 @@ import toast from 'react-hot-toast';
 
 const styles = {
   card: {
-    background: '#fff',
+    background: 'var(--bg-white)',
     borderRadius: '4px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     overflow: 'hidden',
     transition: 'box-shadow 0.2s, transform 0.2s',
     cursor: 'pointer',
@@ -20,7 +20,7 @@ const styles = {
     height: '100%',
   },
   cardHover: {
-    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+    boxShadow: 'var(--shadow-lg)',
     transform: 'translateY(-2px)',
   },
   imageWrap: {
@@ -30,7 +30,7 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '16px',
-    background: '#fafafa',
+    background: 'var(--bg-page)',
     overflow: 'hidden',
   },
   image: {
@@ -42,8 +42,8 @@ const styles = {
     position: 'absolute',
     top: '8px',
     right: '8px',
-    background: '#fff',
-    border: '1px solid #e0e0e0',
+    background: 'var(--bg-white)',
+    border: '1px solid var(--border)',
     borderRadius: '50%',
     width: '32px',
     height: '32px',
@@ -63,14 +63,14 @@ const styles = {
   brand: {
     fontSize: '14px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     marginBottom: '4px',
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
   },
   title: {
     fontSize: '14px',
-    color: '#555',
+    color: 'var(--text-secondary)',
     lineHeight: '1.4',
     marginBottom: '8px',
     display: '-webkit-box',
@@ -90,8 +90,8 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '3px',
-    background: '#388e3c',
-    color: '#fff',
+    background: 'var(--success)',
+    color: 'var(--text-white)',
     padding: '2px 6px',
     borderRadius: '3px',
     fontSize: '12px',
@@ -99,7 +99,7 @@ const styles = {
   },
   ratingCount: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-light)',
   },
   priceWrap: {
     display: 'flex',
@@ -111,16 +111,16 @@ const styles = {
   price: {
     fontSize: '18px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
   },
   originalPrice: {
     fontSize: '14px',
-    color: '#888',
+    color: 'var(--text-light)',
     textDecoration: 'line-through',
   },
   discount: {
     fontSize: '13px',
-    color: '#388e3c',
+    color: 'var(--success)',
     fontWeight: 600,
   },
   addToCart: {
@@ -128,8 +128,8 @@ const styles = {
     bottom: '0',
     left: '0',
     right: '0',
-    background: '#ff9f00',
-    color: '#fff',
+    background: 'var(--warning)',
+    color: 'var(--text-white)',
     border: 'none',
     padding: '10px',
     fontSize: '14px',
@@ -151,8 +151,8 @@ const styles = {
     position: 'absolute',
     top: '8px',
     left: '8px',
-    background: '#fff',
-    border: '1px solid #e0e0e0',
+    background: 'var(--bg-white)',
+    border: '1px solid var(--border)',
     borderRadius: '50%',
     width: '32px',
     height: '32px',

@@ -4,7 +4,7 @@ import { FiChevronRight } from 'react-icons/fi';
 const BRANDS = [
   { name: 'Ray-Ban', slug: 'ray-ban', startPrice: 2999, color: '#1a1a2e', tagline: 'Iconic Style' },
   { name: 'Fastrack', slug: 'fastrack', startPrice: 999, color: '#e43f5a', tagline: 'Youth Vibe' },
-  { name: 'Lenskart Air', slug: 'lenskart-air', startPrice: 1499, color: '#2874f0', tagline: 'Featherlight' },
+  { name: 'Lenskart Air', slug: 'lenskart-air', startPrice: 1499, color: 'var(--brand)', tagline: 'Featherlight' },
   { name: 'John Jacobs', slug: 'john-jacobs', startPrice: 2499, color: '#4a4a4a', tagline: 'Premium Craft' },
   { name: 'Vogue', slug: 'vogue', startPrice: 3499, color: '#9c27b0', tagline: 'Fashion Forward' },
   { name: 'Oakley', slug: 'oakley', startPrice: 4999, color: '#ff6f00', tagline: 'Performance' },
@@ -12,11 +12,11 @@ const BRANDS = [
 
 const styles = {
   section: {
-    background: '#fff',
+    background: 'var(--bg-white)',
     margin: '16px 0',
     padding: '20px 24px',
     borderRadius: '4px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    boxShadow: 'var(--shadow)',
     fontFamily: "var(--font-body)",
   },
   header: {
@@ -28,10 +28,10 @@ const styles = {
   title: {
     fontSize: '22px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
   },
   viewAll: {
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontWeight: 600,
     fontSize: '14px',
     textDecoration: 'none',
@@ -52,12 +52,12 @@ const styles = {
     alignItems: 'center',
     padding: '20px 12px',
     borderRadius: '4px',
-    border: '1px solid #f0f0f0',
+    border: '1px solid var(--bg-subtle)',
     textDecoration: 'none',
     transition: 'all 0.2s',
     cursor: 'pointer',
     textAlign: 'center',
-    background: '#fff',
+    background: 'var(--bg-white)',
   },
   logoCircle: {
     width: '80px',
@@ -69,23 +69,23 @@ const styles = {
     marginBottom: '12px',
     fontSize: '28px',
     fontWeight: 800,
-    color: '#fff',
+    color: 'var(--text-white)',
     letterSpacing: '-1px',
   },
   brandName: {
     fontSize: '15px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     marginBottom: '4px',
   },
   tagline: {
     fontSize: '12px',
-    color: '#888',
+    color: 'var(--text-light)',
     marginBottom: '8px',
   },
   startPrice: {
     fontSize: '13px',
-    color: '#388e3c',
+    color: 'var(--success)',
     fontWeight: 600,
   },
 };
@@ -120,7 +120,7 @@ export default function BrandSection() {
 
       <style>{`
         .brand-card:hover {
-          box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+          box-shadow: var(--shadow-lg) !important;
           transform: translateY(-3px);
         }
         @media (max-width: 1024px) {

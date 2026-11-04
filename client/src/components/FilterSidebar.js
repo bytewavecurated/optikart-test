@@ -29,9 +29,9 @@ const DISCOUNT_OPTIONS = [
 const styles = {
   sidebar: {
     width: '260px',
-    background: '#fff',
+    background: 'var(--bg-white)',
     borderRadius: '4px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    boxShadow: 'var(--shadow)',
     fontFamily: "var(--font-body)",
     overflow: 'hidden',
     position: 'sticky',
@@ -42,19 +42,19 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '16px',
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: '1px solid var(--bg-subtle)',
   },
   title: {
     fontSize: '18px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
   },
   clearBtn: {
     fontSize: '13px',
-    color: '#2874f0',
+    color: 'var(--brand)',
     fontWeight: 600,
     background: 'none',
     border: 'none',
@@ -62,7 +62,7 @@ const styles = {
   },
   section: {
     padding: '16px',
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: '1px solid var(--bg-subtle)',
   },
   sectionHeader: {
     display: 'flex',
@@ -74,7 +74,7 @@ const styles = {
   sectionTitle: {
     fontSize: '14px',
     fontWeight: 700,
-    color: '#212121',
+    color: 'var(--text-primary)',
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
   },
@@ -85,7 +85,7 @@ const styles = {
     padding: '6px 0',
     cursor: 'pointer',
     fontSize: '14px',
-    color: '#555',
+    color: 'var(--text-secondary)',
   },
   checkbox: {
     width: '16px',
@@ -100,7 +100,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: '13px',
-    color: '#888',
+    color: 'var(--text-light)',
     marginBottom: '8px',
   },
   rangeInput: {
@@ -117,7 +117,7 @@ const styles = {
   priceInput: {
     width: '100%',
     padding: '6px 8px',
-    border: '1px solid #e0e0e0',
+    border: '1px solid var(--border)',
     borderRadius: '4px',
     fontSize: '13px',
     outline: 'none',
@@ -134,31 +134,31 @@ const styles = {
     gap: '4px',
     cursor: 'pointer',
     fontSize: '11px',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   colorSwatch: {
     width: '28px',
     height: '28px',
     borderRadius: '50%',
-    border: '2px solid #e0e0e0',
+    border: '2px solid var(--border)',
     transition: 'all 0.15s',
   },
   colorSwatchActive: {
-    border: '2px solid #2874f0',
-    boxShadow: '0 0 0 2px rgba(40,116,240,0.3)',
+    border: '2px solid var(--brand)',
+    boxShadow: 'var(--shadow-focus)',
   },
   mobileToggle: {
     display: 'none',
     position: 'fixed',
     bottom: '20px',
     left: '20px',
-    background: '#2874f0',
-    color: '#fff',
+    background: 'var(--brand)',
+    color: 'var(--text-white)',
     border: 'none',
     borderRadius: '50%',
     width: '52px',
     height: '52px',
-    boxShadow: '0 4px 12px rgba(40,116,240,0.4)',
+    boxShadow: 'var(--shadow-focus)',
     cursor: 'pointer',
     zIndex: 1400,
     alignItems: 'center',
@@ -171,13 +171,13 @@ const styles = {
     border: 'none',
     fontSize: '20px',
     cursor: 'pointer',
-    color: '#666',
+    color: 'var(--text-secondary)',
   },
   applyBtn: {
     width: '100%',
     padding: '12px',
-    background: '#2874f0',
-    color: '#fff',
+    background: 'var(--brand)',
+    color: 'var(--text-white)',
     border: 'none',
     fontWeight: 600,
     fontSize: '14px',
@@ -302,7 +302,7 @@ export default function FilterSidebar({ filters = {}, onFilterChange, mobileOpen
         <span style={styles.title}>
           <FiFilter /> Filters
           {activeCount > 0 && (
-            <span style={{ background: '#2874f0', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>
+            <span style={{ background: 'var(--brand)', color: 'var(--text-white)', borderRadius: '50%', width: '20px', height: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>
               {activeCount}
             </span>
           )}
@@ -350,7 +350,7 @@ export default function FilterSidebar({ filters = {}, onFilterChange, mobileOpen
                 onChange={(e) => handlePriceChange(0, e.target.value)}
                 style={styles.priceInput}
               />
-              <span style={{ color: '#888', fontSize: '13px' }}>to</span>
+              <span style={{ color: 'var(--text-light)', fontSize: '13px' }}>to</span>
               <input
                 type="number"
                 placeholder="Max"

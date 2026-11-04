@@ -184,14 +184,14 @@ const VirtualTryOn = () => {
                     alignItems: 'center', 
                     justifyContent: 'center',
                     background: 'rgba(0,0,0,0.7)',
-                    color: '#fff'
+                    color: 'var(--text-white)'
                   }}>
                     <button
                       onClick={startCamera}
                       style={{
                         padding: '16px 32px',
                         background: 'var(--action)',
-                        color: '#fff',
+                        color: 'var(--text-white)',
                         border: 'none',
                         borderRadius: '8px',
                         fontSize: '16px',
@@ -214,7 +214,7 @@ const VirtualTryOn = () => {
                     top: '16px',
                     left: '16px',
                     background: 'rgba(0,0,0,0.7)',
-                    color: '#fff',
+                    color: 'var(--text-white)',
                     padding: '8px 16px',
                     borderRadius: '8px',
                     fontSize: '14px'
@@ -233,7 +233,7 @@ const VirtualTryOn = () => {
                       flex: 1,
                       padding: '12px',
                       background: 'var(--action)',
-                      color: '#fff',
+                      color: 'var(--text-white)',
                       border: 'none',
                       borderRadius: '8px',
                       fontSize: '14px',
@@ -253,7 +253,7 @@ const VirtualTryOn = () => {
                     style={{
                       padding: '12px 24px',
                       background: 'var(--danger)',
-                      color: '#fff',
+                      color: 'var(--text-white)',
                       border: 'none',
                       borderRadius: '8px',
                       fontSize: '14px',
@@ -299,7 +299,7 @@ const VirtualTryOn = () => {
               {/* Captured Image Preview */}
               {capturedImage && (
                 <div style={{ 
-                  background: '#fff', 
+                  background: 'var(--bg-white)', 
                   borderRadius: '12px', 
                   padding: '16px',
                   marginBottom: '16px'
@@ -323,7 +323,7 @@ const VirtualTryOn = () => {
                         flex: 1,
                         padding: '10px',
                         background: 'var(--success)',
-                        color: '#fff',
+                        color: 'var(--text-white)',
                         border: 'none',
                         borderRadius: '8px',
                         fontSize: '14px',
@@ -342,7 +342,7 @@ const VirtualTryOn = () => {
                       onClick={() => setCapturedImage(null)}
                       style={{
                         padding: '10px 20px',
-                        background: '#fff',
+                        background: 'var(--bg-white)',
                         color: 'var(--text-primary)',
                         border: '1px solid var(--border)',
                         borderRadius: '8px',
@@ -360,7 +360,7 @@ const VirtualTryOn = () => {
               {/* Saved Photos */}
               {savedPhotos.length > 0 && (
                 <div style={{ 
-                  background: '#fff', 
+                  background: 'var(--bg-white)', 
                   borderRadius: '12px', 
                   padding: '16px'
                 }}>
@@ -387,7 +387,7 @@ const VirtualTryOn = () => {
                             top: '8px',
                             right: '8px',
                             background: 'rgba(0,0,0,0.7)',
-                            color: '#fff',
+                            color: 'var(--text-white)',
                             border: 'none',
                             borderRadius: '50%',
                             width: '28px',
@@ -405,7 +405,7 @@ const VirtualTryOn = () => {
                           bottom: '8px',
                           left: '8px',
                           background: 'rgba(0,0,0,0.7)',
-                          color: '#fff',
+                          color: 'var(--text-white)',
                           padding: '4px 8px',
                           borderRadius: '4px',
                           fontSize: '11px',
@@ -423,7 +423,7 @@ const VirtualTryOn = () => {
             {/* Product Selection */}
             <div>
               <div style={{ 
-                background: '#fff', 
+                background: 'var(--bg-white)', 
                 borderRadius: '12px', 
                 padding: '16px',
                 position: 'sticky',

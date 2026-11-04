@@ -81,7 +81,7 @@ const ManageOrders = () => {
                       <td style={{ padding: '12px 16px', fontSize: '13px' }}>{order.address?.fullName || order.user?.name || '-'}</td>
                       <td style={{ padding: '12px 16px', fontSize: '13px' }}>{order.items?.length || 0}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600 }}>₹{order.total}</td>
-                      <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[order.status], color: '#fff', textTransform: 'capitalize' }}>{order.status}</span></td>
+                      <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[order.status], color: 'var(--text-white)', textTransform: 'capitalize' }}>{order.status}</span></td>
                       <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
                     </tr>
                   ))}

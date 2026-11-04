@@ -159,7 +159,7 @@ const Checkout = () => {
           name: 'OptiKart',
           order_id: razorpayOrderId,
           prefill: { name: address.fullName, contact: address.phone },
-          theme: { color: '#2874f0' },
+          theme: { color: 'var(--brand)' },
           handler: async (response) => {
             try {
               // 3. Settle exactly the orders this payment covered.
@@ -199,7 +199,7 @@ const Checkout = () => {
       <Header />
       <main style={{ flex: 1, background: 'var(--bg-primary)' }}>
         <div className="container" style={{ paddingTop: '16px', paddingBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '16px', background: '#fff', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '16px', background: 'var(--bg-white)', borderRadius: '8px' }}>
             {[{ num: 1, label: 'Address' }, { num: 2, label: 'Payment' }, { num: 3, label: 'Summary' }].map((s, idx) => (
               <React.Fragment key={s.num}>
                 {idx > 0 && <div style={{ flex: 1, height: '2px', background: step >= s.num ? 'var(--primary)' : 'var(--border)' }} />}
@@ -348,7 +348,7 @@ const Checkout = () => {
 
             <div className="card" style={{ position: 'sticky', top: '80px' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-dark)' }}>
-                <h3 style={{ color: '#fff', fontSize: '14px', fontWeight: 600, textTransform: 'uppercase' }}>Price Details</h3>
+                <h3 style={{ color: 'var(--text-white)', fontSize: '14px', fontWeight: 600, textTransform: 'uppercase' }}>Price Details</h3>
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>

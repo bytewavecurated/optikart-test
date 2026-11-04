@@ -109,7 +109,7 @@ const UserDetailView = () => {
           <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>
                   {(user.name || 'U')[0].toUpperCase()}
                 </div>
                 <div>
@@ -140,17 +140,17 @@ const UserDetailView = () => {
             </div>
 
             {user.isBanned && (
-              <div style={{ background: '#ffebee', border: '1px solid #ef5350', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: '#c62828', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Banned</p>
-                <p style={{ color: '#c62828', fontSize: '12px' }}>Reason: {user.banReason || 'No reason provided'}</p>
-                <p style={{ color: '#c62828', fontSize: '12px' }}>Banned on: {new Date(user.bannedAt).toLocaleDateString()}</p>
+              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+                <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Banned</p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Reason: {user.banReason || 'No reason provided'}</p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Banned on: {new Date(user.bannedAt).toLocaleDateString()}</p>
               </div>
             )}
 
             {user.isShadowBanned && !user.isBanned && (
-              <div style={{ background: '#fff3e0', border: '1px solid #ff9800', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: '#e65100', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Shadow Banned</p>
-                <p style={{ color: '#e65100', fontSize: '12px' }}>User can still access the platform but with limited visibility</p>
+              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+                <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Shadow Banned</p>
+                <p style={{ color: 'var(--warning)', fontSize: '12px' }}>User can still access the platform but with limited visibility</p>
               </div>
             )}
 

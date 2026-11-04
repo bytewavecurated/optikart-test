@@ -123,7 +123,7 @@ const Header = () => {
               borderRadius: '4px',
               border: 'none',
               fontSize: '14px',
-              background: '#fff',
+              background: 'var(--bg-white)',
               color: 'var(--text-primary)',
             }}
           />
@@ -192,7 +192,7 @@ const Header = () => {
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setProfileDropdown(!profileDropdown)}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontSize: '14px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 <FiUser size={18} />
                 <span>{displayName}</span>
@@ -209,7 +209,7 @@ const Header = () => {
                       top: '100%',
                       right: 0,
                       marginTop: '8px',
-                      background: '#fff',
+                      background: 'var(--bg-white)',
                       borderRadius: '4px',
                       boxShadow: 'var(--shadow-lg)',
                       minWidth: '200px',
@@ -237,7 +237,7 @@ const Header = () => {
               </AnimatePresence>
             </div>
           ) : (
-            <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontSize: '14px', fontWeight: 600, padding: '6px 24px', background: '#fff', borderRadius: '4px', textDecoration: 'none' }}>
+            <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontSize: '14px', fontWeight: 600, padding: '6px 24px', background: 'var(--bg-white)', borderRadius: '4px', textDecoration: 'none' }}>
               <FiUser size={16} />
               Login
             </Link>
@@ -253,7 +253,7 @@ const Header = () => {
               <Link
                 to={roleConsole.path}
                 title={`Signed in as ${activeRole}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontSize: '13px', fontWeight: 600, padding: '7px 12px', border: '1px solid rgba(255,255,255,0.45)', borderRadius: '4px', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '13px', fontWeight: 600, padding: '7px 12px', border: '1px solid rgba(255,255,255,0.45)', borderRadius: '4px', textDecoration: 'none', whiteSpace: 'nowrap' }}
               >
                 <FiUser size={15} />
                 {roleConsole.label}
@@ -267,11 +267,11 @@ const Header = () => {
             </div>
           )}
 
-          <Link to="/wishlist" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>
+          <Link to="/wishlist" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>
             <FiHeart size={18} />
           </Link>
 
-          <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontSize: '14px', fontWeight: 500, position: 'relative', textDecoration: 'none' }}>
+          <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, position: 'relative', textDecoration: 'none' }}>
             <FiShoppingCart size={18} />
             {totalItems > 0 && (
               <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--secondary)', color: 'var(--text-primary)', fontSize: '10px', fontWeight: 700, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -285,12 +285,12 @@ const Header = () => {
         {/* Mobile Icons - Flipkart style */}
         <div className="mobile-icons" style={{ display: 'none', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexShrink: 0 }}>
           {/* Mobile search toggle */}
-          <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} style={{ color: '#fff', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} style={{ color: 'var(--text-white)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <FiSearch size={22} />
           </button>
 
           {/* Cart icon - always visible on mobile */}
-          <Link to="/cart" style={{ position: 'relative', color: '#fff', display: 'flex', alignItems: 'center' }}>
+          <Link to="/cart" style={{ position: 'relative', color: 'var(--text-white)', display: 'flex', alignItems: 'center' }}>
             <FiShoppingCart size={22} />
             {totalItems > 0 && (
               <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: 'var(--secondary)', color: 'var(--text-primary)', fontSize: '9px', fontWeight: 700, width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -301,24 +301,24 @@ const Header = () => {
 
           {/* Account icon - shows Login if not authenticated, user icon if authenticated */}
           {isAuthenticated ? (
-            <Link to="/profile" style={{ color: '#fff', display: 'flex', alignItems: 'center' }}>
+            <Link to="/profile" style={{ color: 'var(--text-white)', display: 'flex', alignItems: 'center' }}>
               <FiUser size={22} />
             </Link>
           ) : (
-            <Link to="/login" style={{ color: '#fff', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, gap: '4px' }}>
+            <Link to="/login" style={{ color: 'var(--text-white)', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, gap: '4px' }}>
               <FiUser size={20} />
               <span style={{ fontSize: '12px' }}>Login</span>
             </Link>
           )}
 
           {/* Hamburger menu */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: '#fff', fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: 'var(--text-white)', fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer' }}>
             {mobileMenuOpen ? <FiX /> : <FiMenu />}
           </button>
         </div>
 
         {/* Desktop hamburger (hidden) */}
-        <button className="hide-desktop" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: '#fff', fontSize: '24px', marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', display: 'none' }}>
+        <button className="hide-desktop" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: 'var(--text-white)', fontSize: '24px', marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', display: 'none' }}>
           {mobileMenuOpen ? <FiX /> : <FiMenu />}
         </button>
       </div>
@@ -330,7 +330,7 @@ const Header = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{ background: '#fff', overflow: 'hidden', position: 'absolute', width: '100%', zIndex: 98, boxShadow: 'var(--shadow)' }}
+            style={{ background: 'var(--bg-white)', overflow: 'hidden', position: 'absolute', width: '100%', zIndex: 98, boxShadow: 'var(--shadow)' }}
             className="mobile-search-bar"
           >
             <form onSubmit={handleSearch} style={{ padding: '12px 16px', display: 'flex', gap: '8px' }}>
@@ -342,7 +342,7 @@ const Header = () => {
                 style={{ flex: 1, padding: '10px 16px', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '14px' }}
                 autoFocus
               />
-              <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                 <FiSearch size={18} />
               </button>
             </form>
@@ -352,7 +352,7 @@ const Header = () => {
 
       {/* Category sub-nav (desktop). Links are padded pills rather than bare text
           on a 40px strip, and the rail scrolls by arrow on wide screens. */}
-      <div className="hide-mobile" style={{ background: '#fff', borderTop: '1px solid var(--border)', position: 'relative' }}>
+      <div className="hide-mobile" style={{ background: 'var(--bg-white)', borderTop: '1px solid var(--border)', position: 'relative' }}>
         <div className="container category-nav-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
           {railOverflow && (
             <button
@@ -410,7 +410,7 @@ const Header = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{ background: '#fff', overflow: 'hidden', position: 'absolute', width: '100%', zIndex: 99, maxHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
+            style={{ background: 'var(--bg-white)', overflow: 'hidden', position: 'absolute', width: '100%', zIndex: 99, maxHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
           >
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
@@ -421,7 +421,7 @@ const Header = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{ flex: 1, padding: '10px 16px', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '14px' }}
                 />
-                <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
                   <FiSearch size={18} />
                 </button>
               </form>

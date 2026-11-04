@@ -217,7 +217,7 @@ const ProductCompare = () => {
                               top: '-8px',
                               right: '-8px',
                               background: 'var(--danger)',
-                              color: '#fff',
+                              color: 'var(--text-white)',
                               border: 'none',
                               borderRadius: '50%',
                               width: '24px',

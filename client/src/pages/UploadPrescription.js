@@ -380,7 +380,7 @@ const UploadPrescription = () => {
                       <button onClick={() => handleEdit(rx)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}>
                         <FiEdit2 size={12} /> Edit
                       </button>
-                      <button onClick={() => handleDelete(rx._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#fff', border: '1px solid var(--danger)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--danger)' }}>
+                      <button onClick={() => handleDelete(rx._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--bg-white)', border: '1px solid var(--danger)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--danger)' }}>
                         <FiTrash2 size={12} /> Delete
                       </button>
                     </div>

@@ -71,7 +71,7 @@ const styles = {
   },
   bannerBtn: {
     background: 'var(--brand)',
-    color: '#fff',
+    color: 'var(--text-white)',
     border: 'none',
     padding: '8px 18px',
     borderRadius: 'var(--radius-sm)',
@@ -104,7 +104,7 @@ const styles = {
     marginBottom: '8px',
   },
   link: {
-    color: '#fff',
+    color: 'var(--text-white)',
     textDecoration: 'none',
     fontSize: '13px',
     fontWeight: 400,
@@ -122,7 +122,7 @@ const styles = {
     marginTop: '4px',
   },
   socialIcon: {
-    color: '#fff',
+    color: 'var(--text-white)',
     fontSize: '20px',
     transition: 'color 0.15s',
     textDecoration: 'none',

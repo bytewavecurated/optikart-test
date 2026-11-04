@@ -101,18 +101,18 @@ const AdminDashboard = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '40px' }}>
         {statCards.map((card, idx) => (
           <div key={idx} style={{ 
-            background: '#fff',
+            background: 'var(--bg-white)',
             borderRadius: '16px',
             padding: '24px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+            boxShadow: 'var(--shadow)',
             position: 'relative',
             overflow: 'hidden',
             transition: 'all 0.3s ease'
           }} className="stat-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <p style={{ fontSize: '14px', color: '#757575', margin: '0 0 8px 0', fontWeight: 500 }}>{card.label}</p>
-                <h3 style={{ fontSize: '32px', fontWeight: 800, color: '#212121', margin: 0, letterSpacing: '-0.5px' }}>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '0 0 8px 0', fontWeight: 500 }}>{card.label}</p>
+                <h3 style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.5px' }}>
                   {card.value}
                 </h3>
               </div>
@@ -142,10 +142,10 @@ const AdminDashboard = () => {
       <div style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: 700, margin: 0, color: '#212121', letterSpacing: '-0.5px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 700, margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
               Quick Access
             </h2>
-            <p style={{ fontSize: '14px', color: '#757575', margin: '4px 0 0 0' }}>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
               Manage your store efficiently
             </p>
           </div>
@@ -157,15 +157,15 @@ const AdminDashboard = () => {
               to={item.path}
               style={{
                 padding: '24px',
-                background: '#fff',
+                background: 'var(--bg-white)',
                 borderRadius: '16px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '16px',
                 textDecoration: 'none',
                 transition: 'all 0.3s ease',
-                border: '1px solid #f0f0f0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                border: '1px solid var(--bg-subtle)',
+                boxShadow: 'var(--shadow-sm)'
               }}
               className="quick-link-card"
             >
@@ -184,10 +184,10 @@ const AdminDashboard = () => {
                 {item.icon}
               </div>
               <div style={{ flex: 1 }}>
-                <span style={{ fontSize: '16px', fontWeight: 600, color: '#212121', display: 'block', marginBottom: '4px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>
                   {item.label}
                 </span>
-                <span style={{ fontSize: '13px', color: '#757575' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                   {item.desc}
                 </span>
               </div>
@@ -198,12 +198,12 @@ const AdminDashboard = () => {
 
       {/* Recent Activity Placeholder */}
       <div style={{ 
-        background: '#fff',
+        background: 'var(--bg-white)',
         borderRadius: '16px',
         padding: '32px',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+        boxShadow: 'var(--shadow)'
       }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '24px', color: '#212121', margin: '0 0 24px 0' }}>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '24px', color: 'var(--text-primary)', margin: '0 0 24px 0' }}>
           Recent Activity
         </h2>
         {recentOrders.length === 0 ? (
@@ -216,8 +216,8 @@ const AdminDashboard = () => {
             }}>
               <FiPieChart />
             </div>
-            <p style={{ fontSize: 16, color: '#757575', margin: 0 }}>No orders have been placed yet</p>
-            <p style={{ fontSize: 14, color: '#9e9e9e', margin: '8px 0 0 0' }}>
+            <p style={{ fontSize: 16, color: 'var(--text-secondary)', margin: 0 }}>No orders have been placed yet</p>
+            <p style={{ fontSize: 14, color: 'var(--text-light)', margin: '8px 0 0 0' }}>
               New orders will appear here as soon as customers start checking out.
             </p>
           </div>
@@ -229,13 +229,13 @@ const AdminDashboard = () => {
                 to="/admin/orders"
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-                  padding: '12px 14px', border: '1px solid #f0f0f0', borderRadius: 10,
+                  padding: '12px 14px', border: '1px solid var(--bg-subtle)', borderRadius: 10,
                   textDecoration: 'none', color: 'inherit'
                 }}
               >
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{o.orderId || o._id}</div>
-                  <div style={{ fontSize: 12, color: '#9e9e9e' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-light)' }}>
                     {o.createdAt ? new Date(o.createdAt).toLocaleString('en-IN') : ''}
                   </div>
                 </div>
@@ -243,7 +243,7 @@ const AdminDashboard = () => {
                   <div style={{ fontSize: 14, fontWeight: 700 }}>
                     ₹{(o.totalAmount || 0).toLocaleString('en-IN')}
                   </div>
-                  <div style={{ fontSize: 12, color: '#757575', textTransform: 'capitalize' }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
                     {(o.orderStatus || 'pending').replace(/_/g, ' ')}
                   </div>
                 </div>
@@ -256,11 +256,11 @@ const AdminDashboard = () => {
       <style>{`
         .stat-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          box-shadow: var(--shadow-lg);
         }
         .quick-link-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          box-shadow: var(--shadow-lg);
           border-color: ${quickLinks[0]?.color || '#667eea'} !important;
         }
       `}</style>

@@ -415,7 +415,7 @@ const SellerInventory = () => {
                                           />
                                           <button
                                             onClick={() => saveInlineStock(product._id, variant._id)}
-                                            style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '3px', padding: '4px 6px', cursor: 'pointer', fontSize: '11px' }}
+                                            style={{ background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '3px', padding: '4px 6px', cursor: 'pointer', fontSize: '11px' }}
                                           >
                                             Save
                                           </button>

@@ -198,7 +198,7 @@ const FaceShapeGuide = () => {
         {/* Hero Section */}
         <div style={{ 
           background: 'var(--bg-dark)',
-          color: '#fff',
+          color: 'var(--text-white)',
           padding: '56px 20px',
           textAlign: 'center'
         }}>
@@ -214,11 +214,11 @@ const FaceShapeGuide = () => {
           {/* Analysis Section */}
           {!result && (
             <div style={{ 
-              background: '#fff',
+              background: 'var(--bg-white)',
               borderRadius: '16px',
               padding: '40px',
               marginBottom: '40px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+              boxShadow: 'var(--shadow)'
             }}>
               <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '24px', textAlign: 'center' }}>
                 Analyze Your Face Shape
@@ -231,7 +231,7 @@ const FaceShapeGuide = () => {
                     style={{
                       padding: '30px',
                       background: 'var(--brand)',
-                      color: '#fff',
+                      color: 'var(--text-white)',
                       border: 'none',
                       borderRadius: '12px',
                       cursor: 'pointer',
@@ -271,9 +271,9 @@ const FaceShapeGuide = () => {
                       e.currentTarget.style.background = '#f8f9fa';
                     }}
                   >
-                    <FiUpload size={48} style={{ color: '#667eea' }} />
-                    <span style={{ fontSize: '18px', fontWeight: 600, color: '#212121' }}>Upload Image</span>
-                    <span style={{ fontSize: '14px', color: '#757575' }}>Choose from gallery</span>
+                    <FiUpload size={48} style={{ color: 'var(--brand)' }} />
+                    <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>Upload Image</span>
+                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Choose from gallery</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -305,8 +305,8 @@ const FaceShapeGuide = () => {
                       onClick={captureImage}
                       style={{
                         padding: '12px 32px',
-                        background: '#667eea',
-                        color: '#fff',
+                        background: 'var(--brand)',
+                        color: 'var(--text-white)',
                         border: 'none',
                         borderRadius: '8px',
                         cursor: 'pointer',
@@ -320,8 +320,8 @@ const FaceShapeGuide = () => {
                       onClick={stopCamera}
                       style={{
                         padding: '12px 32px',
-                        background: '#f44336',
-                        color: '#fff',
+                        background: 'var(--danger)',
+                        color: 'var(--text-white)',
                         border: 'none',
                         borderRadius: '8px',
                         cursor: 'pointer',
@@ -341,12 +341,12 @@ const FaceShapeGuide = () => {
                     width: '60px',
                     height: '60px',
                     border: '4px solid #f3f3f3',
-                    borderTop: '4px solid #667eea',
+                    borderTop: '4px solid var(--brand)',
                     borderRadius: '50%',
                     animation: 'spin 1s linear infinite',
                     margin: '0 auto 20px'
                   }} />
-                  <p style={{ fontSize: '18px', color: '#757575' }}>Analyzing your face shape...</p>
+                  <p style={{ fontSize: '18px', color: 'var(--text-secondary)' }}>Analyzing your face shape...</p>
                 </div>
               )}
             </div>
@@ -355,11 +355,11 @@ const FaceShapeGuide = () => {
           {/* Result Section */}
           {result && (
             <div style={{ 
-              background: '#fff',
+              background: 'var(--bg-white)',
               borderRadius: '16px',
               padding: '40px',
               marginBottom: '40px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+              boxShadow: 'var(--shadow)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <h2 style={{ fontSize: '28px', fontWeight: 700, margin: 0 }}>
@@ -410,7 +410,7 @@ const FaceShapeGuide = () => {
                         gap: '12px'
                       }}
                     >
-                      <FiCheck style={{ color: '#4caf50', flexShrink: 0 }} />
+                      <FiCheck style={{ color: 'var(--success)', flexShrink: 0 }} />
                       <span style={{ fontSize: '16px', textTransform: 'capitalize' }}>{frame}</span>
                     </div>
                   ))}
@@ -433,7 +433,7 @@ const FaceShapeGuide = () => {
               {loadingProducts && (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <div className="spinner spinner-lg" />
-                  <p style={{ marginTop: '16px', color: '#757575' }}>Loading recommended products...</p>
+                  <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading recommended products...</p>
                 </div>
               )}
             </div>
@@ -441,15 +441,15 @@ const FaceShapeGuide = () => {
 
           {/* Face Shapes Guide */}
           <div style={{ 
-            background: '#fff',
+            background: 'var(--bg-white)',
             borderRadius: '16px',
             padding: '40px',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.06)'
+            boxShadow: 'var(--shadow)'
           }}>
             <h2 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '16px', textAlign: 'center' }}>
               Understanding Face Shapes
             </h2>
-            <p style={{ fontSize: '16px', color: '#757575', textAlign: 'center', marginBottom: '40px', maxWidth: '600px', margin: '0 auto 40px' }}>
+            <p style={{ fontSize: '16px', color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '40px', maxWidth: '600px', margin: '0 auto 40px' }}>
               Learn about different face shapes and which frames complement them best
             </p>
 
@@ -466,26 +466,26 @@ const FaceShapeGuide = () => {
                   onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-4px)'}
                   onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
-                  <h3 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '12px', color: '#667eea' }}>
+                  <h3 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '12px', color: 'var(--brand)' }}>
                     {shape.name}
                   </h3>
-                  <p style={{ fontSize: '14px', color: '#757575', marginBottom: '16px', lineHeight: 1.6 }}>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: 1.6 }}>
                     {shape.description}
                   </p>
                   <div style={{ marginBottom: '16px' }}>
-                    <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#212121' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>
                       Characteristics:
                     </h4>
                     <ul style={{ margin: 0, paddingLeft: '20px' }}>
                       {shape.characteristics.map((char, index) => (
-                        <li key={index} style={{ fontSize: '13px', color: '#757575', marginBottom: '4px' }}>
+                        <li key={index} style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
                           {char}
                         </li>
                       ))}
                     </ul>
                   </div>
                   <div>
-                    <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: '#212121' }}>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--text-primary)' }}>
                       Best Frames:
                     </h4>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -494,8 +494,8 @@ const FaceShapeGuide = () => {
                           key={index}
                           style={{
                             padding: '4px 12px',
-                            background: '#667eea',
-                            color: '#fff',
+                            background: 'var(--brand)',
+                            color: 'var(--text-white)',
                             borderRadius: '16px',
                             fontSize: '12px',
                             textTransform: 'capitalize'

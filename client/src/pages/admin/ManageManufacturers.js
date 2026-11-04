@@ -128,7 +128,7 @@ const ManageManufacturers = () => {
           style={{
             padding: '10px 20px',
             background: '#00bcd4',
-            color: '#fff',
+            color: 'var(--text-white)',
             border: 'none',
             borderRadius: '6px',
             cursor: 'pointer',
@@ -143,7 +143,7 @@ const ManageManufacturers = () => {
       </div>
 
       <div style={{ position: 'relative', marginBottom: '20px' }}>
-        <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9e9e9e' }} />
+        <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
         <input
           type="text"
           placeholder="Search by name, email, company, or ID..."
@@ -152,39 +152,39 @@ const ManageManufacturers = () => {
           style={{
             width: '100%',
             padding: '10px 10px 10px 40px',
-            border: '1px solid #e0e0e0',
+            border: '1px solid var(--border)',
             borderRadius: '6px',
             fontSize: '14px'
           }}
         />
       </div>
 
-      <div style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-white)', borderRadius: '12px', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #e0e0e0' }}>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: '#424242' }}>Manufacturer ID</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: '#424242' }}>Company Name</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: '#424242' }}>Contact Person</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: '#424242' }}>Email</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: '#424242' }}>Status</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: '#424242' }}>Actions</th>
+            <tr style={{ background: 'var(--bg-subtle)', borderBottom: '2px solid var(--border)' }}>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Manufacturer ID</th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Company Name</th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Contact Person</th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Email</th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Status</th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredManufacturers.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: '#757575' }}>
+                <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                   No manufacturers found
                 </td>
               </tr>
             ) : (
               filteredManufacturers.map((mfr) => (
-                <tr key={mfr._id} style={{ borderBottom: '1px solid #e0e0e0' }}>
+                <tr key={mfr._id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '12px', fontFamily: 'monospace', fontSize: '13px' }}>{mfr.manufacturerId || '-'}</td>
                   <td style={{ padding: '12px', fontWeight: 500 }}>{mfr.companyName}</td>
                   <td style={{ padding: '12px' }}>{mfr.name}</td>
-                  <td style={{ padding: '12px', color: '#757575' }}>{mfr.email}</td>
+                  <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{mfr.email}</td>
                   <td style={{ padding: '12px' }}>
                     {mfr.isBanned ? (
                       <span style={{
@@ -192,8 +192,8 @@ const ManageManufacturers = () => {
                         borderRadius: '12px',
                         fontSize: '12px',
                         fontWeight: 600,
-                        background: '#ffebee',
-                        color: '#c62828'
+                        background: 'var(--danger-light)',
+                        color: 'var(--danger)'
                       }}>
                         Banned
                       </span>
@@ -203,8 +203,8 @@ const ManageManufacturers = () => {
                         borderRadius: '12px',
                         fontSize: '12px',
                         fontWeight: 600,
-                        background: '#e8f5e9',
-                        color: '#2e7d32'
+                        background: 'var(--success-light)',
+                        color: 'var(--success)'
                       }}>
                         Active
                       </span>
@@ -227,21 +227,21 @@ const ManageManufacturers = () => {
                             brands: mfr.brands || []
                           });
                         }}
-                        style={{ padding: '6px', background: '#2196f3', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: '#2196f3', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         title="Edit"
                       >
                         <FiEdit size={16} />
                       </button>
                       <button
                         onClick={() => handleBan(mfr._id, !mfr.isBanned)}
-                        style={{ padding: '6px', background: mfr.isBanned ? '#4caf50' : '#ff9800', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: mfr.isBanned ? '#4caf50' : '#ff9800', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         title={mfr.isBanned ? 'Unban' : 'Ban'}
                       >
                         {mfr.isBanned ? <FiEye size={16} /> : <FiEyeOff size={16} />}
                       </button>
                       <button
                         onClick={() => handleDelete(mfr._id)}
-                        style={{ padding: '6px', background: '#f44336', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                         title="Delete"
                       >
                         <FiTrash2 size={16} />
@@ -258,7 +258,7 @@ const ManageManufacturers = () => {
       {/* Add/Edit Modal */}
       {(showAddModal || editingManufacturer) && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: '12px', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>
               {editingManufacturer ? 'Edit Manufacturer' : 'Add New Manufacturer'}
             </h2>
@@ -271,7 +271,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="Contact person name"
                   />
                 </div>
@@ -282,7 +282,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.companyName}
                     onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="Company name"
                   />
                 </div>
@@ -295,7 +295,7 @@ const ManageManufacturers = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="manufacturer@email.com"
                   />
                 </div>
@@ -306,7 +306,7 @@ const ManageManufacturers = () => {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -319,7 +319,7 @@ const ManageManufacturers = () => {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="Password"
                   />
                 </div>
@@ -332,7 +332,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.gstNumber}
                     onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="GST number"
                   />
                 </div>
@@ -343,7 +343,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.panNumber}
                     onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="PAN number"
                   />
                 </div>
@@ -355,7 +355,7 @@ const ManageManufacturers = () => {
                   type="text"
                   value={formData.brands.join(', ')}
                   onChange={(e) => setFormData({...formData, brands: e.target.value.split(',').map(b => b.trim()).filter(b => b)})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                   placeholder="Ray-Ban, Oakley, etc."
                 />
               </div>
@@ -367,7 +367,7 @@ const ManageManufacturers = () => {
                   type="text"
                   value={formData.address.street}
                   onChange={(e) => setFormData({...formData, address: {...formData.address, street: e.target.value}})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                   placeholder="Street address"
                 />
               </div>
@@ -379,7 +379,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.address.city}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, city: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="City"
                   />
                 </div>
@@ -390,7 +390,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.address.state}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, state: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="State"
                   />
                 </div>
@@ -401,7 +401,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.address.pincode}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, pincode: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid #e0e0e0', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
                     placeholder="Pincode"
                   />
                 </div>
@@ -411,7 +411,7 @@ const ManageManufacturers = () => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={editingManufacturer ? handleEdit : handleAdd}
-                style={{ flex: 1, padding: '12px', background: '#00bcd4', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: '#00bcd4', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
               >
                 {editingManufacturer ? 'Update' : 'Add'} Manufacturer
               </button>
@@ -431,7 +431,7 @@ const ManageManufacturers = () => {
                     brands: []
                   });
                 }}
-                style={{ flex: 1, padding: '12px', background: '#e0e0e0', color: '#212121', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
               >
                 Cancel
               </button>

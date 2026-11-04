@@ -21,7 +21,7 @@ const dateLabel = (d) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'nu
 const STATUS_TONE = {
   completed: { color: 'var(--success)', bg: 'var(--success-light)' },
   processing: { color: 'var(--brand)', bg: 'var(--brand-tint)' },
-  pending: { color: 'var(--warning)', bg: '#fdf3e3' },
+  pending: { color: 'var(--warning)', bg: 'var(--warning-light)' },
   failed: { color: 'var(--danger)', bg: 'var(--danger-light)' }
 };
 

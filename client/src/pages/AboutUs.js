@@ -32,7 +32,7 @@ const AboutUs = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <div style={{ background: 'var(--primary)', borderRadius: 'var(--radius-lg)', padding: '48px 32px', textAlign: 'center', marginBottom: '32px', color: '#fff' }}>
+          <div style={{ background: 'var(--primary)', borderRadius: 'var(--radius-lg)', padding: '48px 32px', textAlign: 'center', marginBottom: '32px', color: 'var(--text-white)' }}>
             <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '12px' }}>About OptiKart</h1>
             <p style={{ fontSize: '16px', opacity: 0.9, maxWidth: '600px', margin: '0 auto' }}>India's leading online destination for premium eyewear, bringing clarity and style to millions since 2020.</p>
           </div>

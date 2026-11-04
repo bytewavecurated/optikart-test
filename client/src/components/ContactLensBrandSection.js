@@ -37,10 +37,10 @@ const CONTACT_LENS_BRANDS = [
 
 const styles = {
   section: {
-    background: '#fff',
+    background: 'var(--bg-white)',
     padding: '24px 0',
     marginBottom: '32px',
-    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+    boxShadow: 'var(--shadow)',
     borderRadius: '4px',
   },
   header: {
@@ -76,7 +76,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     padding: '20px',
-    background: '#fafafa',
+    background: 'var(--bg-page)',
     borderRadius: '8px',
     textDecoration: 'none',
     transition: 'all 0.2s',
@@ -144,7 +144,7 @@ export default function ContactLensBrandSection() {
       </div>
       <style>{`
         .brand-card:hover {
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          box-shadow: var(--shadow-lg);
           border-color: var(--primary) !important;
           transform: translateY(-2px);
         }

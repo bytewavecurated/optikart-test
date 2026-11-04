@@ -105,8 +105,8 @@ const Commissions = () => {
               onClick={exportToCSV}
               style={{
                 padding: '10px 20px',
-                background: '#4caf50',
-                color: '#fff',
+                background: 'var(--success)',
+                color: 'var(--text-white)',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
@@ -122,33 +122,33 @@ const Commissions = () => {
 
           {/* Stats Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div className="card" style={{ padding: '20px', borderLeft: '4px solid #2874f0' }}>
+            <div className="card" style={{ padding: '20px', borderLeft: '4px solid var(--brand)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '13px', color: '#666', margin: '0 0 8px 0' }}>Total Commission</p>
-                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#212121', margin: 0 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>Total Commission</p>
+                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     ₹{stats.totalCommission.toLocaleString('en-IN')}
                   </h3>
                 </div>
-                <FiDollarSign size={32} style={{ color: '#2874f0', opacity: 0.3 }} />
+                <FiDollarSign size={32} style={{ color: 'var(--brand)', opacity: 0.3 }} />
               </div>
             </div>
-            <div className="card" style={{ padding: '20px', borderLeft: '4px solid #ff9f00' }}>
+            <div className="card" style={{ padding: '20px', borderLeft: '4px solid var(--warning)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '13px', color: '#666', margin: '0 0 8px 0' }}>Total Orders</p>
-                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#212121', margin: 0 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>Total Orders</p>
+                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     {stats.totalOrders}
                   </h3>
                 </div>
-                <FiPackage size={32} style={{ color: '#ff9f00', opacity: 0.3 }} />
+                <FiPackage size={32} style={{ color: 'var(--warning)', opacity: 0.3 }} />
               </div>
             </div>
             <div className="card" style={{ padding: '20px', borderLeft: '4px solid #26a541' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '13px', color: '#666', margin: '0 0 8px 0' }}>Average Commission</p>
-                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#212121', margin: 0 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>Average Commission</p>
+                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     ₹{Math.round(stats.averageCommission).toLocaleString('en-IN')}
                   </h3>
                 </div>
@@ -158,8 +158,8 @@ const Commissions = () => {
             <div className="card" style={{ padding: '20px', borderLeft: '4px solid #ff6161' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '13px', color: '#666', margin: '0 0 8px 0' }}>Pending Payout</p>
-                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: '#212121', margin: 0 }}>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>Pending Payout</p>
+                  <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     ₹{stats.pendingPayout.toLocaleString('en-IN')}
                   </h3>
                 </div>
@@ -249,7 +249,7 @@ const Commissions = () => {
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: '13px' }}>
                           <div>
-                            <div style={{ fontWeight: 600, color: '#2874f0' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--brand)' }}>
                               ₹{(comm.commissionAmount || 0).toLocaleString('en-IN')}
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>
