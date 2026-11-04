@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiFacebook, FiTwitter, FiYoutube, FiInstagram, FiChevronRight } from 'react-icons/fi';
 import Logo from './Logo';
+import { useSiteFooter } from '../services/homeContent';
 
 const FOOTER_LINKS = {
   about: {
@@ -151,6 +152,23 @@ const styles = {
 };
 
 export default function Footer() {
+  // Column titles, link wording and destinations are editable from the admin
+  // panel; the constants above remain the fallback so the footer is never blank
+  // because a request failed.
+  const site = useSiteFooter();
+  const social = FOOTER_LINKS.social;
+  const columns = site.groups
+    ? [
+        ...site.groups.map((group, i) => [`custom${i}`, {
+          title: group.title,
+          links: (group.links || []).map((l) => ({ label: l.name, href: l.link }))
+        }]),
+        // Editing the link columns must not make the social row disappear - a
+        // footer that silently loses its icons reads as a bug, not an edit.
+        ['social', social]
+      ]
+    : Object.entries(FOOTER_LINKS);
+
   return (
     <footer style={styles.footer}>
       <div style={styles.topBanner}>
@@ -161,7 +179,7 @@ export default function Footer() {
       </div>
 
       <div style={styles.main} className="footer-main">
-        {Object.entries(FOOTER_LINKS).map(([key, col]) => (
+        {columns.map(([key, col]) => (
           <div key={key} style={key === 'social' ? styles.socialColumn : styles.column}>
             <span style={styles.colTitle}>{col.title}</span>
             {key === 'social' ? (
@@ -194,6 +212,21 @@ export default function Footer() {
           </div>
         ))}
       </div>
+
+      {/*
+        An operator may add a line the customer needs to see - a returns notice, a
+        support window, a GST or grievance contact. Empty by default, so nothing
+        changes until someone writes it.
+      */}
+      {(site.footerNote || site.support?.email || site.support?.phone) && (
+        <div style={{ padding: '0 40px 22px', fontSize: '12.5px', color: 'rgba(255,255,255,0.62)' }}>
+          {site.footerNote && <div style={{ maxWidth: 880, marginBottom: 6 }}>{site.footerNote}</div>}
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+            {site.support?.email && <a href={`mailto:${site.support.email}`} style={{ color: 'rgba(255,255,255,0.78)' }}>{site.support.email}</a>}
+            {site.support?.phone && <a href={`tel:${site.support.phone.replace(/[^0-9+]/g, '')}`} style={{ color: 'rgba(255,255,255,0.78)' }}>{site.support.phone}</a>}
+          </div>
+        </div>
+      )}
 
       <div style={styles.bottomBar} className="footer-bottom">
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>

@@ -114,6 +114,77 @@ export const validateHome = (input = {}) => {
 };
 
 /** Public: the overrides only. The client owns the defaults and merges them. */
+/**
+ * Footer and navigation validation. Labels are capped, links must be either an
+ * internal path or an https URL, and a group whose links all failed is reported
+ * rather than saved half-built - a footer column of nothing but a heading looks
+ * like a bug the operator cannot see from the edit screen.
+ */
+const cleanLink = (value, where, errors) => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  if (!/^(\/|https:\/\/)/.test(raw)) {
+    errors.push(`${where}: link must start with / or https://`);
+    return '';
+  }
+  return raw.slice(0, 160);
+};
+
+const cleanNavList = (list, where, errors, maxItems) => {
+  if (!Array.isArray(list)) {
+    errors.push(`${where}: expected a list`);
+    return [];
+  }
+  if (list.length > maxItems) errors.push(`${where}: more than ${maxItems} entries`);
+  return list.slice(0, maxItems).map((raw, i) => {
+    const item = raw || {};
+    const name = str(item.name, 60, `${where} entry ${i + 1} label`, errors);
+    const link = cleanLink(item.link || item.slug || item.path, `${where} entry ${i + 1}`, errors);
+    return { name, link };
+  }).filter((x) => x.name && x.link);
+};
+
+const str = (value, max, where, errors) => {
+  if (value === undefined || value === null || value === '') return '';
+  if (typeof value !== 'string') {
+    errors.push(`${where}: must be text`);
+    return '';
+  }
+  const trimmed = value.trim();
+  if (trimmed.length > max) errors.push(`${where}: longer than ${max} characters`);
+  return trimmed.slice(0, max);
+};
+
+export const validateFooter = (input = {}) => {
+  const errors = [];
+  const out = {};
+  if (input.tagline !== undefined) out.tagline = str(input.tagline, 160, 'Tagline', errors);
+  if (input.footerNote !== undefined) out.footerNote = str(input.footerNote, 300, 'Footer note', errors);
+  if (input.support && typeof input.support === 'object') {
+    out.support = {
+      email: str(input.support.email, 120, 'Support email', errors),
+      phone: str(input.support.phone, 40, 'Support phone', errors)
+    };
+    if (out.support.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(out.support.email)) {
+      errors.push('Support email: not a valid email address');
+      out.support.email = '';
+    }
+  }
+  if (input.nav !== undefined) out.nav = cleanNavList(input.nav, 'Navigation', errors, 16);
+  if (Array.isArray(input.footerGroups)) {
+    if (input.footerGroups.length > 8) errors.push('Footer columns: more than 8');
+    out.footerGroups = input.footerGroups.slice(0, 8).map((group, gi) => {
+      const g = group || {};
+      const title = str(g.title, 40, `Footer column ${gi + 1} heading`, errors);
+      const links = cleanNavList(g.links, `Footer column ${gi + 1}`, errors, 12);
+      if (!title) errors.push(`Footer column ${gi + 1}: needs a heading`);
+      if (title && links.length === 0) errors.push(`Footer column "${title}": needs at least one working link`);
+      return { title, links };
+    }).filter((g) => g.title && g.links.length);
+  }
+  return { errors, clean: out };
+};
+
 router.get('/home', async (req, res) => {
   try {
     const doc = await SiteContent.findOne({ key: 'home' }).lean();
@@ -151,6 +222,49 @@ router.delete('/home', verifyToken, verifyAdmin, async (req, res) => {
     res.json({ success: true, message: 'Storefront content reset to the built-in defaults.' });
   } catch (error) {
     console.error('Site content reset error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+/*
+ * Footer and navigation overrides. Public reads return whichever document
+ * exists; absent means "the client's own defaults", which is what keeps a
+ * database outage from blanking the bottom of every page.
+ */
+router.get('/footer', async (req, res) => {
+  try {
+    const doc = await SiteContent.findOne({ key: 'footer' }).lean();
+    res.json({ success: true, footer: doc || { key: 'footer' } });
+  } catch (error) {
+    console.error('Footer content read error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put('/footer', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { errors, clean } = validateFooter(req.body || {});
+    if (errors.length) {
+      return res.status(400).json({ success: false, message: 'Some values need attention. Nothing was saved.', errors: errors.slice(0, 20) });
+    }
+    const doc = await SiteContent.findOneAndUpdate(
+      { key: 'footer' },
+      { ...clean, key: 'footer', updatedBy: req.user.id || req.user._id, updatedAt: new Date() },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).lean();
+    res.json({ success: true, footer: doc });
+  } catch (error) {
+    console.error('Footer content save error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.delete('/footer', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    await SiteContent.deleteOne({ key: 'footer' });
+    res.json({ success: true, message: 'Footer and navigation reset to the built-in defaults.' });
+  } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });

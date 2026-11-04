@@ -34,6 +34,7 @@ const AdminLayout = () => {
     { label: 'Delivery', path: '/admin/delivery', icon: <FiTruck /> },
     { label: 'Delivery Partners', path: '/admin/delivery-partners', icon: <FiTruck /> },
     { label: 'Storefront Content', path: '/admin/site-content', icon: <FiImage /> },
+    { label: 'Footer & Nav', path: '/admin/site-footer', icon: <FiImage /> },
   ];
 
   const isActive = (item) => {

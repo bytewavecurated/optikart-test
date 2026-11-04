@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import Logo from './Logo';
 import { STOREFRONT_NAV } from '../utils/catalogTaxonomy';
+import { useSiteFooter } from '../services/homeContent';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +96,9 @@ const Header = () => {
 
   // Shared with the browse page so the second-hand nav and the filter column
   // can never list different shops.
-  const categories = STOREFRONT_NAV;
+  // The administrator can relabel or retire entries in the category strip.
+  const siteFooter = useSiteFooter();
+  const categories = siteFooter.nav || STOREFRONT_NAV;
 
   const displayName = user?.name || seller?.storeName || seller?.businessName || 'Account';
 

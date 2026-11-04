@@ -100,3 +100,38 @@ export function useHomeContent() {
     defaults: { headings: DEFAULT_HEADINGS, visible: DEFAULT_VISIBLE }
   };
 }
+
+/**
+ * Footer and navigation overrides, merged over the defaults that live in the
+ * components. Same rule as the home content: the API holds only what an
+ * administrator changed, so a failed request still renders a complete footer.
+ */
+export function useSiteFooter() {
+  const [stored, setStored] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    api.get('/site-content/footer')
+      .then((res) => { if (alive) setStored(res.data.footer || {}); })
+      .catch(() => { if (alive) setStored({}); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  const navList = (stored.nav || []).length
+    ? stored.nav.map((item) => ({ name: item.name, path: item.link }))
+    : null;
+
+  return {
+    loading,
+    stored,
+    tagline: stored.tagline || '',
+    footerNote: stored.footerNote || '',
+    support: stored.support || {},
+    nav: navList,
+    groups: (stored.footerGroups || []).length ? stored.footerGroups : null,
+    hasOverrides: Boolean((stored.nav || []).length || (stored.footerGroups || []).length
+      || stored.tagline || stored.footerNote || (stored.support && (stored.support.email || stored.support.phone)))
+  };
+}

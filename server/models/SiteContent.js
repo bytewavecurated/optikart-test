@@ -26,7 +26,7 @@ const entrySchema = new mongoose.Schema({
 }, { _id: false });
 
 const homeSchema = new mongoose.Schema({
-  key: { type: String, required: true, unique: true, enum: ['home'] },
+  key: { type: String, required: true, unique: true, enum: ['home', 'footer'] },
 
   headings: {
     categories: { type: String, maxlength: 80, default: '' },
@@ -59,6 +59,29 @@ const homeSchema = new mongoose.Schema({
   frameMaterials: { type: [String], default: [] },
   promoTiles: { type: [entrySchema], default: [] },
   genderTiles: { type: [entrySchema], default: [] },
+
+  /*
+   * Navigation labels the storefront shows in the category strip. A shop that
+   * renames "Solution" to "Lens Care" for its market should not need a deploy to
+   * say so, and an operator who retires a section wants it gone from the bar, not
+   * labelled at a page that no longer exists.
+   */
+  nav: { type: [entrySchema], default: [] },
+
+  // Footer-only fields; unused on the home document.
+  tagline: { type: String, maxlength: 160, default: '' },
+  footerNote: { type: String, maxlength: 300, default: '' },
+  support: {
+    email: { type: String, maxlength: 120, default: '' },
+    phone: { type: String, maxlength: 40, default: '' }
+  },
+  footerGroups: {
+    type: [{
+      title: { type: String, required: true, trim: true, maxlength: 40 },
+      links: { type: [entrySchema], default: [] }
+    }],
+    default: []
+  },
 
   notes: { type: String, maxlength: 400, default: '' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

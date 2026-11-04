@@ -27,6 +27,7 @@ const BlogManagement = lazy(() => import('./pages/admin/BlogManagement'));
 const DeliveryManagement = lazy(() => import('./pages/admin/DeliveryManagement'));
 const ManageDeliveryPartners = lazy(() => import('./pages/admin/ManageDeliveryPartners'));
 const SiteContentManagement = lazy(() => import('./pages/admin/SiteContentManagement'));
+const SiteFooterManagement = lazy(() => import('./pages/admin/SiteFooterManagement'));
 const PriceChangeConfirm = lazy(() => import('./pages/account/PriceChangeConfirm'));
 const SaleEvents = lazy(() => import('./pages/admin/SaleEvents'));
 const BannerManagement = lazy(() => import('./pages/admin/BannerManagement'));
@@ -239,6 +240,7 @@ function App() {
           <Route path="delivery" element={<DeliveryManagement />} />
           <Route path="delivery-partners" element={<ManageDeliveryPartners />} />
           <Route path="site-content" element={<SiteContentManagement />} />
+          <Route path="site-footer" element={<SiteFooterManagement />} />
           <Route path="sale-events" element={<SaleEvents />} />
           <Route path="banners" element={<BannerManagement />} />
           <Route path="executives" element={<ManageExecutives />} />
