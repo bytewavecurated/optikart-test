@@ -308,13 +308,31 @@ router.put('/update-profile', verifySeller, async (req, res) => {
 router.get('/orders', verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
-    const { status, page = 1, limit = 10 } = req.query;
+    const { status, page = 1, limit = 10, q } = req.query;
 
     const query = { seller: sellerId };
     if (status) query.orderStatus = status;
+    /*
+     * A shop with a few hundred orders cannot work from a page of ten sorted by
+     * date, so the panel searches by order number, buyer phone or name. The
+     * pattern is escaped because it comes from a query string.
+     */
+    if (q && String(q).trim()) {
+      const needle = String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const rx = new RegExp(needle, 'i');
+      query.$or = [
+        { orderNumber: rx },
+        { 'shippingAddress.phone': rx },
+        { 'shippingAddress.name': rx },
+        { 'shippingAddress.pincode': rx }
+      ];
+    }
 
     const orders = await Order.find(query)
       .populate('items.product', 'title images price')
+      // Lines carry their own sold price; the seller list must show what was
+      // charged, not what the item costs today.
+      .select('orderNumber orderStatus createdAt deliveredAt totalAmount subtotal paymentMethod paymentStatus shippingAddress items user deliveryAssignmentMode assignedDeliveryPartner')
       .populate('user', 'name email phone')
       .sort({ createdAt: -1 })
       .limit(limit * 1)

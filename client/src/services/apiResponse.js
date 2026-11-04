@@ -55,3 +55,21 @@ export const oneOf = (payload, ...keys) => {
   }
   return null;
 };
+
+/**
+ * Reading page metadata has to tolerate the same envelope choices as the list
+ * helper above; a page that silently resets to 1 whenever the shape differs is
+ * how a seller ends up believing they have ten orders.
+ */
+export const paginationOf = (payload) => {
+  const p = (payload && (payload.pagination || payload.meta))
+    || (payload && payload.data && (payload.data.pagination || payload.data.meta))
+    || null;
+  if (!p) return null;
+  return {
+    total: Number(p.total ?? p.totalItems ?? 0) || 0,
+    page: Number(p.page ?? p.current ?? 1) || 1,
+    pages: Number(p.pages ?? p.totalPages ?? 1) || 1,
+    limit: Number(p.limit ?? p.pageSize ?? 10) || 10
+  };
+};
