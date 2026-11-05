@@ -44,7 +44,7 @@ const HelpCenter = () => {
           <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', marginBottom: '24px' }}>Find answers to common questions</p>
           <div style={{ maxWidth: '500px', margin: '0 auto', position: 'relative' }}>
             <FiSearch style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '18px' }} />
-            <input type="text" placeholder="Search for help articles..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: '8px', border: 'none', fontSize: '15px' }} />
+            <input type="text" placeholder="Search for help articles..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 'var(--radius-md)', border: 'none', fontSize: '15px' }} />
           </div>
         </div>
 

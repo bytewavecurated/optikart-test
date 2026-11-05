@@ -38,7 +38,7 @@ const BrandPage = () => {
             <Link to="/" style={{ color: 'var(--primary)' }}>Home</Link> / <Link to="/brands" style={{ color: 'var(--primary)' }}>Brands</Link> / <span>{brandName}</span>
           </nav>
 
-          <div style={{ background: 'var(--bg-white)', borderRadius: '8px', padding: '24px', marginBottom: '24px', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-md)', padding: '24px', marginBottom: '24px', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: 700 }}>{brandName}</h1>
               <p style={{ fontSize: '14px', color: 'var(--text-light)', marginTop: '4px' }}>{productsList.length} products available</p>

@@ -152,7 +152,7 @@ const ProductCompare = () => {
               </div>
 
               {searchResults.length > 0 && (
-                <div style={{ marginTop: '12px', border: '1px solid var(--border)', borderRadius: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                <div style={{ marginTop: '12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', maxHeight: '300px', overflowY: 'auto' }}>
                   {searchResults.map(product => (
                     <div
                       key={product._id}
@@ -172,7 +172,7 @@ const ProductCompare = () => {
                       <img
                         src={product.images?.[0] || '/placeholder.svg'}
                         alt={product.name}
-                        style={{ width: '60px', height: '60px', objectFit: 'contain', borderRadius: '4px' }}
+                        style={{ width: '60px', height: '60px', objectFit: 'contain', borderRadius: 'var(--radius-xs)' }}
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '14px', fontWeight: 500 }}>{product.name}</div>

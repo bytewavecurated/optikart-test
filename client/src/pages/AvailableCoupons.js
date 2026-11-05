@@ -74,7 +74,7 @@ const AvailableCoupons = () => {
                   {coupon.validUntil && (
                     <div style={{ fontSize: '12px', color: 'var(--text-light)', marginBottom: '12px' }}>Valid till: {new Date(coupon.validUntil).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                   )}
-                  <button onClick={() => handleCopy(coupon.code)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'var(--bg-primary)', borderRadius: '4px', border: '1px dashed var(--primary)', fontSize: '14px', fontWeight: 600, color: 'var(--primary)', cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                  <button onClick={() => handleCopy(coupon.code)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-xs)', border: '1px dashed var(--primary)', fontSize: '14px', fontWeight: 600, color: 'var(--primary)', cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
                     {copiedCode === coupon.code ? <><FiCheck size={14} /> Copied!</> : <><FiCopy size={14} /> {coupon.code}</>}
                   </button>
                 </div>

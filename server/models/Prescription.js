@@ -31,6 +31,12 @@ const prescriptionSchema = new mongoose.Schema({
   },
   fileUrl: { type: String },
   /*
+   * Earlier versions of the same prescription. A verifier replacing a blurry scan
+   * must not lose what the customer originally sent - that is the record a
+   * disputed order gets judged on.
+   */
+  previousFiles: { type: [String], default: [] },
+  /*
    * Both writers below already assigned this field, but it was never declared -
    * mongoose dropped an unknown path silently, so the record's own status never
    * changed even after a human decision was recorded.

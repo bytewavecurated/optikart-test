@@ -437,6 +437,10 @@ export const executive = {
   getDeliveryDetails: (id) => api.get(`/executive/deliveries/${id}`),
   updateDeliveryStatus: (id, status) => api.put(`/executive/deliveries/${id}/status`, { status }),
   resolveDeliveryIssue: (id) => api.put(`/executive/deliveries/${id}/issue/resolve`),
+  getTeam: () => api.get('/executive/staff'),
+  addTeamMember: (data) => api.post('/executive/staff', data),
+  updateTeamMember: (id, data) => api.put(`/executive/staff/${id}`, data),
+  deactivateTeamMember: (id) => api.delete(`/executive/staff/${id}`),
 };
 
 // Manufacturers API (public)
@@ -455,5 +459,7 @@ export const prescriptionVerification = {
   pending: () => api.get('/prescription-verification/pending'),
   all: (params) => api.get('/prescription-verification', { params }),
   approve: (id, notes) => api.post(`/prescription-verification/${id}/approve`, { notes }),
+  attachDocument: (id, fileUrl, note) => api.patch(`/prescription-verification/${id}/document`, { fileUrl, note }),
+  uploadFile: (formData) => api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   reject: (id, reason) => api.post(`/prescription-verification/${id}/reject`, { reason })
 };

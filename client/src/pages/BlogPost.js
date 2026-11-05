@@ -87,7 +87,7 @@ const BlogPost = () => {
             <span>By {post.author?.name || 'OptiKart Team'}</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiClock size={12} /> {new Date(post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
-          <img src={post.coverImage || '/placeholder.svg'} alt={post.title} style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '8px', marginBottom: '24px' }} />
+          <img src={post.coverImage || '/placeholder.svg'} alt={post.title} style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: '24px' }} />
           <div style={{ fontSize: '16px', lineHeight: 1.8, color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: post.content }} />
 
           <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
@@ -112,7 +112,7 @@ const BlogPost = () => {
             {post.comments?.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {post.comments.map((c, idx) => (
-                  <div key={idx} style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                  <div key={idx} style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ fontSize: '14px', fontWeight: 500 }}>{c.userName || 'Anonymous'}</span>
                       <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>{new Date(c.createdAt).toLocaleDateString()}</span>

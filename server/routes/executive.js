@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import Executive from '../models/Executive.js';
-import ExecutiveStaff from '../models/ExecutiveStaff.js';
+import StaffRole from '../models/StaffRole.js';
 import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import Order from '../models/Order.js';
@@ -223,90 +223,152 @@ router.get('/dashboard', verifyExecutive, async (req, res) => {
   }
 });
 
-// Get Executive Staff
+/*
+ * Desk team.
+ *
+ * These endpoints used to read and write a private `ExecutiveStaff` collection:
+ * records with a password field, and no login route anywhere that accepts it. So
+ * every person "added" from the desk was an account nobody could sign in to, while
+ * the staff workspace was fed by entirely separate accounts only an administrator
+ * could create. Both desks now manage the same User + StaffRole pair, and an
+ * executive's view is limited to their own department.
+ */
+const STAFF_ROLES = ['blog_manager', 'doc_verifier', 'user_manager', 'seller_manager',
+  'finance_manager', 'delivery_manager', 'pickup_manager'];
+
+/** Only this department's records, unless a hire predates the department field. */
+const inOwnDepartment = (executive, staff) =>
+  !executive?.department || !staff.department || staff.department === executive.department;
+
 router.get('/staff', verifyExecutive, async (req, res) => {
   try {
     const executive = await Executive.findById(req.executive._id);
-    
-    if (!executive) {
-      return res.status(404).json({ success: false, message: 'Executive not found.' });
-    }
+    if (!executive) return res.status(404).json({ success: false, message: 'Executive not found.' });
 
-    const { department } = req.query;
-    const query = department ? { department } : {};
-    
-    const staff = await ExecutiveStaff.find(query).select('-password');
-    
-    res.json({
-      success: true,
-      data: staff
-    });
+    const query = executive.department ? { department: executive.department } : {};
+    const staff = await StaffRole.find(query).populate('admin', 'name email').sort({ createdAt: -1 }).lean();
+
+    const rows = [];
+    for (const s of staff) {
+      const account = await User.findOne({ email: s.email }).select('isActive lastLoginAt').lean();
+      rows.push({ ...s, hasLogin: !!account, accountActive: !!account?.isActive });
+    }
+    res.json({ success: true, data: rows, staff: rows });
   } catch (error) {
-    console.error('Get staff error:', error);
+    console.error('Get team error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 
-// Add Executive Staff
 router.post('/staff', verifyExecutive, async (req, res) => {
   try {
     const executive = await Executive.findById(req.executive._id);
-    
-    if (!executive) {
-      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    if (!executive) return res.status(404).json({ success: false, message: 'Executive not found.' });
+
+    const name = String(req.body.name || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const role = String(req.body.role || '').trim();
+    const password = String(req.body.password || '');
+    const permissions = Array.isArray(req.body.permissions) ? req.body.permissions.map(String) : [];
+
+    if (!name || !email) return res.status(400).json({ success: false, message: 'Name and email are required.' });
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ success: false, message: 'A valid email address is required.' });
+    if (!STAFF_ROLES.includes(role)) {
+      return res.status(400).json({ success: false, message: `Role must be one of: ${STAFF_ROLES.join(', ')}` });
+    }
+    if (password && password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+    }
+    if (await StaffRole.findOne({ email })) {
+      return res.status(400).json({ success: false, message: 'A staff record for this email already exists.' });
     }
 
-    const { name, email, password, role, department } = req.body;
+    // A generated password is returned once. A desk that cannot hand over the
+    // credentials it just created has produced an unusable account, which is
+    // precisely what this endpoint used to do.
+    const generated = !password;
+    const tempPassword = generated ? `Staff${Date.now()}@` : password;
 
-    const existingStaff = await ExecutiveStaff.findOne({ email });
-    if (existingStaff) {
-      return res.status(400).json({ success: false, message: 'Email already registered.' });
+    let account = await User.findOne({ email });
+    if (!account) {
+      account = await User.create({ name, email, password: tempPassword, phone: String(req.body.phone || ''), role: 'staff' });
+    } else if (!account.isActive) {
+      account.isActive = true;
+      await account.save();
     }
 
-    const staff = new ExecutiveStaff({
-      name,
+    const staff = await StaffRole.create({
+      admin: executive.createdBy || null,
+      createdByExecutive: executive._id,
       email,
-      password,
+      name,
       role,
-      department: department || executive.department,
-      createdBy: executive._id
+      permissions,
+      department: executive.department || ''
     });
-
-    await staff.save();
 
     res.status(201).json({
       success: true,
-      message: 'Staff added successfully.',
-      data: staff.toJSON()
+      message: 'Team member added.',
+      tempPassword: generated ? tempPassword : undefined,
+      loginCreated: !password && !!account,
+      data: staff
     });
   } catch (error) {
-    console.error('Add staff error:', error);
+    console.error('Add team member error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 
-// Delete Executive Staff
+router.put('/staff/:id', verifyExecutive, async (req, res) => {
+  try {
+    const executive = await Executive.findById(req.executive._id);
+    const staff = await StaffRole.findById(req.params.id);
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff record not found.' });
+    if (!inOwnDepartment(executive, staff)) {
+      return res.status(403).json({ success: false, message: 'That person is not part of your department.' });
+    }
+
+    const role = String(req.body.role || '').trim();
+    if (role) {
+      if (!STAFF_ROLES.includes(role)) {
+        return res.status(400).json({ success: false, message: `Role must be one of: ${STAFF_ROLES.join(', ')}` });
+      }
+      staff.role = role;
+    }
+    if (Array.isArray(req.body.permissions)) staff.permissions = req.body.permissions.map(String);
+    if (req.body.isActive !== undefined) staff.isActive = !!req.body.isActive;
+    await staff.save();
+
+    // The workspace trusts the account, so both halves change together: leaving
+    // an "off" staff record attached to a live login keeps a disabled person
+    // signing in.
+    await User.updateOne({ email: staff.email, role: 'staff' }, { $set: { isActive: !!staff.isActive } });
+    res.json({ success: true, message: 'Team member updated.', data: staff });
+  } catch (error) {
+    console.error('Update team member error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 router.delete('/staff/:id', verifyExecutive, async (req, res) => {
   try {
     const executive = await Executive.findById(req.executive._id);
-    
-    if (!executive) {
-      return res.status(404).json({ success: false, message: 'Executive not found.' });
+    const staff = await StaffRole.findById(req.params.id);
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff record not found.' });
+    if (!inOwnDepartment(executive, staff)) {
+      return res.status(403).json({ success: false, message: 'That person is not part of your department.' });
     }
 
-    const staff = await ExecutiveStaff.findById(req.params.id);
-    if (!staff) {
-      return res.status(404).json({ success: false, message: 'Staff not found.' });
-    }
-
-    await ExecutiveStaff.findByIdAndDelete(req.params.id);
-
-    res.json({
-      success: true,
-      message: 'Staff deleted successfully.'
-    });
+    // Deactivate rather than delete: this record may have verified prescriptions
+    // or handled orders under its own id, and erasing it removes the audit trail
+    // those decisions rely on.
+    staff.isActive = false;
+    await staff.save();
+    await User.updateOne({ email: staff.email, role: 'staff' }, { $set: { isActive: false } });
+    res.json({ success: true, message: 'Team member deactivated; their history is kept.' });
   } catch (error) {
-    console.error('Delete staff error:', error);
+    console.error('Deactivate team member error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });

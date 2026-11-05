@@ -1,7 +1,9 @@
 import mongoose from 'mongoose';
 
 const staffRoleSchema = new mongoose.Schema({
-  admin: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  // The administrator (or, for a desk hire, the executive) who created the
+  // account. Optional because an executive can now add their own team member.
+  admin: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -16,6 +18,9 @@ const staffRoleSchema = new mongoose.Schema({
     enum: ['blog_manager', 'doc_verifier', 'user_manager', 'seller_manager', 'finance_manager', 'delivery_manager', 'pickup_manager']
   },
   permissions: [String],
+  // Which desk the person works in. Executives only see and manage their own.
+  department: { type: String, default: '' },
+  createdByExecutive: { type: mongoose.Schema.Types.ObjectId, ref: 'Executive', default: null },
   isActive: { type: Boolean, default: true },
   lastLoginAt: { type: Date }
 }, {

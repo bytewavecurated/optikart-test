@@ -209,7 +209,7 @@ const CustomerReturnPortal = () => {
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Select Items to Return</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {eligibility.items.map((item, index) => (
-              <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '2px solid var(--border)', borderRadius: '8px' }}>
+              <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '2px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
                 <input
                   type="checkbox"
                   checked={selectedItems.some(si => si.productId === item.product._id)}
@@ -219,7 +219,7 @@ const CustomerReturnPortal = () => {
                 <img
                   src={item.product.images?.[0] || '/placeholder.svg'}
                   alt={item.product.title}
-                  style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
+                  style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
@@ -331,7 +331,7 @@ const CustomerReturnPortal = () => {
                   <img
                     src={URL.createObjectURL(img)}
                     alt={`Upload ${index + 1}`}
-                    style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
+                    style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
                   />
                   <button
                     onClick={() => removeImage(index)}

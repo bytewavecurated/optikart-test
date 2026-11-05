@@ -167,7 +167,7 @@ const LensSelection = () => {
             {/* Step Indicator */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
               {[1, 2, 3, 4].map((s) => (
-                <div key={s} style={{ flex: 1, height: '4px', background: step >= s ? 'var(--primary)' : 'var(--border)', borderRadius: '2px' }} />
+                <div key={s} style={{ flex: 1, height: '4px', background: step >= s ? 'var(--primary)' : 'var(--border)', borderRadius: 'var(--radius-2xs)' }} />
               ))}
             </div>
 

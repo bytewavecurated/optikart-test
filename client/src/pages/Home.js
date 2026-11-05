@@ -71,7 +71,7 @@ const sectionHeading = (title, subtitle) => (
 const viewAllLink = {
   display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)',
   fontSize: '14px', fontWeight: 600, textDecoration: 'none', padding: '10px 18px',
-  borderRadius: '8px', background: 'var(--primary-light)'
+  borderRadius: 'var(--radius-md)', background: 'var(--primary-light)'
 };
 
 /*

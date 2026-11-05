@@ -26,19 +26,19 @@ root.render(
                   background: 'var(--bg-white)',
                   color: 'var(--text-primary)',
                   boxShadow: 'var(--shadow-lg)',
-                  borderRadius: '4px',
+                  borderRadius: 'var(--radius-xs)',
                   fontSize: '14px',
                 },
                 success: {
                   iconTheme: {
-                    primary: '#26a541',
-                    secondary: '#fff',
+                    primary: 'var(--success)',
+                    secondary: 'var(--bg-white)',
                   },
                 },
                 error: {
                   iconTheme: {
-                    primary: '#ff6161',
-                    secondary: '#fff',
+                    primary: 'var(--danger)',
+                    secondary: 'var(--bg-white)',
                   },
                 },
               }}

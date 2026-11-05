@@ -28,6 +28,7 @@ const DeliveryManagement = lazy(() => import('./pages/admin/DeliveryManagement')
 const ManageDeliveryPartners = lazy(() => import('./pages/admin/ManageDeliveryPartners'));
 const SiteContentManagement = lazy(() => import('./pages/admin/SiteContentManagement'));
 const SiteFooterManagement = lazy(() => import('./pages/admin/SiteFooterManagement'));
+const AdminPrescriptionQueue = lazy(() => import('./pages/admin/PrescriptionVerificationQueue'));
 const PriceChangeConfirm = lazy(() => import('./pages/account/PriceChangeConfirm'));
 const SaleEvents = lazy(() => import('./pages/admin/SaleEvents'));
 const BannerManagement = lazy(() => import('./pages/admin/BannerManagement'));
@@ -241,6 +242,7 @@ function App() {
           <Route path="delivery-partners" element={<ManageDeliveryPartners />} />
           <Route path="site-content" element={<SiteContentManagement />} />
           <Route path="site-footer" element={<SiteFooterManagement />} />
+          <Route path="prescriptions" element={<AdminPrescriptionQueue />} />
           <Route path="sale-events" element={<SaleEvents />} />
           <Route path="banners" element={<BannerManagement />} />
           <Route path="executives" element={<ManageExecutives />} />
@@ -318,6 +320,7 @@ function App() {
         <Route path="/executive/deliveries" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="deliveries" /></ProtectedRoute>} />
         <Route path="/executive/customers" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="customers" /></ProtectedRoute>} />
         <Route path="/executive/reports" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="reports" /></ProtectedRoute>} />
+        <Route path="/executive/team" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="team" /></ProtectedRoute>} />
         <Route path="/executive/delivery/:id" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="detail" /></ProtectedRoute>} />
         <Route path="/manufacturer/login" element={<ManufacturerLogin />} />
         <Route path="/manufacturer/dashboard" element={<ProtectedRoute allowedRoles={['manufacturer']}><ManufacturerDashboard /></ProtectedRoute>} />

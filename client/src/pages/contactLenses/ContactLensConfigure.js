@@ -34,7 +34,7 @@ const Stepper = ({ steps, index }) => (
             width: 24, height: 24, borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 12, fontWeight: 700,
             background: i < index ? 'var(--success)' : i === index ? 'var(--brand)' : 'var(--bg-subtle)',
-            color: i <= index ? '#fff' : 'var(--text-light)'
+            color: i <= index ? 'var(--text-white)' : 'var(--text-light)'
           }}>
             {i < index ? <FiCheck size={13} /> : i + 1}
           </span>

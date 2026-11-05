@@ -9,6 +9,9 @@ import {
   getAllVerifications
 } from '../services/prescriptionVerification.js';
 
+import Prescription from '../models/Prescription.js';
+import PrescriptionVerification from '../models/PrescriptionVerification.js';
+
 const router = express.Router();
 
 /**
@@ -150,6 +153,51 @@ router.get('/', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
  * POST /api/prescription-verification/:id/approve
  * Approve prescription verification (admin)
  */
+/*
+ * A clearer photograph than the one the customer uploaded is a normal outcome of
+ * checking - the scan is blurry, the numbers are cut off, the wrong page came
+ * through. Without a way to attach the better copy here, the verifier's only
+ * option is to reject and hope the customer uploads it somewhere else, and the
+ * conversation ends up in email with nothing recorded on the prescription.
+ *
+ * The previous file is kept: prescription images are evidence, and overwriting
+ * what a customer sent destroys the thing a later decision may need to refer to.
+ */
+router.patch('/:id/document', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
+  try {
+    const fileUrl = String(req.body?.fileUrl || '').trim();
+    const note = String(req.body?.note || '').trim().slice(0, 300);
+    if (!/^(\/uploads\/|https:\/\/)/.test(fileUrl)) {
+      return res.status(400).json({ success: false, message: 'Attach a file through the upload endpoint first; send back the /uploads/prescriptions/... address it returns.' });
+    }
+
+    const verification = await PrescriptionVerification.findById(req.params.id);
+    if (!verification) return res.status(404).json({ success: false, message: 'Verification not found.' });
+
+    const prescription = await Prescription.findById(verification.prescription);
+    if (!prescription) return res.status(404).json({ success: false, message: 'Prescription not found.' });
+
+    if (!Array.isArray(prescription.previousFiles)) {
+      prescription.previousFiles = [];
+    }
+    if (prescription.fileUrl && !prescription.previousFiles.includes(prescription.fileUrl)) {
+      prescription.previousFiles.push(prescription.fileUrl);
+    }
+    prescription.fileUrl = fileUrl;
+    if (note) prescription.notes = [prescription.notes, `Verifier note: ${note}`].filter(Boolean).join('\n');
+    await prescription.save();
+
+    prescription.validatedBy = req.user.id || req.user._id;
+    prescription.validatedAt = new Date();
+    await prescription.save();
+
+    res.json({ success: true, message: 'Document attached to the prescription.', fileUrl, previousFiles: prescription.previousFiles });
+  } catch (error) {
+    console.error('Attach prescription document error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 router.post('/:id/approve', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
   try {
     const { id } = req.params;
