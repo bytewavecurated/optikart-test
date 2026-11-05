@@ -174,7 +174,7 @@ const SmartChoice = () => {
               background: 'var(--primary)',
               color: 'var(--text-white)',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
               fontSize: '14px',
               fontWeight: 500
@@ -230,7 +230,7 @@ const SmartChoice = () => {
                       <span style={{ 
                         padding: '2px 8px', 
                         background: 'var(--bg-primary)', 
-                        borderRadius: '4px',
+                        borderRadius: 'var(--radius-xs)',
                         fontSize: '11px',
                         textTransform: 'capitalize'
                       }}>

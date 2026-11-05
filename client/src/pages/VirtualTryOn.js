@@ -139,7 +139,7 @@ const VirtualTryOn = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <main style={{ flex: 1, background: '#f8f9fa' }}>
+      <main style={{ flex: 1, background: 'var(--bg-page)' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
           <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '8px', color: 'var(--primary)' }}>
             Virtual Try-On
@@ -153,7 +153,7 @@ const VirtualTryOn = () => {
             <div>
               <div style={{ 
                 background: '#000', 
-                borderRadius: '12px', 
+                borderRadius: 'var(--radius)', 
                 overflow: 'hidden', 
                 position: 'relative',
                 aspectRatio: '16/9',
@@ -193,7 +193,7 @@ const VirtualTryOn = () => {
                         background: 'var(--action)',
                         color: 'var(--text-white)',
                         border: 'none',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--radius-md)',
                         fontSize: '16px',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -216,7 +216,7 @@ const VirtualTryOn = () => {
                     background: 'rgba(0,0,0,0.7)',
                     color: 'var(--text-white)',
                     padding: '8px 16px',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--radius-md)',
                     fontSize: '14px'
                   }}>
                     Trying: {selectedProduct.title}
@@ -235,7 +235,7 @@ const VirtualTryOn = () => {
                       background: 'var(--action)',
                       color: 'var(--text-white)',
                       border: 'none',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--radius-md)',
                       fontSize: '14px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -255,7 +255,7 @@ const VirtualTryOn = () => {
                       background: 'var(--danger)',
                       color: 'var(--text-white)',
                       border: 'none',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--radius-md)',
                       fontSize: '14px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -280,10 +280,10 @@ const VirtualTryOn = () => {
                       style={{
                         flex: 1,
                         padding: '10px',
-                        background: currentAngle === angle ? 'var(--action)' : '#fff',
-                        color: currentAngle === angle ? '#fff' : 'var(--text-primary)',
+                        background: currentAngle === angle ? 'var(--action)' : 'var(--bg-white)',
+                        color: currentAngle === angle ? 'var(--text-white)' : 'var(--text-primary)',
                         border: `1px solid ${currentAngle === angle ? 'var(--action)' : 'var(--border)'}`,
-                        borderRadius: '8px',
+                        borderRadius: 'var(--radius-md)',
                         fontSize: '13px',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -300,7 +300,7 @@ const VirtualTryOn = () => {
               {capturedImage && (
                 <div style={{ 
                   background: 'var(--bg-white)', 
-                  borderRadius: '12px', 
+                  borderRadius: 'var(--radius)', 
                   padding: '16px',
                   marginBottom: '16px'
                 }}>
@@ -312,7 +312,7 @@ const VirtualTryOn = () => {
                     alt="Captured" 
                     style={{ 
                       width: '100%', 
-                      borderRadius: '8px',
+                      borderRadius: 'var(--radius-md)',
                       marginBottom: '12px'
                     }}
                   />
@@ -325,7 +325,7 @@ const VirtualTryOn = () => {
                         background: 'var(--success)',
                         color: 'var(--text-white)',
                         border: 'none',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--radius-md)',
                         fontSize: '14px',
                         fontWeight: 600,
                         cursor: 'pointer',
@@ -345,7 +345,7 @@ const VirtualTryOn = () => {
                         background: 'var(--bg-white)',
                         color: 'var(--text-primary)',
                         border: '1px solid var(--border)',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--radius-md)',
                         fontSize: '14px',
                         fontWeight: 600,
                         cursor: 'pointer'
@@ -361,7 +361,7 @@ const VirtualTryOn = () => {
               {savedPhotos.length > 0 && (
                 <div style={{ 
                   background: 'var(--bg-white)', 
-                  borderRadius: '12px', 
+                  borderRadius: 'var(--radius)', 
                   padding: '16px'
                 }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
@@ -377,7 +377,7 @@ const VirtualTryOn = () => {
                             width: '100%', 
                             aspectRatio: '16/9',
                             objectFit: 'cover',
-                            borderRadius: '8px'
+                            borderRadius: 'var(--radius-md)'
                           }}
                         />
                         <button
@@ -407,7 +407,7 @@ const VirtualTryOn = () => {
                           background: 'rgba(0,0,0,0.7)',
                           color: 'var(--text-white)',
                           padding: '4px 8px',
-                          borderRadius: '4px',
+                          borderRadius: 'var(--radius-xs)',
                           fontSize: '11px',
                           textTransform: 'capitalize'
                         }}>
@@ -424,7 +424,7 @@ const VirtualTryOn = () => {
             <div>
               <div style={{ 
                 background: 'var(--bg-white)', 
-                borderRadius: '12px', 
+                borderRadius: 'var(--radius)', 
                 padding: '16px',
                 position: 'sticky',
                 top: '20px'
@@ -452,7 +452,7 @@ const VirtualTryOn = () => {
                         style={{
                           padding: '12px',
                           border: `2px solid ${selectedProduct?._id === product._id ? 'var(--action)' : 'var(--border)'}`,
-                          borderRadius: '8px',
+                          borderRadius: 'var(--radius-md)',
                           cursor: 'pointer',
                           transition: 'all 0.2s'
                         }}
@@ -465,7 +465,7 @@ const VirtualTryOn = () => {
                               width: '100%',
                               height: '120px',
                               objectFit: 'cover',
-                              borderRadius: '6px',
+                              borderRadius: 'var(--radius-sm)',
                               marginBottom: '8px'
                             }}
                           />

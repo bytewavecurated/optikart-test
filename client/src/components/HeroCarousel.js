@@ -31,7 +31,7 @@ const styles = {
     margin: '16px auto',
     overflow: 'hidden',
     background: 'var(--bg-subtle)',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius)',
     boxShadow: 'var(--shadow)',
   },
   track: {
@@ -81,7 +81,7 @@ const styles = {
   },
   lineIndicator: {
     height: '4px',
-    borderRadius: '2px',
+    borderRadius: 'var(--radius-2xs)',
     border: 'none',
     cursor: 'pointer',
     transition: 'all 0.3s ease',

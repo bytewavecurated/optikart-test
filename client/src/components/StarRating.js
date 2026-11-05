@@ -125,7 +125,7 @@ export default function StarRating({
   interactive = false,
   onChange,
   showNumber = true,
-  color = '#ff9f00',
+  color = 'var(--warning)',
 }) {
   const [hoverRating, setHoverRating] = useState(0);
   const displayRating = hoverRating || rating;
@@ -159,7 +159,7 @@ export default function StarRating({
               fill={fill}
               size={size}
               color={color}
-              hoverColor={interactive ? '#ffb84d' : color}
+              hoverColor={interactive ? 'var(--rating-gold)' : color}
               interactive={interactive}
               onMouseEnter={() => handleMouseEnter(i)}
               onMouseLeave={handleMouseLeave}

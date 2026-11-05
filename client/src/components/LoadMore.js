@@ -12,7 +12,7 @@ const styles = {
   button: {
     background: 'var(--bg-white)',
     border: '1px solid #c2c2c2',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     padding: '12px 48px',
     fontSize: '15px',
     fontWeight: 600,
@@ -26,7 +26,7 @@ const styles = {
     justifyContent: 'center',
   },
   buttonHover: {
-    background: '#f0f6ff',
+    background: 'var(--brand-tint)',
     borderColor: 'var(--brand)',
   },
   buttonDisabled: {
@@ -40,7 +40,7 @@ const styles = {
     width: '18px',
     height: '18px',
     border: '2px solid var(--border)',
-    borderTopColor: '#2874f0',
+    borderTopColor: 'var(--brand)',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
   },

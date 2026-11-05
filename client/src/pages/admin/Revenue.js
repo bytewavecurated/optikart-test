@@ -43,7 +43,7 @@ const Revenue = () => {
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Revenue</h1>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
               {/* Custom Date Range Picker */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: '20px', background: useCustomDate ? 'var(--primary-light)' : '#fff' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', background: useCustomDate ? 'var(--primary-light)' : 'var(--bg-white)' }}>
                 <FiCalendar size={14} style={{ color: useCustomDate ? 'var(--primary)' : 'var(--text-light)' }} />
                 <input
                   type="date"
@@ -63,7 +63,7 @@ const Revenue = () => {
               </div>
               {/* Period Buttons */}
               {[{ label: '7 Days', value: '7d' }, { label: '30 Days', value: '30d' }, { label: '90 Days', value: '90d' }, { label: '1 Year', value: '1y' }].map((p) => (
-                <button key={p.value} onClick={() => { setPeriod(p.value); setUseCustomDate(false); }} style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px', border: `1px solid ${!useCustomDate && period === p.value ? 'var(--primary)' : 'var(--border)'}`, background: !useCustomDate && period === p.value ? 'var(--primary)' : '#fff', color: !useCustomDate && period === p.value ? '#fff' : 'var(--text-secondary)', cursor: 'pointer' }}>{p.label}</button>
+                <button key={p.value} onClick={() => { setPeriod(p.value); setUseCustomDate(false); }} style={{ padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', border: `1px solid ${!useCustomDate && period === p.value ? 'var(--primary)' : 'var(--border)'}`, background: !useCustomDate && period === p.value ? 'var(--primary)' : 'var(--bg-white)', color: !useCustomDate && period === p.value ? 'var(--text-white)' : 'var(--text-secondary)', cursor: 'pointer' }}>{p.label}</button>
               ))}
             </div>
           </div>
@@ -71,15 +71,15 @@ const Revenue = () => {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {[
-                  { label: 'Total Revenue', value: `₹${(revenue?.total || 0).toLocaleString()}`, icon: <FiDollarSign />, color: '#26a541', bg: 'var(--success-light)' },
-                  { label: 'Platform Fees', value: `₹${(revenue?.platformFees || 0).toLocaleString()}`, icon: <FiTrendingUp />, color: 'var(--brand)', bg: '#e8f0fe' },
+                  { label: 'Total Revenue', value: `₹${(revenue?.total || 0).toLocaleString()}`, icon: <FiDollarSign />, color: 'var(--success)', bg: 'var(--success-light)' },
+                  { label: 'Platform Fees', value: `₹${(revenue?.platformFees || 0).toLocaleString()}`, icon: <FiTrendingUp />, color: 'var(--brand)', bg: 'var(--brand-tint)' },
                   { label: 'Seller Payouts', value: `₹${(revenue?.sellerPayouts || 0).toLocaleString()}`, icon: <FiShoppingBag />, color: 'var(--warning)', bg: 'var(--warning-light)' },
-                  { label: 'Orders', value: revenue?.orderCount || 0, icon: <FiShoppingBag />, color: '#ff6161', bg: '#fce4ec' },
+                  { label: 'Orders', value: revenue?.orderCount || 0, icon: <FiShoppingBag />, color: 'var(--danger)', bg: 'var(--brand-tint)' },
                 ].map((card) => (
                   <div key={card.label} className="card" style={{ padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div><p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>{card.label}</p><h3 style={{ fontSize: '24px', fontWeight: 700 }}>{card.value}</h3></div>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
+                      <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
                     </div>
                   </div>
                 ))}

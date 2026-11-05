@@ -108,7 +108,7 @@ const Commissions = () => {
                 background: 'var(--success)',
                 color: 'var(--text-white)',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -152,7 +152,7 @@ const Commissions = () => {
                     ₹{Math.round(stats.averageCommission).toLocaleString('en-IN')}
                   </h3>
                 </div>
-                <FiTrendingUp size={32} style={{ color: '#26a541', opacity: 0.3 }} />
+                <FiTrendingUp size={32} style={{ color: 'var(--success)', opacity: 0.3 }} />
               </div>
             </div>
             <div className="card" style={{ padding: '20px', borderLeft: '4px solid #ff6161' }}>
@@ -163,7 +163,7 @@ const Commissions = () => {
                     ₹{stats.pendingPayout.toLocaleString('en-IN')}
                   </h3>
                 </div>
-                <FiDollarSign size={32} style={{ color: '#ff6161', opacity: 0.3 }} />
+                <FiDollarSign size={32} style={{ color: 'var(--danger)', opacity: 0.3 }} />
               </div>
             </div>
           </div>
@@ -181,7 +181,7 @@ const Commissions = () => {
                   width: '100%',
                   padding: '10px 12px 10px 38px',
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-md)',
                   fontSize: '14px'
                 }}
               />
@@ -195,7 +195,7 @@ const Commissions = () => {
                 style={{
                   padding: '10px',
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-md)',
                   fontSize: '14px'
                 }}
                 placeholder="From"
@@ -208,7 +208,7 @@ const Commissions = () => {
                 style={{
                   padding: '10px',
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-md)',
                   fontSize: '14px'
                 }}
                 placeholder="To"
@@ -257,17 +257,17 @@ const Commissions = () => {
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: '#26a541' }}>
+                        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--success)' }}>
                           ₹{(comm.sellerPayoutAmount || 0).toLocaleString('en-IN')}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{
                             padding: '4px 8px',
-                            borderRadius: '4px',
+                            borderRadius: 'var(--radius-xs)',
                             fontSize: '11px',
                             fontWeight: 600,
-                            background: comm.commissionPaid ? '#e8f5e9' : '#fff3e0',
-                            color: comm.commissionPaid ? '#2e7d32' : '#e65100'
+                            background: comm.commissionPaid ? 'var(--success-light)' : 'var(--warning-light)',
+                            color: comm.commissionPaid ? 'var(--success)' : 'var(--warning)'
                           }}>
                             {comm.commissionPaid ? 'Paid' : 'Pending'}
                           </span>

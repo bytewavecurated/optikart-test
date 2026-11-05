@@ -140,7 +140,7 @@ const UserDetailView = () => {
             </div>
 
             {user.isBanned && (
-              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
                 <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Banned</p>
                 <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Reason: {user.banReason || 'No reason provided'}</p>
                 <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Banned on: {new Date(user.bannedAt).toLocaleDateString()}</p>
@@ -148,7 +148,7 @@ const UserDetailView = () => {
             )}
 
             {user.isShadowBanned && !user.isBanned && (
-              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
                 <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Shadow Banned</p>
                 <p style={{ color: 'var(--warning)', fontSize: '12px' }}>User can still access the platform but with limited visibility</p>
               </div>
@@ -249,11 +249,11 @@ const UserDetailView = () => {
                         <td style={{ padding: '12px' }}>
                           <span style={{ 
                             padding: '4px 8px', 
-                            borderRadius: '4px', 
+                            borderRadius: 'var(--radius-xs)', 
                             fontSize: '11px', 
                             fontWeight: 600,
-                            background: order.orderStatus === 'delivered' ? '#e8f5e9' : order.orderStatus === 'cancelled' ? '#ffebee' : '#fff3e0',
-                            color: order.orderStatus === 'delivered' ? '#2e7d32' : order.orderStatus === 'cancelled' ? '#c62828' : '#e65100'
+                            background: order.orderStatus === 'delivered' ? 'var(--success-light)' : order.orderStatus === 'cancelled' ? 'var(--danger-light)' : 'var(--warning-light)',
+                            color: order.orderStatus === 'delivered' ? 'var(--success)' : order.orderStatus === 'cancelled' ? 'var(--danger)' : 'var(--warning)'
                           }}>
                             {order.orderStatus}
                           </span>
@@ -261,11 +261,11 @@ const UserDetailView = () => {
                         <td style={{ padding: '12px' }}>
                           <span style={{ 
                             padding: '4px 8px', 
-                            borderRadius: '4px', 
+                            borderRadius: 'var(--radius-xs)', 
                             fontSize: '11px', 
                             fontWeight: 600,
-                            background: order.paymentStatus === 'completed' ? '#e8f5e9' : '#ffebee',
-                            color: order.paymentStatus === 'completed' ? '#2e7d32' : '#c62828'
+                            background: order.paymentStatus === 'completed' ? 'var(--success-light)' : 'var(--danger-light)',
+                            color: order.paymentStatus === 'completed' ? 'var(--success)' : 'var(--danger)'
                           }}>
                             {order.paymentStatus}
                           </span>

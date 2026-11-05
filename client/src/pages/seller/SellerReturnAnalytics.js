@@ -138,7 +138,7 @@ const SellerReturnAnalytics = () => {
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Return Status Distribution</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
             {Object.entries(statusDistribution).map(([status, count]) => (
-              <div key={status} style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
+              <div key={status} style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
                 <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>{count}</div>
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{status.replace('_', ' ')}</div>
               </div>
@@ -154,7 +154,7 @@ const SellerReturnAnalytics = () => {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {topReasons.slice(0, 5).map((item, index) => (
-                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                   <div>
                     <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.reason}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{item.count} returns</div>

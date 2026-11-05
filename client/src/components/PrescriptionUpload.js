@@ -15,7 +15,7 @@ const styles = {
   container: {
     fontFamily: "var(--font-body)",
     background: 'var(--bg-white)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     border: '1px solid var(--border)',
     padding: '24px',
   },
@@ -32,7 +32,7 @@ const styles = {
   },
   dropzone: {
     border: '2px dashed #c2c2c2',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-md)',
     padding: '40px 20px',
     textAlign: 'center',
     cursor: 'pointer',
@@ -42,7 +42,7 @@ const styles = {
   },
   dropzoneActive: {
     borderColor: 'var(--brand)',
-    background: '#f0f6ff',
+    background: 'var(--brand-tint)',
   },
   dropzoneIcon: {
     fontSize: '48px',
@@ -80,7 +80,7 @@ const styles = {
     width: '100%',
     padding: '12px',
     border: '1px solid #c2c2c2',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     background: 'var(--bg-white)',
     color: 'var(--text-primary)',
     fontSize: '14px',
@@ -93,8 +93,8 @@ const styles = {
     alignItems: 'center',
     gap: '12px',
     padding: '12px 16px',
-    background: '#f0f6ff',
-    borderRadius: '4px',
+    background: 'var(--brand-tint)',
+    borderRadius: 'var(--radius-xs)',
     border: '1px solid #d0e0ff',
     marginBottom: '20px',
   },
@@ -117,7 +117,7 @@ const styles = {
   removeBtn: {
     background: 'none',
     border: 'none',
-    color: '#e43f5a',
+    color: 'var(--danger)',
     cursor: 'pointer',
     fontSize: '18px',
     padding: '4px',
@@ -138,14 +138,14 @@ const styles = {
   lensCard: {
     padding: '16px',
     border: '2px solid var(--border)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     cursor: 'pointer',
     transition: 'all 0.2s',
     textAlign: 'center',
   },
   lensCardActive: {
     borderColor: 'var(--brand)',
-    background: '#f0f6ff',
+    background: 'var(--brand-tint)',
   },
   lensLabel: {
     fontSize: '14px',
@@ -166,7 +166,7 @@ const styles = {
   },
   eyeSection: {
     background: 'var(--bg-page)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     padding: '16px',
   },
   eyeTitle: {
@@ -198,7 +198,7 @@ const styles = {
   fieldInput: {
     padding: '8px 10px',
     border: '1px solid #d0d0d0',
-    borderRadius: '3px',
+    borderRadius: 'var(--radius-xs)',
     fontSize: '14px',
     outline: 'none',
     transition: 'border-color 0.2s',
@@ -206,7 +206,7 @@ const styles = {
     boxSizing: 'border-box',
   },
   error: {
-    color: '#e43f5a',
+    color: 'var(--danger)',
     fontSize: '12px',
     marginTop: '4px',
     display: 'flex',
@@ -222,7 +222,7 @@ const styles = {
     marginTop: '12px',
     padding: '10px',
     background: 'var(--success-light)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
   },
 };
 
@@ -410,8 +410,8 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
                     value={power[eye][field]}
                     onChange={(e) => handlePowerChange(eye, field, e.target.value)}
                     style={styles.fieldInput}
-                    onFocus={(e) => e.target.style.borderColor = '#2874f0'}
-                    onBlur={(e) => e.target.style.borderColor = '#d0d0d0'}
+                    onFocus={(e) => e.target.style.borderColor = 'var(--brand)'}
+                    onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
                   />
                 </div>
               ))}

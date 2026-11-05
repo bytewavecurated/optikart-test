@@ -344,12 +344,12 @@ const DeliveryPartnerDashboard = () => {
                 disabled={availabilityBusy}
                 style={{
                   padding: '8px 20px',
-                  borderRadius: '20px',
+                  borderRadius: 'var(--radius-xl)',
                   border: 'none',
                   fontSize: '13px',
                   fontWeight: 600,
                   cursor: 'pointer',
-                  background: isOnline ? '#4caf50' : '#f44336',
+                  background: isOnline ? 'var(--success)' : 'var(--danger)',
                   color: 'var(--text-white)',
                   transition: 'all 0.3s ease',
                 }}
@@ -359,7 +359,7 @@ const DeliveryPartnerDashboard = () => {
             </div>
             <button
               onClick={handleLogout}
-              style={{ padding: '8px 16px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}
+              style={{ padding: '8px 16px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}
             >
               <FiLogOut size={14} /> Logout
             </button>
@@ -370,9 +370,9 @@ const DeliveryPartnerDashboard = () => {
           {statCards.map((card, idx) => {
             const Icon = card.icon;
             return (
-              <div className="card" key={idx} style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow)' }}>
+              <div className="card" key={idx} style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '20px', boxShadow: 'var(--shadow)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '48px', height: '48px', background: card.bg, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.color, flexShrink: 0 }}>
+                  <div style={{ width: '48px', height: '48px', background: card.bg, borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.color, flexShrink: 0 }}>
                     <Icon size={22} />
                   </div>
                   <div>
@@ -386,7 +386,7 @@ const DeliveryPartnerDashboard = () => {
         </div>
 
         {/* Route Optimization Button */}
-        <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '20px', boxShadow: 'var(--shadow)', marginBottom: '28px', textAlign: 'center' }}>
+        <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '20px', boxShadow: 'var(--shadow)', marginBottom: '28px', textAlign: 'center' }}>
           <FiNavigation size={32} color="var(--primary)" style={{ marginBottom: '12px' }} />
           <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Optimize Your Delivery Route</h3>
           <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--text-secondary, #757575)' }}>Get AI-powered route suggestions for efficient deliveries</p>
@@ -398,7 +398,7 @@ const DeliveryPartnerDashboard = () => {
               background: 'var(--primary)',
               color: 'var(--text-white)',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-md)',
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -417,7 +417,7 @@ const DeliveryPartnerDashboard = () => {
             nobody should have to accept a delivery they have to guess at.
         */}
         {offers.length > 0 && (
-          <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', boxShadow: 'var(--shadow)', marginBottom: '24px', overflow: 'hidden', borderLeft: '4px solid var(--primary)' }}>
+          <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', marginBottom: '24px', overflow: 'hidden', borderLeft: '4px solid var(--primary)' }}>
             <div style={{ padding: '18px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Delivery offers for you</h2>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Answer before the timer runs out or the next partner is asked</span>
@@ -466,7 +466,7 @@ const DeliveryPartnerDashboard = () => {
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }} className="delivery-dashboard-grid">
-          <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+          <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Active Deliveries</h2>
               <button
@@ -490,7 +490,7 @@ const DeliveryPartnerDashboard = () => {
                       style={{
                         padding: '16px',
                         border: '1px solid #eee',
-                        borderRadius: '10px',
+                        borderRadius: 'var(--radius)',
                         background: 'var(--bg-primary, #fafafa)',
                       }}
                     >
@@ -526,7 +526,7 @@ const DeliveryPartnerDashboard = () => {
                           background: 'var(--primary)',
                           color: 'var(--text-white)',
                           border: 'none',
-                          borderRadius: '6px',
+                          borderRadius: 'var(--radius-sm)',
                           fontSize: '13px',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -586,24 +586,24 @@ const DeliveryPartnerDashboard = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
               <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Earnings Summary</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--success-light)', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--success-light)', borderRadius: 'var(--radius-md)' }}>
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Completed today</span>
                   <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--success)' }}>
                     {stats.completedToday || 0}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#e3f2fd', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)' }}>
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Last 7 days</span>
-                  <span style={{ fontSize: '18px', fontWeight: 700, color: '#2196f3' }}>{inr(earnings.week)}</span>
+                  <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand)' }}>{inr(earnings.week)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--warning-light)', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--warning-light)', borderRadius: 'var(--radius-md)' }}>
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Last 30 days</span>
                   <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--warning)' }}>{inr(earnings.month)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: '#f3e5f5', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)' }}>
                   <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Available Balance</span>
                   {/* This printed totalEarnings under the label "Available
                       Balance", so it could never agree with the withdrawal form
@@ -619,7 +619,7 @@ const DeliveryPartnerDashboard = () => {
                 the only number available is a total, which cannot be checked
                 against a week of work.
             */}
-            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
               <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Recent deliveries</h2>
               <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--text-secondary)' }}>Last 30 days</p>
               {payoutHistory.deliveries.length === 0 ? (
@@ -662,7 +662,7 @@ const DeliveryPartnerDashboard = () => {
               )}
             </div>
 
-            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
               <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Withdraw Funds</h2>
               <form onSubmit={handleWithdraw}>
                 <div style={{ marginBottom: '16px' }}>
@@ -699,10 +699,10 @@ const DeliveryPartnerDashboard = () => {
                   style={{
                     width: '100%',
                     padding: '12px',
-                    background: withdrawing || !withdrawAmount ? '#bdbdbd' : 'var(--primary)',
+                    background: withdrawing || !withdrawAmount ? 'var(--border)' : 'var(--primary)',
                     color: 'var(--text-white)',
                     border: 'none',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--radius-md)',
                     fontSize: '14px',
                     fontWeight: 600,
                     cursor: withdrawing || !withdrawAmount ? 'not-allowed' : 'pointer',
@@ -715,9 +715,9 @@ const DeliveryPartnerDashboard = () => {
           </div>
         </div>
 
-        <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', padding: '20px 24px', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '20px 24px', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <FiMapPin size={20} style={{ color: locationSharing ? '#4caf50' : 'var(--text-light, #999)' }} />
+            <FiMapPin size={20} style={{ color: locationSharing ? 'var(--success)' : 'var(--text-light, #999)' }} />
             <div>
               <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Location Sharing</p>
               <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary, #757575)' }}>
@@ -729,13 +729,13 @@ const DeliveryPartnerDashboard = () => {
             onClick={handleToggleLocation}
             style={{
               padding: '10px 24px',
-              borderRadius: '20px',
+              borderRadius: 'var(--radius-xl)',
               border: 'none',
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
-              background: locationSharing ? '#4caf50' : '#e0e0e0',
-              color: locationSharing ? '#fff' : 'var(--text-secondary, #555)',
+              background: locationSharing ? 'var(--success)' : 'var(--border)',
+              color: locationSharing ? 'var(--text-white)' : 'var(--text-secondary, #555)',
               transition: 'all 0.3s ease',
             }}
           >

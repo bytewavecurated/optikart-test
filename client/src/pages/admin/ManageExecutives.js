@@ -108,7 +108,7 @@ const ManageExecutives = () => {
             background: 'var(--brand)',
             color: 'var(--text-white)',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -131,13 +131,13 @@ const ManageExecutives = () => {
             width: '100%',
             padding: '10px 10px 10px 40px',
             border: '1px solid var(--border)',
-            borderRadius: '6px',
+            borderRadius: 'var(--radius-sm)',
             fontSize: '14px'
           }}
         />
       </div>
 
-      <div style={{ background: 'var(--bg-white)', borderRadius: '12px', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--bg-subtle)', borderBottom: '2px solid var(--border)' }}>
@@ -165,11 +165,11 @@ const ManageExecutives = () => {
                   <td style={{ padding: '12px' }}>
                     <span style={{
                       padding: '4px 12px',
-                      borderRadius: '12px',
+                      borderRadius: 'var(--radius)',
                       fontSize: '12px',
                       fontWeight: 600,
-                      background: '#e3f2fd',
-                      color: '#1976d2',
+                      background: 'var(--brand-tint)',
+                      color: 'var(--brand)',
                       textTransform: 'capitalize'
                     }}>
                       {exec.department}
@@ -179,7 +179,7 @@ const ManageExecutives = () => {
                     {exec.isBanned ? (
                       <span style={{
                         padding: '4px 12px',
-                        borderRadius: '12px',
+                        borderRadius: 'var(--radius)',
                         fontSize: '12px',
                         fontWeight: 600,
                         background: 'var(--danger-light)',
@@ -190,7 +190,7 @@ const ManageExecutives = () => {
                     ) : (
                       <span style={{
                         padding: '4px 12px',
-                        borderRadius: '12px',
+                        borderRadius: 'var(--radius)',
                         fontSize: '12px',
                         fontWeight: 600,
                         background: 'var(--success-light)',
@@ -213,21 +213,21 @@ const ManageExecutives = () => {
                             permissions: exec.permissions || []
                           });
                         }}
-                        style={{ padding: '6px', background: '#2196f3', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                         title="Edit"
                       >
                         <FiEdit size={16} />
                       </button>
                       <button
                         onClick={() => handleBan(exec._id, !exec.isBanned)}
-                        style={{ padding: '6px', background: exec.isBanned ? '#4caf50' : '#ff9800', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: exec.isBanned ? 'var(--success)' : 'var(--warning)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                         title={exec.isBanned ? 'Unban' : 'Ban'}
                       >
                         {exec.isBanned ? <FiEye size={16} /> : <FiEyeOff size={16} />}
                       </button>
                       <button
                         onClick={() => handleDelete(exec._id)}
-                        style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                         title="Delete"
                       >
                         <FiTrash2 size={16} />
@@ -244,7 +244,7 @@ const ManageExecutives = () => {
       {/* Add/Edit Modal */}
       {(showAddModal || editingExecutive) && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '32px', maxWidth: '500px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '32px', maxWidth: '500px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>
               {editingExecutive ? 'Edit Executive' : 'Add New Executive'}
             </h2>
@@ -256,7 +256,7 @@ const ManageExecutives = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="Executive name"
                 />
               </div>
@@ -267,7 +267,7 @@ const ManageExecutives = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="executive@email.com"
                 />
               </div>
@@ -279,7 +279,7 @@ const ManageExecutives = () => {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Password"
                   />
                 </div>
@@ -290,7 +290,7 @@ const ManageExecutives = () => {
                 <select
                   value={formData.department}
                   onChange={(e) => setFormData({...formData, department: e.target.value})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                 >
                   <option value="">Select department</option>
                   {departments.map(dept => (
@@ -303,7 +303,7 @@ const ManageExecutives = () => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={editingExecutive ? handleEdit : handleAdd}
-                style={{ flex: 1, padding: '12px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 {editingExecutive ? 'Update' : 'Add'} Executive
               </button>
@@ -313,7 +313,7 @@ const ManageExecutives = () => {
                   setEditingExecutive(null);
                   setFormData({ name: '', email: '', password: '', department: '', permissions: [] });
                 }}
-                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 Cancel
               </button>

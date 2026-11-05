@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { prescriptionVerification } from '../../services/api';
-import { FiCheckCircle, FiXCircle, FiExternalLink, FiFileText, FiClock, FiAlertTriangle } from 'react-icons/fi';
+import { FiCheckCircle, FiXCircle, FiExternalLink, FiFileText, FiClock, FiAlertTriangle, FiPaperclip } from 'react-icons/fi';
 import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 import toast from 'react-hot-toast';
@@ -56,6 +56,8 @@ export default function PrescriptionQueue() {
   const [busy, setBusy] = useState('');
   const [rejecting, setRejecting] = useState('');
   const [reason, setReason] = useState('');
+  const [attaching, setAttaching] = useState('');
+  const [historyFor, setHistoryFor] = useState('');
   const [note, setNote] = useState('');
 
   const load = useCallback(async () => {
@@ -86,6 +88,31 @@ export default function PrescriptionQueue() {
       toastError(e, 'Approval failed');
     } finally {
       setBusy('');
+    }
+  };
+
+  /*
+   * Attaching a clearer copy is part of checking, not a separate favour by
+   * email: the upload goes to the same store a customer's would, and the
+   * prescription keeps both files so the original evidence survives.
+   */
+  const attachDocument = async (row, file) => {
+    if (!file) return;
+    setBusy(row._id);
+    try {
+      const fd = new FormData();
+      // The upload route's multer instance accepts exactly this field name.
+      fd.append('prescription', file, file.name);
+      const up = await prescriptionVerification.uploadFile(fd);
+      const url = up.data.url || up.data.fileUrl;
+      await prescriptionVerification.attachDocument(row._id, url, `replaced with ${file.name}`);
+      toast.success('Document attached');
+      load();
+    } catch (e) {
+      toastError(e, 'The document could not be attached');
+    } finally {
+      setBusy('');
+      setAttaching('');
     }
   };
 
@@ -175,6 +202,39 @@ export default function PrescriptionQueue() {
                         </a>
                       )}
                       {!p.fileUrl && <div style={{ fontSize: 12, color: 'var(--text-light)' }}>typed values only</div>}
+                      {(row.status === 'pending' || row.status === 'needs_review') && (
+                        <div style={{ marginTop: 4 }}>
+                          {attaching === row._id ? (
+                            <input
+                              type="file"
+                              accept="image/*,application/pdf"
+                              aria-label="Attach a clearer copy"
+                              style={{ fontSize: 12, width: '100%' }}
+                              onChange={(e) => attachDocument(row, e.target.files?.[0])}
+                            />
+                          ) : (
+                            <button className="btn btn-outline" style={{ padding: '2px 8px', fontSize: 12 }}
+                              onClick={() => setAttaching(row._id)}>
+                              attach clearer copy
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {(p.previousFiles || []).length > 0 && (
+                        <div style={{ marginTop: 4 }}>
+                          <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--brand)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
+                            onClick={() => setHistoryFor(historyFor === row._id ? '' : row._id)}>
+                            {p.previousFiles.length} earlier cop{p.previousFiles.length === 1 ? 'y' : 'ies'}
+                          </button>
+                          {historyFor === row._id && (
+                            <ul style={{ margin: '4px 0 0', paddingLeft: 16, fontSize: 12 }}>
+                              {p.previousFiles.map((u, i) => (
+                                <li key={i}><a href={u} target="_blank" rel="noreferrer" style={{ color: 'var(--text-secondary)' }}>{u.split('/').pop()}</a></li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td style={{ ...td, maxWidth: 240 }}>
                       {flags.length === 0 ? (

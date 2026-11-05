@@ -120,9 +120,9 @@ const SellerOrders = () => {
                 key={s}
                 onClick={() => { setFilter(s); setPageInfo({ ...pageInfo, page: 1 }); }}
                 style={{
-                  padding: '6px 16px', borderRadius: '20px', fontSize: '13px', fontWeight: 500,
+                  padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', fontWeight: 500,
                   border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`,
-                  background: filter === s ? 'var(--primary-light)' : '#fff',
+                  background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)',
                   color: filter === s ? 'var(--primary)' : 'var(--text-secondary)',
                   cursor: 'pointer', textTransform: 'capitalize'
                 }}
@@ -192,7 +192,7 @@ const SellerOrders = () => {
                         const variant = variantSummary(item);
                         return (
                           <div key={item._id || idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px' }}>
-                            <img src={product.images?.[0] || '/placeholder.svg'} alt="" style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: '4px', background: 'var(--bg-secondary)' }} />
+                            <img src={product.images?.[0] || '/placeholder.svg'} alt="" style={{ width: '40px', height: '40px', objectFit: 'contain', borderRadius: 'var(--radius-xs)', background: 'var(--bg-secondary)' }} />
                             <span style={{ flex: 1, minWidth: 0 }}>
                               {product.title || product.name || item.name || 'Product'}
                               {variant && <span style={{ color: 'var(--text-secondary)', fontSize: 12.5 }}> — {variant}</span>}

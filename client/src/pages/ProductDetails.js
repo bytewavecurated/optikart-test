@@ -258,7 +258,7 @@ const ProductDetails = () => {
             <div className="card" style={{ padding: '16px' }}>
               <Carousel showThumbs={false} autoPlay infiniteLoop showStatus={false}>
                 {images.map((img, idx) => (
-                  <div key={idx} style={{ background: 'var(--bg-page)', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div key={idx} style={{ background: 'var(--bg-page)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                     <img src={img} alt={`${productTitle} - ${idx + 1}`} style={{ width: '100%', height: '400px', objectFit: 'contain' }} />
                   </div>
                 ))}
@@ -317,7 +317,7 @@ const ProductDetails = () => {
                     <div>
                       <p style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '2px', textTransform: 'uppercase' }}>Rating</p>
                       <p style={{ fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <FiStar size={12} style={{ color: '#f5a623' }} /> {seller.rating?.toFixed(1) || 'New'}
+                        <FiStar size={12} style={{ color: 'var(--warning)' }} /> {seller.rating?.toFixed(1) || 'New'}
                       </p>
                     </div>
                     <div>
@@ -353,8 +353,8 @@ const ProductDetails = () => {
                         style={{
                           padding: '8px 16px',
                           border: `2px solid ${selectedColor?._id === color._id ? 'var(--primary)' : 'var(--border)'}`,
-                          borderRadius: '4px',
-                          background: selectedColor?._id === color._id ? 'var(--primary-light)' : '#fff',
+                          borderRadius: 'var(--radius-xs)',
+                          background: selectedColor?._id === color._id ? 'var(--primary-light)' : 'var(--bg-white)',
                           display: 'flex',
                           alignItems: 'center',
                           gap: '8px',
@@ -367,7 +367,7 @@ const ProductDetails = () => {
                             width: '20px',
                             height: '20px',
                             borderRadius: '50%',
-                            background: color.hexCode || '#ccc',
+                            background: color.hexCode || 'var(--border-strong)',
                             border: '1px solid var(--border)',
                           }}
                         />
@@ -392,8 +392,8 @@ const ProductDetails = () => {
                         style={{
                           padding: '8px 16px',
                           border: `2px solid ${selectedSize === size ? 'var(--primary)' : 'var(--border)'}`,
-                          borderRadius: '4px',
-                          background: selectedSize === size ? 'var(--primary-light)' : '#fff',
+                          borderRadius: 'var(--radius-xs)',
+                          background: selectedSize === size ? 'var(--primary-light)' : 'var(--bg-white)',
                           color: selectedSize === size ? 'var(--primary)' : 'var(--text-primary)',
                           fontWeight: 500,
                           fontSize: '13px',
@@ -422,8 +422,8 @@ const ProductDetails = () => {
                         style={{
                           padding: '8px 16px',
                           border: `2px solid ${selectedVariant === variant ? 'var(--primary)' : 'var(--border)'}`,
-                          borderRadius: '4px',
-                          background: selectedVariant === variant ? 'var(--primary-light)' : '#fff',
+                          borderRadius: 'var(--radius-xs)',
+                          background: selectedVariant === variant ? 'var(--primary-light)' : 'var(--bg-white)',
                           color: selectedVariant === variant ? 'var(--primary)' : 'var(--text-primary)',
                           fontWeight: 500,
                           fontSize: '13px',
@@ -563,11 +563,11 @@ const ProductDetails = () => {
               {activeTab === 'reviews' && (
                 <div>
                   <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '32px', marginBottom: '24px', alignItems: 'start' }} className="ratings-summary-grid">
-                    <div style={{ textAlign: 'center', padding: '20px', border: '1px solid var(--border-light)', borderRadius: '8px' }}>
+                    <div style={{ textAlign: 'center', padding: '20px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)' }}>
                       <p style={{ fontSize: '40px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{avgRating.toFixed(1)}</p>
                       <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <FiStar key={i} size={16} style={{ color: i < Math.round(avgRating) ? '#f5a623' : '#ddd' }} />
+                          <FiStar key={i} size={16} style={{ color: i < Math.round(avgRating) ? 'var(--warning)' : 'var(--border)' }} />
                         ))}
                       </div>
                       <p style={{ fontSize: '13px', color: 'var(--text-light)' }}>{totalRatings} ratings</p>
@@ -580,9 +580,9 @@ const ProductDetails = () => {
                         return (
                           <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                             <span style={{ fontSize: '13px', fontWeight: 500, width: '16px', textAlign: 'right' }}>{star}</span>
-                            <FiStar size={12} style={{ color: '#f5a623' }} />
-                            <div style={{ flex: 1, height: '8px', background: 'var(--bg-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
-                              <div style={{ width: `${pct}%`, height: '100%', background: star >= 4 ? '#4caf50' : star === 3 ? '#ffc107' : '#f44336', borderRadius: '4px', transition: 'width 0.3s' }} />
+                            <FiStar size={12} style={{ color: 'var(--warning)' }} />
+                            <div style={{ flex: 1, height: '8px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', overflow: 'hidden' }}>
+                              <div style={{ width: `${pct}%`, height: '100%', background: star >= 4 ? 'var(--success)' : star === 3 ? 'var(--rating-gold)' : 'var(--danger)', borderRadius: 'var(--radius-xs)', transition: 'width 0.3s' }} />
                             </div>
                             <span style={{ fontSize: '12px', color: 'var(--text-light)', width: '32px', textAlign: 'right' }}>{count}</span>
                           </div>
@@ -598,7 +598,7 @@ const ProductDetails = () => {
                   )}
 
                   {showReviewForm && (
-                    <div style={{ background: 'var(--bg-primary)', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+                    <div style={{ background: 'var(--bg-primary)', padding: '20px', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
                       <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '12px' }}>Write a Review</h4>
                       <div style={{ marginBottom: '12px' }}>
                         <p style={{ fontSize: '13px', marginBottom: '6px' }}>Your Rating</p>
@@ -609,7 +609,7 @@ const ProductDetails = () => {
                               onClick={() => setReviewRating(star)}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
                             >
-                              <FiStar size={24} style={{ color: star <= reviewRating ? '#f5a623' : '#ddd', fill: star <= reviewRating ? '#f5a623' : 'none' }} />
+                              <FiStar size={24} style={{ color: star <= reviewRating ? 'var(--warning)' : 'var(--border)', fill: star <= reviewRating ? 'var(--warning)' : 'none' }} />
                             </button>
                           ))}
                         </div>
@@ -650,7 +650,7 @@ const ProductDetails = () => {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <div style={{ display: 'flex', gap: '2px' }}>
                                     {Array.from({ length: 5 }).map((_, i) => (
-                                      <FiStar key={i} size={10} style={{ color: i < review.rating ? '#f5a623' : '#ddd' }} />
+                                      <FiStar key={i} size={10} style={{ color: i < review.rating ? 'var(--warning)' : 'var(--border)' }} />
                                     ))}
                                   </div>
                                   <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>{new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>

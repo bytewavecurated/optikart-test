@@ -120,7 +120,7 @@ const Header = () => {
             style={{
               width: '100%',
               padding: '10px 80px 10px 40px',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-xs)',
               border: 'none',
               fontSize: '14px',
               background: 'var(--bg-white)',
@@ -210,7 +210,7 @@ const Header = () => {
                       right: 0,
                       marginTop: '8px',
                       background: 'var(--bg-white)',
-                      borderRadius: '4px',
+                      borderRadius: 'var(--radius-xs)',
                       boxShadow: 'var(--shadow-lg)',
                       minWidth: '200px',
                       zIndex: 100,
@@ -237,7 +237,7 @@ const Header = () => {
               </AnimatePresence>
             </div>
           ) : (
-            <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontSize: '14px', fontWeight: 600, padding: '6px 24px', background: 'var(--bg-white)', borderRadius: '4px', textDecoration: 'none' }}>
+            <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontSize: '14px', fontWeight: 600, padding: '6px 24px', background: 'var(--text-white)', borderRadius: 'var(--radius-xs)', textDecoration: 'none' }}>
               <FiUser size={16} />
               Login
             </Link>
@@ -253,7 +253,7 @@ const Header = () => {
               <Link
                 to={roleConsole.path}
                 title={`Signed in as ${activeRole}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '13px', fontWeight: 600, padding: '7px 12px', border: '1px solid rgba(255,255,255,0.45)', borderRadius: '4px', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '13px', fontWeight: 600, padding: '7px 12px', border: '1px solid rgba(255,255,255,0.45)', borderRadius: 'var(--radius-xs)', textDecoration: 'none', whiteSpace: 'nowrap' }}
               >
                 <FiUser size={15} />
                 {roleConsole.label}
@@ -339,10 +339,10 @@ const Header = () => {
                 placeholder="Search for eyewear..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '14px' }}
+                style={{ flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', fontSize: '14px' }}
                 autoFocus
               />
-              <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+              <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}>
                 <FiSearch size={18} />
               </button>
             </form>
@@ -419,9 +419,9 @@ const Header = () => {
                   placeholder="Search for eyewear..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ flex: 1, padding: '10px 16px', borderRadius: '4px', border: '1px solid var(--border)', fontSize: '14px' }}
+                  style={{ flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', fontSize: '14px' }}
                 />
-                <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}>
                   <FiSearch size={18} />
                 </button>
               </form>
@@ -441,7 +441,7 @@ const Header = () => {
                   <Link to="/profile" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>My Profile</Link>
                   <Link to="/orders" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>My Orders</Link>
                   <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Wishlist</Link>
-                  <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} style={{ fontSize: '14px', padding: '10px', color: 'var(--danger)', background: 'none', border: '1px solid var(--danger)', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>Logout</button>
+                  <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} style={{ fontSize: '14px', padding: '10px', color: 'var(--danger)', background: 'none', border: '1px solid var(--danger)', borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontWeight: 600 }}>Logout</button>
                 </>
               )}
             </div>

@@ -5,7 +5,7 @@ const styles = {
   container: {
     fontFamily: "var(--font-body)",
     background: 'var(--bg-white)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     boxShadow: 'var(--shadow)',
     overflow: 'hidden',
   },
@@ -48,7 +48,7 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     padding: '6px 14px',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-xl)',
     fontSize: '13px',
     fontWeight: 700,
   },
@@ -61,7 +61,7 @@ const styles = {
     color: 'var(--text-white)',
   },
   badgeAverage: {
-    background: '#f57c00',
+    background: 'var(--warning)',
     color: 'var(--text-white)',
   },
   ratingSection: {
@@ -107,7 +107,7 @@ const styles = {
   metricIcon: {
     width: '40px',
     height: '40px',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-md)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -141,19 +141,19 @@ const styles = {
     color: 'var(--success)',
   },
   trendDown: {
-    color: '#e43f5a',
+    color: 'var(--danger)',
   },
   progressBar: {
     width: '100%',
     height: '4px',
     background: 'var(--bg-subtle)',
-    borderRadius: '2px',
+    borderRadius: 'var(--radius-2xs)',
     marginTop: '6px',
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: '2px',
+    borderRadius: 'var(--radius-2xs)',
     transition: 'width 0.5s ease',
   },
   footer: {
@@ -200,47 +200,47 @@ export default function SellerPerformance({
   const metrics = [
     {
       icon: <FiPackage />,
-      iconBg: '#e8f5e9',
-      iconColor: '#388e3c',
+      iconBg: 'var(--success-light)',
+      iconColor: 'var(--success)',
       label: 'Total Sales',
       value: totalSales.toLocaleString(),
       trend: '+12%',
       trendUp: true,
       progress: Math.min((totalSales / 20000) * 100, 100),
-      progressColor: '#388e3c',
+      progressColor: 'var(--success)',
     },
     {
       icon: <FiClock />,
-      iconBg: '#e3f2fd',
-      iconColor: '#2874f0',
+      iconBg: 'var(--brand-tint)',
+      iconColor: 'var(--brand)',
       label: 'Avg Delivery',
       value: deliveryTime,
       trend: '-0.5 days',
       trendUp: true,
       progress: 75,
-      progressColor: '#2874f0',
+      progressColor: 'var(--brand)',
     },
     {
       icon: <FiRefreshCw />,
-      iconBg: '#fff3e0',
-      iconColor: '#f57c00',
+      iconBg: 'var(--warning-light)',
+      iconColor: 'var(--warning)',
       label: 'Return Rate',
       value: `${returnRate}%`,
       trend: '-0.8%',
       trendUp: true,
       progress: returnRate * 10,
-      progressColor: returnRate < 5 ? '#388e3c' : '#f57c00',
+      progressColor: returnRate < 5 ? 'var(--success)' : 'var(--warning)',
     },
     {
       icon: <FiMessageSquare />,
-      iconBg: '#f3e5f5',
-      iconColor: '#9c27b0',
+      iconBg: 'var(--brand-tint)',
+      iconColor: 'var(--brand-dark)',
       label: 'Response Rate',
       value: `${responseRate}%`,
       trend: '+2%',
       trendUp: true,
       progress: responseRate,
-      progressColor: responseRate > 90 ? '#388e3c' : '#f57c00',
+      progressColor: responseRate > 90 ? 'var(--success)' : 'var(--warning)',
     },
   ];
 
@@ -250,8 +250,8 @@ export default function SellerPerformance({
         key={i}
         size={18}
         style={{
-          color: i <= Math.floor(rating) ? '#ff9f00' : (i - 0.5 <= rating ? '#ff9f00' : '#ddd'),
-          fill: i <= Math.floor(rating) ? '#ff9f00' : (i - 0.5 <= rating ? '#ff9f00' : 'none'),
+          color: i <= Math.floor(rating) ? 'var(--warning)' : (i - 0.5 <= rating ? 'var(--warning)' : 'var(--border)'),
+          fill: i <= Math.floor(rating) ? 'var(--warning)' : (i - 0.5 <= rating ? 'var(--warning)' : 'none'),
         }}
       />
     ));

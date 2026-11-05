@@ -19,6 +19,9 @@
   --warning: #b06e00;
   --warning-light: #fdf3e3;
   --info: var(--brand);
+  /* Review stars are gold by convention, not because something is wrong:
+     they get their own token instead of borrowing --warning. */
+  --rating-gold: #f5a623;
 
   /* Neutrals: a calm grey ramp instead of competing surfaces. */
   --bg-page: #f7f8fa;
@@ -45,6 +48,12 @@
   --shadow-lg: 0 8px 24px rgba(16, 17, 20, 0.08);
   --shadow-focus: 0 0 0 3px rgba(40, 116, 240, 0.18);
 
+  /* Full radius scale, so a component asks for a step instead of inventing a
+     number: 4/6/8/12px had all been used for the same "slightly rounded box". */
+  --radius-2xs: 2px;
+  --radius-xs: 4px;
+  --radius-md: 8px;
+  --radius-2xl: 28px;
   --radius-sm: 6px;
   --radius: 10px;
   --radius-lg: 14px;

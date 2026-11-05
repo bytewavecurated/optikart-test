@@ -6,11 +6,11 @@ const CATEGORIES = [
   { name: 'Sunglasses', image: '/assets/face-1.svg', link: '/category/sunglasses', color: 'var(--brand)' },
   { name: 'Eyeglasses', image: '/assets/face-1.svg', link: '/category/eyeglasses', color: 'var(--warning)' },
   { name: 'Contact Lenses', image: '/assets/face-3.svg', link: '/category/contact-lenses', color: 'var(--success)' },
-  { name: 'Sports', image: '/assets/face-1.svg', link: '/category/sports', color: '#e43f5a' },
-  { name: 'Kids', image: '/assets/face-5.svg', link: '/category/kids', color: '#6c63ff' },
-  { name: 'Reading', image: '/assets/face-1.svg', link: '/category/reading', color: '#00897b' },
-  { name: 'Computer', image: '/assets/face-1.svg', link: '/category/computer', color: '#9c27b0' },
-  { name: 'Safety', image: '/assets/face-1.svg', link: '/category/safety', color: '#ff5722' },
+  { name: 'Sports', image: '/assets/face-1.svg', link: '/category/sports', color: 'var(--danger)' },
+  { name: 'Kids', image: '/assets/face-5.svg', link: '/category/kids', color: 'var(--brand)' },
+  { name: 'Reading', image: '/assets/face-1.svg', link: '/category/reading', color: 'var(--success)' },
+  { name: 'Computer', image: '/assets/face-1.svg', link: '/category/computer', color: 'var(--brand-dark)' },
+  { name: 'Safety', image: '/assets/face-1.svg', link: '/category/safety', color: 'var(--danger)' },
 ];
 
 const styles = {
@@ -18,7 +18,7 @@ const styles = {
     background: 'var(--bg-white)',
     margin: '16px 0',
     padding: '20px 24px',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     boxShadow: 'var(--shadow)',
     fontFamily: "var(--font-body)",
   },

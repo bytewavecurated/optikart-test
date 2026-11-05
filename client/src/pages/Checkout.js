@@ -199,12 +199,12 @@ const Checkout = () => {
       <Header />
       <main style={{ flex: 1, background: 'var(--bg-primary)' }}>
         <div className="container" style={{ paddingTop: '16px', paddingBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '16px', background: 'var(--bg-white)', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '16px', background: 'var(--bg-white)', borderRadius: 'var(--radius-md)' }}>
             {[{ num: 1, label: 'Address' }, { num: 2, label: 'Payment' }, { num: 3, label: 'Summary' }].map((s, idx) => (
               <React.Fragment key={s.num}>
                 {idx > 0 && <div style={{ flex: 1, height: '2px', background: step >= s.num ? 'var(--primary)' : 'var(--border)' }} />}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: step >= s.num ? 'var(--primary)' : 'var(--border)', color: step >= s.num ? '#fff' : 'var(--text-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: step >= s.num ? 'var(--primary)' : 'var(--border)', color: step >= s.num ? 'var(--text-white)' : 'var(--text-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
                     {step > s.num ? <FiCheck /> : s.num}
                   </div>
                   <span style={{ fontSize: '13px', fontWeight: step === s.num ? 600 : 400, color: step >= s.num ? 'var(--primary)' : 'var(--text-light)' }}>{s.label}</span>
@@ -304,7 +304,7 @@ const Checkout = () => {
                   <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiCreditCard /> Payment Method</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {[{ id: 'online', label: 'Online Payment', desc: 'UPI, Cards, Net Banking, Wallets' }, { id: 'cod', label: 'Cash on Delivery', desc: 'Pay when your order arrives' }].map((method) => (
-                      <label key={method.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: `2px solid ${paymentMethod === method.id ? 'var(--primary)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', background: paymentMethod === method.id ? 'var(--primary-light)' : '#fff' }}>
+                      <label key={method.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: `2px solid ${paymentMethod === method.id ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 'var(--radius-md)', cursor: 'pointer', background: paymentMethod === method.id ? 'var(--primary-light)' : 'var(--bg-white)' }}>
                         <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} style={{ accentColor: 'var(--primary)' }} />
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 500 }}>{method.label}</div>
@@ -323,7 +323,7 @@ const Checkout = () => {
               {step === 3 && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card" style={{ padding: '24px' }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px' }}>Order Summary</h2>
-                  <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                  <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Delivering to:</div>
                     <div style={{ fontSize: '14px' }}>{address.fullName}, {address.addressLine}, {address.city}, {address.state} - {address.pincode}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>Phone: {address.phone}</div>

@@ -194,7 +194,7 @@ const FaceShapeGuide = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <main style={{ flex: 1, background: '#f8f9fa' }}>
+      <main style={{ flex: 1, background: 'var(--bg-page)' }}>
         {/* Hero Section */}
         <div style={{ 
           background: 'var(--bg-dark)',
@@ -215,7 +215,7 @@ const FaceShapeGuide = () => {
           {!result && (
             <div style={{ 
               background: 'var(--bg-white)',
-              borderRadius: '16px',
+              borderRadius: 'var(--radius-xl)',
               padding: '40px',
               marginBottom: '40px',
               boxShadow: 'var(--shadow)'
@@ -233,7 +233,7 @@ const FaceShapeGuide = () => {
                       background: 'var(--brand)',
                       color: 'var(--text-white)',
                       border: 'none',
-                      borderRadius: '12px',
+                      borderRadius: 'var(--radius)',
                       cursor: 'pointer',
                       display: 'flex',
                       flexDirection: 'column',
@@ -252,9 +252,9 @@ const FaceShapeGuide = () => {
                   <label
                     style={{
                       padding: '30px',
-                      background: '#f8f9fa',
+                      background: 'var(--bg-page)',
                       border: '2px dashed #dee2e6',
-                      borderRadius: '12px',
+                      borderRadius: 'var(--radius)',
                       cursor: 'pointer',
                       display: 'flex',
                       flexDirection: 'column',
@@ -263,12 +263,12 @@ const FaceShapeGuide = () => {
                       transition: 'all 0.2s'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#667eea';
-                      e.currentTarget.style.background = '#f0f4ff';
+                      e.currentTarget.style.borderColor = 'var(--brand)';
+                      e.currentTarget.style.background = 'var(--brand-tint)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#dee2e6';
-                      e.currentTarget.style.background = '#f8f9fa';
+                      e.currentTarget.style.borderColor = 'var(--border-light)';
+                      e.currentTarget.style.background = 'var(--bg-page)';
                     }}
                   >
                     <FiUpload size={48} style={{ color: 'var(--brand)' }} />
@@ -294,7 +294,7 @@ const FaceShapeGuide = () => {
                       style={{
                         width: '100%',
                         maxWidth: '640px',
-                        borderRadius: '12px',
+                        borderRadius: 'var(--radius)',
                         transform: 'scaleX(-1)'
                       }}
                     />
@@ -308,7 +308,7 @@ const FaceShapeGuide = () => {
                         background: 'var(--brand)',
                         color: 'var(--text-white)',
                         border: 'none',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--radius-md)',
                         cursor: 'pointer',
                         fontSize: '16px',
                         fontWeight: 600
@@ -323,7 +323,7 @@ const FaceShapeGuide = () => {
                         background: 'var(--danger)',
                         color: 'var(--text-white)',
                         border: 'none',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--radius-md)',
                         cursor: 'pointer',
                         fontSize: '16px',
                         fontWeight: 600
@@ -356,7 +356,7 @@ const FaceShapeGuide = () => {
           {result && (
             <div style={{ 
               background: 'var(--bg-white)',
-              borderRadius: '16px',
+              borderRadius: 'var(--radius-xl)',
               padding: '40px',
               marginBottom: '40px',
               boxShadow: 'var(--shadow)'
@@ -369,9 +369,9 @@ const FaceShapeGuide = () => {
                   onClick={resetAnalysis}
                   style={{
                     padding: '10px 20px',
-                    background: '#f8f9fa',
+                    background: 'var(--bg-page)',
                     border: '1px solid #dee2e6',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -384,7 +384,7 @@ const FaceShapeGuide = () => {
 
               <div style={{ 
                 background: 'var(--brand-tint)',
-                borderRadius: '12px',
+                borderRadius: 'var(--radius)',
                 padding: '30px',
                 marginBottom: '30px'
               }}>
@@ -403,8 +403,8 @@ const FaceShapeGuide = () => {
                       key={index}
                       style={{
                         padding: '16px',
-                        background: '#f8f9fa',
-                        borderRadius: '8px',
+                        background: 'var(--bg-page)',
+                        borderRadius: 'var(--radius-md)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '12px'
@@ -442,7 +442,7 @@ const FaceShapeGuide = () => {
           {/* Face Shapes Guide */}
           <div style={{ 
             background: 'var(--bg-white)',
-            borderRadius: '16px',
+            borderRadius: 'var(--radius-xl)',
             padding: '40px',
             boxShadow: 'var(--shadow)'
           }}>
@@ -458,8 +458,8 @@ const FaceShapeGuide = () => {
                 <div
                   key={key}
                   style={{
-                    background: '#f8f9fa',
-                    borderRadius: '12px',
+                    background: 'var(--bg-page)',
+                    borderRadius: 'var(--radius)',
                     padding: '24px',
                     transition: 'transform 0.2s'
                   }}
@@ -496,7 +496,7 @@ const FaceShapeGuide = () => {
                             padding: '4px 12px',
                             background: 'var(--brand)',
                             color: 'var(--text-white)',
-                            borderRadius: '16px',
+                            borderRadius: 'var(--radius-xl)',
                             fontSize: '12px',
                             textTransform: 'capitalize'
                           }}

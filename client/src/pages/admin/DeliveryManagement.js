@@ -5,7 +5,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { listOf } from '../../services/apiResponse.js';
 
-const STATUS_COLORS = { pending: '#ff9f00', picked: '#2874f0', in_transit: '#2874f0', delivered: '#26a541', failed: '#ff6161' };
+const STATUS_COLORS = { pending: 'var(--warning)', picked: 'var(--brand)', in_transit: 'var(--brand)', delivered: 'var(--success)', failed: 'var(--danger)' };
 
 const DeliveryManagement = () => {
   const [deliveries, setDeliveries] = useState([]);
@@ -70,8 +70,8 @@ const DeliveryManagement = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-            <button onClick={() => setTab('deliveries')} style={{ padding: '8px 20px', borderRadius: '4px', fontSize: '14px', fontWeight: 500, background: tab === 'deliveries' ? 'var(--primary)' : '#fff', color: tab === 'deliveries' ? '#fff' : 'var(--text-secondary)', border: `1px solid ${tab === 'deliveries' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiTruck size={14} /> Deliveries ({filteredDeliveries.length})</button>
-            <button onClick={() => setTab('pickups')} style={{ padding: '8px 20px', borderRadius: '4px', fontSize: '14px', fontWeight: 500, background: tab === 'pickups' ? 'var(--primary)' : '#fff', color: tab === 'pickups' ? '#fff' : 'var(--text-secondary)', border: `1px solid ${tab === 'pickups' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiPackage size={14} /> Pickups ({filteredPickups.length})</button>
+            <button onClick={() => setTab('deliveries')} style={{ padding: '8px 20px', borderRadius: 'var(--radius-xs)', fontSize: '14px', fontWeight: 500, background: tab === 'deliveries' ? 'var(--primary)' : 'var(--bg-white)', color: tab === 'deliveries' ? 'var(--text-white)' : 'var(--text-secondary)', border: `1px solid ${tab === 'deliveries' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiTruck size={14} /> Deliveries ({filteredDeliveries.length})</button>
+            <button onClick={() => setTab('pickups')} style={{ padding: '8px 20px', borderRadius: 'var(--radius-xs)', fontSize: '14px', fontWeight: 500, background: tab === 'pickups' ? 'var(--primary)' : 'var(--bg-white)', color: tab === 'pickups' ? 'var(--text-white)' : 'var(--text-secondary)', border: `1px solid ${tab === 'pickups' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiPackage size={14} /> Pickups ({filteredPickups.length})</button>
           </div>
 
           {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : (

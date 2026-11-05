@@ -84,7 +84,7 @@ const DeliveryPartnerLogin = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', padding: '20px' }}>
-      <div style={{ background: 'var(--bg-white, #fff)', borderRadius: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}>
         <div style={{ background: 'var(--bg-dark)', padding: '26px 32px', textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
             <Logo variant="onDark" size={22} />
@@ -106,7 +106,7 @@ const DeliveryPartnerLogin = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className={`input ${errors.email ? 'input-error' : ''}`}
-                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
               {errors.email && <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.email}</span>}
@@ -122,7 +122,7 @@ const DeliveryPartnerLogin = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className={`input ${errors.password ? 'input-error' : ''}`}
-                  style={{ width: '100%', padding: '12px 40px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '14px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 40px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '14px', boxSizing: 'border-box' }}
                 />
                 <button
                   type="button"
@@ -139,7 +139,7 @@ const DeliveryPartnerLogin = () => {
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-block btn-lg"
-              style={{ width: '100%', padding: '14px', background: loading ? '#9e9e9e' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
+              style={{ width: '100%', padding: '14px', background: loading ? 'var(--text-light)' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-md)', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
@@ -160,7 +160,7 @@ const DeliveryPartnerLogin = () => {
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter 6-digit OTP"
                   className="input"
-                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '18px', fontWeight: 600, letterSpacing: '8px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '18px', fontWeight: 600, letterSpacing: '8px', boxSizing: 'border-box' }}
                   maxLength={6}
                   autoFocus
                 />
@@ -171,7 +171,7 @@ const DeliveryPartnerLogin = () => {
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-block btn-lg"
-              style={{ width: '100%', padding: '14px', background: loading ? '#9e9e9e' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
+              style={{ width: '100%', padding: '14px', background: loading ? 'var(--text-light)' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-md)', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
             >
               {loading ? 'Verifying...' : 'Verify & Login'}
             </button>
@@ -180,7 +180,7 @@ const DeliveryPartnerLogin = () => {
               type="button"
               onClick={() => { setStep(1); setOtp(''); }}
               className="btn btn-outline btn-block"
-              style={{ width: '100%', padding: '12px', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginBottom: '16px' }}
+              style={{ width: '100%', padding: '12px', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-md)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginBottom: '16px' }}
             >
               Back to Login
             </button>

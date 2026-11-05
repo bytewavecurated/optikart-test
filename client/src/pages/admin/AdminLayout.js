@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiUsers, FiShoppingBag, FiPackage, FiDollarSign, FiTrendingUp, FiTruck, FiTag, FiFileText, FiSettings, FiActivity, FiImage, FiLogOut, FiMenu, FiX, FiShield, FiMessageCircle } from 'react-icons/fi';
+import { FiFileText, FiHome, FiUsers, FiShoppingBag, FiPackage, FiDollarSign, FiTrendingUp, FiTruck, FiTag, FiSettings, FiActivity, FiImage, FiLogOut, FiMenu, FiX, FiShield, FiMessageCircle } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import Logo from '../../components/Logo';
 import BackButton from '../../components/BackButton';
@@ -27,6 +27,7 @@ const AdminLayout = () => {
     { label: 'Commissions', path: '/admin/commissions', icon: <FiTrendingUp /> },
     { label: 'Sale Events', path: '/admin/sale-events', icon: <FiActivity /> },
     { label: 'Banners', path: '/admin/banners', icon: <FiImage /> },
+    { label: 'Prescriptions', path: '/admin/prescriptions', icon: <FiFileText /> },
     { label: 'Coupons', path: '/admin/coupons', icon: <FiTag /> },
     { label: 'Blogs', path: '/admin/blogs', icon: <FiFileText /> },
     { label: 'Chatbot', path: '/admin/chatbot', icon: <FiMessageCircle /> },
@@ -43,7 +44,7 @@ const AdminLayout = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f9fa' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-page)' }}>
       {/* Sidebar */}
       <aside style={{
         width: sidebarOpen ? '280px' : '80px',
@@ -73,11 +74,11 @@ const AdminLayout = () => {
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             style={{
-              background: '#f8f9fa',
+              background: 'var(--bg-page)',
               border: 'none',
               cursor: 'pointer',
               padding: '10px',
-              borderRadius: '10px',
+              borderRadius: 'var(--radius)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -85,12 +86,12 @@ const AdminLayout = () => {
               transition: 'all 0.2s ease'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#f0f0f0';
-              e.currentTarget.style.color = '#212121';
+              e.currentTarget.style.background = 'var(--bg-subtle)';
+              e.currentTarget.style.color = 'var(--text-primary)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#f8f9fa';
-              e.currentTarget.style.color = '#757575';
+              e.currentTarget.style.background = 'var(--bg-page)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
             {sidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
@@ -108,10 +109,10 @@ const AdminLayout = () => {
                 alignItems: 'center',
                 gap: '14px',
                 padding: sidebarOpen ? '14px 18px' : '14px',
-                borderRadius: '12px',
+                borderRadius: 'var(--radius)',
                 marginBottom: '6px',
                 textDecoration: 'none',
-                color: isActive(item) ? '#667eea' : '#757575',
+                color: isActive(item) ? 'var(--brand)' : 'var(--text-secondary)',
                 background: isActive(item) ? 'var(--brand-tint)' : 'transparent',
                 fontWeight: isActive(item) ? 600 : 500,
                 fontSize: '14px',
@@ -122,14 +123,14 @@ const AdminLayout = () => {
               title={!sidebarOpen ? item.label : ''}
               onMouseEnter={(e) => {
                 if (!isActive(item)) {
-                  e.currentTarget.style.background = '#f8f9fa';
-                  e.currentTarget.style.color = '#212121';
+                  e.currentTarget.style.background = 'var(--bg-page)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive(item)) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = '#757575';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
                 }
               }}
             >
@@ -157,14 +158,14 @@ const AdminLayout = () => {
             <div style={{ 
               padding: '16px',
               marginBottom: '12px',
-              background: '#f8f9fa',
-              borderRadius: '12px'
+              background: 'var(--bg-page)',
+              borderRadius: 'var(--radius)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                 <div style={{
                   width: '40px',
                   height: '40px',
-                  borderRadius: '10px',
+                  borderRadius: 'var(--radius)',
                   background: 'var(--brand-tint)',
                   color: 'var(--brand)',
                   display: 'flex',
@@ -185,7 +186,7 @@ const AdminLayout = () => {
                 padding: '4px 10px',
                 background: 'var(--brand)',
                 color: 'var(--text-white)',
-                borderRadius: '6px',
+                borderRadius: 'var(--radius-sm)',
                 fontSize: '11px',
                 fontWeight: 600
               }}>
@@ -200,7 +201,7 @@ const AdminLayout = () => {
               alignItems: 'center',
               gap: '14px',
               padding: sidebarOpen ? '14px 18px' : '14px',
-              borderRadius: '12px',
+              borderRadius: 'var(--radius)',
               width: '100%',
               background: 'transparent',
               border: 'none',
@@ -213,7 +214,7 @@ const AdminLayout = () => {
             }}
             title={!sidebarOpen ? 'Logout' : ''}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#ffebee';
+              e.currentTarget.style.background = 'var(--danger-light)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'transparent';
@@ -259,7 +260,7 @@ const AdminLayout = () => {
             <div style={{
               padding: '8px 16px',
               background: 'var(--brand-tint)',
-              borderRadius: '10px',
+              borderRadius: 'var(--radius)',
               display: 'flex',
               alignItems: 'center',
               gap: '8px'

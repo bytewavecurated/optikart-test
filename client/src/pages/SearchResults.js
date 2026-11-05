@@ -80,15 +80,15 @@ const SearchResults = () => {
                 <option value="popularity">Popularity</option>
               </select>
               <div style={{ display: 'flex', gap: '4px' }}>
-                <button onClick={() => setViewMode('grid')} style={{ padding: '8px', background: viewMode === 'grid' ? 'var(--primary-light)' : '#fff', borderRadius: '4px', border: `1px solid ${viewMode === 'grid' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer' }}><FiGrid size={16} /></button>
-                <button onClick={() => setViewMode('list')} style={{ padding: '8px', background: viewMode === 'list' ? 'var(--primary-light)' : '#fff', borderRadius: '4px', border: `1px solid ${viewMode === 'list' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer' }}><FiList size={16} /></button>
+                <button onClick={() => setViewMode('grid')} style={{ padding: '8px', background: viewMode === 'grid' ? 'var(--primary-light)' : 'var(--bg-white)', borderRadius: 'var(--radius-xs)', border: `1px solid ${viewMode === 'grid' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer' }}><FiGrid size={16} /></button>
+                <button onClick={() => setViewMode('list')} style={{ padding: '8px', background: viewMode === 'list' ? 'var(--primary-light)' : 'var(--bg-white)', borderRadius: 'var(--radius-xs)', border: `1px solid ${viewMode === 'list' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer' }}><FiList size={16} /></button>
               </div>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
             {[{ label: 'All Prices', value: 'all' }, { label: 'Under ₹500', value: '0-500' }, { label: '₹500 - ₹1000', value: '500-1000' }, { label: '₹1000 - ₹2000', value: '1000-2000' }, { label: 'Above ₹2000', value: '2000-99999' }].map((range) => (
-              <button key={range.value} onClick={() => setPriceRange(range.value)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '13px', border: `1px solid ${priceRange === range.value ? 'var(--primary)' : 'var(--border)'}`, background: priceRange === range.value ? 'var(--primary-light)' : '#fff', color: priceRange === range.value ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }}>
+              <button key={range.value} onClick={() => setPriceRange(range.value)} style={{ padding: '6px 14px', borderRadius: 'var(--radius-xl)', fontSize: '13px', border: `1px solid ${priceRange === range.value ? 'var(--primary)' : 'var(--border)'}`, background: priceRange === range.value ? 'var(--primary-light)' : 'var(--bg-white)', color: priceRange === range.value ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer' }}>
                 {range.label}
               </button>
             ))}

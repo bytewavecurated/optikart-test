@@ -34,7 +34,7 @@ const STYLES = {
     width: '100%',
     padding: '10px 40px 10px 40px',
     border: '1px solid var(--border)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     fontSize: '14px',
     outline: 'none',
     background: 'var(--bg-white)',
@@ -119,7 +119,7 @@ const STYLES = {
     color: 'var(--text-light)',
     background: 'var(--bg-subtle)',
     padding: '2px 8px',
-    borderRadius: '3px',
+    borderRadius: 'var(--radius-xs)',
   },
   footer: {
     padding: '12px 16px',
@@ -393,9 +393,9 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
           style={{
             position: 'absolute',
             right: '40px',
-            background: isListening ? '#f44336' : 'none',
+            background: isListening ? 'var(--danger)' : 'none',
             border: 'none',
-            color: isListening ? '#fff' : '#2874f0',
+            color: isListening ? 'var(--text-white)' : 'var(--brand)',
             cursor: isCapturing ? 'not-allowed' : 'pointer',
             fontSize: '18px',
             padding: '8px',
@@ -456,7 +456,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
               style={{
                 width: '640px',
                 maxWidth: '90vw',
-                borderRadius: '12px',
+                borderRadius: 'var(--radius)',
                 transform: 'scaleX(-1)'
               }}
             />
@@ -470,7 +470,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 background: 'var(--brand)',
                 color: 'var(--text-white)',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 fontSize: '16px',
                 fontWeight: 600
@@ -485,7 +485,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 background: 'var(--danger)',
                 color: 'var(--text-white)',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 fontSize: '16px',
                 fontWeight: 600

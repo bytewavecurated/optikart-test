@@ -5,10 +5,10 @@ import { oneOf } from '../services/apiResponse.js';
 
 const DEFAULT_FRAME_SHAPES = ['Round', 'Rectangle', 'Square', 'Aviator', 'Cat Eye', 'Wayfarer', 'Oval', 'Geometric'];
 const DEFAULT_COLORS = [
-  { name: 'Black', hex: '#000' }, { name: 'Brown', hex: '#8B4513' },
-  { name: 'Gold', hex: '#FFD700' }, { name: 'Silver', hex: '#C0C0C0' },
-  { name: 'Blue', hex: '#2874f0' }, { name: 'Red', hex: '#e43f5a' },
-  { name: 'Green', hex: '#388e3c' }, { name: 'Transparent', hex: '#e0e0e0' },
+  { name: 'Black', hex: '#000' }, { name: 'Brown', hex: 'var(--warning)' },
+  { name: 'Gold', hex: 'var(--rating-gold)' }, { name: 'Silver', hex: 'var(--border)' },
+  { name: 'Blue', hex: 'var(--brand)' }, { name: 'Red', hex: 'var(--danger)' },
+  { name: 'Green', hex: 'var(--success)' }, { name: 'Transparent', hex: 'var(--border)' },
   { name: 'Multi', hex: 'var(--brand)' },
 ];
 const DEFAULT_LENS_TYPES = ['Non-Powered', 'Powered', 'Photochromic', 'Polarized', 'Blue-Cut'];
@@ -30,7 +30,7 @@ const styles = {
   sidebar: {
     width: '260px',
     background: 'var(--bg-white)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     boxShadow: 'var(--shadow)',
     fontFamily: "var(--font-body)",
     overflow: 'hidden',
@@ -90,7 +90,7 @@ const styles = {
   checkbox: {
     width: '16px',
     height: '16px',
-    accentColor: '#2874f0',
+    accentColor: 'var(--brand)',
     cursor: 'pointer',
   },
   rangeWrap: {
@@ -105,7 +105,7 @@ const styles = {
   },
   rangeInput: {
     width: '100%',
-    accentColor: '#2874f0',
+    accentColor: 'var(--brand)',
     cursor: 'pointer',
   },
   priceInputs: {
@@ -118,7 +118,7 @@ const styles = {
     width: '100%',
     padding: '6px 8px',
     border: '1px solid var(--border)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     fontSize: '13px',
     outline: 'none',
   },
@@ -220,7 +220,7 @@ export default function FilterSidebar({ filters = {}, onFilterChange, mobileOpen
         if (data.colors) {
           setDynamicColors(data.colors.map(c =>
             typeof c === 'string'
-              ? { name: c, hex: DEFAULT_COLORS.find(dc => dc.name.toLowerCase() === c.toLowerCase())?.hex || '#ccc' }
+              ? { name: c, hex: DEFAULT_COLORS.find(dc => dc.name.toLowerCase() === c.toLowerCase())?.hex || 'var(--border-strong)' }
               : c
           ));
         }

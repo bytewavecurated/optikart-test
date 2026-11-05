@@ -88,13 +88,13 @@ const BlogList = () => {
                 onClick={() => setActiveCategory(cat)}
                 style={{
                   padding: '8px 18px',
-                  borderRadius: '20px',
+                  borderRadius: 'var(--radius-xl)',
                   border: 'none',
                   fontSize: '13px',
                   fontWeight: 500,
                   cursor: 'pointer',
                   background: activeCategory === cat ? 'var(--primary)' : 'var(--bg-primary)',
-                  color: activeCategory === cat ? '#fff' : 'var(--text-primary)',
+                  color: activeCategory === cat ? 'var(--text-white)' : 'var(--text-primary)',
                   transition: 'all 0.2s',
                 }}
               >
@@ -137,7 +137,7 @@ const BlogList = () => {
                       <span style={{ color: 'var(--text-white)', fontSize: '32px', fontWeight: 700, opacity: 0.3 }}>{(post.category || 'BLOG').charAt(0)}</span>
                     </div>
                     <div style={{ padding: '16px' }}>
-                      <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '12px', background: 'var(--primary-light, #e3f0ff)', color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase' }}>{post.category}</span>
+                      <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: 'var(--radius)', background: 'var(--primary-light, #e3f0ff)', color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase' }}>{post.category}</span>
                       <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', lineHeight: 1.4, color: 'var(--text-primary)' }}>{post.title}</h3>
                       <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.excerpt}</p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-light)' }}>

@@ -37,7 +37,7 @@ const styles = {
     transition: 'all 0.3s',
   },
   fabOpen: {
-    background: '#e43f5a',
+    background: 'var(--danger)',
     transform: 'rotate(0deg)',
   },
   window: {
@@ -47,7 +47,7 @@ const styles = {
     width: '380px',
     height: '520px',
     background: 'var(--bg-white)',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius)',
     boxShadow: 'var(--shadow-lg)',
     display: 'flex',
     flexDirection: 'column',
@@ -88,12 +88,12 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
-    background: '#f5f7fa',
+    background: 'var(--bg-page)',
   },
   message: {
     maxWidth: '85%',
     padding: '10px 14px',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius)',
     fontSize: '14px',
     lineHeight: '1.5',
   },
@@ -115,12 +115,12 @@ const styles = {
     flexWrap: 'wrap',
     gap: '6px',
     padding: '0 16px 12px',
-    background: '#f5f7fa',
+    background: 'var(--bg-page)',
   },
   quickReply: {
     padding: '6px 12px',
     border: '1px solid var(--brand)',
-    borderRadius: '20px',
+    borderRadius: 'var(--radius-xl)',
     background: 'var(--bg-white)',
     color: 'var(--brand)',
     fontSize: '12px',
@@ -143,7 +143,7 @@ const styles = {
     flex: 1,
     padding: '10px 14px',
     border: '1px solid var(--border)',
-    borderRadius: '24px',
+    borderRadius: 'var(--radius-xl)',
     fontSize: '14px',
     outline: 'none',
     transition: 'border-color 0.2s',
@@ -163,7 +163,7 @@ const styles = {
     flexShrink: 0,
   },
   sendBtnDisabled: {
-    background: '#c2c2c2',
+    background: 'var(--border)',
     cursor: 'not-allowed',
   },
   typing: {
@@ -172,7 +172,7 @@ const styles = {
     padding: '10px 14px',
     alignSelf: 'flex-start',
     background: 'var(--bg-white)',
-    borderRadius: '12px',
+    borderRadius: 'var(--radius)',
     borderBottomLeftRadius: '4px',
     boxShadow: 'var(--shadow-sm)',
   },
@@ -302,8 +302,8 @@ export default function ChatWidget({ userRole = 'user' }) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               style={styles.input}
-              onFocus={(e) => e.target.style.borderColor = '#2874f0'}
-              onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+              onFocus={(e) => e.target.style.borderColor = 'var(--brand)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
             />
             <button
               style={{

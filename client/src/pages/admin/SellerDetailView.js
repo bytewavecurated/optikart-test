@@ -131,12 +131,12 @@ const SellerDetailView = () => {
                   <p style={{ fontSize: '13px', color: 'var(--text-light)' }}>Seller ID: {seller.sellerId || seller._id}</p>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                     {seller.isVerified && (
-                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <FiCheckCircle size={12} /> Verified
                       </span>
                     )}
                     {avgRating > 0 && (
-                      <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <FiStar size={12} /> {avgRating.toFixed(1)}
                       </span>
                     )}
@@ -171,7 +171,7 @@ const SellerDetailView = () => {
             </div>
 
             {seller.isBanned && (
-              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
                 <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Banned</p>
                 <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Reason: {seller.banReason || 'No reason provided'}</p>
                 <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Banned on: {new Date(seller.bannedAt).toLocaleDateString()}</p>
@@ -179,7 +179,7 @@ const SellerDetailView = () => {
             )}
 
             {seller.isShadowBanned && !seller.isBanned && (
-              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: '4px', padding: '12px', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
                 <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Shadow Banned</p>
                 <p style={{ color: 'var(--warning)', fontSize: '12px' }}>Seller can still access the platform but with limited visibility</p>
               </div>
@@ -290,11 +290,11 @@ const SellerDetailView = () => {
                         <td style={{ padding: '12px' }}>
                           <span style={{ 
                             padding: '4px 8px', 
-                            borderRadius: '4px', 
+                            borderRadius: 'var(--radius-xs)', 
                             fontSize: '11px', 
                             fontWeight: 600,
-                            background: product.isActive ? '#e8f5e9' : '#ffebee',
-                            color: product.isActive ? '#2e7d32' : '#c62828'
+                            background: product.isActive ? 'var(--success-light)' : 'var(--danger-light)',
+                            color: product.isActive ? 'var(--success)' : 'var(--danger)'
                           }}>
                             {product.isActive ? 'Active' : 'Inactive'}
                           </span>
@@ -338,11 +338,11 @@ const SellerDetailView = () => {
                         <td style={{ padding: '12px' }}>
                           <span style={{ 
                             padding: '4px 8px', 
-                            borderRadius: '4px', 
+                            borderRadius: 'var(--radius-xs)', 
                             fontSize: '11px', 
                             fontWeight: 600,
-                            background: order.orderStatus === 'delivered' ? '#e8f5e9' : order.orderStatus === 'cancelled' ? '#ffebee' : '#fff3e0',
-                            color: order.orderStatus === 'delivered' ? '#2e7d32' : order.orderStatus === 'cancelled' ? '#c62828' : '#e65100'
+                            background: order.orderStatus === 'delivered' ? 'var(--success-light)' : order.orderStatus === 'cancelled' ? 'var(--danger-light)' : 'var(--warning-light)',
+                            color: order.orderStatus === 'delivered' ? 'var(--success)' : order.orderStatus === 'cancelled' ? 'var(--danger)' : 'var(--warning)'
                           }}>
                             {order.orderStatus}
                           </span>

@@ -10,7 +10,7 @@ import {
  */
 const DEFAULT_GENDERS = [
   { id: 'men', name: 'Men', image: '/assets/gen-men.svg', color: 'var(--brand)' },
-  { id: 'women', name: 'Women', image: '/assets/gen-women.svg', color: '#ff6161' },
+  { id: 'women', name: 'Women', image: '/assets/gen-women.svg', color: 'var(--danger)' },
   { id: 'kids', name: 'Kids', image: '/assets/gen-kids.svg', color: 'var(--warning)' }
 ];
 
@@ -70,7 +70,7 @@ const GenderSelection = ({ tiles }) => {
                 onClick={() => handleGenderSelect(gender.id)}
                 style={{
                   cursor: 'pointer',
-                  borderRadius: '16px',
+                  borderRadius: 'var(--radius-xl)',
                   overflow: 'hidden',
                   boxShadow: 'var(--shadow-lg)',
                   transition: 'transform 0.2s, box-shadow 0.2s',
@@ -132,7 +132,7 @@ const GenderSelection = ({ tiles }) => {
                   padding: '8px 16px',
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border)',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-md)',
                   cursor: 'pointer',
                   fontSize: '14px',
                   color: 'var(--text-secondary)'
@@ -154,7 +154,7 @@ const GenderSelection = ({ tiles }) => {
                     padding: '24px',
                     background: 'var(--bg-white)',
                     border: '2px solid var(--border)',
-                    borderRadius: '12px',
+                    borderRadius: 'var(--radius)',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
                     textAlign: 'center'
@@ -166,7 +166,7 @@ const GenderSelection = ({ tiles }) => {
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.background = '#fff';
+                    e.currentTarget.style.background = 'var(--bg-white)';
                     e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >

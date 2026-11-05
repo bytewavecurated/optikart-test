@@ -2,12 +2,12 @@ import React from 'react';
 import { FiChevronRight } from 'react-icons/fi';
 
 const BRANDS = [
-  { name: 'Ray-Ban', slug: 'ray-ban', startPrice: 2999, color: '#1a1a2e', tagline: 'Iconic Style' },
-  { name: 'Fastrack', slug: 'fastrack', startPrice: 999, color: '#e43f5a', tagline: 'Youth Vibe' },
+  { name: 'Ray-Ban', slug: 'ray-ban', startPrice: 2999, color: 'var(--bg-dark)', tagline: 'Iconic Style' },
+  { name: 'Fastrack', slug: 'fastrack', startPrice: 999, color: 'var(--danger)', tagline: 'Youth Vibe' },
   { name: 'Lenskart Air', slug: 'lenskart-air', startPrice: 1499, color: 'var(--brand)', tagline: 'Featherlight' },
-  { name: 'John Jacobs', slug: 'john-jacobs', startPrice: 2499, color: '#4a4a4a', tagline: 'Premium Craft' },
-  { name: 'Vogue', slug: 'vogue', startPrice: 3499, color: '#9c27b0', tagline: 'Fashion Forward' },
-  { name: 'Oakley', slug: 'oakley', startPrice: 4999, color: '#ff6f00', tagline: 'Performance' },
+  { name: 'John Jacobs', slug: 'john-jacobs', startPrice: 2499, color: 'var(--text-primary)', tagline: 'Premium Craft' },
+  { name: 'Vogue', slug: 'vogue', startPrice: 3499, color: 'var(--brand-dark)', tagline: 'Fashion Forward' },
+  { name: 'Oakley', slug: 'oakley', startPrice: 4999, color: 'var(--warning)', tagline: 'Performance' },
 ];
 
 const styles = {
@@ -15,7 +15,7 @@ const styles = {
     background: 'var(--bg-white)',
     margin: '16px 0',
     padding: '20px 24px',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     boxShadow: 'var(--shadow)',
     fontFamily: "var(--font-body)",
   },
@@ -51,7 +51,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     padding: '20px 12px',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     border: '1px solid var(--bg-subtle)',
     textDecoration: 'none',
     transition: 'all 0.2s',

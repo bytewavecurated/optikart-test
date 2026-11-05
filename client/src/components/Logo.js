@@ -31,7 +31,7 @@ export default function Logo({
 }) {
   const isDark = variant === 'onDark';
   const accent = 'var(--brand)';
-  const textColor = isDark ? '#ffffff' : 'var(--text-primary)';
+  const textColor = isDark ? 'var(--bg-white)' : 'var(--text-primary)';
   const subColor = isDark ? 'rgba(255,255,255,0.62)' : 'var(--text-secondary)';
 
   return (

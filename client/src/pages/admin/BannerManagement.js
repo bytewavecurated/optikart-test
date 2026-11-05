@@ -193,7 +193,7 @@ const BannerManagement = () => {
                       <img
                         src={imagePreview}
                         alt="Preview"
-                        style={{ marginTop: '12px', maxWidth: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px' }}
+                        style={{ marginTop: '12px', maxWidth: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
                       />
                     )}
                   </div>
@@ -360,7 +360,7 @@ const BannerManagement = () => {
                   <img
                     src={banner.images?.desktop?.url || banner.images?.mobile?.url || banner.image}
                     alt={banner.title}
-                    style={{ width: '200px', height: '120px', objectFit: 'cover', borderRadius: '8px' }}
+                    style={{ width: '200px', height: '120px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
                   />
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>

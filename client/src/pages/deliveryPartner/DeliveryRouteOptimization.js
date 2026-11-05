@@ -138,8 +138,8 @@ const DeliveryRouteOptimization = () => {
               <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Optimized Route</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {routeData.optimizedRoute.map((delivery, index) => (
-                  <div key={index} style={{ padding: '16px', border: '2px solid var(--border)', borderRadius: '8px', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '-12px', left: '16px', background: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 600 }}>
+                  <div key={index} style={{ padding: '16px', border: '2px solid var(--border)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: '-12px', left: '16px', background: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: 600 }}>
                       Stop {delivery.sequenceNumber}
                     </div>
                     <div style={{ marginTop: '8px' }}>
@@ -178,7 +178,7 @@ const DeliveryRouteOptimization = () => {
                 <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Recommendations</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {routeData.recommendations.map((rec, index) => (
-                    <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', borderLeft: `4px solid ${rec.priority === 'high' ? 'var(--danger)' : rec.priority === 'medium' ? 'var(--warning)' : 'var(--success)'}` }}>
+                    <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${rec.priority === 'high' ? 'var(--danger)' : rec.priority === 'medium' ? 'var(--warning)' : 'var(--success)'}` }}>
                       <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
                         <FiAlertTriangle size={20} color={rec.priority === 'high' ? 'var(--danger)' : rec.priority === 'medium' ? 'var(--warning)' : 'var(--success)'} style={{ marginTop: '2px' }} />
                         <div>

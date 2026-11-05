@@ -231,7 +231,7 @@ const LensConfiguration = () => {
               <img
                 src={product.images?.[0] || '/placeholder.svg'}
                 alt={product.name}
-                style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '8px', border: '1px solid var(--border-light)', flexShrink: 0 }}
+                style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', flexShrink: 0 }}
               />
               <div style={{ flex: 1 }}>
                 <h1 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>{product.name}</h1>
@@ -263,10 +263,10 @@ const LensConfiguration = () => {
                   flex: 1,
                   padding: '12px 8px',
                   textAlign: 'center',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-md)',
                   cursor: step.number <= currentStep ? 'pointer' : 'default',
                   background: step.number === currentStep ? 'var(--primary)' : step.number < currentStep ? 'var(--primary-light, rgba(99,102,241,0.1))' : 'var(--bg-primary)',
-                  color: step.number === currentStep ? '#fff' : step.number < currentStep ? 'var(--primary)' : 'var(--text-light)',
+                  color: step.number === currentStep ? 'var(--text-white)' : step.number < currentStep ? 'var(--primary)' : 'var(--text-light)',
                   transition: 'all 0.2s ease',
                   border: step.number === currentStep ? 'none' : '1px solid var(--border-light)',
                 }}
@@ -292,7 +292,7 @@ const LensConfiguration = () => {
                     onClick={() => setSelectedType(type.value)}
                     style={{
                       padding: '16px 20px',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--radius-md)',
                       border: `2px solid ${selectedType === type.value ? 'var(--primary)' : 'var(--border-light)'}`,
                       background: selectedType === type.value ? 'rgba(99,102,241,0.04)' : 'var(--bg-primary)',
                       cursor: 'pointer',
@@ -332,7 +332,7 @@ const LensConfiguration = () => {
                     onClick={() => setSelectedMaterial(material.value)}
                     style={{
                       padding: '16px 20px',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--radius-md)',
                       border: `2px solid ${selectedMaterial === material.value ? 'var(--primary)' : 'var(--border-light)'}`,
                       background: selectedMaterial === material.value ? 'rgba(99,102,241,0.04)' : 'var(--bg-primary)',
                       cursor: 'pointer',
@@ -350,7 +350,7 @@ const LensConfiguration = () => {
                       </div>
                       <p style={{ fontSize: '13px', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>{material.description}</p>
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: material.multiplier > 1 ? 'var(--text-secondary)' : 'var(--success)', whiteSpace: 'nowrap', background: 'var(--bg-primary)', padding: '4px 10px', borderRadius: '20px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: material.multiplier > 1 ? 'var(--text-secondary)' : 'var(--success)', whiteSpace: 'nowrap', background: 'var(--bg-primary)', padding: '4px 10px', borderRadius: 'var(--radius-xl)' }}>
                       {material.multiplier === 1 ? 'Included' : `×${material.multiplier}`}
                     </div>
                   </div>
@@ -372,7 +372,7 @@ const LensConfiguration = () => {
                     onClick={() => setSelectedCoating(coating.value)}
                     style={{
                       padding: '16px 20px',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--radius-md)',
                       border: `2px solid ${selectedCoating === coating.value ? 'var(--primary)' : 'var(--border-light)'}`,
                       background: selectedCoating === coating.value ? 'rgba(99,102,241,0.04)' : 'var(--bg-primary)',
                       cursor: 'pointer',
@@ -412,7 +412,7 @@ const LensConfiguration = () => {
                   style={{
                     flex: 1,
                     padding: '10px',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--radius-md)',
                     border: `2px solid ${!useFileUpload ? 'var(--primary)' : 'var(--border-light)'}`,
                     background: !useFileUpload ? 'rgba(99,102,241,0.04)' : 'var(--bg-primary)',
                     color: !useFileUpload ? 'var(--primary)' : 'var(--text-secondary)',
@@ -428,7 +428,7 @@ const LensConfiguration = () => {
                   style={{
                     flex: 1,
                     padding: '10px',
-                    borderRadius: '8px',
+                    borderRadius: 'var(--radius-md)',
                     border: `2px solid ${useFileUpload ? 'var(--primary)' : 'var(--border-light)'}`,
                     background: useFileUpload ? 'rgba(99,102,241,0.04)' : 'var(--bg-primary)',
                     color: useFileUpload ? 'var(--primary)' : 'var(--text-secondary)',
@@ -462,7 +462,7 @@ const LensConfiguration = () => {
                             style={{
                               width: '100%',
                               padding: '10px 12px',
-                              borderRadius: '6px',
+                              borderRadius: 'var(--radius-sm)',
                               border: '1px solid var(--border)',
                               fontSize: '14px',
                               outline: 'none',
@@ -493,7 +493,7 @@ const LensConfiguration = () => {
                             style={{
                               width: '100%',
                               padding: '10px 12px',
-                              borderRadius: '6px',
+                              borderRadius: 'var(--radius-sm)',
                               border: '1px solid var(--border)',
                               fontSize: '14px',
                               outline: 'none',
@@ -515,7 +515,7 @@ const LensConfiguration = () => {
                       style={{
                         width: '100%',
                         padding: '10px 12px',
-                        borderRadius: '6px',
+                        borderRadius: 'var(--radius-sm)',
                         border: '1px solid var(--border)',
                         fontSize: '14px',
                         outline: 'none',
@@ -530,7 +530,7 @@ const LensConfiguration = () => {
                   <div
                     style={{
                       border: '2px dashed var(--border)',
-                      borderRadius: '12px',
+                      borderRadius: 'var(--radius)',
                       padding: '40px 20px',
                       textAlign: 'center',
                       cursor: 'pointer',
@@ -573,12 +573,12 @@ const LensConfiguration = () => {
 
               <div style={{ display: 'grid', gap: '16px' }} className="summary-grid">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Frame</div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{product.name}</div>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>₹{product.price}</div>
                   </div>
-                  <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Lens Type</div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{typeObj?.label || '-'}</div>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>₹{typeObj?.basePrice || 0}</div>
@@ -586,14 +586,14 @@ const LensConfiguration = () => {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Material</div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{materialObj?.label || '-'}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>
                       {materialObj?.multiplier === 1 ? 'No additional cost' : `${materialObj?.multiplier}× multiplier`}
                     </div>
                   </div>
-                  <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Coating</div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{coatingObj?.label || '-'}</div>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: coatingObj?.price === 0 ? 'var(--success)' : 'var(--primary)', marginTop: '4px' }}>
@@ -603,7 +603,7 @@ const LensConfiguration = () => {
                 </div>
 
                 {!useFileUpload && (prescription.rightSphere || prescription.leftSphere || prescription.pd) && (
-                  <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '10px' }}>Prescription Details</div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
@@ -642,13 +642,13 @@ const LensConfiguration = () => {
                 )}
 
                 {useFileUpload && prescriptionFile && (
-                  <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Prescription File</div>
                     <div style={{ fontSize: '14px', fontWeight: 500 }}>{prescriptionFile.name}</div>
                   </div>
                 )}
 
-                <div style={{ padding: '20px', borderRadius: '8px', background: 'var(--bg-dark)', color: 'var(--text-white)' }}>
+                <div style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'var(--bg-dark)', color: 'var(--text-white)' }}>
                   <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '12px', opacity: 0.7 }}>Price Breakdown</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
@@ -686,7 +686,7 @@ const LensConfiguration = () => {
               onClick={currentStep === 1 ? () => navigate(`/product/${id}`) : handleBack}
               style={{
                 padding: '12px 24px',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border)',
                 background: 'var(--bg-primary)',
                 color: 'var(--text-secondary)',
@@ -708,10 +708,10 @@ const LensConfiguration = () => {
                 disabled={!isStepValid(currentStep)}
                 style={{
                   padding: '12px 32px',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-md)',
                   border: 'none',
                   background: isStepValid(currentStep) ? 'var(--primary)' : 'var(--border)',
-                  color: isStepValid(currentStep) ? '#fff' : 'var(--text-light)',
+                  color: isStepValid(currentStep) ? 'var(--text-white)' : 'var(--text-light)',
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: isStepValid(currentStep) ? 'pointer' : 'not-allowed',
@@ -726,7 +726,7 @@ const LensConfiguration = () => {
                 disabled={saving}
                 style={{
                   padding: '12px 32px',
-                  borderRadius: '8px',
+                  borderRadius: 'var(--radius-md)',
                   border: 'none',
                   background: saving ? 'var(--border)' : 'var(--primary)',
                   color: 'var(--text-white)',

@@ -131,7 +131,7 @@ const FAQPage = () => {
                       fontSize: '13px',
                       fontWeight: 500,
                       background: activeCategory === cat ? 'var(--primary)' : 'var(--bg-white)',
-                      color: activeCategory === cat ? '#fff' : 'var(--text-primary)',
+                      color: activeCategory === cat ? 'var(--text-white)' : 'var(--text-primary)',
                       border: activeCategory === cat ? 'none' : '1px solid var(--border)',
                       cursor: 'pointer',
                       transition: 'var(--transition)',

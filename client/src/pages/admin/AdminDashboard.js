@@ -40,12 +40,12 @@ const AdminDashboard = () => {
     { label: 'Manage Manufacturers', path: '/admin/manufacturers', icon: <FiPackage />, color: 'var(--brand)', desc: 'Manage manufacturer accounts' },
     { label: 'View Orders', path: '/admin/orders', icon: <FiPackage />, color: 'var(--brand)', desc: 'Track all orders' },
     { label: 'Revenue Analytics', path: '/admin/revenue', icon: <FiBarChart2 />, color: 'var(--brand)', desc: 'Financial insights' },
-    { label: 'Sale Events', path: '/admin/sale-events', icon: <FiActivity />, color: '#e91e63', desc: 'Create sales events' },
+    { label: 'Sale Events', path: '/admin/sale-events', icon: <FiActivity />, color: 'var(--danger)', desc: 'Create sales events' },
     { label: 'Banners', path: '/admin/banners', icon: <FiImage />, color: 'var(--brand)', desc: 'Manage homepage banners' },
-    { label: 'Coupons', path: '/admin/coupons', icon: <FiTag />, color: '#ff5722', desc: 'Create discount codes' },
-    { label: 'Blog Management', path: '/admin/blogs', icon: <FiFileText />, color: '#607d8b', desc: 'Manage blog content' },
+    { label: 'Coupons', path: '/admin/coupons', icon: <FiTag />, color: 'var(--danger)', desc: 'Create discount codes' },
+    { label: 'Blog Management', path: '/admin/blogs', icon: <FiFileText />, color: 'var(--text-secondary)', desc: 'Manage blog content' },
     { label: 'Staff Management', path: '/admin/staff', icon: <FiSettings />, color: 'var(--brand)', desc: 'Manage staff accounts' },
-    { label: 'Delivery', path: '/admin/delivery', icon: <FiTruck />, color: '#795548', desc: 'Track deliveries' },
+    { label: 'Delivery', path: '/admin/delivery', icon: <FiTruck />, color: 'var(--text-secondary)', desc: 'Track deliveries' },
   ];
 
   if (loading) {
@@ -102,7 +102,7 @@ const AdminDashboard = () => {
         {statCards.map((card, idx) => (
           <div key={idx} style={{ 
             background: 'var(--bg-white)',
-            borderRadius: '16px',
+            borderRadius: 'var(--radius-xl)',
             padding: '24px',
             boxShadow: 'var(--shadow)',
             position: 'relative',
@@ -158,7 +158,7 @@ const AdminDashboard = () => {
               style={{
                 padding: '24px',
                 background: 'var(--bg-white)',
-                borderRadius: '16px',
+                borderRadius: 'var(--radius-xl)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '16px',
@@ -172,7 +172,7 @@ const AdminDashboard = () => {
               <div style={{
                 width: '56px',
                 height: '56px',
-                borderRadius: '14px',
+                borderRadius: 'var(--radius-lg)',
                 background: `${item.color}15`,
                 color: item.color,
                 display: 'flex',
@@ -199,7 +199,7 @@ const AdminDashboard = () => {
       {/* Recent Activity Placeholder */}
       <div style={{ 
         background: 'var(--bg-white)',
-        borderRadius: '16px',
+        borderRadius: 'var(--radius-xl)',
         padding: '32px',
         boxShadow: 'var(--shadow)'
       }}>
@@ -261,7 +261,7 @@ const AdminDashboard = () => {
         .quick-link-card:hover {
           transform: translateY(-4px);
           box-shadow: var(--shadow-lg);
-          border-color: ${quickLinks[0]?.color || '#667eea'} !important;
+          border-color: ${quickLinks[0]?.color || 'var(--brand)'} !important;
         }
       `}</style>
     </div>

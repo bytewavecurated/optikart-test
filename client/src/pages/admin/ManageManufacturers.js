@@ -127,10 +127,10 @@ const ManageManufacturers = () => {
           onClick={() => setShowAddModal(true)}
           style={{
             padding: '10px 20px',
-            background: '#00bcd4',
+            background: 'var(--brand)',
             color: 'var(--text-white)',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -153,13 +153,13 @@ const ManageManufacturers = () => {
             width: '100%',
             padding: '10px 10px 10px 40px',
             border: '1px solid var(--border)',
-            borderRadius: '6px',
+            borderRadius: 'var(--radius-sm)',
             fontSize: '14px'
           }}
         />
       </div>
 
-      <div style={{ background: 'var(--bg-white)', borderRadius: '12px', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--bg-subtle)', borderBottom: '2px solid var(--border)' }}>
@@ -189,7 +189,7 @@ const ManageManufacturers = () => {
                     {mfr.isBanned ? (
                       <span style={{
                         padding: '4px 12px',
-                        borderRadius: '12px',
+                        borderRadius: 'var(--radius)',
                         fontSize: '12px',
                         fontWeight: 600,
                         background: 'var(--danger-light)',
@@ -200,7 +200,7 @@ const ManageManufacturers = () => {
                     ) : (
                       <span style={{
                         padding: '4px 12px',
-                        borderRadius: '12px',
+                        borderRadius: 'var(--radius)',
                         fontSize: '12px',
                         fontWeight: 600,
                         background: 'var(--success-light)',
@@ -227,21 +227,21 @@ const ManageManufacturers = () => {
                             brands: mfr.brands || []
                           });
                         }}
-                        style={{ padding: '6px', background: '#2196f3', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                         title="Edit"
                       >
                         <FiEdit size={16} />
                       </button>
                       <button
                         onClick={() => handleBan(mfr._id, !mfr.isBanned)}
-                        style={{ padding: '6px', background: mfr.isBanned ? '#4caf50' : '#ff9800', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: mfr.isBanned ? 'var(--success)' : 'var(--warning)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                         title={mfr.isBanned ? 'Unban' : 'Ban'}
                       >
                         {mfr.isBanned ? <FiEye size={16} /> : <FiEyeOff size={16} />}
                       </button>
                       <button
                         onClick={() => handleDelete(mfr._id)}
-                        style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                        style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                         title="Delete"
                       >
                         <FiTrash2 size={16} />
@@ -258,7 +258,7 @@ const ManageManufacturers = () => {
       {/* Add/Edit Modal */}
       {(showAddModal || editingManufacturer) && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>
               {editingManufacturer ? 'Edit Manufacturer' : 'Add New Manufacturer'}
             </h2>
@@ -271,7 +271,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Contact person name"
                   />
                 </div>
@@ -282,7 +282,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.companyName}
                     onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Company name"
                   />
                 </div>
@@ -295,7 +295,7 @@ const ManageManufacturers = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="manufacturer@email.com"
                   />
                 </div>
@@ -306,7 +306,7 @@ const ManageManufacturers = () => {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -319,7 +319,7 @@ const ManageManufacturers = () => {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Password"
                   />
                 </div>
@@ -332,7 +332,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.gstNumber}
                     onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="GST number"
                   />
                 </div>
@@ -343,7 +343,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.panNumber}
                     onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="PAN number"
                   />
                 </div>
@@ -355,7 +355,7 @@ const ManageManufacturers = () => {
                   type="text"
                   value={formData.brands.join(', ')}
                   onChange={(e) => setFormData({...formData, brands: e.target.value.split(',').map(b => b.trim()).filter(b => b)})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="Ray-Ban, Oakley, etc."
                 />
               </div>
@@ -367,7 +367,7 @@ const ManageManufacturers = () => {
                   type="text"
                   value={formData.address.street}
                   onChange={(e) => setFormData({...formData, address: {...formData.address, street: e.target.value}})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="Street address"
                 />
               </div>
@@ -379,7 +379,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.address.city}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, city: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="City"
                   />
                 </div>
@@ -390,7 +390,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.address.state}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, state: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="State"
                   />
                 </div>
@@ -401,7 +401,7 @@ const ManageManufacturers = () => {
                     type="text"
                     value={formData.address.pincode}
                     onChange={(e) => setFormData({...formData, address: {...formData.address, pincode: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Pincode"
                   />
                 </div>
@@ -411,7 +411,7 @@ const ManageManufacturers = () => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={editingManufacturer ? handleEdit : handleAdd}
-                style={{ flex: 1, padding: '12px', background: '#00bcd4', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 {editingManufacturer ? 'Update' : 'Add'} Manufacturer
               </button>
@@ -431,7 +431,7 @@ const ManageManufacturers = () => {
                     brands: []
                   });
                 }}
-                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 Cancel
               </button>

@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 const styles = {
   card: {
     background: 'var(--bg-white)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
     border: '1px solid var(--border)',
     overflow: 'hidden',
     transition: 'box-shadow 0.2s, transform 0.2s',
@@ -93,7 +93,7 @@ const styles = {
     background: 'var(--success)',
     color: 'var(--text-white)',
     padding: '2px 6px',
-    borderRadius: '3px',
+    borderRadius: 'var(--radius-xs)',
     fontSize: '12px',
     fontWeight: 600,
   },
@@ -269,12 +269,12 @@ export default function ProductCard({ product }) {
           aria-label="Compare product"
           title="Add to comparison"
         >
-          <FiColumns size={16} color="#666" />
+          <FiColumns size={16} color="var(--text-secondary)" />
         </button>
         <button
           style={{
             ...styles.wishlistBtn,
-            color: wishlisted ? '#ff4747' : '#999',
+            color: wishlisted ? 'var(--danger)' : 'var(--text-light)',
           }}
           onClick={handleWishlistClick}
           aria-label="Add to wishlist"

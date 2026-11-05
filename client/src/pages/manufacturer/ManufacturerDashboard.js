@@ -522,7 +522,7 @@ const ManufacturerDashboard = () => {
           </div>
           <button
             onClick={handleLogout}
-            style={{ padding: '8px 16px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{ padding: '8px 16px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <FiLogOut /> Logout
           </button>
@@ -532,9 +532,9 @@ const ManufacturerDashboard = () => {
       {/* Stats Cards */}
       <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', background: '#fce4ec', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f5576c' }}>
+              <div style={{ width: '48px', height: '48px', background: 'var(--brand-tint)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)' }}>
                 <FiPackage size={24} />
               </div>
               <div>
@@ -543,9 +543,9 @@ const ManufacturerDashboard = () => {
               </div>
             </div>
           </div>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', background: 'var(--success-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)' }}>
+              <div style={{ width: '48px', height: '48px', background: 'var(--success-light)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)' }}>
                 <FiUsers size={24} />
               </div>
               <div>
@@ -554,9 +554,9 @@ const ManufacturerDashboard = () => {
               </div>
             </div>
           </div>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', background: 'var(--warning-light)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--warning)' }}>
+              <div style={{ width: '48px', height: '48px', background: 'var(--warning-light)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--warning)' }}>
                 <FiPackage size={24} />
               </div>
               <div>
@@ -568,17 +568,17 @@ const ManufacturerDashboard = () => {
         </div>
 
         {/* Products Section */}
-        <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)', marginBottom: '24px' }}>
+        <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)', marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: 'var(--text-primary)' }}>Products</h2>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <label style={{ padding: '10px 20px', background: 'var(--success)', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <label style={{ padding: '10px 20px', background: 'var(--success)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <FiUpload /> Bulk Upload
                 <input type="file" accept=".xlsx,.xls,.csv" onChange={handleBulkUpload} style={{ display: 'none' }} />
               </label>
               <button
                 onClick={() => setShowAddProduct(true)}
-                style={{ padding: '10px 20px', background: '#f5576c', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ padding: '10px 20px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <FiPlus /> Add Product
               </button>
@@ -605,7 +605,7 @@ const ManufacturerDashboard = () => {
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           {product.images?.[0] && (
-                            <img src={product.images[0]} alt={product.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px' }} />
+                            <img src={product.images[0]} alt={product.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: 'var(--radius-sm)' }} />
                           )}
                           <span style={{ fontWeight: '500' }}>{product.title}</span>
                         </div>
@@ -615,34 +615,34 @@ const ManufacturerDashboard = () => {
                       <td style={{ padding: '12px' }}>
                         <span style={{
                           padding: '4px 12px',
-                          borderRadius: '12px',
+                          borderRadius: 'var(--radius)',
                           fontSize: '12px',
                           fontWeight: '600',
-                          background: product.isDiscontinued ? '#ffebee' : '#e8f5e9',
-                          color: product.isDiscontinued ? '#f44336' : '#4caf50'
+                          background: product.isDiscontinued ? 'var(--danger-light)' : 'var(--success-light)',
+                          color: product.isDiscontinued ? 'var(--danger)' : 'var(--success)'
                         }}>
                           {product.isDiscontinued ? 'Discontinued' : 'Active'}
                         </span>
                       </td>
                       <td style={{ padding: '12px' }}>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                          <button style={{ padding: '6px', background: '#2196f3', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                          <button style={{ padding: '6px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}>
                             <FiEye size={16} />
                           </button>
-                          <button style={{ padding: '6px', background: 'var(--warning)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                          <button style={{ padding: '6px', background: 'var(--warning)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}>
                             <FiEdit size={16} />
                           </button>
                           {product.isDiscontinued ? (
                             <button 
                               onClick={() => handleRecontinue(product._id)}
-                              style={{ padding: '6px', background: 'var(--success)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                              style={{ padding: '6px', background: 'var(--success)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                             >
                               Re-continue
                             </button>
                           ) : (
                             <button 
                               onClick={() => handleDiscontinue(product._id)}
-                              style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                              style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
                             >
                               <FiTrash2 size={16} />
                             </button>
@@ -658,25 +658,25 @@ const ManufacturerDashboard = () => {
         </div>
 
         {/* Sellers Section */}
-        <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '24px', boxShadow: 'var(--shadow)' }}>
+        <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: 'var(--text-primary)' }}>Your Sellers</h2>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 onClick={() => setShowBulkSellerUpload(true)}
-                style={{ padding: '10px 20px', background: 'var(--success)', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ padding: '10px 20px', background: 'var(--success)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <FiUpload /> Bulk Upload
               </button>
               <button
                 onClick={() => setShowAddSeller(true)}
-                style={{ padding: '10px 20px', background: '#f5576c', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ padding: '10px 20px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <FiPlus /> Add Seller
               </button>
               <button
                 onClick={openProfile}
-                style={{ padding: '10px 20px', background: 'var(--bg-white)', color: 'var(--text-primary)', border: '1px solid #d2d7de', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                style={{ padding: '10px 20px', background: 'var(--bg-white)', color: 'var(--text-primary)', border: '1px solid #d2d7de', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
               >
                 <FiEdit size={16} /> Company & brands
               </button>
@@ -706,11 +706,11 @@ const ManufacturerDashboard = () => {
                       <td style={{ padding: '12px' }}>
                         <span style={{
                           padding: '4px 12px',
-                          borderRadius: '12px',
+                          borderRadius: 'var(--radius)',
                           fontSize: '12px',
                           fontWeight: '600',
-                          background: seller.isBanned ? '#ffebee' : '#e8f5e9',
-                          color: seller.isBanned ? '#f44336' : '#4caf50'
+                          background: seller.isBanned ? 'var(--danger-light)' : 'var(--success-light)',
+                          color: seller.isBanned ? 'var(--danger)' : 'var(--success)'
                         }}>
                           {seller.isBanned ? 'Banned' : 'Active'}
                         </span>
@@ -750,7 +750,7 @@ const ManufacturerDashboard = () => {
       {/* Add Product Modal */}
       {showAddProduct && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>Add New Product</h2>
             
             <div style={{ display: 'grid', gap: '16px' }}>
@@ -760,7 +760,7 @@ const ManufacturerDashboard = () => {
                   type="text"
                   value={newProduct.title}
                   onChange={(e) => setNewProduct({...newProduct, title: e.target.value})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="Enter product title"
                 />
               </div>
@@ -770,7 +770,7 @@ const ManufacturerDashboard = () => {
                 <textarea
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px', minHeight: '100px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', minHeight: '100px' }}
                   placeholder="Enter product description"
                 />
               </div>
@@ -782,7 +782,7 @@ const ManufacturerDashboard = () => {
                     type="number"
                     value={newProduct.price}
                     onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="₹0.00"
                   />
                 </div>
@@ -793,7 +793,7 @@ const ManufacturerDashboard = () => {
                     type="number"
                     value={newProduct.stock}
                     onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="0"
                   />
                 </div>
@@ -805,7 +805,7 @@ const ManufacturerDashboard = () => {
                   <select
                     value={newProduct.category}
                     onChange={(e) => setNewProduct({...newProduct, category: e.target.value, kidsType: e.target.value === 'kids' ? '' : undefined})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   >
                     <option value="sunglasses">Sunglasses</option>
                     <option value="eyeglasses">Eyeglasses</option>
@@ -822,7 +822,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newProduct.brand}
                     onChange={(e) => setNewProduct({...newProduct, brand: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Brand name"
                   />
                 </div>
@@ -838,11 +838,11 @@ const ManufacturerDashboard = () => {
                       style={{
                         padding: '12px',
                         border: newProduct.kidsType === 'eyeglasses' ? '2px solid var(--brand)' : '1px solid var(--border)',
-                        borderRadius: '6px',
-                        background: newProduct.kidsType === 'eyeglasses' ? '#e8f0fe' : '#fff',
+                        borderRadius: 'var(--radius-sm)',
+                        background: newProduct.kidsType === 'eyeglasses' ? 'var(--brand-tint)' : 'var(--bg-white)',
                         cursor: 'pointer',
                         fontWeight: newProduct.kidsType === 'eyeglasses' ? '600' : '400',
-                        color: newProduct.kidsType === 'eyeglasses' ? '#2874f0' : '#212121'
+                        color: newProduct.kidsType === 'eyeglasses' ? 'var(--brand)' : 'var(--text-primary)'
                       }}
                     >
                       Eyeglasses
@@ -853,11 +853,11 @@ const ManufacturerDashboard = () => {
                       style={{
                         padding: '12px',
                         border: newProduct.kidsType === 'sunglasses' ? '2px solid var(--brand)' : '1px solid var(--border)',
-                        borderRadius: '6px',
-                        background: newProduct.kidsType === 'sunglasses' ? '#e8f0fe' : '#fff',
+                        borderRadius: 'var(--radius-sm)',
+                        background: newProduct.kidsType === 'sunglasses' ? 'var(--brand-tint)' : 'var(--bg-white)',
                         cursor: 'pointer',
                         fontWeight: newProduct.kidsType === 'sunglasses' ? '600' : '400',
-                        color: newProduct.kidsType === 'sunglasses' ? '#2874f0' : '#212121'
+                        color: newProduct.kidsType === 'sunglasses' ? 'var(--brand)' : 'var(--text-primary)'
                       }}
                     >
                       Sunglasses
@@ -872,7 +872,7 @@ const ManufacturerDashboard = () => {
                   <select
                     value={newProduct.gender}
                     onChange={(e) => setNewProduct({...newProduct, gender: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   >
                     <option value="men">Men</option>
                     <option value="women">Women</option>
@@ -886,7 +886,7 @@ const ManufacturerDashboard = () => {
                   <select
                     value={newProduct.frameSize}
                     onChange={(e) => setNewProduct({...newProduct, frameSize: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   >
                     <option value="small">Small</option>
                     <option value="medium">Medium</option>
@@ -974,7 +974,7 @@ const ManufacturerDashboard = () => {
                   type="text"
                   value={newProduct.colors.join(', ')}
                   onChange={(e) => setNewProduct({...newProduct, colors: e.target.value.split(',').map(c => c.trim())})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="Black, Brown, Gold"
                 />
               </div>
@@ -985,7 +985,7 @@ const ManufacturerDashboard = () => {
                   type="text"
                   value={newProduct.sizes.join(', ')}
                   onChange={(e) => setNewProduct({...newProduct, sizes: e.target.value.split(',').map(s => s.trim())})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="Small, Medium, Large"
                 />
               </div>
@@ -1070,13 +1070,13 @@ const ManufacturerDashboard = () => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={handleAddProduct}
-                style={{ flex: 1, padding: '12px', background: '#f5576c', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 Add Product
               </button>
               <button
                 onClick={() => setShowAddProduct(false)}
-                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 Cancel
               </button>
@@ -1144,7 +1144,7 @@ const ManufacturerDashboard = () => {
       {/* Add Seller Modal */}
       {showAddSeller && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '32px', maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '32px', maxWidth: '700px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>
               {editingSeller ? `Edit ${editingSeller.storeName || editingSeller.name || 'Seller'}` : 'Add New Seller'}
             </h2>
@@ -1157,7 +1157,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.name}
                     onChange={(e) => setNewSeller({...newSeller, name: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Full name"
                   />
                 </div>
@@ -1168,7 +1168,7 @@ const ManufacturerDashboard = () => {
                     type="email"
                     value={newSeller.email}
                     onChange={(e) => setNewSeller({...newSeller, email: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="seller@email.com"
                   />
                 </div>
@@ -1181,7 +1181,7 @@ const ManufacturerDashboard = () => {
                     type="tel"
                     value={newSeller.phone}
                     onChange={(e) => setNewSeller({...newSeller, phone: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -1192,7 +1192,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.storeName}
                     onChange={(e) => setNewSeller({...newSeller, storeName: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Store name"
                   />
                 </div>
@@ -1204,7 +1204,7 @@ const ManufacturerDashboard = () => {
                   type="text"
                   value={newSeller.manufacturerCode}
                   onChange={(e) => setNewSeller({...newSeller, manufacturerCode: e.target.value})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                   placeholder="Unique code from manufacturer"
                 />
               </div>
@@ -1217,7 +1217,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.storeAddress.street}
                     onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, street: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Street address"
                   />
                 </div>
@@ -1228,7 +1228,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.storeAddress.city}
                     onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, city: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="City"
                   />
                 </div>
@@ -1239,7 +1239,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.storeAddress.state}
                     onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, state: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="State"
                   />
                 </div>
@@ -1250,7 +1250,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.storeAddress.pincode}
                     onChange={(e) => setNewSeller({...newSeller, storeAddress: {...newSeller.storeAddress, pincode: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Pincode"
                   />
                 </div>
@@ -1264,7 +1264,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.gstNumber}
                     onChange={(e) => setNewSeller({...newSeller, gstNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="GST number"
                   />
                 </div>
@@ -1275,7 +1275,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.panNumber}
                     onChange={(e) => setNewSeller({...newSeller, panNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="PAN number"
                   />
                 </div>
@@ -1289,7 +1289,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.bankDetails.accountNumber}
                     onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, accountNumber: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Account number"
                   />
                 </div>
@@ -1300,7 +1300,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.bankDetails.ifscCode}
                     onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, ifscCode: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="IFSC code"
                   />
                 </div>
@@ -1311,7 +1311,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.bankDetails.bankName}
                     onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, bankName: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Bank name"
                   />
                 </div>
@@ -1322,7 +1322,7 @@ const ManufacturerDashboard = () => {
                     type="text"
                     value={newSeller.bankDetails.branchName}
                     onChange={(e) => setNewSeller({...newSeller, bankDetails: {...newSeller.bankDetails, branchName: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: '6px' }}
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
                     placeholder="Branch name"
                   />
                 </div>
@@ -1332,13 +1332,13 @@ const ManufacturerDashboard = () => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={editingSeller ? saveSeller : handleAddSeller}
-                style={{ flex: 1, padding: '12px', background: '#f5576c', color: 'var(--text-white)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 Add Seller
               </button>
               <button
                 onClick={() => setShowAddSeller(false)}
-                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
               >
                 Cancel
               </button>
@@ -1350,7 +1350,7 @@ const ManufacturerDashboard = () => {
       {/* Bulk Seller Upload Modal */}
       {showBulkSellerUpload && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: '12px', padding: '32px', maxWidth: '600px', width: '90%' }}>
+          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '32px', maxWidth: '600px', width: '90%' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>Bulk Upload Sellers</h2>
             
             <div style={{ marginBottom: '24px' }}>
@@ -1371,13 +1371,13 @@ const ManufacturerDashboard = () => {
                 <li>branchName - Branch name</li>
                 <li>street, city, state, pincode - Store address (optional)</li>
               </ul>
-              <p style={{ fontSize: '13px', color: '#f5576c', marginTop: '16px', fontWeight: '500' }}>
+              <p style={{ fontSize: '13px', color: 'var(--danger)', marginTop: '16px', fontWeight: '500' }}>
                 Note: Password will be auto-generated and sent to each seller's email.
               </p>
             </div>
 
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', padding: '40px', border: '2px dashed var(--border)', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+              <label style={{ display: 'block', padding: '40px', border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', textAlign: 'center', cursor: 'pointer' }}>
                 <input
                   type="file"
                   accept=".xlsx,.xls,.csv"
@@ -1391,7 +1391,7 @@ const ManufacturerDashboard = () => {
 
             <button
               onClick={() => setShowBulkSellerUpload(false)}
-              style={{ width: '100%', padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              style={{ width: '100%', padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
             >
               Cancel
             </button>

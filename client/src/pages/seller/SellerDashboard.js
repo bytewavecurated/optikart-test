@@ -44,10 +44,10 @@ const SellerDashboard = () => {
   }, []);
 
   const statCards = [
-    { label: 'Total Orders', value: stats.totalOrders, icon: <FiShoppingBag />, color: 'var(--brand)', bg: '#e8f0fe', link: '/seller/orders' },
-    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: <FiDollarSign />, color: '#26a541', bg: 'var(--success-light)', link: '/seller/analytics' },
+    { label: 'Total Orders', value: stats.totalOrders, icon: <FiShoppingBag />, color: 'var(--brand)', bg: 'var(--brand-tint)', link: '/seller/orders' },
+    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: <FiDollarSign />, color: 'var(--success)', bg: 'var(--success-light)', link: '/seller/analytics' },
     { label: 'Products', value: stats.totalProducts, icon: <FiPackage />, color: 'var(--warning)', bg: 'var(--warning-light)', link: '/seller/products' },
-    { label: 'Pending Orders', value: stats.pendingOrders, icon: <FiTrendingUp />, color: '#ff6161', bg: '#fce4ec', link: '/seller/orders' },
+    { label: 'Pending Orders', value: stats.pendingOrders, icon: <FiTrendingUp />, color: 'var(--danger)', bg: 'var(--brand-tint)', link: '/seller/orders' },
   ];
 
   return (
@@ -83,7 +83,7 @@ const SellerDashboard = () => {
                         <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>{card.label}</p>
                         <h3 style={{ fontSize: '24px', fontWeight: 700 }}>{card.value}</h3>
                       </div>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
+                      <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
                     </div>
                   </Link>
                 ))}

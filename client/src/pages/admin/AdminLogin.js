@@ -59,7 +59,7 @@ const AdminLogin = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', padding: '20px' }}>
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'var(--bg-white)', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', width: '100%', maxWidth: '400px', overflow: 'hidden' }}>
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', width: '100%', maxWidth: '400px', overflow: 'hidden' }}>
         <div style={{ background: 'var(--bg-dark)', padding: '28px', textAlign: 'center' }}>
           <div style={{ marginBottom: 12 }}><Logo variant="onDark" size={24} /></div>
           <h1 style={{ color: 'var(--text-white)', fontSize: '22px', fontWeight: 700 }}>

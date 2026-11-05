@@ -76,7 +76,7 @@ const ManageSellers = () => {
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Manage Sellers</h1>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
             {['all', 'pending', 'verified', 'rejected'].map((s) => (
-              <button key={s} onClick={() => setFilter(s)} style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px', border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`, background: filter === s ? 'var(--primary-light)' : '#fff', color: filter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize' }}>{s}</button>
+              <button key={s} onClick={() => setFilter(s)} style={{ padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`, background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)', color: filter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize' }}>{s}</button>
             ))}
           </div>
           <div style={{ position: 'relative', maxWidth: '500px', marginBottom: '20px' }}>
@@ -105,11 +105,11 @@ const ManageSellers = () => {
                         </td>
                         <td style={{ padding: '12px 16px' }}>
                           {seller.isBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--danger-light)', color: 'var(--danger)' }}>Banned</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--danger-light)', color: 'var(--danger)' }}>Banned</span>
                           ) : seller.isShadowBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)' }}>Shadow Banned</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)' }}>Shadow Banned</span>
                           ) : (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>
                           )}
                         </td>
                         <td style={{ padding: '12px 16px' }}>

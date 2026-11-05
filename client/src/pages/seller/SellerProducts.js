@@ -191,10 +191,10 @@ const SellerProducts = () => {
   const getOfferBadge = (product) => {
     if (!product.offer || product.offer.type === 'none') return null;
     if (product.offer.type === 'bogo') {
-      return <span style={{ background: '#26a541', color: 'var(--text-white)', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', whiteSpace: 'nowrap' }}>BOGO</span>;
+      return <span style={{ background: 'var(--success)', color: 'var(--text-white)', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-xs)', whiteSpace: 'nowrap' }}>BOGO</span>;
     }
     if (product.offer.type === 'percentage') {
-      return <span style={{ background: '#26a541', color: 'var(--text-white)', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '3px', whiteSpace: 'nowrap' }}>{product.offer.percentage}% OFF</span>;
+      return <span style={{ background: 'var(--success)', color: 'var(--text-white)', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-xs)', whiteSpace: 'nowrap' }}>{product.offer.percentage}% OFF</span>;
     }
     return null;
   };
@@ -292,7 +292,7 @@ const SellerProducts = () => {
               <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                 <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Return & Exchange Policy</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600 }}>Allow Returns</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>Customers can return this product</div>
@@ -310,8 +310,8 @@ const SellerProducts = () => {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: formData.isReturnable ? 'var(--success)' : '#ccc',
-                        borderRadius: '26px',
+                        backgroundColor: formData.isReturnable ? 'var(--success)' : 'var(--border-strong)',
+                        borderRadius: 'var(--radius-xl)',
                         transition: '0.3s',
                       }}>
                         <span style={{
@@ -327,7 +327,7 @@ const SellerProducts = () => {
                       </span>
                     </label>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600 }}>Allow Exchanges</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>Customers can exchange this product</div>
@@ -345,8 +345,8 @@ const SellerProducts = () => {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: formData.isExchangeable ? 'var(--success)' : '#ccc',
-                        borderRadius: '26px',
+                        backgroundColor: formData.isExchangeable ? 'var(--success)' : 'var(--border-strong)',
+                        borderRadius: 'var(--radius-xl)',
                         transition: '0.3s',
                       }}>
                         <span style={{
@@ -373,7 +373,7 @@ const SellerProducts = () => {
                 </div>
 
                 {showVariantForm && (
-                  <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                  <div style={{ background: 'var(--bg-primary)', padding: '12px', borderRadius: 'var(--radius-md)', marginBottom: '12px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '8px', alignItems: 'end' }}>
                       <div className="input-group" style={{ marginBottom: 0 }}><label style={{ fontSize: '11px' }}>Color</label><input className="input" style={{ fontSize: '12px' }} placeholder="Black" value={variantForm.color} onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })} /></div>
                       <div className="input-group" style={{ marginBottom: 0 }}><label style={{ fontSize: '11px' }}>Size</label><input className="input" style={{ fontSize: '12px' }} placeholder="Medium" value={variantForm.size} onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })} /></div>
@@ -425,7 +425,7 @@ const SellerProducts = () => {
                 <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>{offerProduct.name}</p>
 
                 {offerProduct.saleEvent && (
-                  <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px', padding: '10px 12px', marginBottom: '16px', fontSize: '13px', color: '#856404' }}>
+                  <div style={{ background: 'var(--warning-light)', border: '1px solid #ffc107', borderRadius: 'var(--radius-xs)', padding: '10px 12px', marginBottom: '16px', fontSize: '13px', color: 'var(--warning)' }}>
                     This product is under sale event "{offerProduct.saleEvent.name}". Offers cannot be modified.
                   </div>
                 )}
@@ -487,7 +487,7 @@ const SellerProducts = () => {
                 <tbody>
                   {filtered.map((product) => (
                     <tr key={product._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                      <td style={{ padding: '12px 16px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><img src={product.images?.[0] || '/placeholder.svg'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px' }} /><div><div style={{ fontSize: '14px', fontWeight: 500 }}>{product.name}</div><div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{product.brand}</div></div></div></td>
+                      <td style={{ padding: '12px 16px' }}><div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}><img src={product.images?.[0] || '/placeholder.svg'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: 'var(--radius-xs)' }} /><div><div style={{ fontSize: '14px', fontWeight: 500 }}>{product.name}</div><div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{product.brand}</div></div></div></td>
                       <td style={{ padding: '12px 16px', fontSize: '13px', textTransform: 'capitalize' }}>{product.category}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600 }}>₹{product.price}</td>
                       <td style={{ padding: '12px 16px', fontSize: '13px' }}><span className={`badge ${product.stock > 10 ? 'badge-success' : product.stock > 0 ? 'badge-warning' : 'badge-danger'}`}>{product.stock || 0}</span></td>

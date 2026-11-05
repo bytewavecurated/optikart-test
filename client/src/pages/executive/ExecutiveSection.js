@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { executive as executiveApi } from '../../services/api';
+import ExecutiveTeam from './ExecutiveTeam';
 import { listOf, oneOf } from '../../services/apiResponse.js';
 import toast from 'react-hot-toast';
 import { toastError } from '../../services/errors.js';
@@ -382,11 +383,13 @@ export default function ExecutiveSection({ section = 'deliveries' }) {
           <Link to="/executive/deliveries" className={`btn ${section === 'deliveries' ? 'btn-primary' : 'btn-outline'}`}>Deliveries</Link>
           <Link to="/executive/customers" className={`btn ${section === 'customers' ? 'btn-primary' : 'btn-outline'}`}>Customers</Link>
           <Link to="/executive/reports" className={`btn ${section === 'reports' ? 'btn-primary' : 'btn-outline'}`}>Reports</Link>
+          <Link to="/executive/team" className={`btn ${section === 'team' ? 'btn-primary' : 'btn-outline'}`}>Desk team</Link>
         </div>
 
         {title(...(headings[section] || headings.deliveries))}
 
         {section === 'deliveries' && <DeliveriesView />}
+        {section === 'team' && <ExecutiveTeam />}
         {section === 'customers' && <CustomersView />}
         {section === 'reports' && <ReportsView />}
         {section === 'detail' && <DetailView />}

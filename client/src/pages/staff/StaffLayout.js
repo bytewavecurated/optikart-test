@@ -85,7 +85,7 @@ const StaffLayout = () => {
           {sidebarOpen && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand)' }}>OptiKart</span>
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px' }}>Staff</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-xs)' }}>Staff</span>
             </div>
           )}
           <button
@@ -95,7 +95,7 @@ const StaffLayout = () => {
               border: 'none',
               cursor: 'pointer',
               padding: '8px',
-              borderRadius: '4px',
+              borderRadius: 'var(--radius-xs)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -117,11 +117,11 @@ const StaffLayout = () => {
                 alignItems: 'center',
                 gap: '12px',
                 padding: sidebarOpen ? '12px 16px' : '12px',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-md)',
                 marginBottom: '4px',
                 textDecoration: 'none',
-                color: location.pathname === item.path ? '#667eea' : '#555',
-                background: location.pathname === item.path ? '#f0f4ff' : 'transparent',
+                color: location.pathname === item.path ? 'var(--brand)' : 'var(--text-secondary)',
+                background: location.pathname === item.path ? 'var(--brand-tint)' : 'transparent',
                 fontWeight: location.pathname === item.path ? 600 : 400,
                 fontSize: '14px',
                 transition: 'all 0.2s',
@@ -151,12 +151,12 @@ const StaffLayout = () => {
               alignItems: 'center',
               gap: '12px',
               padding: sidebarOpen ? '12px 16px' : '12px',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-md)',
               width: '100%',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#ff6161',
+              color: 'var(--danger)',
               fontSize: '14px',
               fontWeight: 500,
               justifyContent: sidebarOpen ? 'flex-start' : 'center'

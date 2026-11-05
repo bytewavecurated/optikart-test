@@ -41,7 +41,7 @@ const styles = {
     padding: '24px 0',
     marginBottom: '32px',
     boxShadow: 'var(--shadow)',
-    borderRadius: '4px',
+    borderRadius: 'var(--radius-xs)',
   },
   header: {
     display: 'flex',
@@ -77,7 +77,7 @@ const styles = {
     alignItems: 'center',
     padding: '20px',
     background: 'var(--bg-page)',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-md)',
     textDecoration: 'none',
     transition: 'all 0.2s',
     border: '1px solid transparent',

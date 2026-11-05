@@ -66,7 +66,7 @@ const ExecutiveDashboard = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '12px', background: 'var(--primary-light)', borderRadius: '8px' }}>
+              <div style={{ padding: '12px', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)' }}>
                 <FiPackage size={24} color="var(--primary)" />
               </div>
               <div>
@@ -78,7 +78,7 @@ const ExecutiveDashboard = () => {
 
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '12px', background: 'var(--success-light, #e8f5e9)', borderRadius: '8px' }}>
+              <div style={{ padding: '12px', background: 'var(--success-light, #e8f5e9)', borderRadius: 'var(--radius-md)' }}>
                 <FiCheckCircle size={24} color="var(--success)" />
               </div>
               <div>
@@ -90,7 +90,7 @@ const ExecutiveDashboard = () => {
 
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '12px', background: 'var(--warning-light, #fff3e0)', borderRadius: '8px' }}>
+              <div style={{ padding: '12px', background: 'var(--warning-light, #fff3e0)', borderRadius: 'var(--radius-md)' }}>
                 <FiClock size={24} color="var(--warning)" />
               </div>
               <div>
@@ -102,7 +102,7 @@ const ExecutiveDashboard = () => {
 
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '12px', background: 'var(--danger-light, #ffebee)', borderRadius: '8px' }}>
+              <div style={{ padding: '12px', background: 'var(--danger-light, #ffebee)', borderRadius: 'var(--radius-md)' }}>
                 <FiAlertCircle size={24} color="var(--danger)" />
               </div>
               <div>
@@ -123,6 +123,7 @@ const ExecutiveDashboard = () => {
             <Link to="/executive/customers" className="btn btn-outline">
               <FiUsers /> Manage Customers
             </Link>
+            <Link to="/executive/team" className="btn btn-outline" style={{ marginLeft: 8 }}><FiUsers /> Desk team</Link>
             <Link to="/executive/reports" className="btn btn-outline">
               <FiPackage /> Generate Reports
             </Link>

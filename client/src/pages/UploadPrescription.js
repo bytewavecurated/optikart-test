@@ -208,7 +208,7 @@ const UploadPrescription = () => {
 
                 {/* File Upload */}
                 <div
-                  style={{ border: '2px dashed var(--border)', borderRadius: '8px', padding: '32px', textAlign: 'center', marginBottom: '20px', cursor: 'pointer' }}
+                  style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)', padding: '32px', textAlign: 'center', marginBottom: '20px', cursor: 'pointer' }}
                   onClick={() => document.getElementById('fileInput').click()}
                 >
                   <FiUpload size={32} style={{ color: 'var(--primary)', marginBottom: '8px' }} />
@@ -222,7 +222,7 @@ const UploadPrescription = () => {
                 {files.length > 0 && (
                   <div style={{ marginBottom: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {files.map((file, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-primary)', borderRadius: '4px' }}>
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-xs)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <FiFile size={14} style={{ color: 'var(--primary)' }} />
                           <span style={{ fontSize: '13px' }}>{file.name}</span>
@@ -263,7 +263,7 @@ const UploadPrescription = () => {
                 <div style={{ marginBottom: '16px' }}>
                   <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Eye Power (optional)</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                    <div style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
                       <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Right Eye (OD)</p>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                         <div>
@@ -280,7 +280,7 @@ const UploadPrescription = () => {
                         </div>
                       </div>
                     </div>
-                    <div style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                    <div style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
                       <p style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Left Eye (OS)</p>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
                         <div>
@@ -337,7 +337,7 @@ const UploadPrescription = () => {
                           {rx.prescriptionType ? rx.prescriptionType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Prescription'}
                         </span>
                         {rx.lensType && (
-                          <span style={{ fontSize: '11px', padding: '2px 8px', background: 'var(--primary-light, #e3f0ff)', color: 'var(--primary)', borderRadius: '12px', fontWeight: 500 }}>
+                          <span style={{ fontSize: '11px', padding: '2px 8px', background: 'var(--primary-light, #e3f0ff)', color: 'var(--primary)', borderRadius: 'var(--radius)', fontWeight: 500 }}>
                             {rx.lensType}
                           </span>
                         )}
@@ -377,10 +377,10 @@ const UploadPrescription = () => {
                       )}
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleEdit(rx)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}>
+                      <button onClick={() => handleEdit(rx)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}>
                         <FiEdit2 size={12} /> Edit
                       </button>
-                      <button onClick={() => handleDelete(rx._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--bg-white)', border: '1px solid var(--danger)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--danger)' }}>
+                      <button onClick={() => handleDelete(rx._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: 'var(--bg-white)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontSize: '12px', fontWeight: 500, color: 'var(--danger)' }}>
                         <FiTrash2 size={12} /> Delete
                       </button>
                     </div>

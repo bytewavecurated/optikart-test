@@ -78,7 +78,7 @@ const SellerRegister = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: '20px' }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'var(--bg-white)', borderRadius: '8px', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '500px', overflow: 'hidden' }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '500px', overflow: 'hidden' }}>
         <div style={{ background: 'var(--bg-dark)', padding: '24px 32px' }}>
           <h1 style={{ color: 'var(--text-white)', fontSize: '22px', fontWeight: 700 }}>Seller Registration</h1>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '4px' }}>Start selling on OptiKart</p>

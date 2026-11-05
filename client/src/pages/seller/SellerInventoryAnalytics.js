@@ -193,7 +193,7 @@ const SellerInventoryAnalytics = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {fastMoving.slice(0, 5).map((item, index) => (
-                  <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                  <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                       {item.avgDailySales.toFixed(1)} units/day · {item.quantitySold} sold
@@ -214,7 +214,7 @@ const SellerInventoryAnalytics = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {slowMoving.slice(0, 5).map((item, index) => (
-                  <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                  <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                     <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                       {item.avgDailySales.toFixed(2)} units/day · Last sold {item.daysSinceLastSale}d ago
@@ -235,7 +235,7 @@ const SellerInventoryAnalytics = () => {
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
               {deadStock.slice(0, 6).map((item, index) => (
-                <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                     No sales in {item.daysSinceLastSale} days

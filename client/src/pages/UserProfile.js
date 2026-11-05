@@ -197,7 +197,7 @@ const UserProfile = () => {
               <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {menuItems.map((item) => (
                   item.path ? (
-                    <Link key={item.path} to={item.path} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '4px', fontSize: '14px', color: 'var(--text-primary)', textDecoration: 'none', transition: 'background 0.2s' }}>
+                    <Link key={item.path} to={item.path} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: 'var(--radius-xs)', fontSize: '14px', color: 'var(--text-primary)', textDecoration: 'none', transition: 'background 0.2s' }}>
                       {item.icon} {item.label}
                     </Link>
                   ) : (
@@ -205,7 +205,7 @@ const UserProfile = () => {
                       key={item.key}
                       onClick={() => setActiveTab(item.key)}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '4px', fontSize: '14px',
+                        display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: 'var(--radius-xs)', fontSize: '14px',
                         color: activeTab === item.key ? 'var(--primary)' : 'var(--text-primary)',
                         background: activeTab === item.key ? 'var(--primary-light, #e3f0ff)' : 'transparent',
                         fontWeight: activeTab === item.key ? 600 : 400,
@@ -216,7 +216,7 @@ const UserProfile = () => {
                     </button>
                   )
                 ))}
-                <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '4px', fontSize: '14px', color: 'var(--danger)', cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', marginTop: '8px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: 'var(--radius-xs)', fontSize: '14px', color: 'var(--danger)', cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', marginTop: '8px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                   <FiLogOut /> Logout
                 </button>
               </nav>
@@ -272,7 +272,7 @@ const UserProfile = () => {
 
                   {/* Address Form */}
                   {showAddressForm && (
-                    <div style={{ background: 'var(--bg-primary)', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+                    <div style={{ background: 'var(--bg-primary)', padding: '20px', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
                       <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '16px' }}>
                         {editingAddressId ? 'Edit Address' : 'Add New Address'}
                       </h4>
@@ -321,9 +321,9 @@ const UserProfile = () => {
                   ) : addresses.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {addresses.map((addr) => (
-                        <div key={addr._id} style={{ padding: '16px', border: `1px solid ${addr.isDefault ? 'var(--primary)' : 'var(--border)'}`, borderRadius: '8px', position: 'relative', background: addr.isDefault ? 'var(--primary-light, #f0f6ff)' : '#fff' }}>
+                        <div key={addr._id} style={{ padding: '16px', border: `1px solid ${addr.isDefault ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 'var(--radius-md)', position: 'relative', background: addr.isDefault ? 'var(--primary-light, #f0f6ff)' : 'var(--bg-white)' }}>
                           {addr.isDefault && (
-                            <span style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', background: 'var(--primary)', color: 'var(--text-white)', borderRadius: '3px', textTransform: 'uppercase' }}>Default</span>
+                            <span style={{ position: 'absolute', top: '8px', right: '8px', fontSize: '10px', fontWeight: 700, padding: '2px 8px', background: 'var(--primary)', color: 'var(--text-white)', borderRadius: 'var(--radius-xs)', textTransform: 'uppercase' }}>Default</span>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
                             <div style={{ flex: 1 }}>
@@ -337,14 +337,14 @@ const UserProfile = () => {
                               </p>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                              <button onClick={() => handleEditAddress(addr)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                              <button onClick={() => handleEditAddress(addr)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-primary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontSize: '12px' }}>
                                 <FiEdit2 size={12} /> Edit
                               </button>
-                              <button onClick={() => handleDeleteAddress(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-white)', border: '1px solid var(--danger)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: 'var(--danger)' }}>
+                              <button onClick={() => handleDeleteAddress(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-white)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontSize: '12px', color: 'var(--danger)' }}>
                                 <FiTrash2 size={12} /> Delete
                               </button>
                               {!addr.isDefault && (
-                                <button onClick={() => handleSetDefault(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-white)', border: '1px solid var(--primary)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: 'var(--primary)' }}>
+                                <button onClick={() => handleSetDefault(addr._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'var(--bg-white)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontSize: '12px', color: 'var(--primary)' }}>
                                   <FiCheck size={12} /> Default
                                 </button>
                               )}

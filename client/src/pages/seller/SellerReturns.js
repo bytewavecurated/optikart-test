@@ -8,12 +8,12 @@ import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 
 const STATUS_COLORS = {
-  requested: { bg: '#fff3cd', color: '#856404' },
-  approved: { bg: '#cce5ff', color: '#004085' },
-  picked_up: { bg: '#e2d5f1', color: '#5a2d82' },
+  requested: { bg: 'var(--warning-light)', color: 'var(--warning)' },
+  approved: { bg: 'var(--brand-tint)', color: 'var(--brand-dark)' },
+  picked_up: { bg: 'var(--brand-tint)', color: 'var(--brand-dark)' },
   received: { bg: '#ffe0b2', color: 'var(--warning)' },
-  completed: { bg: '#d4edda', color: '#155724' },
-  rejected: { bg: '#f8d7da', color: '#721c24' },
+  completed: { bg: 'var(--success-light)', color: 'var(--success)' },
+  rejected: { bg: 'var(--danger-light)', color: 'var(--danger)' },
 };
 
 const STATUS_FLOW = ['requested', 'approved', 'picked_up', 'received', 'completed'];
@@ -206,10 +206,10 @@ const SellerReturns = () => {
   };
 
   const statCards = [
-    { label: 'Total Returns', value: stats.total, icon: <FiPackage />, color: 'var(--brand)', bg: '#e8f0fe' },
+    { label: 'Total Returns', value: stats.total, icon: <FiPackage />, color: 'var(--brand)', bg: 'var(--brand-tint)' },
     { label: 'Pending Approval', value: stats.pending, icon: <FiFilter />, color: 'var(--warning)', bg: 'var(--warning-light)' },
-    { label: 'In Progress', value: stats.inProgress, icon: <FiEye />, color: '#5a2d82', bg: '#f3e5f5' },
-    { label: 'Completed / Refunded', value: stats.completed, icon: <FiCheck />, color: '#26a541', bg: 'var(--success-light)' },
+    { label: 'In Progress', value: stats.inProgress, icon: <FiEye />, color: 'var(--brand-dark)', bg: 'var(--brand-tint)' },
+    { label: 'Completed / Refunded', value: stats.completed, icon: <FiCheck />, color: 'var(--success)', bg: 'var(--success-light)' },
   ];
 
   const statusFilters = ['all', 'requested', 'approved', 'picked_up', 'received', 'completed', 'rejected'];
@@ -229,7 +229,7 @@ const SellerReturns = () => {
                     <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>{card.label}</p>
                     <h3 style={{ fontSize: '24px', fontWeight: 700 }}>{card.value}</h3>
                   </div>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
+                  <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
                 </div>
               </div>
             ))}
@@ -247,7 +247,7 @@ const SellerReturns = () => {
               </div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {statusFilters.map((s) => (
-                  <button key={s} onClick={() => setStatusFilter(s)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 500, border: `1px solid ${statusFilter === s ? 'var(--primary)' : 'var(--border)'}`, background: statusFilter === s ? 'var(--primary-light)' : '#fff', color: statusFilter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>
+                  <button key={s} onClick={() => setStatusFilter(s)} style={{ padding: '6px 14px', borderRadius: 'var(--radius-xl)', fontSize: '12px', fontWeight: 500, border: `1px solid ${statusFilter === s ? 'var(--primary)' : 'var(--border)'}`, background: statusFilter === s ? 'var(--primary-light)' : 'var(--bg-white)', color: statusFilter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>
                     {s === 'all' ? 'All' : s.replace('_', ' ')}
                   </button>
                 ))}
@@ -276,7 +276,7 @@ const SellerReturns = () => {
                 <tbody>
                   {filtered.map((ret) => {
                     const isExpanded = expandedId === ret._id;
-                    const statusStyle = STATUS_COLORS[ret.status] || { bg: '#eee', color: 'var(--text-primary)' };
+                    const statusStyle = STATUS_COLORS[ret.status] || { bg: 'var(--border)', color: 'var(--text-primary)' };
                     return (
                       <React.Fragment key={ret._id}>
                         <tr
@@ -303,7 +303,7 @@ const SellerReturns = () => {
                               {ret.status?.replace('_', ' ')}
                             </span>
                             {ret.exchange && (
-                              <span className="badge" style={{ background: '#e2d5f1', color: '#5a2d82', fontSize: '10px', marginLeft: '4px' }}>Exchange</span>
+                              <span className="badge" style={{ background: 'var(--brand-tint)', color: 'var(--brand-dark)', fontSize: '10px', marginLeft: '4px' }}>Exchange</span>
                             )}
                           </td>
                           <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{formatDate(ret.createdAt)}</td>
@@ -318,8 +318,8 @@ const SellerReturns = () => {
                                     <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Return Items</h4>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                       {ret.items?.map((item, idx) => (
-                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'var(--bg-white)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                                          <img src={item.product?.images?.[0] || item.image || '/placeholder.svg'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px', background: '#f8f8f8' }} />
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'var(--bg-white)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                                          <img src={item.product?.images?.[0] || item.image || '/placeholder.svg'} alt="" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: 'var(--radius-xs)', background: 'var(--bg-page)' }} />
                                           <div style={{ flex: 1 }}>
                                             <div style={{ fontSize: '13px', fontWeight: 500 }}>{item.product?.name || item.name || 'Product'}</div>
                                             <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>
@@ -340,33 +340,33 @@ const SellerReturns = () => {
                                   <div>
                                     <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Return Details</h4>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-white)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-white)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
                                         <span style={{ color: 'var(--text-light)' }}>Reason</span>
                                         <span style={{ fontWeight: 500, textTransform: 'capitalize' }}>{ret.reason || '—'}</span>
                                       </div>
                                       {ret.description && (
-                                        <div style={{ padding: '8px 12px', background: 'var(--bg-white)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                                        <div style={{ padding: '8px 12px', background: 'var(--bg-white)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
                                           <span style={{ color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>Description</span>
                                           <span style={{ fontSize: '13px' }}>{ret.description}</span>
                                         </div>
                                       )}
                                       {ret.adminNotes && (
-                                        <div style={{ padding: '8px 12px', background: 'var(--bg-white)', borderRadius: '6px', border: '1px solid var(--border-light)' }}>
+                                        <div style={{ padding: '8px 12px', background: 'var(--bg-white)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
                                           <span style={{ color: 'var(--text-light)', display: 'block', marginBottom: '4px' }}>Admin Notes</span>
                                           <span style={{ fontSize: '13px' }}>{ret.adminNotes}</span>
                                         </div>
                                       )}
                                       {ret.rejectionReason && (
-                                        <div style={{ padding: '8px 12px', background: '#fff8f8', borderRadius: '6px', border: '1px solid #f8d7da' }}>
-                                          <span style={{ color: '#721c24', display: 'block', marginBottom: '4px', fontWeight: 500 }}>Rejection Reason</span>
-                                          <span style={{ fontSize: '13px', color: '#721c24' }}>{ret.rejectionReason}</span>
+                                        <div style={{ padding: '8px 12px', background: 'var(--bg-page)', borderRadius: 'var(--radius-sm)', border: '1px solid #f8d7da' }}>
+                                          <span style={{ color: 'var(--danger)', display: 'block', marginBottom: '4px', fontWeight: 500 }}>Rejection Reason</span>
+                                          <span style={{ fontSize: '13px', color: 'var(--danger)' }}>{ret.rejectionReason}</span>
                                         </div>
                                       )}
                                       {ret.exchange && (
-                                        <div style={{ padding: '8px 12px', background: '#f3e5f5', borderRadius: '6px', border: '1px solid #e2d5f1' }}>
-                                          <span style={{ color: '#5a2d82', fontWeight: 500, fontSize: '13px' }}>This return is marked as an exchange</span>
+                                        <div style={{ padding: '8px 12px', background: 'var(--brand-tint)', borderRadius: 'var(--radius-sm)', border: '1px solid #e2d5f1' }}>
+                                          <span style={{ color: 'var(--brand-dark)', fontWeight: 500, fontSize: '13px' }}>This return is marked as an exchange</span>
                                           {ret.replacementOrderId && (
-                                            <div style={{ fontSize: '12px', color: '#5a2d82', marginTop: '4px' }}>Replacement Order: #{ret.replacementOrderId.slice(-8).toUpperCase()}</div>
+                                            <div style={{ fontSize: '12px', color: 'var(--brand-dark)', marginTop: '4px' }}>Replacement Order: #{ret.replacementOrderId.slice(-8).toUpperCase()}</div>
                                           )}
                                         </div>
                                       )}
@@ -377,7 +377,7 @@ const SellerReturns = () => {
                                         <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Customer Images</h4>
                                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                           {ret.images.map((img, idx) => (
-                                            <img key={idx} src={img} alt={`Return image ${idx + 1}`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-light)', cursor: 'pointer' }} onClick={() => window.open(img, '_blank')} />
+                                            <img key={idx} src={img} alt={`Return image ${idx + 1}`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)', cursor: 'pointer' }} onClick={() => window.open(img, '_blank')} />
                                           ))}
                                         </div>
                                       </div>
@@ -412,14 +412,14 @@ const SellerReturns = () => {
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Approve Return</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>Return #{approveModal._id?.slice(-8).toUpperCase()} — {formatCurrency(approveModal.refundAmount)}</p>
 
-            <div style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: '8px', marginBottom: '16px', fontSize: '13px' }}>
+            <div style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', marginBottom: '16px', fontSize: '13px' }}>
               <div style={{ fontWeight: 500, marginBottom: '4px' }}>{approveModal.customer?.name}</div>
               <div style={{ color: 'var(--text-light)' }}>{approveModal.items?.length || 0} item(s) · Reason: {approveModal.reason || '—'}</div>
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 12px', background: isExchange ? '#f3e5f5' : 'var(--bg-primary)', borderRadius: '8px', border: `1px solid ${isExchange ? '#ce93d8' : 'var(--border-light)'}`, transition: 'all 0.15s' }}>
-                <input type="checkbox" checked={isExchange} onChange={(e) => setIsExchange(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: '#5a2d82' }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '10px 12px', background: isExchange ? 'var(--brand-tint)' : 'var(--bg-primary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isExchange ? 'var(--brand-dark)' : 'var(--border-light)'}`, transition: 'all 0.15s' }}>
+                <input type="checkbox" checked={isExchange} onChange={(e) => setIsExchange(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: 'var(--brand-dark)' }} />
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 500 }}>Mark as Exchange</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>Create a replacement order instead of refund</div>
@@ -476,7 +476,7 @@ const SellerReturns = () => {
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Process Refund</h3>
             <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>Confirm refund for return #{refundModal._id?.slice(-8).toUpperCase()}</p>
 
-            <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: '8px', marginBottom: '16px' }}>
+            <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                 <span style={{ color: 'var(--text-light)' }}>Customer</span>
                 <span style={{ fontWeight: 500 }}>{refundModal.customer?.name}</span>
@@ -488,7 +488,7 @@ const SellerReturns = () => {
               {refundModal.exchange && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
                   <span style={{ color: 'var(--text-light)' }}>Type</span>
-                  <span style={{ fontWeight: 500, color: '#5a2d82' }}>Exchange</span>
+                  <span style={{ fontWeight: 500, color: 'var(--brand-dark)' }}>Exchange</span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', paddingTop: '8px', borderTop: '1px solid var(--border-light)' }}>
@@ -497,7 +497,7 @@ const SellerReturns = () => {
               </div>
             </div>
 
-            <div style={{ padding: '10px 12px', background: '#fff3cd', borderRadius: '6px', marginBottom: '16px', fontSize: '13px', color: '#856404' }}>
+            <div style={{ padding: '10px 12px', background: 'var(--warning-light)', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontSize: '13px', color: 'var(--warning)' }}>
               This action will initiate the refund to the customer's original payment method and cannot be undone.
             </div>
 

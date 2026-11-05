@@ -6,7 +6,7 @@ import Footer from '../../components/Footer';
 import { listOf } from '../../services/apiResponse.js';
 import { FILTER_STATUSES } from '../../utils/orderStatuses.js';
 
-const STATUS_COLORS = { pending: '#b06e00', confirmed: '#2874f0', packed: '#2874f0', picked_up: '#2874f0', in_transit: '#2874f0', delivered: '#1a7f4b', cancelled: '#d13438', return_requested: '#b06e00', returned: '#5c6470' };
+const STATUS_COLORS = { pending: 'var(--warning)', confirmed: 'var(--brand)', packed: 'var(--brand)', picked_up: 'var(--brand)', in_transit: 'var(--brand)', delivered: 'var(--success)', cancelled: 'var(--danger)', return_requested: 'var(--warning)', returned: 'var(--text-secondary)' };
 
 const ManageOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -59,7 +59,7 @@ const ManageOrders = () => {
                 width: '100%',
                 padding: '10px 12px 10px 38px',
                 border: '1px solid var(--border)',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-md)',
                 fontSize: '14px'
               }}
             />
@@ -67,7 +67,7 @@ const ManageOrders = () => {
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
             {['all', ...FILTER_STATUSES].map((s) => (
-              <button key={s} onClick={() => setFilter(s)} style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px', border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`, background: filter === s ? 'var(--primary-light)' : '#fff', color: filter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize' }}>{s}</button>
+              <button key={s} onClick={() => setFilter(s)} style={{ padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`, background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)', color: filter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize' }}>{s}</button>
             ))}
           </div>
           {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : filteredOrders.length === 0 ? <div className="empty-state"><h3>{searchQuery ? 'No orders match your search' : 'No orders found'}</h3></div> : (

@@ -116,7 +116,7 @@ const AIChatbot = () => {
             width: '380px',
             height: '500px',
             background: 'var(--bg-white)',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius)',
             boxShadow: 'var(--shadow-lg)',
             display: 'flex',
             flexDirection: 'column',
@@ -182,9 +182,9 @@ const AIChatbot = () => {
                 </div>
                 <div
                   style={{
-                    background: message.sender === 'user' ? 'var(--primary-light)' : '#f5f5f5',
+                    background: message.sender === 'user' ? 'var(--primary-light)' : 'var(--bg-subtle)',
                     padding: '10px 14px',
-                    borderRadius: '12px',
+                    borderRadius: 'var(--radius)',
                     maxWidth: '70%',
                     fontSize: '14px',
                     lineHeight: '1.5'
@@ -216,7 +216,7 @@ const AIChatbot = () => {
                 flex: 1,
                 padding: '10px 14px',
                 border: '1px solid var(--border)',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-md)',
                 fontSize: '14px',
                 outline: 'none'
               }}
@@ -227,7 +227,7 @@ const AIChatbot = () => {
               style={{
                 width: '40px',
                 height: '40px',
-                borderRadius: '8px',
+                borderRadius: 'var(--radius-md)',
                 background: inputMessage.trim() ? 'var(--primary)' : 'var(--border)',
                 color: 'var(--text-white)',
                 border: 'none',

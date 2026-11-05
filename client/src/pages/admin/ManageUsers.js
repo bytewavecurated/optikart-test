@@ -95,11 +95,11 @@ const ManageUsers = () => {
                         <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{new Date(user.createdAt).toLocaleDateString()}</td>
                         <td style={{ padding: '12px 16px' }}>
                           {user.isBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--danger-light)', color: 'var(--danger)' }}>Banned</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--danger-light)', color: 'var(--danger)' }}>Banned</span>
                           ) : user.isShadowBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)' }}>Shadow Banned</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)' }}>Shadow Banned</span>
                           ) : (
-                            <span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>
                           )}
                         </td>
                         <td style={{ padding: '12px 16px' }}>

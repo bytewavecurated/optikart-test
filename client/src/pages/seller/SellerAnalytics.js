@@ -32,7 +32,7 @@ const SellerAnalytics = () => {
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Analytics</h1>
             <div style={{ display: 'flex', gap: '8px' }}>
               {[{ label: '7 Days', value: '7d' }, { label: '30 Days', value: '30d' }, { label: '90 Days', value: '90d' }].map((p) => (
-                <button key={p.value} onClick={() => setPeriod(p.value)} style={{ padding: '6px 16px', borderRadius: '20px', fontSize: '13px', border: `1px solid ${period === p.value ? 'var(--primary)' : 'var(--border)'}`, background: period === p.value ? 'var(--primary)' : '#fff', color: period === p.value ? '#fff' : 'var(--text-secondary)', cursor: 'pointer' }}>{p.label}</button>
+                <button key={p.value} onClick={() => setPeriod(p.value)} style={{ padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', border: `1px solid ${period === p.value ? 'var(--primary)' : 'var(--border)'}`, background: period === p.value ? 'var(--primary)' : 'var(--bg-white)', color: period === p.value ? 'var(--text-white)' : 'var(--text-secondary)', cursor: 'pointer' }}>{p.label}</button>
               ))}
             </div>
           </div>
@@ -43,15 +43,15 @@ const SellerAnalytics = () => {
             <>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
                 {[
-                  { label: 'Total Revenue', value: `₹${(stats.revenue || 0).toLocaleString()}`, icon: <FiDollarSign />, color: '#26a541', bg: 'var(--success-light)' },
-                  { label: 'Total Orders', value: stats.orders || 0, icon: <FiShoppingBag />, color: 'var(--brand)', bg: '#e8f0fe' },
+                  { label: 'Total Revenue', value: `₹${(stats.revenue || 0).toLocaleString()}`, icon: <FiDollarSign />, color: 'var(--success)', bg: 'var(--success-light)' },
+                  { label: 'Total Orders', value: stats.orders || 0, icon: <FiShoppingBag />, color: 'var(--brand)', bg: 'var(--brand-tint)' },
                   { label: 'Avg Order Value', value: `₹${stats.avgOrderValue || 0}`, icon: <FiTrendingUp />, color: 'var(--warning)', bg: 'var(--warning-light)' },
-                  { label: 'Products Sold', value: stats.productsSold || 0, icon: <FiPackage />, color: '#ff6161', bg: '#fce4ec' },
+                  { label: 'Products Sold', value: stats.productsSold || 0, icon: <FiPackage />, color: 'var(--danger)', bg: 'var(--brand-tint)' },
                 ].map((card) => (
                   <div key={card.label} className="card" style={{ padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div><p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>{card.label}</p><h3 style={{ fontSize: '24px', fontWeight: 700 }}>{card.value}</h3></div>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
+                      <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
                     </div>
                   </div>
                 ))}
@@ -63,7 +63,7 @@ const SellerAnalytics = () => {
                   {analytics?.topProducts?.length > 0 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {analytics.topProducts.map((product, idx) => (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', background: 'var(--bg-primary)', borderRadius: '8px' }}>
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
                           <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>{idx + 1}</span>
                           <div style={{ flex: 1 }}><div style={{ fontSize: '14px', fontWeight: 500 }}>{product.name}</div><div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{product.sold} sold</div></div>
                           <span style={{ fontSize: '14px', fontWeight: 600 }}>₹{product.revenue}</span>

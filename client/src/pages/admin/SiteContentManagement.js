@@ -78,8 +78,8 @@ const TileList = ({ title, rows, onChange, fields, addLabel }) => {
               </div>
             )}
             {fields.includes('image') && <div>{label('Image')}<input className="input" value={row.image || ''} onChange={(e) => set(i, 'image', e.target.value)} placeholder="/assets/…" /></div>}
-            {fields.includes('color') && <div>{label('Accent (hex)')}<input className="input" value={row.fg || ''} onChange={(e) => set(i, 'fg', e.target.value)} placeholder="#2874f0" /></div>}
-            {fields.includes('tint') && <div>{label('Background (hex)')}<input className="input" value={row.tint || ''} onChange={(e) => set(i, 'tint', e.target.value)} placeholder="#eef4fe" /></div>}
+            {fields.includes('color') && <div>{label('Accent (hex)')}<input className="input" value={row.fg || ''} onChange={(e) => set(i, 'fg', e.target.value)} placeholder="var(--brand)" /></div>}
+            {fields.includes('tint') && <div>{label('Background (hex)')}<input className="input" value={row.tint || ''} onChange={(e) => set(i, 'tint', e.target.value)} placeholder="var(--brand-tint)" /></div>}
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
             <button type="button" className="btn btn-outline" style={{ padding: '4px 8px' }} onClick={() => move(i, -1)} aria-label="Move up"><FiChevronUp size={13} /></button>

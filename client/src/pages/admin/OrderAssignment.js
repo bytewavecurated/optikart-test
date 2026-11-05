@@ -184,7 +184,7 @@ const OrderAssignment = () => {
                         background: getStatusColor(order.assignmentStatus),
                         color: 'white',
                         padding: '4px 12px',
-                        borderRadius: '12px',
+                        borderRadius: 'var(--radius)',
                         fontSize: '12px',
                         fontWeight: 600,
                         textTransform: 'capitalize'
@@ -268,12 +268,12 @@ const OrderAssignment = () => {
                   <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Items ({order.items?.length || 0})</div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {order.items?.slice(0, 3).map((item, index) => (
-                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                         {item.product?.images?.[0] && (
                           <img 
                             src={item.product.images[0]} 
                             alt={item.product?.title}
-                            style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }}
+                            style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: 'var(--radius-xs)' }}
                           />
                         )}
                         <div>
@@ -292,7 +292,7 @@ const OrderAssignment = () => {
 
                 {/* Notes */}
                 {order.assignmentNotes && (
-                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', borderLeft: '3px solid var(--warning)' }}>
+                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--warning)' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Notes</div>
                     <div style={{ fontSize: '13px' }}>{order.assignmentNotes}</div>
                   </div>

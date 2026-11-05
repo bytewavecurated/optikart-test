@@ -33,7 +33,7 @@ const ManufacturerSellerLogin = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)' }}>
-      <div style={{ background: 'var(--bg-white)', borderRadius: '12px', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '400px', padding: '40px' }}>
+      <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '400px', padding: '40px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-primary)' }}>Manufacturer Seller Login</h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>Access your seller dashboard</p>
 
@@ -48,7 +48,7 @@ const ManufacturerSellerLogin = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '14px' }}
+                style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '14px' }}
               />
             </div>
           </div>
@@ -63,7 +63,7 @@ const ManufacturerSellerLogin = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '14px' }}
+                style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '14px' }}
               />
               <button
                 type="button"
@@ -81,10 +81,10 @@ const ManufacturerSellerLogin = () => {
             style={{
               width: '100%',
               padding: '14px',
-              background: loading ? '#9e9e9e' : '#4facfe',
+              background: loading ? 'var(--text-light)' : 'var(--brand)',
               color: 'var(--text-white)',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: 'var(--radius-md)',
               fontSize: '16px',
               fontWeight: '600',
               cursor: loading ? 'not-allowed' : 'pointer',
@@ -95,7 +95,7 @@ const ManufacturerSellerLogin = () => {
           </button>
 
           <div style={{ textAlign: 'center' }}>
-            <Link to="/" style={{ color: '#4facfe', fontSize: '14px', textDecoration: 'none' }}>
+            <Link to="/" style={{ color: 'var(--brand)', fontSize: '14px', textDecoration: 'none' }}>
               Back to Home
             </Link>
           </div>

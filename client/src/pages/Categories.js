@@ -33,7 +33,7 @@ const ALL_CATEGORIES = [
     name: 'Sports Eyewear', 
     image: '/assets/face-4.svg', 
     link: '/category/sports', 
-    color: '#e43f5a',
+    color: 'var(--danger)',
     description: 'Performance eyewear designed for athletes and active lifestyles',
     count: '150+ Products'
   },
@@ -41,7 +41,7 @@ const ALL_CATEGORIES = [
     name: 'Kids Eyewear', 
     image: '/assets/face-5.svg', 
     link: '/category/kids', 
-    color: '#6c63ff',
+    color: 'var(--brand)',
     description: 'Durable and fun eyewear designed specifically for children',
     count: '120+ Products'
   },
@@ -49,7 +49,7 @@ const ALL_CATEGORIES = [
     name: 'Reading Glasses', 
     image: '/assets/face-1.svg', 
     link: '/category/reading', 
-    color: '#00897b',
+    color: 'var(--success)',
     description: 'Clear close-up vision for reading and detailed work',
     count: '180+ Products'
   },
@@ -57,7 +57,7 @@ const ALL_CATEGORIES = [
     name: 'Computer Glasses', 
     image: '/assets/face-1.svg', 
     link: '/category/computer', 
-    color: '#9c27b0',
+    color: 'var(--brand-dark)',
     description: 'Blue light blocking glasses for digital eye strain relief',
     count: '250+ Products'
   },
@@ -65,7 +65,7 @@ const ALL_CATEGORIES = [
     name: 'Safety Eyewear', 
     image: '/assets/face-1.svg', 
     link: '/category/safety', 
-    color: '#ff5722',
+    color: 'var(--danger)',
     description: 'Protective eyewear for industrial and workplace safety',
     count: '100+ Products'
   },
@@ -105,7 +105,7 @@ const styles = {
   },
   card: {
     background: 'var(--bg-white)',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-md)',
     overflow: 'hidden',
     boxShadow: 'var(--shadow)',
     transition: 'all 0.3s',

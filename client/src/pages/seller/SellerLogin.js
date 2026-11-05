@@ -69,7 +69,7 @@ const SellerLogin = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: '20px' }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'var(--bg-white)', borderRadius: '8px', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}>
         <div style={{ background: 'var(--bg-dark)', padding: '24px 32px' }}>
           <div style={{ marginBottom: 10 }}><Logo variant="onDark" size={22} /></div>
           <h1 style={{ color: 'var(--text-white)', fontSize: '22px', fontWeight: 700 }}>

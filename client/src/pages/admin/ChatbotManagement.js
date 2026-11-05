@@ -117,7 +117,7 @@ const ChatbotManagement = () => {
                     alignItems: 'start',
                     padding: '12px',
                     background: 'var(--bg-primary)',
-                    borderRadius: '8px'
+                    borderRadius: 'var(--radius-md)'
                   }}>
                     <div style={{ 
                       fontSize: '13px', 
@@ -136,7 +136,7 @@ const ChatbotManagement = () => {
                           width: '100%',
                           padding: '8px',
                           border: '2px solid var(--primary)',
-                          borderRadius: '4px',
+                          borderRadius: 'var(--radius-xs)',
                           fontSize: '13px',
                           resize: 'vertical',
                           minHeight: '60px'

@@ -261,11 +261,11 @@ const SellerInventory = () => {
               <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>Total Stock</div>
             </div>
             <div className="card" style={{ padding: '20px', textAlign: 'center' }}>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: '#e67e22' }}>{stats.lowStock}</div>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--warning)' }}>{stats.lowStock}</div>
               <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>Low Stock Items</div>
             </div>
             <div className="card" style={{ padding: '20px', textAlign: 'center' }}>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: '#e74c3c' }}>{stats.outOfStock}</div>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--danger)' }}>{stats.outOfStock}</div>
               <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>Out of Stock</div>
             </div>
           </div>
@@ -330,7 +330,7 @@ const SellerInventory = () => {
                         <img
                           src={product.image || product.images?.[0] || '/placeholder.svg'}
                           alt=""
-                          style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px', flexShrink: 0 }}
+                          style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: 'var(--radius-xs)', flexShrink: 0 }}
                         />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
@@ -415,7 +415,7 @@ const SellerInventory = () => {
                                           />
                                           <button
                                             onClick={() => saveInlineStock(product._id, variant._id)}
-                                            style={{ background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: '3px', padding: '4px 6px', cursor: 'pointer', fontSize: '11px' }}
+                                            style={{ background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', padding: '4px 6px', cursor: 'pointer', fontSize: '11px' }}
                                           >
                                             Save
                                           </button>

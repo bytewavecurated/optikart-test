@@ -167,7 +167,7 @@ const OrderDetail = () => {
                       width: 26, height: 26, borderRadius: '50%', display: 'inline-flex',
                       alignItems: 'center', justifyContent: 'center',
                       background: done ? 'var(--success)' : current ? 'var(--brand)' : 'var(--bg-subtle)',
-                      color: done || current ? '#fff' : 'var(--text-light)'
+                      color: done || current ? 'var(--text-white)' : 'var(--text-light)'
                     }}>
                       {done ? <FiCheck size={14} /> : f.icon}
                     </span>
