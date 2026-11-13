@@ -212,19 +212,48 @@ const OrderAssignment = () => {
                   {(order.candidates || []).length > 0 && (
                     <div style={{ gridColumn: '1 / -1' }}>
                       <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                        Sellers who stock this item
+                        Sellers who stock every line of this order, ranked. Number 1 is asked first.
+                        {order.candidates?.[0]?.rankedAt
+                          ? ` Measured over the last 90 days, calculated ${new Date(order.candidates[0].rankedAt).toLocaleString('en-IN')}.`
+                          : ''}
                       </div>
                       <div className="assign-row">
                         {order.candidates.map((c) => (
                           <div key={c.sellerId} className="candidate">
                             <div>
                               <div style={{ fontSize: 13.5, fontWeight: 700 }}>
+                                {c.rank ? <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>#{c.rank}  </span> : null}
                                 {c.storeName}
                                 {c.distanceKm !== null && c.distanceKm !== undefined ? ` - ${c.distanceKm} km` : ''}
+                                {c.score ? (
+                                  <span
+                                    title="Weighted from delivery speed, return rate, price, distance and customer rating"
+                                    style={{ marginLeft: 8, fontSize: 11.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'var(--primary-light, rgba(37, 99, 235, .10))', color: 'var(--primary-dark, #1d4ed8)' }}
+                                  >
+                                    score {typeof c.score === 'number' ? c.score.toFixed(1) : c.score}
+                                  </span>
+                                ) : null}
                               </div>
                               <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
                                 {[c.phone && `Call ${c.phone}`, c.rating ? `Rated ${c.rating}` : null, c.city].filter(Boolean).join(' / ')}
                               </div>
+                              {c.measured && (
+                                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
+                                  {c.measured.delivered ?? 0} delivered
+                                  {c.measured.avgDeliveryDays ? ` · ${c.measured.avgDeliveryDays} days average` : ' · no delivery on record yet'}
+                                  {c.measured.returnPct !== null && c.measured.returnPct !== undefined ? ` · ${c.measured.returnPct}% returned` : ''}
+                                  {c.measured.avgRating ? ` · ${c.measured.avgRating}/5 from ${c.measured.reviewCount} reviews` : ''}
+                                  {c.priceTotal ? ` · quoted ₹${Number(c.priceTotal).toLocaleString('en-IN')}` : ''}
+                                  {c.coversWholeOrder === false ? ' · cannot cover every line' : ''}
+                                </div>
+                              )}
+                              {(c.scoreReasons || []).length > 0 && (
+                                <ul style={{ margin: '4px 0 0', paddingLeft: 16, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                                  {c.scoreReasons.slice(0, 3).map((reason, ri) => (
+                                    <li key={ri}>{reason}</li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
                             <span className={`resp r-${c.response}`}>{(c.response || 'pending').replace('_', ' ')}</span>
                             {c.response !== 'accepted' && (

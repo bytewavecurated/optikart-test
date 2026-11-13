@@ -190,6 +190,45 @@ in the customer timeline, the order detail screen and the delivery desk, where
 the run can raise it, and clearing an already-cleared report is refused instead of
 appending a second "resolved" entry as if work had been done.
 
+## Which seller gets the order
+
+Two separate questions, decided in two places, and keeping them apart is the
+point:
+
+1. **Who can fulfil it.** `services/orderProximity.js` reads `SellerStock` for
+   every line of the order and requires the exact colour and size the buyer
+   chose, `isListed`, stock, and - for a powered order - a seller who opted into
+   `sellsWithPower`. Banned and inactive sellers are dropped. Distance is capped
+   at `RADIUS_KM_MAX`. A seller who cannot cover every line is kept only when
+   nobody can, and is labelled as such.
+2. **Who is asked first.** `services/sellerRanking.js` scores those candidates
+   with weights that sum to 1.00 - delivery speed `.27`, returns `.22`, price
+   `.18`, distance `.18`, customer rating `.15` - measured over the last 90 days
+   of orders, `ReturnRequest`s and reviews. Sellers with no history in a factor
+   get a neutral mark and the reason says so; a missing measurement is never
+   shown as a zero, because that would read as "delivered instantly, no returns".
+
+The ranked result is stored on the routing document
+(`nearbySellers[].rank/score/scoreReasons/measured/rankedAt`) rather than
+recomputed on each page view, so what the desk saw at the time is what survives,
+and `POST /api/order-routing/:id/auto-assign` picks rank #1 and writes the
+reasons into `aiDecision` with `assignedBy: 'auto'`.
+
+**What this replaced.** The auto-assign path scored sellers on `Seller.rating`,
+`Seller.avgDeliveryTime` and `Seller.returnRate`. Those fields exist on the
+schema, default to 0, and nothing in the codebase writes them - so a seller with
+300 on-time deliveries and one with none produced identical arithmetic under a
+label that said AI. Separately, `aiPick` (which chooses when a seller's window
+expires) had its own invented weights, disagreeing with the shortlist on the
+same routing document. Both now read the one ranking. `assignedBy` still accepts
+the historical value `ai` for rows written before this change; nothing writes it
+anymore.
+
+If the order of the list looks wrong in practice, the weights are the knob -
+they are one object at the top of `services/sellerRanking.js`, and
+`scripts/ranking_e2e.mjs` (18 assertions) fails if candidates stop carrying
+scores, reasons, or the measured counts.
+
 ## Who may reach what
 
 Each console is guarded by its own middleware (`verifySeller`, `verifyAdmin`,
@@ -317,6 +356,12 @@ Stated plainly so nothing is mistaken for done.
   and a consent UI).
 
 ### Smaller rough edges worth knowing
+- `routes/notification.js` and `routes/notifications.js` are both mounted at
+  `/api/notifications` (`server.js` lines that call `app.use`). Express tries the
+  first, so `GET /`, `PUT /:id/read` and `PUT /read-all` from the second file are
+  unreachable - only its unique `POST /subscribe` and `DELETE /:id` are live.
+  Consolidating them is part of finishing the notification fan-out.
+
 
 - Return and exchange eligibility is evaluated per line against that product's
   `returnWindowDays`. A product with the field unset falls back to the platform's

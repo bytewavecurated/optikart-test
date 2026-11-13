@@ -18,6 +18,27 @@ const orderRoutingSchema = new mongoose.Schema({
     },
     distance: Number, // in km
     hasProduct: Boolean,
+    /*
+     * The output of services/sellerRanking.js, recorded at the moment the
+     * shortlist was built. Storing it means the admin panel can say why a
+     * seller is first, and any later decision can be compared against the
+     * numbers that were in front of whoever made it. Sellers are re-measured
+     * on every routing, so `rankedAt` says how old these figures are.
+     */
+    rank: Number,
+    score: Number,
+    scoreReasons: [String],
+    measured: {
+      orders: Number,
+      delivered: Number,
+      avgDeliveryDays: Number,
+      returnPct: Number,
+      avgRating: Number,
+      reviewCount: Number
+    },
+    priceTotal: Number,
+    coversWholeOrder: Boolean,
+    rankedAt: Date,
     contactedAt: Date,
     respondedAt: Date,
     response: {

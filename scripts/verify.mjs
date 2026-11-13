@@ -33,6 +33,7 @@ const SUITES = [
   ['prescription and stock safety', 'scripts/safety_e2e.mjs'],
   ['catalogue and access control', 'scripts/catalog_access_e2e.mjs'],
   ['delivery dispatch', 'scripts/dispatch_e2e.mjs'],
+  ['seller ranking', 'scripts/ranking_e2e.mjs'],
   ['partner flow', 'scripts/partner_flow_e2e.mjs']
 ];
 
@@ -82,7 +83,16 @@ if (!mongoUri) {
       const line = chunk.toString().split('\n').find((l) => l.startsWith('MONGO_READY'));
       if (line) { clearTimeout(timer); resolve(line.split(' ').pop()); }
     });
-    child.on('exit', (code) => { clearTimeout(timer); reject(new Error(`database exited with ${code} (see .verify-logs/mongo.log)`)); });
+    child.on('exit', (code) => {
+      clearTimeout(timer);
+      /*
+       * The launcher dies for one reason far more often than any other: the
+       * in-memory database unpacks into the system temp directory, and a
+       * sandbox that has been reused accumulates a ~200MB folder per run.
+       * Saying "disk space" here beats reading a stack trace.
+       */
+      reject(new Error(`database exited with code ${code}. If the log shows a download or extraction failure, check free space in the temp directory (du -sh /tmp/mongo-mem-* after a run; each isolated database leaves one behind while it lives).`));
+    });
   });
   console.log('ready');
 } else {

@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import OrderRouting from '../models/OrderRouting.js';
 import SellerStock from '../models/SellerStock.js';
+import { rankCandidates } from './sellerRanking.js';
+import { notifyAdmins } from './notifications.js';
 import Seller from '../models/Seller.js';
 import Product from '../models/Product.js';
 import { sendEmail } from './email.js';
@@ -156,17 +158,29 @@ export const findCandidates = async (order) => {
   // A candidate must be able to fulfil every line of the order.
   const lineCount = (order.items || []).length;
   const full = [...bySeller.values()].filter((c) => c.lines.length >= lineCount);
-  const ranked = (full.length ? full : [...bySeller.values()]).sort((a, b) => {
-    if (a.distance !== b.distance) return a.distance - b.distance;
-    if (b.rating !== a.rating) return b.rating - a.rating;
-    return b.priceTotal - a.priceTotal;
-  });
-
-  return ranked.slice(0, MAX_CANDIDATES).map((c) => ({
+  /*
+   * Eligibility is decided above (exact colour and size, powered opt-in, every
+   * line covered, not banned, inside the radius). Ordering the eligible set is
+   * a separate question and is delegated to sellerRanking, which measures
+   * sellers from their orders, returns and reviews and reports why each one
+   * sits where it does. The previous two-line sort by distance and the stored
+   * `rating` meant a seller who is 1 km away and has never shipped anything
+   * outranked one across town with a clean record.
+   */
+  const prepared = [...bySeller.entries()].map(([sellerId, c]) => ({
     ...c,
+    sellerId,
+    coverage: {
+      complete: full.some((f) => String(f.sellerId || f.seller?._id) === sellerId),
+      have: new Set(c.lines.map((l) => l.product)).size,
+      need: lineCount
+    },
     // Unmeasured distances are reported as unknown rather than as a huge number.
     distance: Number.isFinite(c.distance) ? c.distance : null
   }));
+
+  const ranked = await rankCandidates(prepared, { radiusKm: RADIUS_KM_MAX });
+  return ranked.slice(0, MAX_CANDIDATES);
 };
 
 const notifySeller = async (seller, order, routing) => {
@@ -205,6 +219,13 @@ export const startRouting = async (order, io = null) => {
       seller: c.sellerId,
       distance: c.distance,
       hasProduct: true,
+      rank: c.rank,
+      score: c.score,
+      scoreReasons: c.scoreReasons,
+      measured: c.measured,
+      priceTotal: c.priceTotal,
+      coversWholeOrder: !!c.coverage?.complete,
+      rankedAt: new Date(),
       response: 'pending'
     })),
     currentSellerIndex: 0,
@@ -213,6 +234,18 @@ export const startRouting = async (order, io = null) => {
 
   if (!candidates.length) {
     await Order.updateOne({ _id: order._id }, { assignmentStatus: 'admin_required' });
+    /*
+     * The desk has to know that nothing matched, because the order is now
+     * sitting on their queue rather than in a seller's. This used to be an
+     * `assignmentStatus` change only, discoverable if someone happened to look.
+     */
+    await notifyAdmins({
+      title: `No seller can fulfil ${order.orderNumber}`,
+      message: `Nobody inside the delivery radius holds every line of this order with the exact colour, size and prescription option requested. It needs a manual assignment.`,
+      type: 'order',
+      data: { order: String(order._id), orderNumber: order.orderNumber, reason: 'no_candidate' },
+      io
+    });
     return { success: true, routing, candidates: [], message: 'No nearby seller stocks this item; it is waiting in the admin queue.' };
   }
 
@@ -234,6 +267,28 @@ export const startRouting = async (order, io = null) => {
       assignmentNotes: `Offered to ${first.seller.storeName || first.seller.name} (${first.distance ?? 'unknown'} km)`
     }
   );
+
+  await notifyAdmins({
+    title: `Seller shortlist ready for ${order.orderNumber}`,
+    message: candidates.length > 1
+      ? `Asking ${first.seller.storeName || first.seller.name} first - ranked #1 of ${candidates.length}`
+        + `${first.score ? ` (score ${first.score.toFixed(1)})` : ''}: ${(first.scoreReasons || []).slice(0, 3).join('; ')}`
+      : `Only one seller can cover this order: ${first.seller.storeName || first.seller.name}.`,
+    type: 'order',
+    data: {
+      order: String(order._id),
+      orderNumber: order.orderNumber,
+      shortlist: candidates.map((c) => ({
+        seller: String(c.sellerId),
+        store: c.seller?.storeName || c.seller?.name,
+        rank: c.rank,
+        score: c.score,
+        distance: c.distance,
+        priceTotal: c.priceTotal
+      }))
+    },
+    io
+  });
 
   try { await notifySeller(first.seller, order, routing); } catch (e) { console.error('Offer mail failed:', e.message); }
 
@@ -262,6 +317,14 @@ export const advanceRouting = async (routingDoc, io = null) => {
     routingDoc.timeoutAt = null;
     await routingDoc.save();
     await Order.updateOne({ _id: order._id }, { assignmentStatus: 'admin_required' });
+
+    await notifyAdmins({
+      title: `Every seller declined ${order.orderNumber}`,
+      message: `${routingDoc.nearbySellers.length} sellers were contacted and none accepted in time. The order is waiting on the assignment desk.`,
+      type: 'order',
+      data: { order: String(order._id), routing: String(routingDoc._id), reason: 'all_declined' },
+      io
+    });
 
     try {
       const adminEmail = process.env.ADMIN_EMAIL;
@@ -367,23 +430,42 @@ export const rejectRouting = async (orderId, sellerId, reason = '') => {
  * Pick the best candidate without a human: cheapest credible seller, favouring
  * closeness and rating. Used for the "no admin available" mode.
  */
+/*
+ * Whom to ask when a seller window expires without an answer.
+ *
+ * This used to invent its own arithmetic - distance, rating, price and
+ * totalSales with weights that appeared nowhere else - while the shortlist this
+ * file had already built was ranked by services/sellerRanking.js from measured
+ * orders, returns and reviews. Two answers to one question, disagreeing, on the
+ * same routing document: whoever expired first got offered by one formula and
+ * escalated by the other.
+ *
+ * It now reads the score that ranking recorded on this very routing. A routing
+ * saved before that field existed has no score to trust, so it falls back to
+ * distance - reported as the fallback it is, rather than dressed up as a
+ * calculation.
+ */
 export const aiPick = (routing) => {
-  const ranked = (routing.nearbySellers || [])
-    .filter((s) => s.hasProduct !== false)
-    .map((s) => {
-      const seller = s.seller || {};
-      const dist = Number.isFinite(s.distance) ? s.distance : 8;
-      const price = Number(s.priceTotal ?? s.sellingPrice ?? 0);
-      const rating = Number(seller.rating ?? 0);
-      let score = 100;
-      score -= dist * 2;
-      score += rating * 6;
-      score -= Math.min(price / 1000, 15);
-      score += Math.min((seller.totalSales || 0) / 40, 10);
-      return { entry: s, score };
-    })
-    .sort((a, b) => b.score - a.score);
-  return ranked[0] || null;
+  const usable = (routing.nearbySellers || []).filter((entry) => entry.hasProduct !== false && entry.seller);
+  if (!usable.length) return null;
+
+  const scored = usable.filter((entry) => Number.isFinite(entry.score));
+  if (scored.length) {
+    const best = [...scored].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const da = Number.isFinite(a.distance) ? a.distance : 1e9;
+      const db = Number.isFinite(b.distance) ? b.distance : 1e9;
+      return da - db;
+    })[0];
+    return { entry: best, score: best.score, basis: 'measured' };
+  }
+
+  const byDistance = [...usable].sort((a, b) => {
+    const da = Number.isFinite(a.distance) ? a.distance : 1e9;
+    const db = Number.isFinite(b.distance) ? b.distance : 1e9;
+    return da - db;
+  })[0];
+  return { entry: byDistance, score: null, basis: 'distance-fallback' };
 };
 
 /**
@@ -408,8 +490,10 @@ export const sweepExpiredOffers = async (io = null) => {
       if (pick?.entry?.seller) {
         const r = await acceptRouting(routing.order, oid(pick.entry.seller), io);
         if (r.success) {
-          routing.assignedBy = 'ai';
-          routing.aiDecision = `auto-selected ${pick.entry.seller.storeName || pick.entry.seller.name} (score ${pick.score.toFixed(1)})`;
+          routing.assignedBy = 'auto';
+          routing.aiDecision = pick.basis === 'measured'
+            ? `Asked ${pick.entry.seller.storeName || pick.entry.seller.name} after the window expired - ranked score ${pick.score}.`
+            : `Asked ${pick.entry.seller.storeName || pick.entry.seller.name} after the window expired by nearest-first (this routing has no recorded ranking).`
           await routing.save();
           results.push({ routing: String(routing._id), aiAssigned: true });
           continue;

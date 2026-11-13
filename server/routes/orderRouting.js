@@ -177,9 +177,15 @@ router.post('/:id/auto-assign', verifyToken, verifyAdmin, async (req, res) => {
         }
       });
     } else {
-      res.status(400).json({
+      /*
+       * Keep the reason. This branch used to answer `{ success: false }` with
+       * `message: undefined` whenever the service failed for a non-obvious
+       * reason, so the desk saw a rejection with nothing to act on.
+       */
+      res.status(result.status ? 200 : 400).json({
         success: false,
-        message: result.message
+        message: result.message || result.error || 'The order could not be assigned automatically.',
+        ...(result.status ? { status: result.status } : {})
       });
     }
   } catch (error) {
@@ -229,16 +235,27 @@ router.get('/queue', verifyToken, verifyAdmin, async (req, res) => {
         assignedBy: r.assignedBy,
         assignedSeller: r.assignedSeller ? { _id: r.assignedSeller._id, storeName: r.assignedSeller.storeName } : null,
         adminNotes: r.adminNotes || '',
-        candidates: (r.nearbySellers || []).map((entry) => ({
-          sellerId: entry.seller?._id || entry.seller,
-          storeName: entry.seller?.storeName || entry.seller?.name || 'Unknown seller',
-          phone: entry.seller?.phone || '',
-          email: entry.seller?.email || '',
-          city: entry.seller?.city || entry.seller?.address?.city || '',
-          rating: entry.seller?.rating || 0,
-          distanceKm: entry.distance,
-          response: entry.response || 'pending'
-        }))
+        candidates: (r.nearbySellers || [])
+          .map((entry) => ({
+            sellerId: entry.seller?._id || entry.seller,
+            storeName: entry.seller?.storeName || entry.seller?.name || 'Unknown seller',
+            phone: entry.seller?.phone || '',
+            email: entry.seller?.email || '',
+            city: entry.seller?.city || entry.seller?.address?.city || '',
+            rating: entry.seller?.rating || 0,
+            distanceKm: entry.distance,
+            response: entry.response || 'pending',
+            // Measured ranking, so the desk sees why an order is offered in the
+            // order it is - and can disagree with it in an informed way.
+            rank: entry.rank ?? null,
+            score: entry.score ?? null,
+            scoreReasons: entry.scoreReasons || [],
+            measured: entry.measured || null,
+            priceTotal: entry.priceTotal ?? null,
+            coversWholeOrder: entry.coversWholeOrder ?? null,
+            rankedAt: entry.rankedAt || null
+          }))
+          .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
       }));
 
     res.json({ success: true, queue, count: queue.length });

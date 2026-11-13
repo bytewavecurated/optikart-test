@@ -374,74 +374,78 @@ export const adminAssignOrder = async (routingId, sellerId, adminNotes) => {
 /**
  * AI auto-assigns order based on logic
  */
+/**
+ * Assign the best-ranked candidate on the shortlist.
+ *
+ * The name says AI, and the old body matched it in the worst way: it read
+ * `seller.rating`, `seller.avgDeliveryTime` and `seller.returnRate` straight off
+ * the Seller document and combined them into a score. Those three fields exist on
+ * the schema with a default of 0, and no code in this project ever writes to
+ * them - so every seller's history looked perfect and, apart from distance,
+ * every seller looked the same. The decision string then told the admin it was
+ * `Auto-assigned based on score`.
+ *
+ * It now takes the ranking that services/sellerRanking.js measured from real
+ * orders, returns and reviews and stored on this routing document, and records
+ * the reasons it used. Nothing here is intelligent; it is a rule with visible
+ * arithmetic, which is what an operations desk can actually audit.
+ */
 export const aiAutoAssignOrder = async (routingId) => {
   try {
     const routing = await OrderRouting.findById(routingId)
-      .populate('nearbySellers.seller');
-    
-    if (!routing) {
-      throw new Error('Routing not found');
-    }
+      .populate({ path: 'nearbySellers.seller', select: 'name storeName phone email location rating' });
 
-    // AI logic: Choose seller with best metrics
-    let bestSeller = null;
-    let bestScore = -1;
+    if (!routing) throw new Error('Routing not found');
 
-    for (const sellerData of routing.nearbySellers) {
-      const seller = sellerData.seller;
-      
-      // Calculate score based on:
-      // - Distance (closer is better)
-      // - Rating (higher is better)
-      // - Delivery time (faster is better)
-      // - Return rate (lower is better)
-      
-      const distanceScore = 10 - sellerData.distance; // Max 10 km
-      const ratingScore = (seller.rating || 0) * 2; // Max 10
-      const deliveryScore = 10 - (seller.avgDeliveryTime || 10); // Max 10 days
-      const returnScore = 10 - (seller.returnRate || 0) * 10; // Max 10%
-      
-      const totalScore = distanceScore + ratingScore + deliveryScore + returnScore;
-      
-      if (totalScore > bestScore) {
-        bestScore = totalScore;
-        bestSeller = sellerData;
-      }
-    }
-
-    if (bestSeller) {
-      routing.status = 'seller_accepted';
-      routing.assignedSeller = bestSeller.seller._id;
-      routing.assignedBy = 'ai';
-      routing.aiDecision = `Auto-assigned based on score: ${bestScore.toFixed(2)} (Distance: ${bestSeller.distance}km, Rating: ${bestSeller.seller.rating})`;
-      routing.completedAt = new Date();
-      
-      await routing.save();
-
-      // Update order with assigned seller
-      await Order.findByIdAndUpdate(routing.order, {
-        seller: bestSeller.seller._id,
-        status: 'confirmed'
+    const ranked = [...(routing.nearbySellers || [])]
+      .filter((entry) => entry.seller)
+      .sort((a, b) => {
+        const sa = Number.isFinite(a.score) ? a.score : (Number.isFinite(a.distance) ? 100 - a.distance : -1);
+        const sb = Number.isFinite(b.score) ? b.score : (Number.isFinite(b.distance) ? 100 - b.distance : -1);
+        return sb - sa;
       });
 
-      return {
-        success: true,
-        message: 'Order auto-assigned by AI',
-        assignedSeller: bestSeller.seller,
-        score: bestScore
-      };
-    } else {
+    if (!ranked.length) {
+      routing.status = 'admin_required';
+      await routing.save();
       return {
         success: false,
-        message: 'No suitable seller found'
+        status: 'admin_required',
+        message: 'No seller was available to rank. This order needs a manual assignment.'
       };
     }
-  } catch (error) {
-    console.error('Error in AI auto-assign:', error);
+
+    const best = ranked[0];
+    const reasons = (best.scoreReasons || []).filter(Boolean);
+    const measured = best.score
+      ? `rank #${best.rank ?? 1} of ${ranked.length}, score ${best.score.toFixed(1)}`
+      : `closest candidate at ${best.distance ?? 'unknown'} km (no measured score on this routing)`;
+
+    routing.status = 'seller_accepted';
+    routing.assignedSeller = best.seller._id;
+    routing.assignedBy = 'auto';
+    routing.assignedAt = new Date();
+    routing.aiDecision = `Assigned ${best.seller.storeName || best.seller.name} - ${measured}. ${reasons.join('; ')}`;
+    routing.completedAt = new Date();
+    await routing.save();
+
+    await Order.findByIdAndUpdate(routing.order, {
+      seller: best.seller._id,
+      status: 'confirmed',
+      assignmentStatus: 'assigned'
+    });
+
     return {
-      success: false,
-      error: error.message
+      success: true,
+      message: 'Assigned to the highest-ranked seller on the shortlist.',
+      assignedSeller: best.seller,
+      score: best.score ?? null,
+      reasons,
+      candidatesConsidered: ranked.length
     };
+  } catch (error) {
+    console.error('Error auto-assigning order:', error);
+    return { success: false, error: error.message };
   }
 };
 
