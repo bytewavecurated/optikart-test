@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SupplyDeclaration from '../../components/SupplyDeclaration';
 import { useNavigate } from 'react-router-dom';
 import { FiPackage, FiToggleLeft, FiToggleRight, FiLogOut } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -43,25 +44,65 @@ const ManufacturerSellerDashboard = () => {
     navigate('/manufacturer-seller/login');
   };
 
-  const handleToggleProduct = async (productId, productData) => {
-    const isInInventory = myProducts.some(p => p.manufacturerProduct === productId);
+  /*
+   * Listing a brand frame here is a claim about supply, so the claim has to be
+   * stated before anything is sent: the brand confirms it supplied this shop
+   * and the platform verifies the listing after that. Until both have, the copy
+   * is not visible to customers, which is the point - a shop cannot put a
+   * brand's frames in front of buyers on an unchecked assertion.
+   *
+   * Toggling off now pauses. It used to delete the listing document, taking the
+   * price history, the variant stock ledger and any order line pointing at it
+   * with it, and a shop that sold out for a week lost the record of having
+   * stocked the frame at all.
+   */
+  const [declaring, setDeclaring] = useState(null);
+  const [proof, setProof] = useState({ kind: '', reference: '', note: '' });
+  const [busyId, setBusyId] = useState('');
 
-    try {
-      if (isInInventory) {
-        await api.post(`/manufacturer-seller/products/${productId}/toggle`, {});
-        toast.success('Product removed from inventory');
-      } else {
-        await api.post(`/manufacturer-seller/products/${productId}/toggle`, {
-          price: productData.price,
-          stock: 100,
-          colors: productData.colors,
-          sizes: productData.sizes
-        });
-        toast.success('Product added to inventory');
+  const handleToggleProduct = async (productId, productData) => {
+    const existing = myProducts.find((p) => p.manufacturerProduct === productId);
+
+    if (existing) {
+      try {
+        setBusyId(productId);
+        const res = await api.post(`/manufacturer-seller/products/${productId}/toggle`, {});
+        toast.info(res.data?.message || 'Listing paused. Your price and stock are kept.');
+        await fetchMyProducts();
+      } catch (error) {
+        toastError(error, 'The listing could not be paused.');
+      } finally {
+        setBusyId('');
       }
-      fetchMyProducts();
+      return;
+    }
+
+    setDeclaring({ productId, productData });
+    setProof({ kind: '', reference: '', note: '' });
+  };
+
+  const submitDeclaration = async () => {
+    const { productId, productData } = declaring;
+    try {
+      setBusyId(productId);
+      const res = await api.post(`/manufacturer-seller/products/${productId}/toggle`, {
+        price: productData.price,
+        stock: 100,
+        colors: productData.colors,
+        sizes: productData.sizes,
+        proofKind: proof.kind,
+        proofReference: proof.reference,
+        proofNote: proof.note
+      });
+      toast.success(res.data?.message || 'Sent to the brand for approval.');
+      setDeclaring(null);
+      await fetchMyProducts();
     } catch (error) {
-      toastError(error, "Failed to toggle product");
+      // A refused declaration keeps the form open: the shop has already typed
+      // the reference, and losing it over a validation message is its own bug.
+      toastError(error, 'The declaration was not accepted.');
+    } finally {
+      setBusyId('');
     }
   };
 
@@ -129,6 +170,17 @@ const ManufacturerSellerDashboard = () => {
           </div>
         </div>
 
+        {declaring && (
+          <SupplyDeclaration
+            value={proof}
+            onChange={setProof}
+            productName={declaring.productData?.title}
+            busy={!!busyId}
+            onSubmit={submitDeclaration}
+            onCancel={() => setDeclaring(null)}
+          />
+        )}
+
         {/* Available Products from Manufacturer */}
         <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px', color: 'var(--text-primary)' }}>
@@ -140,7 +192,16 @@ const ManufacturerSellerDashboard = () => {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
               {availableProducts.map((product) => {
-                const isInInventory = myProductIds.includes(product._id);
+                const existing = myProducts.find((x) => String(x.manufacturerProduct || '') === String(product._id));
+                const isInInventory = !!existing || myProductIds.includes(product._id);
+                const listingState = existing?.listing?.state;
+                const stateLabel = {
+                  live: 'Live in your store',
+                  paused: 'Paused by you',
+                  awaiting_manufacturer: 'Waiting on the brand',
+                  awaiting_admin: 'Waiting on OptiKart',
+                  rejected: 'Refused by the brand'
+                }[listingState] || (isInInventory ? 'Listed' : 'Not listed');
                 
                 return (
                   <div key={product._id} style={{ background: 'var(--bg-page)', borderRadius: 'var(--radius)', padding: '16px', border: isInInventory ? '2px solid var(--success)' : '2px solid var(--border)' }}>
@@ -153,6 +214,10 @@ const ManufacturerSellerDashboard = () => {
                     )}
                     <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>{product.title}</h3>
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Brand: {product.brand}</p>
+                    <p style={{ fontSize: 12, marginBottom: '8px', color: existing ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                      {stateLabel}
+                      {listingState && listingState !== 'live' ? ' - customers cannot buy it yet' : ''}
+                    </p>
                     <p style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>₹{product.price}</p>
                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                       Colors: {product.colors?.map(c => c.name).join(', ') || 'N/A'}
@@ -165,7 +230,7 @@ const ManufacturerSellerDashboard = () => {
                       style={{
                         width: '100%',
                         padding: '12px',
-                        background: isInInventory ? 'var(--danger)' : 'var(--success)',
+                        background: existing ? 'var(--danger)' : 'var(--success)',
                         color: 'var(--text-white)',
                         border: 'none',
                         borderRadius: 'var(--radius-sm)',

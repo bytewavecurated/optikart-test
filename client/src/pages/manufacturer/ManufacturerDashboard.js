@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import SupplyClaimQueue from '../../components/SupplyClaimQueue';
 import { useNavigate } from 'react-router-dom';
 import { FiPackage, FiUsers, FiPlus, FiUpload, FiLogOut, FiEdit, FiTrash2, FiEye, FiCamera, FiX } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
@@ -565,6 +566,25 @@ const ManufacturerDashboard = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/*
+         * Shops asking to sell this brand's frames.
+         *
+         * This is the half only the brand can answer: whether the shop was
+         * actually supplied. It sits in front of the product list because it is
+         * the one item on this screen that goes stale - a listing stays invisible
+         * until someone here reads it.
+         */}
+        <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: 20, boxShadow: 'var(--shadow-sm)', marginBottom: 22 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0, color: 'var(--text-dark)' }}>Listing requests</h2>
+          </div>
+          <SupplyClaimQueue
+            fetchUrl="/manufacturer/listing-requests"
+            decideUrl="/manufacturer/listing-requests/decide"
+            stage="the brand"
+          />
         </div>
 
         {/* Products Section */}

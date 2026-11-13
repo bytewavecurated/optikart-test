@@ -190,6 +190,46 @@ in the customer timeline, the order detail screen and the delivery desk, where
 the run can raise it, and clearing an already-cleared report is refused instead of
 appending a second "resolved" entry as if work had been done.
 
+## Brand supply claims (anti-diversion)
+
+A shop listing another company's brand is making a claim about its supply, and
+nothing in the data can tell a brand-issued frame from one bought off a closing
+shop. So the claim is stated, confirmed by the party who can check it, then
+verified by the platform:
+
+`awaiting_manufacturer -> awaiting_admin -> live`, plus `rejected` and `paused`.
+
+| Who | Where | What they see |
+| --- | --- | --- |
+| Manufacturer's retailer | `/manufacturer-seller` dashboard, "List this frame" | A source declaration before anything is sent: brand purchase (with invoice/PO), stockist supply, or "somewhere else" in words a brand can check. |
+| The brand | `/manufacturer` dashboard, Listing requests | The claim, the reference, who declared it and how many times; "We supplied them" or refuse with a reason. |
+| Platform admin | `/admin/supply-claims` | What the brand approved, then Verify or refuse. Also the listings that were selling before the rule. |
+| Services | `server/services/listingApproval.js` | One implementation of all three steps, used by both listing documents. |
+
+Rules that hold this together:
+
+- Not sellable until both agree. Enforced in the models
+  (`Product.verificationStatus`, `SellerStock.isListed`), not only in the
+  routes, because four writers touch these documents; `models/Product.js` only
+  downgrades a save that actually changed the listing, so a view-counter bump
+  cannot silently pull a verified product out of the storefront.
+- Order routing cannot offer an unapproved claim: the candidate query in
+  `services/orderProximity.js` requires `listing.state: 'live'` for brand-linked
+  rows.
+- Pausing keeps the configuration and costs a fresh declaration plus both
+  sign-offs to come back, so a pause cannot be used to park an approval.
+- Refusals need a reason of at least a few words, and `other` sources need a
+  sentence rather than "got it". A queue of claims nobody can check is the same
+  problem wearing a different shirt.
+- Rows that existed before the rule are `grandfathered`: they keep selling and
+  are listed separately as never confirmed. An absent record is not a record of
+  approval.
+
+Gap that remains: the `SellerStock` claim (the one that affects routing) has no
+seller-facing screen yet - the API and the brand queue work, and no page calls
+them, so today only the retailer path is reachable by a human. Building that
+screen is the next piece of this item.
+
 ## Which seller gets the order
 
 Two separate questions, decided in two places, and keeping them apart is the

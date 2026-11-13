@@ -27,6 +27,7 @@ const BlogManagement = lazy(() => import('./pages/admin/BlogManagement'));
 const DeliveryManagement = lazy(() => import('./pages/admin/DeliveryManagement'));
 const ManageDeliveryPartners = lazy(() => import('./pages/admin/ManageDeliveryPartners'));
 const SiteContentManagement = lazy(() => import('./pages/admin/SiteContentManagement'));
+const SupplyClaims = lazy(() => import('./pages/admin/SupplyClaims'));
 const SiteFooterManagement = lazy(() => import('./pages/admin/SiteFooterManagement'));
 const AdminPrescriptionQueue = lazy(() => import('./pages/admin/PrescriptionVerificationQueue'));
 const PriceChangeConfirm = lazy(() => import('./pages/account/PriceChangeConfirm'));
@@ -241,6 +242,8 @@ function App() {
           <Route path="delivery" element={<DeliveryManagement />} />
           <Route path="delivery-partners" element={<ManageDeliveryPartners />} />
           <Route path="site-content" element={<SiteContentManagement />} />
+          {/* Brand supply claims waiting on the platform's own verification. */}
+          <Route path="supply-claims" element={<SupplyClaims />} />
           <Route path="site-footer" element={<SiteFooterManagement />} />
           <Route path="prescriptions" element={<AdminPrescriptionQueue />} />
           <Route path="sale-events" element={<SaleEvents />} />

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import hotToast from 'react-hot-toast';
 
 // Default to same-origin `/api`. That works both under the CRA dev server
 // (which proxies /api to the backend, see package.json) and when the Express
@@ -462,4 +463,22 @@ export const prescriptionVerification = {
   attachDocument: (id, fileUrl, note) => api.patch(`/prescription-verification/${id}/document`, { fileUrl, note }),
   uploadFile: (formData) => api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   reject: (id, reason) => api.post(`/prescription-verification/${id}/reject`, { reason })
+};
+
+/*
+ * One toast for the whole app.
+ *
+ * Two pages import `{ toast }` from this module and it was never exported here:
+ * the build stops on the missing export, and until it stops the browsers using
+ * those screens would throw `toast is not a function` on any success or failure
+ * message while the page itself still looked fine. `react-hot-toast` is the
+ * underlying library. It is wrapped rather than re-exported bare because the app
+ * calls `toast.info`, which that library does not expose under that name.
+ */
+export const toast = {
+  success: (message, options) => hotToast.success(message, options),
+  error: (message, options) => hotToast.error(message, options),
+  loading: (message, options) => hotToast.loading(message, options),
+  custom: (render, options) => hotToast.custom(render, options),
+  info: (message, options) => hotToast(message, { icon: '\u2139\uFE0F', duration: 3500, ...options })
 };
