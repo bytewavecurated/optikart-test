@@ -8,11 +8,45 @@ import Coupon from '../models/Coupon.js';
 import StaffRole from '../models/StaffRole.js';
 import Notification from '../models/Notification.js';
 import { verifyToken, verifyAdmin, verifyStaff } from '../middleware/auth.js';
+import { adminQueue as adminListingQueues, decideAsAdmin as decideListingAsAdmin } from '../services/listingApproval.js';
 import Executive from '../models/Executive.js';
 import Manufacturer from '../models/Manufacturer.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 
 const router = express.Router();
+
+/*
+ * The platform half of the supply-claim check, and the rows that predate the
+ * rule. Grandfathered listings keep selling - silently emptying the storefront
+ * would be its own kind of damage - but they are listed labelled, so a human
+ * can decide rather than the system pretending they were verified.
+ */
+router.get('/listing-approvals', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const queues = await adminListingQueues();
+    res.json({ success: true, ...queues });
+  } catch (error) {
+    console.error('Listing approvals error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+router.post('/listing-approvals/decide', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { listingKind, listingId, decision, reason } = req.body || {};
+    const result = await decideListingAsAdmin({
+      listingKind,
+      id: listingId,
+      decision,
+      reason,
+      actorLabel: req.user.name || req.user.email || 'admin'
+    });
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Listing approval decision error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
 /*
  * The coupon form used to post field names the model never had (`type`,
  * `value`, `minOrder`) and omitted a required `validFrom`, so creating a coupon

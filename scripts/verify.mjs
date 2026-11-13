@@ -34,7 +34,8 @@ const SUITES = [
   ['catalogue and access control', 'scripts/catalog_access_e2e.mjs'],
   ['delivery dispatch', 'scripts/dispatch_e2e.mjs'],
   ['seller ranking', 'scripts/ranking_e2e.mjs'],
-  ['partner flow', 'scripts/partner_flow_e2e.mjs']
+  ['partner flow', 'scripts/partner_flow_e2e.mjs'],
+  ['brand supply claims', 'scripts/listing_approval_e2e.mjs']
 ];
 
 // Static checks: no server needed, but they gate the same push.

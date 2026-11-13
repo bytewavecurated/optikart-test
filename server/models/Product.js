@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { listingApprovalSchema, pushListingEvent } from './listingApproval.js';
 
 const colorSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -239,6 +240,15 @@ const productSchema = new mongoose.Schema({
     variant: { type: String, default: null },
     at: { type: Date, default: Date.now }
   }],
+  /*
+   * The supply claim behind this listing. For a retailer's copy of a brand
+   * product this is what says whether the brand actually supplied them, and no
+   * amount of `status` juggling in a route can make the copy sellable while it
+   * says otherwise - the pre-save hook below enforces that rather than trusting
+   * the caller.
+   */
+  listing: { ...listingApprovalSchema, type: mongoose.Schema.Types.Mixed, default: () => ({ brandLinked: false, state: 'live' }) },
+
   // Return and exchange policy
   isReturnable: { type: Boolean, default: true },
   isExchangeable: { type: Boolean, default: true }
@@ -363,6 +373,29 @@ productSchema.statics.fillMissingNames = async function fillMissingNames() {
   );
   return res.modifiedCount ?? 0;
 };
+
+/*
+ * A brand product that has not cleared both approvals cannot be `verified`, and
+ * a listing the seller chose not to sell cannot be `live`.
+ *
+ * This is a model rule rather than a route rule on purpose. The retailer toggle,
+ * the bulk upload, the admin edit form, a seed, and a future endpoint I have not
+ * written yet all write these documents; one guard here covers all of them, and
+ * the audit that checks this behaviour goes through the HTTP API, where the
+ * consequence is what matters.
+ */
+productSchema.pre('save', function (next) {
+  const listing = this.listing || {};
+  if (listing.brandLinked === true && listing.state !== 'live') {
+    if (this.isModified('verificationStatus') || this.verificationStatus === 'verified') {
+      this.verificationStatus = 'pending';
+      if (listing.state === 'awaiting_manufacturer') {
+        listing.manufacturerReview = { ...(listing.manufacturerReview || {}), status: 'pending', at: new Date() };
+      }
+    }
+  }
+  next();
+});
 
 const Product = mongoose.model('Product', productSchema);
 export default Product;

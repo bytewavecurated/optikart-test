@@ -101,7 +101,21 @@ export const findCandidates = async (order) => {
     : false)
     || order.items?.some((i) => i.variant?.lensType);
 
-  const stockFilter = { product: { $in: productIds }, isListed: true };
+  /*
+   * Routing reads SellerStock, so this is the second half of the gate: an
+   * unapproved brand claim cannot be listed (model rule) and must not be
+   * offered real customers even if a row slipped through. Rows written before
+   * the rule carry no `listing` object and keep working - the grandfathering
+   * decision is documented in models/listingApproval.js.
+   */
+  const stockFilter = {
+    product: { $in: productIds },
+    isListed: true,
+    $or: [
+      { 'listing.brandLinked': { $ne: true } },
+      { 'listing.state': 'live' }
+    ]
+  };
   if (isPoweredOrder) stockFilter.sellsWithPower = true;
 
   const stocks = await SellerStock.find(stockFilter)

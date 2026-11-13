@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { listingApprovalSchema } from './listingApproval.js';
 
 /**
  * A seller's stock of a specific brand product, at their own price.
@@ -35,6 +36,12 @@ const sellerStockSchema = new mongoose.Schema({
   isExchangeable: { type: Boolean, default: true },
   isListed: { type: Boolean, default: true },
   /*
+   * Proximity routing reads SellerStock to decide who can fulfil an order, so a
+   * claimed brand listing here sends real customers to a shop the brand never
+   * supplied. Same contract as a storefront copy, same enforcement.
+   */
+  listing: { ...listingApprovalSchema, type: mongoose.Schema.Types.Mixed, default: () => ({ brandLinked: false, state: 'live' }) },
+  /*
    * The seller's own decision about prescription sales. A frame the
    * manufacturer declares as powered still does not have to be sold that way by
    * every seller, and proximity routing only offers powered orders to sellers
@@ -64,6 +71,20 @@ const sellerStockSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // One row per seller per product.
+/*
+ * `isListed` is what routing and the "who sells this near me" lookups filter
+ * on, so an unapproved brand claim must not be listed - whatever the caller
+ * asked for. Pausing keeps variants, price and stock exactly as the seller set
+ * them; only visibility stops.
+ */
+sellerStockSchema.pre('save', function (next) {
+  const listing = this.listing || {};
+  if (listing.brandLinked === true && listing.state !== 'live' && this.isListed) {
+    this.isListed = false;
+  }
+  next();
+});
+
 sellerStockSchema.index({ seller: 1, product: 1 }, { unique: true });
 // Fast "who near me sells this brand" lookups.
 sellerStockSchema.index({ brand: 1, isListed: 1, totalStock: 1 });

@@ -1,5 +1,6 @@
 import express from 'express';
 import { signSession, logoutHandler } from '../services/session.js';
+import { declareSupply, pauseListing } from '../services/listingApproval.js';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
@@ -212,61 +213,129 @@ router.get('/available-products', verifyManufacturerSeller, async (req, res) => 
   }
 });
 
-// Toggle Product (Add/Remove from seller inventory)
+/*
+ * List a brand product in this shop, or stop listing it.
+ *
+ * Two things changed here. Pausing no longer deletes: the old branch ran
+ * `Product.findByIdAndDelete`, which took the shop's price, its variant stock
+ * ledger, and every order line that pointed at the listing with it - so a shop
+ * that sold out for a week lost the record of having ever stocked the frame.
+ *
+ * And listing is no longer self-service. The copy used to be created from the
+ * brand record with that record's `status: 'verified'` intact, which put it on
+ * the storefront immediately: a shop could list frames it had never been
+ * supplied with, because a black-market purchase looks identical to a supplied
+ * one in the data. Now a listing starts as a claim, the brand approves the
+ * claim, and the platform verifies the copy. See services/listingApproval.js.
+ */
 router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) => {
   try {
-    
-    const seller = await ManufacturerSeller.findById(req.manufacturerSeller._id);
-    if (!seller) {
+    const retailer = await ManufacturerSeller.findById(req.manufacturerSeller._id);
+    if (!retailer) {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
     }
 
-    const manufacturerProduct = await Product.findById(req.params.id);
-    if (!manufacturerProduct) {
+    const brandProduct = await Product.findById(req.params.id);
+    if (!brandProduct) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    // Check if seller already has this product
-    const existingProduct = await Product.findOne({
-      manufacturerProduct: manufacturerProduct._id,
-      seller: req.manufacturerSeller._id
+    const existing = await Product.findOne({
+      manufacturerProduct: brandProduct._id,
+      seller: retailer._id
     });
 
-    if (existingProduct) {
-      // Remove from seller inventory
-      await Product.findByIdAndDelete(existingProduct._id);
-      seller.products = seller.products.filter(p => p.toString() !== existingProduct._id.toString());
-      await seller.save();
-
-      res.json({
-        success: true,
-        message: 'Product removed from inventory.'
+    if (existing) {
+      const state = existing.listing?.state;
+      if (state === 'paused') {
+        // Coming back costs a fresh declaration and both sign-offs again.
+        const result = await declareSupply({
+          doc: existing,
+          kind: 'storefront',
+          product: brandProduct,
+          actorLabel: retailer.storeName || retailer.name || 'retailer',
+          proof: { kind: req.body?.proofKind, reference: req.body?.proofReference, note: req.body?.proofNote },
+          brandLinked: true
+        });
+        if (!result.success) return res.status(400).json({ success: false, message: result.message, reason: result.reason });
+        return res.json({
+          success: true,
+          state: result.state,
+          message: 'Listing re-declared. It goes back through the brand and the platform before it sells again; your price, variants and stock are unchanged.'
+        });
+      }
+      const paused = await pauseListing({
+        listingKind: 'storefront',
+        id: existing._id,
+        actorLabel: retailer.storeName || retailer.name || 'retailer',
+        reason: req.body?.reason || ''
       });
-    } else {
-      // Add to seller inventory with seller's pricing
-      const sellerProduct = new Product({
-        ...manufacturerProduct.toObject(),
-        _id: undefined,
-        manufacturerProduct: manufacturerProduct._id,
-        manufacturerSellerId: req.manufacturerSeller._id,
-        seller: req.manufacturerSeller._id,
-        price: req.body.price || manufacturerProduct.price,
-        discountedPrice: req.body.discountedPrice || manufacturerProduct.discountedPrice,
-        stock: req.body.stock || 0,
-        colors: req.body.colors || manufacturerProduct.colors,
-        sizes: req.body.sizes || manufacturerProduct.sizes
-      });
+      return res.json(paused.success
+        ? { success: true, state: 'paused', message: paused.message }
+        : { success: false, message: paused.message });
+    }
 
-      await sellerProduct.save();
-      seller.products.push(sellerProduct._id);
-      await seller.save();
-
-      res.json({
-        success: true,
-        message: 'Product added to inventory.',
-        product: sellerProduct
+    if (!brandProduct.manufacturer) {
+      return res.status(400).json({
+        success: false,
+        message: 'That product is not linked to a brand, so it cannot be stocked from here.'
       });
     }
+    if (String(brandProduct.manufacturer) !== String(retailer.manufacturer || '')) {
+      return res.status(403).json({
+        success: false,
+        message: "Only your own brand's catalogue can be stocked here."
+      });
+    }
+
+    const sellerProduct = new Product({
+      ...brandProduct.toObject(),
+      _id: undefined,
+      manufacturerProduct: brandProduct._id,
+      manufacturerSellerId: retailer._id,
+      seller: retailer._id,
+      // Never copied: the brand's verification is not this shop's, and a copy
+      // that inherited it would reach the storefront before anyone confirmed
+      // where the goods came from.
+      verificationStatus: 'pending',
+      isListed: false,
+      price: req.body?.price || brandProduct.price,
+      discountedPrice: req.body?.discountedPrice || brandProduct.discountedPrice,
+      stock: req.body?.stock || 0,
+      colors: req.body?.colors || brandProduct.colors,
+      sizes: req.body?.sizes || brandProduct.sizes,
+      stockDetail: Array.isArray(req.body?.stockDetail) ? req.body.stockDetail : brandProduct.stockDetail
+    });
+
+    const declared = await declareSupply({
+      doc: sellerProduct,
+      kind: 'storefront',
+      product: brandProduct,
+      actorLabel: retailer.storeName || retailer.name || 'retailer',
+      proof: { kind: req.body?.proofKind, reference: req.body?.proofReference, note: req.body?.proofNote },
+      brandLinked: true
+    });
+
+    if (!declared.success) {
+      return res.status(400).json({
+        success: false,
+        message: declared.message,
+        reason: declared.reason,
+        // The shop keeps what it typed, so a refused declaration does not
+        // discard the pricing work behind the missing sentence.
+        draft: { price: sellerProduct.price, stock: sellerProduct.stock }
+      });
+    }
+
+    retailer.products.push(sellerProduct._id);
+    await retailer.save();
+
+    return res.status(201).json({
+      success: true,
+      state: declared.state,
+      message: declared.message,
+      product: { _id: sellerProduct._id, title: sellerProduct.title, status: sellerProduct.status, listing: sellerProduct.listing }
+    });
   } catch (error) {
     console.error('Toggle product error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });

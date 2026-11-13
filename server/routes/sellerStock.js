@@ -7,6 +7,8 @@ import {
   overridePriceChange, WORKING_DAYS
 } from '../services/priceChangeAcceptance.js';
 
+import { declareSupply, pauseListing } from '../services/listingApproval.js';
+
 const router = express.Router();
 
 /**
@@ -71,7 +73,7 @@ router.post('/', verifyAnySeller, async (req, res) => {
     }
     const mrp = Number(product.price) || price;
     if (price > mrp) {
-      return res.status(400).json({ success: false, message: `Selling price cannot exceed the MRP of Rs. ${mrp}.` });
+      return res.status(400).json({ success: false, message: `Selling price cannot exceed the MRP of ₹${mrp}.` });
     }
 
     const cleanVariants = (Array.isArray(variants) ? variants : []).map((v) => ({
@@ -81,32 +83,82 @@ router.post('/', verifyAnySeller, async (req, res) => {
       price: Number(v.price) || price
     }));
 
-    const stock = await SellerStock.findOneAndUpdate(
-      { seller: req.seller._id, product: product._id },
-      {
-        seller: req.seller._id,
-        product: product._id,
-        brand: product.brand,
-        modelNumber: product.modelNumber || '',
-        category: product.category,
-        sellingPrice: price,
-        mrp,
-        variants: cleanVariants,
-        isReturnable: isReturnable !== false,
-        isExchangeable: isExchangeable !== false,
-        isListed: isListed !== false,
-        sellsWithPower: !!sellsWithPower && !!product?.poweredOptionsAvailable,
-        powerLensTypes: Array.isArray(powerLensTypes) ? powerLensTypes : []
-      },
-      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
-    ).lean();
+    /*
+     * Assigned and saved rather than upserted. `findOneAndUpdate` does not run
+     * model hooks, so the rule that an unapproved brand claim cannot be listed
+     * - which lives in models/SellerStock.js, because four writers touch this
+     * document - would have been skipped by the one route sellers use most.
+     */
+    let stock = await SellerStock.findOne({ seller: req.seller._id, product: product._id });
+    const creating = !stock;
+    if (creating) {
+      stock = new SellerStock({ seller: req.seller._id, product: product._id });
+    }
 
-    res.status(201).json({ success: true, message: 'Listing saved.', data: stock });
+    /*
+     * Any catalogue owned by a manufacturer is somebody's brand, so claiming
+     * stock in it is a claim about supply. The manufacturer's own retail
+     * consoles sell the same products through a storefront copy, and that path
+     * is gated too - see routes/manufacturerSeller.js toggle.
+     */
+    const brandLinked = !!product.manufacturer;
+
+    Object.assign(stock, {
+      brand: product.brand,
+      modelNumber: product.modelNumber || '',
+      category: product.category,
+      sellingPrice: price,
+      mrp,
+      variants: cleanVariants,
+      isReturnable: isReturnable !== false,
+      isExchangeable: isExchangeable !== false,
+      sellsWithPower: !!sellsWithPower && !!product?.poweredOptionsAvailable,
+      powerLensTypes: Array.isArray(powerLensTypes) ? powerLensTypes : []
+    });
+
+    const wantsListed = isListed !== false;
+    const actorLabel = req.seller.storeName || req.seller.name || 'seller';
+
+    if (!brandLinked) {
+      stock.isListed = wantsListed;
+      if (!stock.listing) stock.listing = { brandLinked: false, state: 'live' };
+      await stock.save();
+      return res.status(creating ? 201 : 200).json({ success: true, message: 'Listing saved.', data: stock });
+    }
+
+    // A branded item: this row is a claim that the brand supplied us.
+    const declared = await declareSupply({
+      doc: stock,
+      kind: 'stock',
+      product,
+      actorLabel,
+      proof: {
+        kind: req.body.proofKind,
+        reference: req.body.proofReference,
+        note: req.body.proofNote
+      },
+      brandLinked: true
+    });
+
+    if (!declared.success) {
+      return res.status(400).json({ success: false, message: declared.message, reason: declared.reason });
+    }
+
+    if (wantsListed && declared.state === 'live') stock.isListed = true;
+    await stock.save();
+
+    return res.status(creating ? 201 : 200).json({
+      success: true,
+      state: declared.state,
+      message: declared.message,
+      data: stock
+    });
   } catch (error) {
     console.error('Seller stock create error:', error);
     res.status(400).json({ success: false, message: error.message });
   }
 });
+
 
 
 /**

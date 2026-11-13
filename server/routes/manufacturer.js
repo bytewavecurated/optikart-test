@@ -1,5 +1,6 @@
 import { otpBypassAllowed } from '../config/authMode.js';
 import { signSession, logoutHandler } from '../services/session.js';
+import { brandQueue, decideAsManufacturer } from '../services/listingApproval.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
@@ -21,6 +22,43 @@ import {
   deletePendingProduct
 } from '../services/manufacturerEnhancements.js';
 const router = express.Router();
+
+/* --------------------------------------------------------------------------
+ * Supply claims about this brand's products.
+ *
+ * A shop listing a frame it was never given is invisible to every ordinary
+ * check: the price is plausible, the model number is real, the stock count is
+ * its own. The only party who can tell is the brand, so this queue is theirs,
+ * and the decision they take here is not "may it sell" but "did we supply it" -
+ * the platform verifies the listing itself afterwards.
+ * ------------------------------------------------------------------------ */
+router.get('/listing-requests', verifyManufacturer, async (req, res) => {
+  try {
+    const queue = await brandQueue(req.manufacturer._id);
+    res.json({ success: true, count: queue.length, requests: queue });
+  } catch (error) {
+    console.error('Brand listing queue error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+router.post('/listing-requests/decide', verifyManufacturer, async (req, res) => {
+  try {
+    const { listingKind, listingId, decision, reason } = req.body || {};
+    const result = await decideAsManufacturer({
+      listingKind,
+      id: listingId,
+      decision,
+      reason,
+      actorLabel: req.manufacturer.name || 'brand',
+      brandId: req.manufacturer._id
+    });
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Brand listing decision error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
 
 /*
  * Ends this session server-side. Without it, signing out only discarded the

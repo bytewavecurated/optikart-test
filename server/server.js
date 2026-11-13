@@ -424,6 +424,50 @@ const startServer = async () => {
       console.log('ℹ️  Seed note:', seedErr.message);
     }
     
+    /*
+     * Listings that existed before brand supply approval became a rule.
+     *
+     * Marked, not deleted and not relabelled as approved. A seller was doing
+     * nothing wrong under the rules of the day, and an update that quietly hid
+     * every existing brand listing would break the storefront within minutes of
+     * deploy - a worse incident than the one being fixed. What changes is that
+     * the state is now written down: `grandfathered` with no manufacturer
+     * review lets the admin queue show them as never confirmed, instead of an
+     * absence of records being read as a record of approval.
+     *
+     * Idempotent - only rows without a `listing` object are touched - and it
+     * runs outside the seed branch, because this is a schema change rather than
+     * demo data.
+     */
+    try {
+      const { default: SellerStock } = await import('./models/SellerStock.js');
+      const untagged = await SellerStock.countDocuments({ listing: { $exists: false } });
+      if (untagged) {
+        const { default: Product } = await import('./models/Product.js');
+        const brandIds = (await Product.find({ manufacturer: { $exists: true, $ne: null } }).select('_id').lean()).map((x) => x._id);
+
+        const brandStock = await SellerStock.updateMany(
+          { listing: { $exists: false }, product: { $in: brandIds } },
+          { $set: { 'listing.brandLinked': true, 'listing.state': 'live', 'listing.grandfathered': true } }
+        );
+        const plainStock = await SellerStock.updateMany(
+          { listing: { $exists: false } },
+          { $set: { 'listing.brandLinked': false, 'listing.state': 'live' } }
+        );
+        const brandCopies = await Product.updateMany(
+          { listing: { $exists: false }, manufacturerProduct: { $exists: true, $ne: null } },
+          { $set: { 'listing.brandLinked': true, 'listing.state': 'live', 'listing.grandfathered': true } }
+        );
+        const plainCopies = await Product.updateMany(
+          { listing: { $exists: false } },
+          { $set: { 'listing.brandLinked': false, 'listing.state': 'live' } }
+        );
+        console.log(`Listing rules seeded: ${brandStock.modifiedCount} brand stock rows and ${brandCopies.modifiedCount} brand storefront copies marked live-but-never-confirmed; ${plainStock.modifiedCount + plainCopies.modifiedCount} unbranded rows left untouched.`);
+      }
+    } catch (lgErr) {
+      console.error(JSON.stringify({ event: 'listing_migration_failed', message: String(lgErr.message).slice(0, 200) }));
+    }
+
     httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
 
