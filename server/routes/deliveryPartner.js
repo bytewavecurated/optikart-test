@@ -390,14 +390,18 @@ router.post('/withdraw', verifyDeliveryPartner, async (req, res) => {
     const result = await processPaymentWithdrawal(partnerId, amount);
 
     if (result.success) {
+      /*
+       * The service answers under `data`, and everything the partner needs to
+       * know - whether money actually moved, what it was called, what is left
+       * available - lives there. This used to reach for `result.amount`,
+       * `result.fee` and `result.transactionId`, which the service never
+       * returns, so the response carried three undefined fields and a flat
+       * "Withdrawal processed" whether the payout happened, queued, or failed.
+       */
       res.json({
         success: true,
-        message: 'Withdrawal processed',
-        data: {
-          amount: result.amount,
-          fee: result.fee,
-          transactionId: result.transactionId
-        }
+        message: result.data.message,
+        data: result.data
       });
     } else {
       res.status(400).json({
@@ -844,7 +848,9 @@ export default router;
 import { 
   calculateDeliveryFee, 
   getDeliveryPartnerEarnings, 
-  processWithdrawal as processPaymentWithdrawal
+  processWithdrawal as processPaymentWithdrawal,
+  pendingPartnerWithdrawals,
+  settlePartnerWithdrawal
 } from '../services/deliveryPartnerPayment.js';
 
 router.get('/payment/calculate', verifyDeliveryPartner, async (req, res) => {
@@ -887,5 +893,45 @@ router.post('/payment/withdraw', verifyDeliveryPartner, async (req, res) => {
     }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/* ---------------------------------------------------------------------------
+ * Partner payout settlement queue (admin).
+ *
+ * A withdrawal that could not be paid by RazorpayX stays in the ledger as
+ * `awaiting_settlement` with the balance reserved. These two endpoints are the
+ * only way it leaves that state by hand: the admin pays the partner through the
+ * bank and records the transfer reference here, so every ₹ that shows as paid
+ * has something traceable behind it.
+ * ------------------------------------------------------------------------ */
+
+router.get('/payouts/pending', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const result = await pendingPartnerWithdrawals();
+    res.json(result);
+  } catch (error) {
+    console.error('Pending partner payouts error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+router.post('/payouts/:withdrawalId/settle', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { partnerId, reference, note } = req.body || {};
+    if (!partnerId) {
+      return res.status(400).json({ success: false, message: 'partnerId is required.' });
+    }
+    const result = await settlePartnerWithdrawal({
+      partnerId,
+      withdrawalId: req.params.withdrawalId,
+      reference,
+      note,
+      actor: req.user.name || req.user.email || 'admin'
+    });
+    res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Settle partner payout error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });

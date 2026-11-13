@@ -76,8 +76,21 @@ const deliveryPartnerSchema = new mongoose.Schema({
     platformFee: { type: Number, required: true },
     netPaid: { type: Number, required: true },
     payoutId: { type: String, default: '' },
-    status: { type: String, enum: ['initiated', 'processed', 'failed'], default: 'processed' },
-    at: { type: Date, default: Date.now }
+    /*
+     * 'processed' means money actually left the platform, and it is only ever
+     * written when a gateway accepted the payout or an admin marked it settled.
+     * The old default of 'processed' meant a withdrawal was counted as paid the
+     * moment it was requested, which is how a partner's ledger came to show
+     * receipts for transfers nobody had made.
+     */
+    status: {
+      type: String,
+      enum: ['awaiting_settlement', 'processed', 'failed'],
+      default: 'awaiting_settlement'
+    },
+    at: { type: Date, default: Date.now },
+    settledAt: { type: Date, default: null },
+    settlementNote: { type: String, default: '' }
   }]
 }, {
   timestamps: true

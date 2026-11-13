@@ -118,6 +118,126 @@ async function main() {
   check('earnings list the runs with a payout', (earnings.deliveries || []).length > 0, JSON.stringify(row0 || null));
   check('each earning row names the order', !!row0?.orderNumber, row0?.orderNumber || 'missing');
 
+  /*
+   * One run pays the delivery fee (₹10 per km), which is under the ₹50 minimum
+   * withdrawal, so the ledger below would never be exercised. Repeat the same
+   * short cycle until there is something real to withdraw.
+   */
+  const earnMoreRuns = async (tries) => {
+    for (let i = 0; i < tries; i += 1) {
+      const probe = (await call('/delivery-partner/me', { token: partner })).json.data || {};
+      if (Number(probe.availableBalance ?? 0) >= 50) return probe;
+
+      const item = (await call('/products?category=sunglasses&limit=5', { token: seller }))
+        .json.products?.[i % 5];
+      if (!item) break;
+      const made = await call('/orders', {
+        token: customer,
+        body: {
+          items: [{ product: item._id, quantity: 1 }],
+          shippingAddress: { name: 'Partner Flow', phone: '9800001234', street: '4 Linking Road', city: 'Mumbai', pincode: '400050' },
+          paymentMethod: 'cod'
+        }
+      });
+      const placed = (await call('/orders?limit=1', { token: customer })).json.orders?.[0];
+      if (!placed) break;
+      await call(`/seller/orders/${placed._id}/status`, { token: seller, body: { status: 'confirmed' }, method: 'PUT' });
+      await call(`/seller/orders/${placed._id}/status`, { token: seller, body: { status: 'packed' }, method: 'PUT' });
+      // Assigned by hand rather than waiting on the auto-offer timer, so the
+      // earning is deterministic: the point of this loop is a balance to
+      // withdraw, not another test of dispatch.
+      const assigned = await call('/delivery-partner/assign', {
+        token: adminToken,
+        body: { orderId: placed._id, partnerId }
+      });
+      if (assigned.json?.success === false) continue;
+      await call(`/delivery-partner/complete/${placed._id}`, { token: partner, body: {} });
+    }
+    return (await call('/delivery-partner/me', { token: partner })).json.data || {};
+  };
+
+  /* ---------------------------------------------------------------- payouts
+   * A withdrawal that no payment system accepted must not be shown as money
+   * that left. These checks are the reason: the ledger used to stamp every row
+   * `processed` with a generated `payout_<timestamp>` reference, so a partner's
+   * history looked settled while nothing had been attempted.
+   * ---------------------------------------------------------------------- */
+  await earnMoreRuns(6);
+
+  const ledger = (await call('/delivery-partner/me', { token: partner })).json.data || {};
+  const rows0 = (ledger.partner?.withdrawals || ledger.withdrawals || []);
+  const fabricated = rows0.filter((w) => w.status === 'processed' && !String(w.payoutId || '').trim());
+  check('no withdrawal claims to be paid without a payment reference', fabricated.length === 0,
+    JSON.stringify(fabricated.slice(0, 2)));
+
+  const available = Number(ledger.availableBalance ?? 0);
+  const withdrawnBefore = Number(ledger.totalWithdrawn ?? 0);
+  if (ledger.canWithdrawToday === false) {
+    console.log('SKIP  withdrawal attempt (one per calendar day already used by this run)');
+  } else if (available < 50) {
+    console.log(`SKIP  withdrawal attempt (only ${available} available)`);
+  } else {
+    // The minimum is ₹50, so withdraw exactly that rather than half of an
+    // available balance that may be smaller than twice the floor.
+    const amount = 50;
+    const wd = await call('/delivery-partner/withdraw', { token: partner, body: { amount } });
+    const data = wd.json?.data || {};
+    check('withdrawal is accepted', wd.status === 200 && data.amount > 0, wd.text);
+    check('withdrawal reports the status the ledger recorded',
+      ['processed', 'awaiting_settlement'].includes(data.status), JSON.stringify(data));
+    check('withdrawal response carries the real figures, not undefined fields',
+      data.netAmount !== undefined && data.platformFee !== undefined && data.availableBalance !== undefined,
+      JSON.stringify(data));
+
+    if (data.status === 'awaiting_settlement') {
+      const meAfterQueue = (await call('/delivery-partner/me', { token: partner })).json.data || {};
+      check('a queued withdrawal is not counted as paid out',
+        Number(meAfterQueue.totalWithdrawn ?? 0) === withdrawnBefore,
+        `${meAfterQueue.totalWithdrawn} vs ${withdrawnBefore}`);
+      check('a queued withdrawal reserves the balance',
+        Number(meAfterQueue.availableBalance ?? 0) <= available - amount + 0.01,
+        `available ${available} -> ${meAfterQueue.availableBalance} for ${amount}`);
+      check('the reserved amount is visible as awaiting settlement',
+        Number(meAfterQueue.awaitingSettlement ?? 0) >= amount, meAfterQueue.awaitingSettlement);
+
+      const pend = await call('/delivery-partner/payouts/pending', { token: adminToken });
+      const row = (pend.json?.withdrawals || []).find((w) => w.withdrawalId === String(data.withdrawalId || ''))
+        || (pend.json?.withdrawals || []).slice(-1)[0];
+      check('admin can see the settlement queue', pend.status === 200 && !!row, pend.text);
+
+      const noRef = await call(`/delivery-partner/payouts/${row.withdrawalId}/settle`, {
+        token: adminToken, body: { partnerId: ledger.partner?._id || row.partner.id }
+      });
+      check('settling without a bank reference is refused',
+        noRef.status === 400 && noRef.json?.needsReference === true, noRef.text);
+
+      const settled = await call(`/delivery-partner/payouts/${row.withdrawalId}/settle`, {
+        token: adminToken,
+        body: { partnerId: ledger.partner?._id || row.partner.id, reference: 'UTRTEST123456', note: 'suite settlement' }
+      });
+      check('settling with a reference marks it paid',
+        settled.status === 200 && settled.json?.success === true, settled.text);
+
+      const meSettled = (await call('/delivery-partner/me', { token: partner })).json.data || {};
+      check('settling moves the amount into total withdrawn',
+        Number(meSettled.totalWithdrawn ?? 0) === withdrawnBefore + amount,
+        `${meSettled.totalWithdrawn} vs ${withdrawnBefore} + ${amount}`);
+      const settledRow = (meSettled.partner?.withdrawals || []).slice(-1)[0] || {};
+      check('the settled row carries the reference that was entered',
+        settledRow.payoutId === 'UTRTEST123456' && settledRow.status === 'processed',
+        JSON.stringify({ payoutId: settledRow.payoutId, status: settledRow.status }));
+      check('settling twice is refused rather than double-counted',
+        (await call(`/delivery-partner/payouts/${row.withdrawalId}/settle`, {
+          token: adminToken, body: { partnerId: ledger.partner?._id || row.partner.id, reference: 'UTRAGAIN' }
+        })).json?.alreadySettled === true);
+    } else if (data.status === 'processed') {
+      console.log('SKIP  settlement queue checks (the gateway paid this payout, so nothing is queued)');
+    } else {
+      check('a withdrawal that did not settle must say why', false,
+        `unexpected status ${JSON.stringify(data)}`);
+    }
+  }
+
   const me = (await call('/delivery-partner/me', { token: partner })).json.data || {};
   check('partner profile exposes withdrawal history', Array.isArray(me.partner?.withdrawals ?? me.withdrawals ?? []),
     typeof (me.partner?.withdrawals ?? me.withdrawals));

@@ -98,6 +98,7 @@ const DeliveryPartnerDashboard = () => {
       setStats({
         todayDeliveries: partnerData.todayDeliveries || 0,
         availableBalance: partnerData.availableBalance || 0,
+        awaitingSettlement: partnerData.awaitingSettlement || 0,
         canWithdrawToday: partnerData.canWithdrawToday !== false,
         totalEarnings: partnerData.totalEarnings || 0,
         pendingDeliveries: partnerData.pendingDeliveries || 0,
@@ -274,19 +275,36 @@ const DeliveryPartnerDashboard = () => {
       toast.error('Please enter a valid amount');
       return;
     }
-    if (amount > stats.totalEarnings) {
-      toast.error('Insufficient balance');
+    // Availability is the server's figure, not gross earnings: money already
+    // queued for settlement is neither the partner's to take again nor money
+    // that has been paid. Guessing from totalEarnings offered balances that did
+    // not exist.
+    const available = Number(stats.availableBalance ?? stats.totalEarnings ?? 0);
+    if (amount > available) {
+      toast.error(`Only ₹${available.toFixed(2)} is available to withdraw.`);
       return;
     }
 
     setWithdrawing(true);
     try {
-      await deliveryApi.withdraw(amount);
-      toast.success(`Withdrawal of ₹${amount.toFixed(2)} requested successfully`);
+      const response = await deliveryApi.withdraw(amount);
+      // The message has to come from the response. This used to announce
+      // "requested successfully" and then subtract the amount from the visible
+      // earnings locally, which showed a payout progressing that the server had
+      // not accepted - or had never attempted at all.
+      const data = response.data?.data || response.data || {};
+      const settled = data.status === 'processed';
+      if (settled) {
+        toast.success(data.message || `₹${amount.toFixed(2)} paid out to your account.`);
+      } else if (data.requiresManualSettlement) {
+        toast.info(data.message || `₹${amount.toFixed(2)} is queued for settlement.`);
+      } else {
+        toast.success(data.message || `Withdrawal of ₹${amount.toFixed(2)} recorded.`);
+      }
       setWithdrawAmount('');
-      setStats((prev) => ({ ...prev, totalEarnings: prev.totalEarnings - amount }));
+      await fetchDashboardData();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Withdrawal failed');
+      toast.error(error.response?.data?.error || error.response?.data?.message || 'Withdrawal failed');
     }
     setWithdrawing(false);
   };
@@ -649,12 +667,27 @@ const DeliveryPartnerDashboard = () => {
               )}
               {payoutHistory.withdrawals.length > 0 && (
                 <>
-                  <h3 style={{ margin: '18px 0 8px', fontSize: 14.5, fontWeight: 700 }}>Withdrawals</h3>
+                  <h3 style={{ margin: '18px 0 8px', fontSize: 14.5, fontWeight: 700 }}>
+                    Withdrawals
+                    {stats.awaitingSettlement > 0 && (
+                      <span style={{ fontWeight: 500, fontSize: 12.5, color: 'var(--text-secondary)', marginLeft: 8 }}>
+                        ₹{stats.awaitingSettlement.toFixed(2)} awaiting settlement
+                      </span>
+                    )}
+                  </h3>
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
                     {payoutHistory.withdrawals.slice(0, 8).map((w, i) => (
                       <li key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-light)', paddingBottom: 6 }}>
                         <span>{w.at ? new Date(w.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'} {w.payoutId ? `· ${w.payoutId}` : ''}</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{inr(w.netPaid ?? w.amount)} <span style={{ fontWeight: 400 }}>({w.status || 'processed'})</span></span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{inr(w.netPaid ?? w.amount)}{' '}
+                          <span style={{
+                            fontWeight: 600, fontSize: 11, padding: '2px 7px', borderRadius: 999,
+                            color: w.status === 'processed' ? 'var(--success)' : w.status === 'failed' ? 'var(--error)' : 'var(--warning-dark, #8a6d3b)',
+                            background: w.status === 'processed' ? 'rgba(22, 163, 74, .10)' : w.status === 'failed' ? 'rgba(220, 38, 38, .10)' : 'rgba(217, 119, 6, .12)'
+                          }}>
+                            {w.status === 'processed' ? 'Paid' : w.status === 'failed' ? 'Failed' : 'Awaiting settlement'}
+                          </span>
+                        </span>
                       </li>
                     ))}
                   </ul>

@@ -326,10 +326,18 @@ Stated plainly so nothing is mistaken for done.
   in one tab now ends the session in the others too. That is the intended
   meaning of Logout; before session ids existed it was the opposite problem,
   where Logout changed nothing outside the tab that clicked it.
-- A partner withdrawal records `payout_<timestamp>` and moves the balance to
-  withdrawn even when `RAZORPAY2_KEY_ID`/`SECRET` are unset, so the withdrawal
-  history shows an id that no payment system ever issued. Until payouts go
-  through the approval queue, treat those ids as bookkeeping, not receipts.
+- A partner withdrawal that no gateway paid sits in the ledger as
+  `awaiting_settlement` with the balance reserved, and leaves that state only
+  when an admin records a bank transfer reference (`GET
+  /api/delivery-partner/payouts/pending`, `POST .../payouts/:id/settle`). Two
+  things used to stand in the way of that: the withdrawal wrote a generated
+  `payout_<timestamp>` id and called it processed, and a Mongoose ObjectId
+  answers `_id` with itself, so `partnerOrId._id ? partnerOrId : find(...)`
+  treated a bare id as a document, read every balance as undefined, and refused
+  every withdrawal as insufficient. If a partner reports "balance not
+  available" while their earnings are plainly there, that resolution path is
+  the first place to look. The admin payout console for settling these is the
+  remaining piece.
 - Session revocation lives in one middleware mounted at `/api`. A future route
   outside that prefix would not be covered, and nothing would notice.
 - Store location at seller sign-up is resolved from the PIN code unless the browser

@@ -26,6 +26,25 @@ export const calculatePlatformFee = (amount) => {
   return multiples * feePer50;
 };
 
+/*
+ * What a partner may actually withdraw.
+ *
+ * `totalWithdrawn` counts money that genuinely left the platform. A request
+ * that is still waiting to be settled is not withdrawn - but it must not stay
+ * spendable either, or one partner could queue several days of pickups against
+ * the same balance while each of them sat un-settled. So pending rows are
+ * reserved here, and the reserve disappears the moment a row fails.
+ */
+export const PARTNER_PENDING_STATES = ['awaiting_settlement'];
+
+export const availableBalance = (partner) => {
+  const withdrawn = Number(partner.totalWithdrawn || 0);
+  const reserved = (partner.withdrawals || [])
+    .filter((w) => PARTNER_PENDING_STATES.includes(w.status))
+    .reduce((sum, w) => sum + Number(w.amount || 0), 0);
+  return Math.max(0, Math.round(((Number(partner.totalEarnings || 0) - withdrawn - reserved) * 100)) / 100);
+};
+
 /**
  * Create payout for delivery partner
  */
@@ -43,18 +62,27 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
       };
     }
 
-    const available = (partner.totalEarnings || 0) - (partner.totalWithdrawn || 0);
+    const available = availableBalance(partner);
     if (amount > available) {
-      return { success: false, error: 'Withdrawal amount exceeds your available balance.' };
+      return {
+        success: false,
+        error: `₹50 minimum, and only ₹${available.toFixed(2)} is available to withdraw right now.`,
+        availableBalance: available
+      };
     }
 
     const platformFee = calculatePlatformFee(amount);
     const netAmount = Math.round((amount - platformFee) * 100) / 100;
 
-    // Razorpay2 (separate account) handles partner payouts. Without live
-    // RazorpayX credentials the payout is recorded and settled manually,
-    // but the ledger below is always the source of truth.
-    let payoutId = `payout_${Date.now()}`;
+    /*
+     * RazorpayX pays out only if its own credentials are configured. The id
+     * below is whatever the gateway returns, and nothing else: this used to
+     * fall back to `payout_<timestamp>`, a number that looked exactly like a
+     * receipt, was stored as `processed`, and moved the balance to withdrawn -
+     * so a partner's history recorded transfers that had never been attempted.
+     */
+    let payoutId = null;
+    let payFailed = null;
     if (process.env.RAZORPAY2_KEY_ID && process.env.RAZORPAY2_KEY_SECRET) {
       const rz2 = new Razorpay({
         key_id: process.env.RAZORPAY2_KEY_ID,
@@ -72,26 +100,37 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
       payoutId = payout.id;
     }
 
-    partner.totalWithdrawn = (partner.totalWithdrawn || 0) + amount;
-    partner.totalPlatformFees = (partner.totalPlatformFees || 0) + platformFee;
+    const settled = !!payoutId;
     partner.lastWithdrawalAt = new Date();
+    if (settled) {
+      partner.totalWithdrawn = (partner.totalWithdrawn || 0) + amount;
+      partner.totalPlatformFees = (partner.totalPlatformFees || 0) + platformFee;
+    }
     partner.withdrawals.push({
       amount,
       platformFee,
       netPaid: netAmount,
-      payoutId,
-      status: 'processed',
-      at: new Date()
+      payoutId: payoutId || '',
+      status: settled ? 'processed' : 'awaiting_settlement',
+      at: new Date(),
+      settledAt: settled ? new Date() : null,
+      settlementNote: settled
+        ? 'Paid out by RazorpayX.'
+        : 'No RazorpayX credentials configured (or the transfer was rejected). Held as reserved until an admin settles it against a real bank transfer.'
     });
     await partner.save();
 
     return {
       success: true,
-      payoutId,
+      payoutId: payoutId || null,
       amount: netAmount,
       platformFee,
-      status: 'processed',
-      message: 'Payout processed successfully'
+      status: settled ? 'processed' : 'awaiting_settlement',
+      requiresManualSettlement: !settled,
+      availableBalance: availableBalance(partner),
+      message: settled
+        ? 'Payout processed successfully'
+        : 'Withdrawal queued for settlement. The balance is reserved, but no money has left the platform yet.'
     };
   } catch (error) {
     console.error('Error creating delivery payout:', error);
@@ -158,9 +197,16 @@ export const getDeliveryPartnerEarnings = async (partnerId, period = 'month') =>
 export const processWithdrawal = async (partnerOrId, amount) => {
   try {
     const { default: DeliveryPartner } = await import('../models/DeliveryPartner.js');
-    const partner = partnerOrId && partnerOrId._id
-      ? partnerOrId
-      : await DeliveryPartner.findById(partnerOrId);
+    /*
+     * Always load the document. The old test was `partnerOrId._id ? partnerOrId
+     * : findById(partnerOrId)`, which looks harmless but is not: a Mongoose
+     * ObjectId answers `_id` with itself, so a bare id passed as a document, and
+     * every read below (totalEarnings, totalWithdrawn, withdrawals) came back
+     * undefined. The guard then saw a zero balance and refused every withdrawal
+     * made through HTTP, which is the shape of the bug this file had: partners
+     * could not be paid, and the failure looked like an empty wallet.
+     */
+    const partner = await DeliveryPartner.findById(partnerOrId?._id ?? partnerOrId);
 
     if (!partner) return { success: false, error: 'Delivery partner not found.' };
 
@@ -169,22 +215,32 @@ export const processWithdrawal = async (partnerOrId, amount) => {
       return { success: false, error: 'A valid withdrawal amount is required.' };
     }
     if (value < 50) {
-      return { success: false, error: 'Minimum withdrawal amount is Rs. 50' };
+      return { success: false, error: 'Minimum withdrawal amount is ₹50' };
     }
 
     const payout = await createDeliveryPayout(partner, value, null);
     if (!payout.success) return { success: false, error: payout.error };
 
-    const platformFee = payout.platformFee;
+    /*
+     * The status a partner is told has to be the status the ledger recorded.
+     * This used to answer `processed` and "credited within 24 hours" on every
+     * success, even when no payout had been attempted at all - so the partner
+     * waited for money that was only ever sitting in a queue.
+     */
+    const settled = payout.status === 'processed';
     return {
       success: true,
       data: {
-        withdrawalId: payout.payoutId,
+        withdrawalId: payout.payoutId ? String(payout.payoutId) : null,
         amount: value,
-        platformFee,
+        platformFee: payout.platformFee,
         netAmount: payout.amount,
-        status: 'processed',
-        message: 'Withdrawal processed successfully. The amount will be credited to your account within 24 hours.'
+        status: payout.status,
+        requiresManualSettlement: !settled,
+        availableBalance: payout.availableBalance,
+        message: settled
+          ? 'Withdrawal processed. The amount has been paid out to your account.'
+          : `Withdrawal of ₹${value} is queued for settlement and your balance is reserved. An admin records the bank transfer reference when it is paid; you will see it move to Paid on the day that happens.`
       }
     };
   } catch (error) {
@@ -199,4 +255,80 @@ export default {
   createDeliveryPayout,
   getDeliveryPartnerEarnings,
   processWithdrawal
+};
+
+/**
+ * Mark a queued partner withdrawal as settled by hand.
+ *
+ * This is the only way money leaves the platform without RazorpayX: a person
+ * pays the partner through the bank and records the transfer reference here.
+ * It is deliberately a separate, admin-only operation rather than something a
+ * partner can trigger, and it moves the balance only now - at the moment the
+ * payment is asserted to have happened - so the ledger and the bank agree
+ * instead of agreeing only in appearance.
+ */
+export const settlePartnerWithdrawal = async ({ partnerId, withdrawalId, reference, note, actor }) => {
+  const partner = await (await import('../models/DeliveryPartner.js')).default.findById(partnerId);
+  if (!partner) return { success: false, error: 'Delivery partner not found.' };
+
+  const row = (partner.withdrawals || []).id(withdrawalId);
+  if (!row) return { success: false, error: 'Withdrawal not found for this partner.' };
+  if (row.status === 'processed') {
+    return { success: false, alreadySettled: true, message: `Already settled${row.settledAt ? ` on ${row.settledAt.toISOString()}` : ''}.` };
+  }
+
+  const cleanReference = String(reference || '').trim();
+  if (!cleanReference) {
+    return {
+      success: false,
+      needsReference: true,
+      error: 'A bank transfer reference (UTR) is required. Settling without one would put an untraceable payment in the partner history.'
+    };
+  }
+
+  row.payoutId = cleanReference.slice(0, 40);
+  row.status = 'processed';
+  row.settledAt = new Date();
+  row.settlementNote = `${String(note || 'Settled by bank transfer').slice(0, 180)} (by ${actor || 'admin'})`;
+
+  partner.totalWithdrawn = (partner.totalWithdrawn || 0) + Number(row.amount || 0);
+  partner.totalPlatformFees = (partner.totalPlatformFees || 0) + Number(row.platformFee || 0);
+  await partner.save();
+
+  return {
+    success: true,
+    message: 'Withdrawal marked as settled.',
+    withdrawal: { id: String(row._id), amount: row.amount, payoutId: row.payoutId, status: row.status, settledAt: row.settledAt }
+  };
+};
+
+/** Queued withdrawals across every partner, oldest first: the admin queue. */
+export const pendingPartnerWithdrawals = async () => {
+  const DeliveryPartner = (await import('../models/DeliveryPartner.js')).default;
+  const partners = await DeliveryPartner.find({ 'withdrawals.status': 'awaiting_settlement' })
+    .select('name phone uniqueId totalEarnings totalWithdrawn withdrawals bankDetails')
+    .lean();
+
+  const rows = [];
+  for (const partner of partners) {
+    for (const w of partner.withdrawals || []) {
+      if (w.status !== 'awaiting_settlement') continue;
+      rows.push({
+        withdrawalId: String(w._id),
+        partner: { id: String(partner._id), name: partner.name, phone: partner.phone, uniqueId: partner.uniqueId },
+        bank: { accountNumber: partner.bankDetails?.accountNumber || '', ifsc: partner.bankDetails?.ifscCode || '', holder: partner.bankDetails?.accountHolderName || '' },
+        amount: w.amount,
+        platformFee: w.platformFee,
+        netPaid: w.netPaid,
+        requestedAt: w.at
+      });
+    }
+  }
+  rows.sort((a, b) => new Date(a.requestedAt) - new Date(b.requestedAt));
+  return {
+    success: true,
+    count: rows.length,
+    totalValue: Math.round(rows.reduce((sum, r) => sum + Number(r.amount || 0), 0) * 100) / 100,
+    withdrawals: rows
+  };
 };

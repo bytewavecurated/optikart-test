@@ -1,4 +1,5 @@
 import DeliveryPartner from '../models/DeliveryPartner.js';
+import { availableBalance as reservedAvailableBalance } from './deliveryPartnerPayment.js';
 import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import { sendEmail } from './email.js';
@@ -387,7 +388,13 @@ export const getPartnerDashboard = async (partnerId) => {
       }
     });
 
-    const availableBalance = (partner.totalEarnings || 0) - (partner.totalWithdrawn || 0);
+    // Same reservation-aware figure the withdrawal guard uses, so the balance
+    // shown to a partner can never be more than what they can actually take:
+    // a queued withdrawal is money that is neither paid nor free.
+    const availableBalance = reservedAvailableBalance(partner);
+    const awaitingSettlement = (partner.withdrawals || [])
+      .filter((w) => w.status === 'awaiting_settlement')
+      .reduce((sum, w) => sum + Number(w.amount || 0), 0);
 
     return {
       success: true,
@@ -405,6 +412,7 @@ export const getPartnerDashboard = async (partnerId) => {
       pendingEarnings: partner.pendingEarnings || 0,
       availableBalance: Math.round(availableBalance * 100) / 100,
       totalWithdrawn: partner.totalWithdrawn || 0,
+      awaitingSettlement: Math.round(awaitingSettlement * 100) / 100,
       weeklyEarnings: Math.round((weekAgg[0]?.total || 0) * 100) / 100,
       monthlyEarnings: Math.round((monthAgg[0]?.total || 0) * 100) / 100,
       canWithdrawToday: !partner.lastWithdrawalAt || new Date(partner.lastWithdrawalAt) < startOfDay,
