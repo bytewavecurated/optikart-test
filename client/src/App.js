@@ -90,6 +90,7 @@ const ManufacturerSellerDashboard = lazy(() => import('./pages/manufacturerSelle
 const FaceShapeGuide = lazy(() => import('./pages/FaceShapeGuide'));
 const SellerInventory = lazy(() => import('./pages/seller/SellerInventory'));
 const SellerStock = lazy(() => import('./pages/seller/SellerStock'));
+const SellerBrandStock = lazy(() => import('./pages/seller/SellerBrandStock'));
 const SellerReturns = lazy(() => import('./pages/seller/SellerReturns'));
 const DeliveryPartnerLogin = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerLogin'));
 const DeliveryPartnerDashboard = lazy(() => import('./pages/deliveryPartner/DeliveryPartnerDashboard'));
@@ -224,6 +225,7 @@ function App() {
         <Route path="/seller/payouts" element={<SellerRoute><SellerPayouts /></SellerRoute>} />
         <Route path="/seller/inventory" element={<SellerRoute><SellerInventory /></SellerRoute>} />
         <Route path="/seller/stock" element={<SellerRoute><SellerStock /></SellerRoute>} />
+        <Route path="/seller/brand-stock" element={<SellerRoute><SellerBrandStock /></SellerRoute>} />
         <Route path="/seller/returns" element={<SellerRoute><SellerReturns /></SellerRoute>} />
         <Route path="/seller/inventory-analytics" element={<SellerRoute><SellerInventoryAnalytics /></SellerRoute>} />
         <Route path="/seller/return-analytics" element={<SellerRoute><SellerReturnAnalytics /></SellerRoute>} />

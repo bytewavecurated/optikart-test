@@ -243,6 +243,7 @@ async function main() {
       && redeclared.json?.data?.listing?.state === 'awaiting_manufacturer',
     JSON.stringify(redeclared.json?.data?.listing?.sellerProof));
 
+
   const stockQueue = await call('/manufacturer/listing-requests', { token: brand });
   const stockEntry = (stockQueue.json?.requests || []).find((r) => String(r.id) === String(stockRow._id));
   check('the brand sees the routing-side claim too', !!stockEntry && stockEntry.listingKind === 'stock',

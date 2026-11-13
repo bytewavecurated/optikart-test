@@ -242,6 +242,7 @@ verified by the platform:
 | Who | Where | What they see |
 | --- | --- | --- |
 | Manufacturer's retailer | `/manufacturer-seller` dashboard, "List this frame" | A source declaration before anything is sent: brand purchase (with invoice/PO), stockist supply, or "somewhere else" in words a brand can check. |
+| Any seller stocking a branded line | `/seller/brand-stock` | The same declaration against the brand catalogue their account is opened to, plus the state each listing is in - waiting on the brand, waiting on OptiKart, live, refused, paused. This writes the `SellerStock` row order routing reads. |
 | The brand | `/manufacturer` dashboard, Listing requests | The claim, the reference, who declared it and how many times; "We supplied them" or refuse with a reason. |
 | Platform admin | `/admin/supply-claims` | What the brand approved, then Verify or refuse. Also the listings that were selling before the rule. |
 | Services | `server/services/listingApproval.js` | One implementation of all three steps, used by both listing documents. |

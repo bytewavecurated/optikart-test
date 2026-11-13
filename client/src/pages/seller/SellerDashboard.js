@@ -62,6 +62,7 @@ const SellerDashboard = () => {
             </div>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <Link to="/seller/stock" className="btn btn-outline"><FiTag /> My Listings</Link>
+              <Link to="/seller/brand-stock" className="btn btn-outline"><FiTag /> Brand Listings</Link>
               <Link to="/seller/inventory" className="btn btn-outline"><FiBox /> Inventory</Link>
               <Link to="/seller/returns" className="btn btn-outline"><FiRefreshCw /> Returns</Link>
               <Link to="/seller/inventory-analytics" className="btn btn-outline"><FiBarChart2 /> Inventory Analytics</Link>
