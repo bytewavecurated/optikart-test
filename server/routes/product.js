@@ -515,12 +515,22 @@ router.put('/:id', verifySeller, async (req, res) => {
     const changed = {};
     allowedUpdates.forEach(field => {
       if (req.body[field] !== undefined && String(req.body[field]) !== String(product[field])) {
-        product[field] = req.body[field];
         changed[field] = req.body[field];
       }
     });
 
-    await product.save();
+    /*
+     * A partial update, not `product.save()`. Saving the document fetched at the
+     * top of this handler wrote every field back - so a seller who only corrected
+     * a description or a price would silently restore the stock figure they had
+     * read moments earlier, undoing the orders another buyer placed in between.
+     * That mismatch is unrecoverable from the inventory screen, because the
+     * displayed number simply stops agreeing with the movement log.
+     */
+    if (Object.keys(changed).length) {
+      await Product.updateOne({ _id: product._id }, { $set: changed });
+    }
+    Object.assign(product, changed, { updatedAt: new Date() });
 
     // Audit trail for the seller: a price move gets its own mail, any other
     // field edit gets a summary. Never block the update if mailing fails.

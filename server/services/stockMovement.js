@@ -87,38 +87,81 @@ export const deductStockForOrder = async (order, io = null) => {
     const qty = Math.max(1, Number(line.quantity) || 1);
     const variant = matchVariant(product, line.variant || {});
 
-    if (variant) {
-      const have = Math.max(0, Number(variant.stock) || 0);
-      if (have < qty) {
-        report.shortages.push({ product: product.title, variant: `${variant.color || ''} ${variant.size || ''}`.trim(), need: qty, have });
-        continue;
-      }
-      variant.stock = have - qty;
-      syncProductStock(product);
-    } else {
-      const have = Math.max(0, Number(product.stock) || 0);
-      if (have < qty) {
-        report.shortages.push({ product: product.title, need: qty, have });
-        continue;
-      }
-      product.stock = have - qty;
-    }
-
-    product.stockMovementLog = product.stockMovementLog || [];
-    product.stockMovementLog.push({
+    /*
+     * The guard lives in the query, not in a value read beforehand: the update
+     * only applies to a document whose stock is still sufficient at the moment
+     * Mongo executes it. Read-check-save let two concurrent orders both see "1
+     * left" and both write, which oversold the last unit and lost whatever the
+     * seller had changed on the product in between (a whole-document save
+     * overwrites their edit). No rows modified therefore means someone beat this
+     * order to it, and is reported as a shortage instead of forcing stock
+     * negative.
+     */
+    const movement = {
       type: 'out',
       quantity: qty,
       reason: 'sale',
       order: String(order._id),
       variant: variant ? String(variant._id) : null,
       at: new Date()
-    });
-    if (product.stockMovementLog.length > 200) {
-      product.stockMovementLog = product.stockMovementLog.slice(-200);
+    };
+
+    let took = null;
+    if (variant) {
+      const updated = await Product.updateOne(
+        {
+          _id: product._id,
+          // $elemMatch is what makes this correct: it requires one and the same
+          // variant to be the chosen one AND to still hold enough stock. A
+          // 'variants.$[v].stock' condition here would not work at all - the
+          // filtered positional operator only exists on the update side, so the
+          // guard would silently match nothing and every order would read as sold
+          // out. product-level stock moves in the same write, and because it is
+          // maintained as the sum of variant stock, it cannot disagree.
+          variants: { $elemMatch: { _id: variant._id, stock: { $gte: qty } } }
+        },
+        {
+          $inc: {
+            // product.stock is the sum of active variant stock, so it moves by
+            // the same amount in the same atomic write.
+            stock: -qty,
+            'variants.$[v].stock': -qty
+          },
+          $push: { stockMovementLog: { $each: [movement], $slice: -200 } }
+        },
+        { arrayFilters: [{ 'v._id': variant._id }] }
+      );
+      took = updated.modifiedCount > 0 ? qty : null;
+    } else {
+      const updated = await Product.updateOne(
+        { _id: product._id, stock: { $gte: qty } },
+        { $inc: { stock: -qty }, $push: { stockMovementLog: { $each: [movement], $slice: -200 } } }
+      );
+      took = updated.modifiedCount > 0 ? qty : null;
     }
 
-    await product.save();
-    await alertIfLow(io, product, order.seller);
+    if (took === null) {
+      // Re-read only to report the true current figure to the shopper.
+      const fresh = await Product.findById(product._id).lean();
+      const freshVariant = fresh ? matchVariant(fresh, line.variant || {}) : null;
+      const have = freshVariant ? Number(freshVariant.stock) || 0 : Number(fresh?.stock) || 0;
+      report.shortages.push({
+        product: product.title,
+        variant: variant ? `${variant.color || ''} ${variant.size || ''}`.trim() : undefined,
+        need: qty,
+        have
+      });
+      continue;
+    }
+
+    /*
+     * The log entry was written in the same atomic update above. Reading the
+     * document again is only for the low-stock alert, never to decide or write
+     * stock: saving the document fetched before this update would have written
+     * the old stock figure straight back over the decrement we just made.
+     */
+    const after = await Product.findById(product._id).lean();
+    await alertIfLow(io, after, order.seller);
     report.deducted.push({
       product: String(product._id),
       variant: variant ? String(variant._id) : null,
@@ -149,27 +192,46 @@ export const restoreStockForOrder = async (order, io = null, { reason = 'restore
     );
     if (alreadyApplied) continue;
 
-    if (variant) {
-      variant.stock = (Math.max(0, Number(variant.stock) || 0)) + qty;
-      syncProductStock(product);
-    } else {
-      product.stock = (Math.max(0, Number(product.stock) || 0)) + qty;
-    }
-
-    product.stockMovementLog = product.stockMovementLog || [];
-    product.stockMovementLog.push({
+    /*
+     * Adding stock back is not the same risk as taking it away, but it fails the
+     * same way: saving the document read at the top of this loop overwrites any
+     * change the seller made in between, including stock a different order just
+     * took. Same treatment - an atomic conditional increment, log in the same
+     * write, and the double-reversal guard re-checked in the query.
+     */
+    const movement = {
       type: 'in',
       quantity: qty,
       reason,
       order: String(order._id),
       variant: variant ? String(variant._id) : null,
       at: new Date()
-    });
-    if (product.stockMovementLog.length > 200) {
-      product.stockMovementLog = product.stockMovementLog.slice(-200);
-    }
+    };
 
-    await product.save();
+    if (variant) {
+      await Product.updateOne(
+        {
+          _id: product._id,
+          // Same reasoning as the deduction: pair the variant identity and the
+          // "not already reversed" guard in one $elemMatch-anchored match.
+          variants: { $elemMatch: { _id: variant._id } },
+          stockMovementLog: { $not: { $elemMatch: { order: String(order._id), reason, type: 'in' } } }
+        },
+        {
+          $inc: { stock: qty, 'variants.$[v].stock': qty },
+          $push: { stockMovementLog: { $each: [movement], $slice: -200 } }
+        },
+        { arrayFilters: [{ 'v._id': variant._id }] }
+      );
+    } else {
+      await Product.updateOne(
+        {
+          _id: product._id,
+          'stockMovementLog': { $not: { $elemMatch: { order: String(order._id), reason, type: 'in' } } }
+        },
+        { $inc: { stock: qty }, $push: { stockMovementLog: { $each: [movement], $slice: -200 } } }
+      );
+    }
     restored.push({ product: String(product._id), variant: variant ? String(variant._id) : null, qty });
   }
 
