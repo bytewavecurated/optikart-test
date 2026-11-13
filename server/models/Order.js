@@ -33,6 +33,14 @@ const shippingAddressSchema = new mongoose.Schema({
 });
 
 const prescriptionSchema = new mongoose.Schema({
+  /*
+   * The verifying prescription this order was ground to. Everything else here is
+   * a convenience copy for the seller; the id is what makes the "was this
+   * actually checked" question answerable at all, and orders created before it
+   * existed simply have none.
+   */
+  prescription: { type: mongoose.Schema.Types.ObjectId, ref: 'Prescription' },
+  verificationStatus: { type: String, default: '' },
   fileUrl: { type: String },
   type: { type: String },
   lensPreference: { type: String }

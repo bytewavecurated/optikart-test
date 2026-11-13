@@ -5,6 +5,7 @@ import Cart from '../models/Cart.js';
 import Coupon from '../models/Coupon.js';
 import { verifyToken } from '../middleware/auth.js';
 import { deductStockForOrder, restoreStockForOrder, matchVariant } from '../services/stockMovement.js';
+import { assertPrescriptionVerified } from '../services/prescriptionGate.js';
 import { startRouting } from '../services/orderProximity.js';
 import { orderValidation } from '../middleware/validate.js';
 import { sendOrderConfirmation, sendOrderStatusNotification } from '../services/email.js';
@@ -16,8 +17,23 @@ const SELF_DELIVERY_FEE_PER_ITEM = 59;
 
 router.post('/', verifyToken, orderValidation, async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod, couponCode, prescription } = req.body;
+    const { items, shippingAddress, paymentMethod, couponCode, prescription, prescriptionId } = req.body;
     const userId = req.user._id;
+
+    /*
+     * Lenses that have to be ground are a clinical instruction, not a preference.
+     * Checked before stock, coupons or a payment intent so a refusal never leaves
+     * a half-applied order behind.
+     */
+    const rxGate = await assertPrescriptionVerified({
+      userId,
+      prescriptionId: prescriptionId || prescription?.prescription,
+      lines: items || []
+    });
+    if (!rxGate.ok) {
+      console.warn(`Order refused for user ${userId}: ${rxGate.code}`);
+      return res.status(403).json({ success: false, code: rxGate.code, message: rxGate.message });
+    }
 
     let subtotal = 0;
     const sellerItems = {};
@@ -147,7 +163,13 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         orderStatus: 'pending',
         couponApplied: couponCode ? couponCode.toUpperCase() : undefined,
         couponDiscount: sellerCouponDiscount,
-        prescription,
+        prescription: rxGate.required
+          ? {
+              ...(prescription || {}),
+              prescription: prescriptionId || prescription?.prescription,
+              verificationStatus: rxGate.status
+            }
+          : prescription,
         // Commission tracking
         commissionPercentage,
         commissionAmount,

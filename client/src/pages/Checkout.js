@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FiMapPin, FiCreditCard, FiCheck } from 'react-icons/fi';
 import { motion } from 'framer-motion';
 import { useCart } from '../contexts/CartContext';
@@ -42,6 +42,47 @@ const Checkout = () => {
     if (isAuthenticated) loadSaved();
     return () => { cancelled = true; };
   }, [isAuthenticated]);
+
+  // Same rule as services/prescriptionGate.js, so the shopper is asked for the
+  // prescription before hitting a refusal at the last step instead of after.
+  /*
+   * Declared before anything reads them. The rule and the loader below touch
+   * these during the first render, and with the declarations after them the whole
+   * page threw "Cannot access before initialization" — every checkout fell into
+   * the error boundary, which a green build ships perfectly happily.
+   */
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [prescriptionId, setPrescriptionId] = useState('');
+
+  // Mirrors services/prescriptionGate.js, including powers that reading-glass
+  // variants carry as their size ("+1.00").
+  const signedNumber = (value) => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    if (!/^[+-]?\d*\.?\d+$/.test(raw.replace(/\s/g, ''))) return null;
+    const n = Number(raw.replace(/[^0-9.+-]/g, ''));
+    return Number.isFinite(n) ? n : null;
+  };
+  const lineNeedsPrescription = (item) => {
+    const v = (item && item.variant) || {};
+    const power = signedNumber(v.power);
+    const cyl = signedNumber(v.cyl);
+    const size = signedNumber(v.size);
+    if ((power !== null && power !== 0) || (cyl !== null && cyl !== 0) || (size !== null && size !== 0)) return true;
+    return ['single vision', 'bifocal', 'progressive'].includes(String(v.lensType || '').toLowerCase());
+  };
+  const needsPrescription = items.some(lineNeedsPrescription);
+  const approvedPrescriptions = prescriptions.filter((rx) => rx.verificationStatus === 'approved');
+  const unapprovedCount = prescriptions.length - approvedPrescriptions.length;
+
+  useEffect(() => {
+    if (!needsPrescription) return undefined;
+    let alive = true;
+    auth.getPrescriptions()
+      .then((res) => { if (alive) setPrescriptions(res.data.prescriptions || []); })
+      .catch(() => { if (alive) setPrescriptions([]); });
+    return () => { alive = false; };
+  }, [needsPrescription]);
 
   const [paymentMethod, setPaymentMethod] = useState('online');
 
@@ -125,10 +166,17 @@ const Checkout = () => {
       country: address.country || 'India'
     },
     couponCode: coupon?.code,
-    prescription: prescription || undefined
+    prescriptionId: prescriptionId || undefined
   });
 
   const handlePlaceOrder = async () => {
+    if (needsPrescription && !prescriptionId) {
+      // Refused here rather than at the gateway: a shopper who has just entered
+      // card details should not learn about a missing prescription on the next
+      // screen. The server still decides on its own.
+      toast.error('Choose the prescription these lenses will be ground to');
+      return;
+    }
     setProcessing(true);
     try {
       if (paymentMethod === 'online') {
@@ -297,6 +345,42 @@ const Checkout = () => {
                     </div>
                   </form>
                 </motion.div>
+              )}
+
+              {step === 2 && needsPrescription && (
+                <div className="card" style={{ padding: 18, marginBottom: 4 }}>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 6px' }}>Prescription for these lenses</h3>
+                  <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)' }}>
+                    This basket has lenses ground to your prescription, so our opticians must have checked the numbers before the order can be placed.
+                  </p>
+                  <select
+                    className="input"
+                    aria-label="Select prescription"
+                    value={prescriptionId}
+                    onChange={(e) => setPrescriptionId(e.target.value)}
+                    style={{ maxWidth: 480 }}
+                  >
+                    <option value="">Select a verified prescription</option>
+                    {approvedPrescriptions.map((rx) => (
+                      <option key={rx._id} value={rx._id}>
+                        {(rx.patientName || user?.name || 'Prescription') + (rx.createdAt ? ' · ' + new Date(rx.createdAt).toLocaleDateString('en-IN') : '') + (rx.fileUrl ? ' · document on file' : ' · typed numbers')}
+                      </option>
+                    ))}
+                  </select>
+                  {approvedPrescriptions.length === 0 && (
+                    <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--danger)' }}>
+                      No approved prescription is on your account yet. Upload one and it is normally reviewed within a few hours.
+                    </p>
+                  )}
+                  {unapprovedCount > 0 && (
+                    <p style={{ margin: '10px 0 0', fontSize: 12.5, color: 'var(--text-secondary)' }}>
+                      {unapprovedCount} prescription{unapprovedCount === 1 ? '' : 's'} on your account {unapprovedCount === 1 ? 'is' : 'are'} still with our opticians or were not accepted, so {unapprovedCount === 1 ? 'it cannot' : 'they cannot'} be used for this order.
+                    </p>
+                  )}
+                  <Link to="/prescription" className="btn btn-outline" style={{ alignSelf: 'flex-start', marginTop: 12 }}>
+                    Upload a prescription
+                  </Link>
+                </div>
               )}
 
               {step === 2 && (
