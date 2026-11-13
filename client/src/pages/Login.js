@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiKey } from 'react-icons/fi';
 import { motion } from 'framer-motion';
@@ -16,6 +16,14 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const { login, verifyLoginOTP } = useAuth();
+  /*
+   * Countdown state is per session in this browser, which is what the user sees;
+   * the server enforces the real limit per account. Before this, "Resend OTP"
+   * only printed 'OTP resent' - it never sent anything, so a shopper who never
+   * received the first code had no way to ask for another and a reassuring lie on
+   * screen.
+   */
+  const [resendIn, setResendIn] = useState(0);
   const navigate = useNavigate();
 
   const validate = () => {
@@ -67,6 +75,12 @@ const Login = () => {
       toast.error(result.message || 'OTP verification failed');
     }
   };
+
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn((v) => Math.max(0, v - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -174,10 +188,24 @@ const Login = () => {
                 Didn't receive OTP?{' '}
                 <button 
                   type="button" 
-                  onClick={() => toast.success('OTP resent to your email')}
-                  style={{ color: 'var(--primary)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  onClick={async () => {
+                    if (resendIn > 0) return;
+                    setResendIn(30);
+                    try {
+                      // Re-authenticating is the resend: the server mints a fresh
+                      // code for this account and mails it. No new endpoint means
+                      // no new way to make the system send mail to strangers.
+                      const result = await login(email, password);
+                      if (result?.success) toast.success('A new code is on its way');
+                      else toast.error(result?.message || 'Could not resend the code');
+                    } catch (e) {
+                      toast.error('Could not resend the code. Please try again.');
+                    }
+                  }}
+                  disabled={resendIn > 0}
+                  style={{ color: resendIn > 0 ? 'var(--text-light)' : 'var(--primary)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
-                  Resend OTP
+                  {resendIn > 0 ? `Resend OTP in ${resendIn}s` : 'Resend OTP'}
                 </button>
               </p>
             </form>

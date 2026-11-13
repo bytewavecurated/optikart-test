@@ -3,7 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FiShoppingCart, FiHeart, FiShare2, FiTruck, FiShield, FiRefreshCw, FiCheck, FiChevronDown, FiChevronUp, FiStar, FiMinus, FiPlus, FiUser, FiPackage, FiCalendar, FiFileText, FiExternalLink } from 'react-icons/fi';
 import { Carousel } from 'react-responsive-carousel';
 import ReactStars from 'react-rating-stars-component';
-import api, { products, orders } from '../services/api';
+import api, { products, orders, wishlist as wishlistApi } from '../services/api';
+import { wishlistItemsOf } from '../services/apiResponse.js';
+import { toastError } from '../services/errors.js';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserBehavior } from '../contexts/UserBehaviorContext';
@@ -25,6 +27,14 @@ const ProductDetails = () => {
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [currentImages, setCurrentImages] = useState([]);
+  /*
+   * The button used to call toast.success('Added to wishlist!') and nothing else:
+   * no request, nothing on the Wishlist page, and the same message every time it
+   * was pressed. It now goes through the same endpoint the Wishlist screen reads,
+   * and reflects whether this product is already saved.
+   */
+  const [wishlisted, setWishlisted] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [showAllReviews, setShowAllReviews] = useState(false);
@@ -98,6 +108,41 @@ const ProductDetails = () => {
       setCurrentImages(colorImages);
     }
   }, [selectedColor, product]);
+
+  const loadWishlistState = async (id) => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await wishlistApi.get();
+      const items = wishlistItemsOf(res.data);
+      setWishlisted(items.some((w) => String(w?.product?._id || w?.productId || w?._id) === String(id)));
+    } catch {
+      setWishlisted(false);
+    }
+  };
+
+  const toggleWishlist = async () => {
+    if (!isAuthenticated) {
+      toast('Sign in to save this to your wishlist');
+      navigate('/login');
+      return;
+    }
+    setWishlistBusy(true);
+    try {
+      if (wishlisted) {
+        await wishlistApi.remove(product._id);
+        setWishlisted(false);
+        toast.success('Removed from wishlist');
+      } else {
+        await wishlistApi.add(product._id);
+        setWishlisted(true);
+        toast.success('Saved to wishlist');
+      }
+    } catch (error) {
+      toastError(error, 'The wishlist could not be updated');
+    } finally {
+      setWishlistBusy(false);
+    }
+  };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -264,8 +309,14 @@ const ProductDetails = () => {
                 ))}
               </Carousel>
               <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => toast.success('Added to wishlist!')}>
-                  <FiHeart /> Wishlist
+                <button
+                  className="btn btn-outline"
+                  style={{ flex: 1, color: wishlisted ? 'var(--danger)' : undefined, borderColor: wishlisted ? 'var(--danger)' : undefined }}
+                  onClick={toggleWishlist}
+                  disabled={wishlistBusy}
+                  aria-pressed={wishlisted}
+                >
+                  <FiHeart fill={wishlisted ? 'currentColor' : 'none'} /> {wishlisted ? 'Saved' : 'Wishlist'}
                 </button>
                 <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }}>
                   <FiShare2 /> Share

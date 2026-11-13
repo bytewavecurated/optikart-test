@@ -235,7 +235,7 @@ const DeliveryPartnerDashboard = () => {
               await deliveryApi.updateLocation(position.coords.latitude, position.coords.longitude);
               setLocationSharing(true);
               toast.success('Location sharing enabled');
-            } catch {
+            } catch (error) {
               toastError(error, "Failed to update location");
             }
           },

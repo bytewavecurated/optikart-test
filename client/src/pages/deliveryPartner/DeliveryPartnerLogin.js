@@ -193,7 +193,7 @@ const DeliveryPartnerLogin = () => {
                   try {
                     await deliveryApi.login(email, password);
                     toast.success('OTP resent to your email');
-                  } catch {
+                  } catch (error) {
                     toastError(error, "Failed to resend OTP");
                   }
                 }}
