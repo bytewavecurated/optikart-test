@@ -104,7 +104,7 @@ const Header = () => {
 
   return (
     <header style={{ background: 'var(--bg-dark)', position: 'sticky', top: 0, zIndex: 50 }}>
-      <div className="container header-row" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '28px' }}>
+      <div className="container header-row" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '28px', paddingBlock: 'var(--header-pad-block)' }}>
         {/* Logo */}
         <Link to="/" aria-label="OptiKart home" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
           <Logo variant="onDark" size={22} tagline />
