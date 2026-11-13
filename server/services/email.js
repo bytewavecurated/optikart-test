@@ -51,6 +51,48 @@ export const sendOTP = async (email, otp, type = 'login') => {
   }
 };
 
+/*
+ * The bill, line by line.
+ *
+ * A confirmation that says only "Total Amount: ₹8,856" is the document a
+ * customer reads when the number on their bank statement does not match the
+ * number in their head of what the glasses cost. Itemising is not decoration:
+ * the platform fee and the cash-handling charge are legitimate, and they stop
+ * being surprising the moment they are written down where the customer agreed
+ * to them.
+ *
+ * Fields are read off the order rather than recomputed, so the receipt cannot
+ * disagree with the record. A receipt that re-derives prices drifts the day a
+ * rule changes, and then the email is the thing that is wrong.
+ */
+const money = (n) => Number(n || 0).toLocaleString('en-IN');
+
+const chargeLines = (order) => {
+  const rows = [
+    ['Items', order.subtotal, false],
+    ['Delivery charges', order.deliveryCharge, false],
+    ['Platform fee', order.platformFee, false],
+    ['Cash-on-delivery handling', order.codFee, false],
+    ['Coupon discount', order.couponDiscount, true]
+  ].filter(([label, value]) => Number(value) > 0);
+
+  const body = rows
+    .map(
+      ([label, value, negative]) =>
+        `<tr><td style="color:#666;padding:4px 0;font-size:14px;">${label}</td><td style="color:#333;padding:4px 0;font-size:14px;text-align:right;">${negative ? '-₹' : '₹'}${money(value)}</td></tr>`
+    )
+    .join('');
+
+  return `
+    <table style="width:100%;border-collapse:collapse;margin:14px 0 6px;">
+      ${body}
+      <tr>
+        <td style="color:#333;font-weight:bold;padding-top:8px;border-top:1px solid #ddd;">Total</td>
+        <td style="color:#333;font-weight:bold;padding-top:8px;text-align:right;border-top:1px solid #ddd;">₹${money(order.totalAmount)}</td>
+      </tr>
+    </table>`;
+};
+
 export const sendOrderConfirmation = async (email, order) => {
   const mailOptions = {
     from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
@@ -58,7 +100,7 @@ export const sendOrderConfirmation = async (email, order) => {
     subject: `Order Confirmation - ${order.orderNumber}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
+        <div style="background: #1d4ed8; padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
           <h1 style="color: white; margin: 0;">Order Confirmed!</h1>
         </div>
         <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -67,9 +109,20 @@ export const sendOrderConfirmation = async (email, order) => {
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="color: #333; margin-top: 0;">Order Details</h3>
             <p style="color: #666;"><strong>Order Number:</strong> ${order.orderNumber}</p>
-            <p style="color: #666;"><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
             <p style="color: #666;"><strong>Items:</strong> ${order.items.length}</p>
+            ${chargeLines(order)}
           </div>
+          ${
+            String(order.paymentMethod) === 'cod'
+              ? `<p style="color: #666; font-size: 14px; margin: 0 0 12px;">
+                   You are paying <strong>cash on delivery</strong>. Please keep
+                   <strong>₹${money(order.totalAmount)}</strong> ready for the delivery person - that figure
+                   already includes the one-time ₹${Number(order.codFee) || 0} cash-handling charge, which covers
+                   collecting and reconciling the payment. It is not refunded if you return the items, and nothing
+                   else in this bill is affected by a return.
+                 </p>`
+              : ''
+          }
           <p style="color: #666;">We'll notify you when your order is shipped.</p>
         </div>
       </div>

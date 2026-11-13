@@ -60,6 +60,34 @@ const orderSchema = new mongoose.Schema({
   deliveryCharge: { type: Number, default: 0 },
   shiprocketDeliveryCharge: { type: Number, default: 0 },
   platformFee: { type: Number, default: 0 },
+  /*
+   * Cash-on-delivery handling, ₹39 per customer order, stored rather than
+   * derived. Three separate things need to point at the same number: the cash
+   * leg reconciled against a partner's collection, a refund that must not hand
+   * back a charge already spent, and a customer reading their bill. Inferring it
+   * by subtracting the other lines makes all three circular the moment any other
+   * charge changes.
+   *
+   * Only the split that carries the cash leg records it, so the order-level sum
+   * is the ₹39 once and not once per shop.
+   */
+  codFee: { type: Number, default: 0 },
+
+  /*
+   * What changed hands at the door.
+   *
+   * Completion used to record only `paymentStatus: 'completed'` for a cash
+   * order. That is enough to release a seller's payout and not enough for
+   * anything else: when a partner's cash does not add up at the end of a shift
+   * there is no figure per order to compare against, only a flag saying some
+   * amount was collected somewhere. `cashCollected` is the number the partner
+   * took, recorded when they say they took it, so reconciliation is arithmetic
+   * rather than memory - and it is the order total, ₹39 cash-handling charge
+   * included, because that is what the customer actually handed over.
+   */
+  cashCollected: { type: Number, default: 0 },
+  cashCollectedAt: { type: Date, default: null },
+  cashCollectedBy: { type: String, default: '' },
   totalAmount: { type: Number, required: true },
   paymentMethod: {
     type: String,

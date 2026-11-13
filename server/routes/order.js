@@ -1,4 +1,11 @@
 import express from 'express';
+import {
+  quoteCharges,
+  DELIVERY_PER_ITEM,
+  COD_HANDLING_FEE,
+  PLATFORM_FEE_PERCENT,
+  refundableAmount
+} from '../config/fees.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
@@ -116,18 +123,86 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
       }
     }
 
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-    const deliveryCharge = totalItems * 16;
-    const platformFee = Math.round(subtotal * 0.02);
-    const totalAmount = subtotal + deliveryCharge + platformFee - couponDiscount;
+    /*
+     * The customer-facing bill, from the same function the quote endpoint and
+     * the checkout screen use. Inlined arithmetic here is how the order total
+     * and the price panel a customer reads came to disagree: the server charged
+     * a 2% platform fee that the panel never showed.
+     */
+    /*
+     * Priced from the resolved lines, never from `req.body.items`.
+     *
+     * The request array carries product ids and quantities only: prices, stock
+     * and the seller of each line are decided above, from the catalogue and the
+     * exact colour/size the buyer chose. Quoting from the request therefore used
+     * `price: undefined` for every line, and while that looked harmless - the
+     * per-seller arithmetic below still produced correct order totals - it made
+     * the quote useless as the source of truth, which is what it is now meant to
+     * be. Anyone who later trusts `quote.platformFee` would bill zero.
+     */
+    const resolvedLines = Object.entries(sellerItems).flatMap(([sellerId, list]) =>
+      list.map((i) => ({
+        price: Number(i.price) || 0,
+        quantity: Math.max(1, Number(i.quantity) || 1),
+        seller: sellerId
+      }))
+    );
+
+    /*
+     * 'online' is a choice on a screen, not a payment channel: the order
+     * document stores razorpay / card / upi / netbanking / wallet / cod. The
+     * checkout sent the screen's word straight through and the write rejected
+     * it, so a customer who picked an online method without the sub-channel
+     * being resolved got a 500 after their cart was priced. Normalising here
+     * means the quote, the stored order and the refund rule all speak about the
+     * same thing: was cash involved or not.
+     */
+    const storedPaymentMethod = ['cod', 'razorpay', 'card', 'upi', 'netbanking', 'wallet'].includes(paymentMethod)
+      ? paymentMethod
+      : 'razorpay';
+
+    const quote = quoteCharges({
+      lines: resolvedLines,
+      paymentMethod: storedPaymentMethod,
+      couponDiscount
+    });
+    const totalItems = quote.itemCount;
+    const deliveryCharge = quote.deliveryCharges;
+    const platformFee = quote.platformFee;
+    const codFee = quote.codHandlingFee;
+    const totalAmount = quote.total;
 
     const orders = [];
+    // Quote groups are consumed once each, so a split cannot borrow
+    // another shop's rounding.
+    const usedGroups = new Set();
+    let codFeeClaimed = false;
 
     for (const [sellerId, sellerItemsList] of Object.entries(sellerItems)) {
       const sellerSubtotal = sellerItemsList.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       const sellerItemCount = sellerItemsList.reduce((sum, item) => sum + item.quantity, 0);
-      const sellerDeliveryCharge = sellerItemCount * 16;
-      const sellerPlatformFee = Math.round(sellerSubtotal * 0.02);
+      /*
+       * Delivery, platform fee, discount share and the cash-handling charge come
+       * from the quote's group for this shop rather than being recomputed here.
+       * Two implementations of the same bill round differently; when checkout
+       * showed one number and the order stored another, the customer was left to
+       * reconcile arithmetic that was our job.
+       */
+      /*
+       * Match the quote's group for this shop by seller key, and fall back to
+       * the unconsumed groups in order. The grouping key comes from catalogue
+       * seller ids, which are not always populated the same way on the line
+       * items this route was handed; matching only on the key meant some
+       * baskets found no group and shipped with the fee arithmetic in the
+       * fallbacks - silently dropping the cash-handling charge from the total
+       * while checkout had already shown it.
+       */
+      const group = quote.groups.find((g) => String(g.seller) === String(sellerId) && !usedGroups.has(g))
+        || quote.groups.find((g) => !usedGroups.has(g))
+        || {};
+      usedGroups.add(group);
+      const sellerDeliveryCharge = group.deliveryCharges ?? (sellerItemCount * DELIVERY_PER_ITEM);
+      const sellerPlatformFee = group.platformFee ?? Math.round(sellerSubtotal * (PLATFORM_FEE_PERCENT / 100));
       // Charged to the customer up front for every order. If the platform ends up
       // delivering it (instead of Shiprocket) a further flat Rs. 59 per product
       // line is added, billed alongside the miscellaneous charges; that choice is
@@ -140,7 +215,15 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         sellerCouponDiscount = Math.round((couponDiscount * sellerSubtotal) / subtotal);
       }
 
-      const sellerTotal = sellerSubtotal + sellerDeliveryCharge + sellerPlatformFee + sellerSelfDeliveryCharge - sellerCouponDiscount;
+      /*
+       * The cash-handling charge goes to exactly one document of this purchase.
+       * Grouping decides the rest of the arithmetic; it must not decide whether
+       * the customer pays the fee at all, because a grouped miss used to mean
+       * checkout promised ₹39 and the order quietly did not include it.
+       */
+      const sellerCodFee = quote.isCod && !codFeeClaimed ? COD_HANDLING_FEE : 0;
+      if (sellerCodFee) codFeeClaimed = true;
+      const sellerTotal = Math.max(0, sellerSubtotal + sellerDeliveryCharge + sellerPlatformFee + sellerSelfDeliveryCharge - sellerCouponDiscount) + sellerCodFee;
 
       // Calculate commission (3% of subtotal after discounts)
       const commissionPercentage = 3;
@@ -156,9 +239,14 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         subtotal: sellerSubtotal,
         deliveryCharge: sellerDeliveryCharge,
         platformFee: sellerPlatformFee,
+        // Flat ₹39 per customer order, never per seller split: one basket that
+        // breaks into three shops is still one cash collection to reconcile. The
+        // parent order holds the total the customer pays; the split that carries
+        // the cash leg records it so the money can be traced to a document.
+        codFee: sellerCodFee,
         selfDeliveryCharge: sellerSelfDeliveryCharge,
         totalAmount: sellerTotal,
-        paymentMethod: paymentMethod || 'razorpay',
+        paymentMethod: storedPaymentMethod,
         paymentStatus: 'pending',
         orderStatus: 'pending',
         couponApplied: couponCode ? couponCode.toUpperCase() : undefined,
@@ -269,6 +357,78 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
+/*
+ * The bill before the order.
+ *
+ * The client used to assemble the summary itself from cart prices, which works
+ * right up to the moment the server's rules move - and they had already moved:
+ * the price panel showed subtotal, delivery and discount while the order also
+ * charged a 2% platform fee. So the checkout asks for the number rather than
+ * arriving at its own, and what a customer is shown comes out of the same
+ * function that will price the order they place.
+ *
+ * Prices are read from the catalogue here, never taken from the request: a quote
+ * built on client-supplied prices is a discount a caller can type in.
+ */
+router.post('/quote', async (req, res) => {
+  try {
+    const { items = [], paymentMethod = 'online', couponCode = '' } = req.body || {};
+    if (!Array.isArray(items) || !items.length) {
+      return res.status(400).json({ success: false, message: 'Add something to the cart first.' });
+    }
+
+    const lines = [];
+    for (const entry of items.slice(0, 100)) {
+      const product = await Product.findById(entry.product || entry.productId || entry._id)
+        .select('price discountedPrice title').lean();
+      if (!product) continue;
+      const effective = Number(product.discountedPrice) > 0 ? product.discountedPrice : product.price;
+      lines.push({
+        price: Number(effective) || 0,
+        quantity: Math.max(1, Number(entry.quantity) || 1)
+      });
+    }
+
+    if (!lines.length) {
+      return res.status(400).json({ success: false, message: 'None of those items can be bought right now.' });
+    }
+
+    let couponDiscount = 0;
+    let coupon = null;
+    if (couponCode) {
+      const found = await Coupon.findOne({ code: String(couponCode).toUpperCase(), isActive: true }).lean();
+      const subtotal = lines.reduce((n, l) => n + l.price * l.quantity, 0);
+      if (found
+        && (!found.expiresAt || new Date(found.expiresAt) >= new Date())
+        && (!(found.minOrderAmount > 0) || subtotal >= found.minOrderAmount)
+        && (!(found.usageLimit > 0) || (found.usageCount || 0) < found.usageLimit)) {
+        coupon = found;
+        if (found.discountType === 'percentage') {
+          couponDiscount = (subtotal * found.discountValue) / 100;
+          if (found.maxDiscount && couponDiscount > found.maxDiscount) couponDiscount = found.maxDiscount;
+        } else {
+          couponDiscount = found.discountValue;
+        }
+      }
+    }
+
+    const charges = quoteCharges({ lines, paymentMethod, couponDiscount });
+
+    res.json({
+      success: true,
+      quote: {
+        ...charges,
+        couponApplied: coupon ? coupon.code : null,
+        couponNotApplied: !!couponCode && !coupon,
+        codFeeLabel: `Cash-on-delivery handling (flat ₹${COD_HANDLING_FEE} per order, non-refundable)`
+      }
+    });
+  } catch (error) {
+    console.error('Quote error:', error);
+    res.status(500).json({ success: false, message: 'Could not price this order.' });
+  }
+});
+
 router.get('/:id', verifyToken, async (req, res) => {
   try {
     const order = await Order.findOne({
@@ -287,6 +447,47 @@ router.get('/:id', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Get order error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/*
+ * The bill on an order the customer already placed.
+ *
+ * Support conversations about a charge go wrong when the two sides rebuild the
+ * number from different assumptions, so the stored lines are read back rather
+ * than recomputed: subtotal, delivery, platform fee, the cash-handling charge,
+ * the discount, what was paid, and - for a cash order - what is refundable if
+ * the goods come back. The last one is the whole point of this endpoint: a
+ * customer comparing a refund to their order total is not being short-changed,
+ * they are seeing the ₹39 that paid for the cash leg stay where it was spent.
+ */
+router.get('/:id/charge-summary', verifyToken, async (req, res) => {
+  try {
+    const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
+      .select('orderNumber subtotal deliveryCharge platformFee codFee couponDiscount totalAmount paymentMethod paymentStatus orderStatus');
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
+
+    const refundable = refundableAmount(order);
+    res.json({
+      success: true,
+      charges: {
+        subtotal: order.subtotal,
+        deliveryCharge: order.deliveryCharge,
+        platformFee: order.platformFee,
+        codFee: order.codFee || 0,
+        couponDiscount: order.couponDiscount || 0,
+        totalAmount: order.totalAmount
+      },
+      paymentMethod: order.paymentMethod,
+      refundableAmount: refundable,
+      nonRefundableCodFee: Math.max(0, (order.totalAmount || 0) - refundable),
+      note: order.paymentMethod === 'cod' && (order.codFee || 0) > 0
+        ? `This order includes a flat ₹${order.codFee} cash-handling charge. It is not refunded on a return; the items are.`
+        : undefined
+    });
+  } catch (error) {
+    console.error('Charge summary error:', error);
+    res.status(500).json({ success: false, message: 'Could not read these charges.' });
   }
 });
 

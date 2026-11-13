@@ -1062,5 +1062,87 @@ router.get('/commissions', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
+/*
+ * Cash collected on delivery, reconciled.
+ *
+ * A cash order is money moving through somebody's hands. Until the amount was
+ * recorded when the pickup was confirmed, the platform could tell that a cash
+ * order had been paid but not how much was in the envelope - so the only
+ * reconciliation available was trust. This is the arithmetic instead: what
+ * should have been taken across delivered cash orders in the window, what was
+ * actually recorded, the difference as its own number, and the cash-handling
+ * charges separated from merchandise, because the ₹39 is the platform's and
+ * mixing it into seller figures is how a payout dispute begins.
+ *
+ * Grouped by partner, so a shift closes against a person rather than a total,
+ * and sorted by largest difference first, because that is where asking starts.
+ */
+router.get('/cash-reconciliation', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const days = Math.min(365, Math.max(1, Number(req.query.days) || 30));
+    const since = new Date(Date.now() - days * 86400000);
+
+    const cashOrders = await Order.find({
+      paymentMethod: 'cod',
+      orderStatus: 'delivered',
+      deliveredAt: { $gte: since }
+    })
+      .select('orderNumber totalAmount codFee cashCollected cashCollectedAt cashCollectedBy deliveredAt assignedDeliveryPartner seller')
+      .lean();
+
+    const due = cashOrders.reduce((n, o) => n + (Number(o.totalAmount) || 0), 0);
+    const recorded = cashOrders.reduce((n, o) => n + (Number(o.cashCollected) || 0), 0);
+    const handling = cashOrders.reduce((n, o) => n + (Number(o.codFee) || 0), 0);
+    const unrecorded = cashOrders.filter((o) => !(Number(o.cashCollected) || 0));
+
+    const byPartner = new Map();
+    for (const o of cashOrders) {
+      const key = o.assignedDeliveryPartner
+        ? String(o.assignedDeliveryPartner)
+        : (o.cashCollectedBy || 'unassigned');
+      const row = byPartner.get(key) || { who: key, orders: 0, due: 0, recorded: 0, handling: 0 };
+      row.orders += 1;
+      row.due += Number(o.totalAmount) || 0;
+      row.recorded += Number(o.cashCollected) || 0;
+      row.handling += Number(o.codFee) || 0;
+      byPartner.set(key, row);
+    }
+
+    res.json({
+      success: true,
+      windowDays: days,
+      totals: {
+        orders: cashOrders.length,
+        due: Math.round(due * 100) / 100,
+        recorded: Math.round(recorded * 100) / 100,
+        // Anything other than zero here is a person or an order to go and ask.
+        discrepancy: Math.round((due - recorded) * 100) / 100,
+        cashHandlingCharges: Math.round(handling * 100) / 100,
+        merchandise: Math.round((due - handling) * 100) / 100
+      },
+      unrecorded: {
+        count: unrecorded.length,
+        orders: unrecorded.slice(0, 25).map((o) => ({
+          orderNumber: o.orderNumber,
+          totalAmount: o.totalAmount,
+          deliveredAt: o.deliveredAt
+        }))
+      },
+      byPartner: [...byPartner.values()]
+        .map((r) => ({
+          ...r,
+          due: Math.round(r.due * 100) / 100,
+          recorded: Math.round(r.recorded * 100) / 100,
+          handling: Math.round(r.handling * 100) / 100,
+          difference: Math.round((r.due - r.recorded) * 100) / 100
+        }))
+        .sort((a, b) => b.difference - a.difference)
+    });
+  } catch (error) {
+    console.error('Cash reconciliation error:', error);
+    res.status(500).json({ success: false, message: 'Could not reconcile the cash.' });
+  }
+});
+
 export default router;
 

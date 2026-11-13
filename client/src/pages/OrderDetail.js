@@ -28,12 +28,35 @@ const READABLE = {
 
 const money = (n) => Number(n || 0).toLocaleString('en-IN');
 
-const Row = ({ label, value, strong }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0', fontSize: strong ? 15 : 13.5, fontWeight: strong ? 700 : 400, borderBottom: strong ? 'none' : '1px solid var(--border-light)' }}>
+/*
+ * One line of the payment summary.
+ *
+ * `hint` is rendered, not accepted and dropped: a charge explained only in a
+ * tooltip that no one opens is how a ₹39 handling fee becomes a support ticket.
+ */
+const Row = ({ label, value, strong, hint }) => (
+  <div
+    style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: 12,
+      padding: '7px 0',
+      fontSize: strong ? 15 : 13.5,
+      fontWeight: strong ? 700 : 400,
+      borderBottom: strong ? 'none' : '1px solid var(--border-light)'
+    }}
+  >
     <span style={{ color: strong ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label}</span>
     <span style={{ color: 'var(--text-primary)', textAlign: 'right' }}>{value}</span>
+    {hint && (
+      <div style={{ width: '100%', fontSize: 11.5, color: 'var(--text-light)', textAlign: 'right', lineHeight: 1.45 }}>
+        {hint}
+      </div>
+    )}
   </div>
 );
+
 
 const Card = ({ title, icon, children, style }) => (
   <div className="card-flat" style={{ padding: 20, ...style }}>
@@ -239,6 +262,13 @@ const OrderDetail = () => {
               {order.couponDiscount > 0 && <Row label={`Coupon${order.couponApplied ? ` (${order.couponApplied})` : ''}`} value={`- ₹${money(order.couponDiscount)}`} />}
               <Row label={paidUpfront ? 'Delivery' : 'Delivery (payable on order)'} value={order.deliveryCharge ? `₹${money(order.deliveryCharge)}` : 'Free'} />
               <Row label="Platform fee" value={`₹${money(order.platformFee)}`} />
+              {Number(order.codFee) > 0 && (
+                <Row
+                  label="Cash-on-delivery handling"
+                  value={`₹${money(order.codFee)}`}
+                  hint="Charged once per order for collecting cash. Not refunded if you return the items."
+                />
+              )}
               <Row label="Paid via" value={order.paymentMethod === 'cod' ? 'Cash on delivery' : paidUpfront ? 'Prepaid' : 'Awaiting payment'} />
               <Row label="Order total" value={`₹${money(order.totalAmount)}`} strong />
             </Card>

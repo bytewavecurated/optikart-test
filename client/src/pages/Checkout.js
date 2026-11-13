@@ -85,6 +85,18 @@ const Checkout = () => {
   }, [needsPrescription]);
 
   const [paymentMethod, setPaymentMethod] = useState('online');
+  /*
+   * The bill comes from the server.
+   *
+   * The panel used to add up cart values itself, and it had already fallen
+   * behind: the order route charges a 2% platform fee that this screen never
+   * showed, and now a cash-on-delivery handling charge on top. A total the
+   * browser computes is a promise the browser cannot keep - so checkout asks
+   * `/orders/quote`, which prices the order with the same function that will
+   * create it. The old arithmetic stays only as what is displayed while that
+   * request is in flight or has failed.
+   */
+  const [quote, setQuote] = useState(null);
 
   if (!isAuthenticated) {
     navigate('/login');
@@ -95,6 +107,28 @@ const Checkout = () => {
     navigate('/cart');
     return null;
   }
+
+  useEffect(() => {
+    let cancelled = false;
+    const lines = (items || []).map((item) => ({
+      product: item.product?._id || item.product,
+      quantity: item.quantity
+    })).filter((l) => l.product && l.quantity > 0);
+    if (!lines.length) {
+      setQuote(null);
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      orders.quote({
+        items: lines,
+        paymentMethod,
+        couponCode: coupon?.code || ''
+      })
+        .then((res) => { if (!cancelled) setQuote(res.data?.quote || null); })
+        .catch(() => { if (!cancelled) setQuote(null); });
+    }, 220);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [items, paymentMethod, coupon]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -387,7 +421,7 @@ const Checkout = () => {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card" style={{ padding: '24px' }}>
                   <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiCreditCard /> Payment Method</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {[{ id: 'online', label: 'Online Payment', desc: 'UPI, Cards, Net Banking, Wallets' }, { id: 'cod', label: 'Cash on Delivery', desc: 'Pay when your order arrives' }].map((method) => (
+                    {[{ id: 'online', label: 'Online Payment', desc: 'UPI, Cards, Net Banking, Wallets' }, { id: 'cod', label: 'Cash on Delivery', desc: 'Pay when your order arrives - adds a flat ₹39 handling charge, not refunded on returns' }].map((method) => (
                       <label key={method.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: `2px solid ${paymentMethod === method.id ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 'var(--radius-md)', cursor: 'pointer', background: paymentMethod === method.id ? 'var(--primary-light)' : 'var(--bg-white)' }}>
                         <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} style={{ accentColor: 'var(--primary)' }} />
                         <div>
@@ -435,25 +469,49 @@ const Checkout = () => {
                 <h3 style={{ color: 'var(--text-white)', fontSize: '14px', fontWeight: 600, textTransform: 'uppercase' }}>Price Details</h3>
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span>Subtotal ({items.length} items)</span>
-                  <span>₹{subtotal}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                  <span>Delivery Charges</span>
-                  <span>₹{deliveryCharges}</span>
-                </div>
-                {discount > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: 'var(--success)' }}>
-                    <span>Discount</span>
-                    <span>-₹{discount}</span>
+                {(quote?.breakdown || [
+                  { label: `Subtotal (${items.length} item${items.length === 1 ? '' : 's'})`, amount: subtotal },
+                  { label: 'Delivery charges', amount: deliveryCharges },
+                  ...(discount ? [{ label: 'Coupon discount', amount: -discount }] : [])
+                ]).map((row) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: '14px',
+                      color: row.amount < 0 ? 'var(--success)' : 'var(--text-primary)'
+                    }}
+                  >
+                    <span>{row.label}</span>
+                    <span>
+                      {row.amount < 0 ? '-₹' : '₹'}{Math.abs(row.amount).toLocaleString('en-IN')}
+                      {row.key === 'codFee' && (
+                        <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-light)', textAlign: 'right' }}>
+                          collected with the cash at the door
+                        </span>
+                      )}
+                    </span>
                   </div>
-                )}
+                ))}
                 <div className="divider" />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', fontWeight: 700 }}>
-                  <span>Total</span>
-                  <span>₹{total}</span>
+                  <span>
+                    Total
+                    {!quote && (
+                      <span style={{ display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--text-light)' }}>
+                        estimated
+                      </span>
+                    )}
+                  </span>
+                  <span>₹{(quote?.total ?? total).toLocaleString('en-IN')}</span>
                 </div>
+                {paymentMethod === 'cod' && (
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                    Paying cash on delivery adds a flat ₹39 handling charge to the order. It covers collecting and
+                    reconciling the cash and is not refunded if you return the goods; the price of the items is.
+                  </p>
+                )}
               </div>
               {!coupon && (
                 <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)' }}>

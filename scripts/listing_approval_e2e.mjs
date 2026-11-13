@@ -195,6 +195,54 @@ async function main() {
   check('an unapproved claim cannot be listed by editing the row directly',
     forceListed.json?.data?.isListed === false, JSON.stringify(forceListed.json?.data?.listing));
 
+  /*
+   * The path the seller's own console uses: pausing a claim, then trying to put
+   * it back on the shelf by flipping the switch. The UI offers that switch and
+   * refuses it with an explanation; the server has to be the one that actually
+   * holds the line, because the button is not the only way to write this row.
+   */
+  const pausedStock = await call(`/seller-stock/${stockRow._id}`, {
+    token: seller, body: { isListed: false }, method: 'PUT'
+  });
+  check('a brand stock claim can be paused without losing its configuration',
+    pausedStock.status === 200 && pausedStock.json?.data?.isListed === false, pausedStock.text);
+  const myListings = await call('/seller-stock', { token: seller });
+  const stockKept = (myListings.json?.data || myListings.json?.stock || [])
+    .find((x) => String(x._id) === String(stockRow._id));
+  check('the seller can see their own listings', !!stockKept, `${JSON.stringify(myListings.json).slice(0, 70)}`);
+  check('and pausing keeps the price and variants they chose',
+    stockKept && Number(stockKept.sellingPrice) === 1499
+      && Array.isArray(stockKept.variants) && stockKept.variants.length > 0
+      && Number(stockKept.variants[0].stock) === 3,
+    JSON.stringify({ price: stockKept?.sellingPrice, v: stockKept?.variants?.[0] }));
+
+  const relisted = await call(`/seller-stock/${stockRow._id}`, {
+    token: seller, body: { isListed: true }, method: 'PUT'
+  });
+  check('flipping the switch cannot relist an unapproved brand claim',
+    relisted.json?.data?.isListed === false, JSON.stringify(relisted.json?.data?.listing?.state));
+  check('and the row still says which approval it is waiting on',
+    ['awaiting_manufacturer', 'awaiting_admin'].includes(relisted.json?.data?.listing?.state),
+    relisted.json?.data?.listing?.state);
+
+  const redeclared = await call('/seller-stock', {
+    token: seller,
+    body: {
+      productId: secondProduct._id,
+      sellingPrice: 1499,
+      variants: [{ color: 'Matte Black', size: 'M', stock: 3 }],
+      proofKind: 'manufacturer_purchase',
+      proofReference: 'INV-RESTOCK-77'
+    }
+  });
+  check('re-declaring the same product reuses the row instead of duplicating it',
+    String(redeclared.json?.data?._id) === String(stockRow._id),
+    `${redeclared.json?.data?._id} vs ${stockRow._id}`);
+  check('a fresh declaration replaces the old reference',
+    redeclared.json?.data?.listing?.sellerProof?.reference === 'INV-RESTOCK-77'
+      && redeclared.json?.data?.listing?.state === 'awaiting_manufacturer',
+    JSON.stringify(redeclared.json?.data?.listing?.sellerProof));
+
   const stockQueue = await call('/manufacturer/listing-requests', { token: brand });
   const stockEntry = (stockQueue.json?.requests || []).find((r) => String(r.id) === String(stockRow._id));
   check('the brand sees the routing-side claim too', !!stockEntry && stockEntry.listingKind === 'stock',

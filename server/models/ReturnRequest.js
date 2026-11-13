@@ -60,6 +60,16 @@ const returnRequestSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  // Two figures about the original charge, stored rather than derived.
+  // `refundAmount` prices the returned lines, so it can never be compared
+  // against what the customer paid without knowing what the difference was:
+  // delivery, platform fee and the ₹39 cash-handling charge stay with the
+  // platform. Without these on the record, the only way to explain the gap is
+  // to re-read an order that may have changed since, and a support reply
+  // rebuilt from drifting data is how "we never charge that" gets said in
+  // good faith about an order that was charged it.
+  nonRefundableCodFee: { type: Number, default: 0 },
+  orderChargedTotal: { type: Number, default: 0 },
   refundStatus: {
     type: String,
     enum: ['pending', 'processing', 'completed', 'failed'],

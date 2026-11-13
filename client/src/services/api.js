@@ -173,6 +173,10 @@ export const products = {
 
 export const orders = {
   create: (data) => api.post('/orders', data),
+  // The bill computed by the server, from catalogue prices. Checkout displays
+  // this instead of summing cart values itself, so the number a customer reads
+  // is produced by the same code that will charge it.
+  quote: (data) => api.post('/orders/quote', data),
   getAll: (params) => api.get('/orders', { params }),
   getById: (id) => api.get(`/orders/${id}`),
   cancel: (id, reason) => api.put(`/orders/${id}/cancel`, { reason }),

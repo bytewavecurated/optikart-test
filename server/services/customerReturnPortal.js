@@ -223,6 +223,20 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
       });
     }
 
+    /*
+     * What the customer is owed, spelled out.
+     *
+     * Refunds are priced from the returned lines, so platform fees, delivery and
+     * the cash-on-delivery handling charge are never in this number - which was
+     * true before and after this change, but invisible. A customer who paid ₹39
+     * for COD handling and sees a refund ₹39 short of their order total is not
+     * being overcharged, they are seeing a charge that was spent on the cash leg
+     * of the delivery. Saying so is the difference between a policy and a
+     * dispute, and it costs one line here.
+     */
+    const chargedTotal = Number(order.totalAmount) || 0;
+    const codFeeHeld = order.paymentMethod === 'cod' ? (Number(order.codFee) || 0) : 0;
+
     // Create return request
     const returnRequest = await ReturnRequest.create({
       order: orderId,
@@ -230,6 +244,10 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
       seller: order.seller,
       items: returnItems,
       refundAmount,
+      // Kept on the request so the customer-facing message and the admin's
+      // ledger quote the same figure rather than recomputing it differently.
+      nonRefundableCodFee: codFeeHeld,
+      orderChargedTotal: chargedTotal,
       requestType: type,
       status: 'requested'
     });

@@ -35,6 +35,7 @@ const AdminLayout = () => {
     { label: 'Delivery', path: '/admin/delivery', icon: <FiTruck /> },
     { label: 'Delivery Partners', path: '/admin/delivery-partners', icon: <FiTruck /> },
     { label: 'Supply Claims', path: '/admin/supply-claims', icon: <FiFileText /> },
+    { label: 'Cash Reconciliation', path: '/admin/cash-reconciliation', icon: <FiDollarSign /> },
     { label: 'Storefront Content', path: '/admin/site-content', icon: <FiImage /> },
     { label: 'Footer & Nav', path: '/admin/site-footer', icon: <FiImage /> },
   ];

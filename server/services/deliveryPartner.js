@@ -304,6 +304,11 @@ export const completeDelivery = async (orderId) => {
     // order looking unpaid, which held up the seller's payout.
     if (order.paymentMethod === 'cod') {
       order.paymentStatus = 'completed';
+      // The amount is recorded with the fact, because the amount is the part
+      // that gets argued about later.
+      order.cashCollected = Math.round((Number(order.totalAmount) || 0) * 100) / 100;
+      order.cashCollectedAt = new Date();
+      order.cashCollectedBy = `partner:${String(partner._id)}`;
       await order.save();
     }
 

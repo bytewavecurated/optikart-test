@@ -190,6 +190,46 @@ in the customer timeline, the order detail screen and the delivery desk, where
 the run can raise it, and clearing an already-cleared report is refused instead of
 appending a second "resolved" entry as if work had been done.
 
+## What a customer is charged, and where it is computed
+
+One module, `server/config/fees.js`, and one function, `quoteCharges`, produces
+the whole customer-facing bill: items subtotal, delivery (₹16 per item - the
+per-item rule the site has always billed, not a threshold), a 2% platform fee,
+the flat **₹39 cash-on-delivery handling charge**, and the coupon share.
+
+- `POST /api/orders/quote` runs it from catalogue prices, and the checkout price
+  panel renders the answer instead of adding up cart values. Before this, the
+  order route charged a platform fee that the panel never displayed - a legal
+  charge that was invisible is a disputable one, and 2% of ₹9,000 is not a
+  rounding error.
+- The order route calls the same function on the prices *it* resolved (from the
+  chosen colour/size and the stock row), so the quote and the order cannot
+  round differently. A basket that splits across shops produces one document per
+  shop and the ₹39 rides on exactly one of them: per purchase, never per shop.
+  `scripts/charges_e2e.mjs` asserts the order total equals the displayed quote,
+  split by split, and that commission is computed on merchandise only - the
+  handling charge is the platform's and must never come out of a seller.
+- `GET /api/orders/:id/charge-summary` is the receipt: stored line values, what
+  is refundable, what is not, and the policy sentence. Refunds price the
+  returned lines, so delivery, the platform fee and the ₹39 are not returned;
+  the ₹39 pays for the cash leg that already happened. That is stated on the
+  checkout option, in the order screen, in the confirmation email, and in the
+  refund note - not left for a customer to discover from a bank statement.
+- `GET /api/admin/cash-reconciliation?days=30` (screen: `/admin/cash-reconciliation`)
+  is the cash-counting half that the charge exists to fund. Delivered cash
+  orders now store `cashCollected`, `cashCollectedAt` and `cashCollectedBy` at
+  the moment the money is taken - either by a partner completing the run or by a
+  seller hand-off - so the desk can see due, recorded, the difference, the
+  handling-charge share split out from merchandise, and the orders where
+  somebody took cash and nobody recorded how much.
+
+The constants are code rather than configuration. ₹39 is a business decision
+quoted in four places as a flat number; making it editable without also
+handling what it means for already-placed orders, published receipts and the
+reconciliation figures below them would produce a cheaper bug than the one it
+saves. Adding a second pricing rule that has to stay in step with these numbers
+is when this module should become a settings document.
+
 ## Brand supply claims (anti-diversion)
 
 A shop listing another company's brand is making a claim about its supply, and
@@ -225,10 +265,13 @@ Rules that hold this together:
   are listed separately as never confirmed. An absent record is not a record of
   approval.
 
-Gap that remains: the `SellerStock` claim (the one that affects routing) has no
-seller-facing screen yet - the API and the brand queue work, and no page calls
-them, so today only the retailer path is reachable by a human. Building that
-screen is the next piece of this item.
+Both paths are reachable by a human. The ordinary seller's screen is
+`/seller/stock` ("Stock a catalogue product"), which asks the source question in
+the form itself before it will submit a brand item, shows what each listing is
+waiting on, and says plainly that a paused brand listing needs a new
+declaration rather than a switch flipped. The claim it writes is the same
+`SellerStock` row order routing reads, so the gate is not decoration: nothing
+unapproved can be offered work.
 
 ## Which seller gets the order
 

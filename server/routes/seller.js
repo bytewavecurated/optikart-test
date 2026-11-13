@@ -397,6 +397,13 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
       // order stays `pending` forever and never qualifies for a payout.
       if (order.paymentMethod === 'cod') {
         order.paymentStatus = 'completed';
+        // Recorded here too: cash reaches the platform through the seller
+        // hand-off as often as through a partner, and a reconciliation that
+        // covers only one of the two paths is worse than none, because the
+        // number looks plausible right up to the shift it is wrong about.
+        order.cashCollected = Math.round((Number(order.totalAmount) || 0) * 100) / 100;
+        order.cashCollectedAt = new Date();
+        order.cashCollectedBy = `seller:${String(order.seller?._id || order.seller || '')}`;
       }
     }
     await order.save();

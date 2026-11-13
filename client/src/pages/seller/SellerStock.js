@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import SupplyDeclaration from '../../components/SupplyDeclaration';
 import { Link } from 'react-router-dom';
 import { cart as cartApi, listOf } from '../../services/apiBridge';
 import Header from '../../components/Header';
@@ -7,6 +8,64 @@ import BackButton from '../../components/BackButton';
 import toast from 'react-hot-toast';
 import { toastError } from '../../services/errors';
 import { FiSearch, FiPlus, FiTruck, FiCheck, FiX, FiTag, FiBox, FiAlertCircle } from 'react-icons/fi';
+
+/*
+ * What a listing is waiting on, in the seller's own words.
+ *
+ * The row used to say `List` or `Unlist` and nothing else, so a brand listing
+ * that was sitting in an approval queue looked identical to one the seller had
+ * chosen to hide. That difference is the whole experience of this feature: one
+ * needs patience, the other needs a click.
+ */
+const rowStateChip = (row) => {
+  const listing = row.listing || {};
+  if (listing.brandLinked !== true) return null;
+
+  const map = {
+    awaiting_manufacturer: ['Waiting on the brand', 'warning'],
+    awaiting_admin: ['Waiting on OptiKart', 'warning'],
+    live: ['Approved and live', 'success'],
+    rejected: ['Refused by the brand', 'danger'],
+    paused: ['Paused by you', 'muted']
+  };
+  const found = map[listing.state] || ['Status unknown', 'muted'];
+  const tone = {
+    warning: { bg: 'rgba(217, 119, 6, .12)', fg: 'var(--warning-dark, #8a6d3b)' },
+    success: { bg: 'rgba(22, 163, 74, .12)', fg: 'var(--success)' },
+    danger: { bg: 'rgba(220, 38, 38, .10)', fg: 'var(--danger)' },
+    muted: { bg: 'var(--bg-subtle, #f1f3f5)', fg: 'var(--text-secondary)' }
+  }[found[1]];
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <span
+        title={
+          listing.state === 'rejected'
+            ? listing.manufacturerReview?.reason || listing.adminReview?.reason || 'No reason recorded'
+            : listing.sellerProof?.kind === 'other'
+              ? `Declared source: ${listing.sellerProof.note || 'not stated'}`
+              : `Declared source: ${listing.sellerProof?.reference || 'not stated'}`
+        }
+        style={{
+          display: 'inline-block', fontSize: 11, fontWeight: 700, padding: '2px 8px',
+          borderRadius: 999, background: tone.bg, color: tone.fg
+        }}
+      >
+        {found[0]}
+      </span>
+      {['awaiting_manufacturer', 'awaiting_admin'].includes(listing.state) && (
+        <div style={{ fontSize: 11.5, color: 'var(--text-light)', marginTop: 3 }}>
+          Not visible to buyers yet, and no orders can be routed to it.
+        </div>
+      )}
+      {listing.state === 'rejected' && (
+        <div style={{ fontSize: 11.5, color: 'var(--text-light)', marginTop: 3 }}>
+          Listing it again needs a new declaration and both approvals again.
+        </div>
+      )}
+    </div>
+  );
+};
 
 const th = { padding: '10px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, letterSpacing: .6, textTransform: 'uppercase', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td = { padding: '12px', fontSize: 13.5, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
@@ -38,7 +97,10 @@ const ListingRow = ({ row, onToggle, onList, onEdit }) => {
           </div>
         </div>
       </td>
-      <td style={td}>{p.brand || row.brand}</td>
+      <td style={td}>
+        {p.brand || row.brand}
+        {rowStateChip(row)}
+      </td>
       <td style={{ ...td, whiteSpace: 'nowrap' }}>
         <span style={{ fontWeight: 700 }}>{inr(row.sellingPrice)}</span>
         {row.mrp > row.sellingPrice && (
@@ -74,7 +136,9 @@ const ListingRow = ({ row, onToggle, onList, onEdit }) => {
       </td>
       <td style={{ ...td, whiteSpace: 'nowrap' }}>
         <button onClick={() => onList(row)} className="btn btn-quiet" style={{ padding: '6px 12px', fontSize: 12.5 }}>
-          {row.isListed === false ? 'List' : 'Unlist'}
+          {row.isListed === false
+            ? (row.listing?.state === 'paused' ? 'Re-declare' : 'List')
+            : 'Pause'}
         </button>
         <button onClick={() => onEdit(row)} className="btn btn-link" style={{ marginLeft: 8, fontSize: 12.5 }}>Edit</button>
       </td>
@@ -119,12 +183,26 @@ const PendingProposals = ({ items, onDecide, busy }) => {
   );
 };
 /** Pick a verified catalogue product and set your price and stock per variant. */
+const draftBrandLinked = (draft) => !!draft?.brandLinked;
+
 const AddListing = ({ catalogBrands, onSave, onCancel, saving }) => {
   const [brand, setBrand] = useState(catalogBrands[0]?.brand || '');
   const [productId, setProductId] = useState('');
   const [price, setPrice] = useState('');
   const [variantRows, setVariantRows] = useState([]);
+  /*
+   * The source claim.
+   *
+   * Stocking another company's brand is a statement about where the goods came
+   * from, and it is now sent with the listing instead of being inferred from the
+   * listing existing. Without a field for it here, the seller would meet a
+   * server-side refusal ("say where this stock came from") with no box to answer
+   * it in - which is a dead end wearing the costume of a validation error.
+   */
+  const [proof, setProof] = useState({ kind: '', reference: '', note: '' });
   const products = catalogBrands.find((b) => b.brand === brand)?.products || [];
+  const chosen = products.find((x) => x._id === productId) || null;
+  const brandLinked = !!chosen?.manufacturer;
 
   const choose = (id) => {
     const p = products.find((x) => x._id === id);
@@ -192,14 +270,41 @@ const AddListing = ({ catalogBrands, onSave, onCancel, saving }) => {
         </div>
       )}
 
+      {brandLinked && (
+        <SupplyDeclaration
+          value={proof}
+          onChange={setProof}
+          productName={chosen?.title || chosen?.name || `this ${brand} item`}
+          busy={saving}
+          submitLabel="Send with my listing"
+          onSubmit={() => {
+            onSave({
+              productId,
+              sellingPrice: Number(price),
+              mrp: chosen?.price,
+              variants: variantRows,
+              proof,
+              brandLinked: true
+            });
+          }}
+        />
+      )}
+
       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-        <button
-          className="btn btn-primary"
-          disabled={!productId || !price || saving}
-          onClick={() => onSave({ productId, sellingPrice: Number(price), mrp: products.find((p) => p._id === productId)?.price, variants: variantRows })}
-        >
-          {saving ? 'Saving…' : 'Add to my listings'}
-        </button>
+        {/*
+         * A brand listing is submitted by the declaration panel above, which owns
+         * its own button: two ways to submit the same form is how one of them
+         * ends up sending the older, incomplete state.
+         */}
+        {!brandLinked && (
+          <button
+            className="btn btn-primary"
+            disabled={!productId || !price || saving}
+            onClick={() => onSave({ productId, sellingPrice: Number(price), mrp: products.find((p) => p._id === productId)?.price, variants: variantRows })}
+          >
+            {saving ? 'Saving…' : 'Add to my listings'}
+          </button>
+        )}
         <button className="btn btn-outline" onClick={onCancel}>Cancel</button>
       </div>
     </div>
@@ -262,10 +367,30 @@ export default function SellerStock() {
   const toggleListed = async (row) => {
     setBusy(String(row._id));
     try {
-      await cartApi.updateStock(row._id, { isListed: row.isListed === false });
+      const listing = row.listing || {};
+      const goingLive = row.isListed === false;
+
+      if (goingLive && listing.brandLinked === true && listing.state !== 'live') {
+        // Saying "listed" when the row is waiting on two approvals is how a
+        // seller ends up refreshing a dashboard for a listing nobody can buy.
+        toast.info('This brand listing needs a new source declaration before it can sell again. Open "Stock a catalogue product" and declare it once more.');
+        setBusy('');
+        return;
+      }
+
+      const res = await cartApi.updateStock(row._id, { isListed: goingLive });
+      if (goingLive) {
+        toast.success('Listing shown to buyers.');
+      } else {
+        toast.info(
+          listing.brandLinked === true
+            ? 'Paused. Your price and stock are kept; listing it again needs the brand and OptiKart to say yes once more.'
+            : 'Hidden from buyers. Your price and stock are kept.'
+        );
+      }
       load();
     } catch (err) {
-      toastError(err, 'Could not change listing state');
+      toastError(err, err.response?.data?.message || 'Could not change listing state');
     } finally { setBusy(''); }
   };
 
@@ -275,13 +400,22 @@ export default function SellerStock() {
       await cartApi.listStock({
         productId: draft.productId,
         sellingPrice: draft.sellingPrice,
-        variants: draft.variants.filter((v) => Number(v.stock) >= 0)
+        variants: draft.variants.filter((v) => Number(v.stock) >= 0),
+        proofKind: draft.proof?.kind,
+        proofReference: draft.proof?.reference,
+        proofNote: draft.proof?.note
       });
-      toast.success('Listing added');
+      toast.success(
+        draftBrandLinked(draft)
+          ? 'Sent to the brand for approval. It stays hidden from buyers until the brand and OptiKart have both said yes.'
+          : 'Listing added'
+      );
       setShowAdd(false);
       load();
     } catch (err) {
-      toastError(err, 'Could not save listing');
+      // The server's reason instead of a generic failure: "a purchase claim needs
+      // an invoice the brand can look up" is actionable, "could not save" is not.
+      toastError(err, err.response?.data?.message || 'Could not save listing');
     } finally { setSaving(false); }
   };
 
