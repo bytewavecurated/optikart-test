@@ -4,10 +4,33 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET
-});
+/*
+ * Constructed on first use, never at import.
+ *
+ * The SDK throws "`key_id` or `oauthToken` is mandatory" if credentials are
+ * missing, so the original module-level construction made the entire API
+ * refuse to start whenever payment keys were absent - on a cash-on-delivery
+ * deployment, in a CI container, on a fresh staging box. Every symptom pointed
+ * at a crashed process and nothing pointed at payments, because nobody had
+ * reached a payment route.
+ *
+ * Missing configuration is now decided where it matters: one clear answer from
+ * the payment call that needed it.
+ */
+let client = null;
+const razorpay = () => {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) return null;
+  if (!client) client = new Razorpay({ key_id: keyId, key_secret: keySecret });
+  return client;
+};
+
+const NOT_CONFIGURED = {
+  success: false,
+  configMissing: true,
+  error: 'Razorpay API keys are not configured. Card payment is unavailable; cash on delivery is unaffected.'
+};
 
 export const createOrder = async (amount, currency = 'INR', receipt) => {
   try {
@@ -18,7 +41,10 @@ export const createOrder = async (amount, currency = 'INR', receipt) => {
       payment_capture: 1
     };
 
-    const order = await razorpay.orders.create(options);
+    const rzp = razorpay();
+    if (!rzp) return NOT_CONFIGURED;
+
+    const order = await rzp.orders.create(options);
     return {
       success: true,
       orderId: order.id,
@@ -55,7 +81,10 @@ export const verifyOrder = (orderId, paymentId, signature) => {
 
 export const fetchPayment = async (paymentId) => {
   try {
-    const payment = await razorpay.payments.fetch(paymentId);
+    const rzp = razorpay();
+    if (!rzp) return NOT_CONFIGURED;
+
+    const payment = await rzp.payments.fetch(paymentId);
     return {
       success: true,
       paymentId: payment.id,
@@ -159,7 +188,7 @@ export const transferFunds = async ({ amount, paymentId, accountNumber, ifscCode
     };
   }
 
-  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  if (!razorpay()) {
     return {
       success: false,
       configMissing: true,
@@ -169,7 +198,10 @@ export const transferFunds = async ({ amount, paymentId, accountNumber, ifscCode
   }
 
   try {
-    const transfer = await razorpay.transfers.create({
+    const rzp = razorpay();
+    if (!rzp) return { ...NOT_CONFIGURED, status: 'not_initiated' };
+
+    const transfer = await rzp.transfers.create({
       payments: [{ id: paymentId }],
       total_amount: Math.round(value * 100), // paise
       currency: 'INR',

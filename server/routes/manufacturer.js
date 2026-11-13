@@ -1,4 +1,5 @@
 import { otpBypassAllowed } from '../config/authMode.js';
+import { signSession, logoutHandler } from '../services/session.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
@@ -20,6 +21,13 @@ import {
   deletePendingProduct
 } from '../services/manufacturerEnhancements.js';
 const router = express.Router();
+
+/*
+ * Ends this session server-side. Without it, signing out only discarded the
+ * token in one browser, and any other copy of that string kept working until it
+ * expired on its own. See services/session.js.
+ */
+router.post('/logout', verifyManufacturer, logoutHandler('manufacturer'));
 /**
  * Copy remote image links into our own store.
  *
@@ -180,7 +188,7 @@ router.post('/products/upload-images', verifyManufacturer, imageUpload.array('im
 const upload = multer({ dest: 'uploads/' });
 
 const generateManufacturerToken = (manufacturerId) => {
-  return jwt.sign({ id: manufacturerId, manufacturerId, role: 'manufacturer' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  return signSession({ id: manufacturerId, manufacturerId, role: 'manufacturer' }, { expiresIn: '24h' });
 };
 
 // Manufacturer Login

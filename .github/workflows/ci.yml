@@ -1,0 +1,84 @@
+# CI boots the real server against a real MongoDB, seeds it, and drives the HTTP
+# suites in scripts/verify.mjs. That is deliberate: the bugs this codebase
+# actually produces are routes that 404, guards that admit the wrong role, and
+# edits that never reach the database - none of which a mocked unit test sees.
+#
+# The client build is not published from CI, only checked. It is ignored by git
+# and served from disk, so a workflow could not hand it to any other
+# environment even if it wanted to; the value of building it here is that a
+# broken import or a JSX error fails the job instead of showing up as a blank
+# page. Regenerating the bundle for a deployment stays an explicit, local step.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push to the same branch makes the previous run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # CI always runs in development mode: the server refuses SEED_ON_BOOT in
+      # production, and every suite asserts against seeded accounts. OTP is
+      # bypassed by that mode, so no job needs an SMTP box.
+      NODE_ENV: development
+      # Nothing here verifies a token signed elsewhere, so any stable value
+      # works - but it must exist, because every login route calls jwt.sign.
+      JWT_SECRET: ci-only-secret-not-for-production-use-0123456789
+      MONGODB_URI: mongodb://localhost:27017/eyewear-platform
+      SEED_ON_BOOT: "true"
+      # The suites use cash on delivery for every order. A CI container has no
+      # payment keys, and since the Razorpay clients became lazy nothing needs
+      # them to boot.
+      VERIFY_PORT: "3111"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci --no-audit --no-fund
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci --no-audit --no-fund
+
+      - name: Build the client (catches broken imports and JSX)
+        working-directory: client
+        env:
+          CI: "false"
+        run: npm run build
+
+      - name: Run the API suites
+        run: node scripts/verify.mjs
+
+      - name: Report on this run's logs if anything failed
+        if: failure()
+        run: |
+          echo "--- server.log (tail) ---"
+          tail -n 60 .verify-logs/server.log 2>/dev/null || echo "no server log"
+          echo "--- mongo.log (tail) ---"
+          tail -n 20 .verify-logs/mongo.log 2>/dev/null || echo "no mongo log"

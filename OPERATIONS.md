@@ -58,26 +58,91 @@ If the platform's filesystem is ephemeral, mount a volume at `server/uploads/` o
 uploads to Cloudinary. Otherwise every re-deploy silently loses uploaded banners and
 product images.
 
-The seed runs on every boot and clears the collections it owns, so it is not safe against a
-real production database yet. Before pointing `MONGODB_URI` at anything you care about,
-either delete the `seedDatabase()` call in `server/server.js` or use a separate database
-name. Treat that as a required deployment step, not an optional one.
+Seeding follows `SEED_ON_BOOT`: `auto` (the default) seeds only when the
+database looks empty, `true` forces it and wipes the collections the seed owns,
+`false` never runs it. The server refuses to start with `SEED_ON_BOOT=true` when
+`NODE_ENV=production` precisely because that flag deletes data - so a production
+deploy that also forgot to set the mode is stopped at boot rather than discovered
+later. To pull demo fixtures back out of a database that has real records in it,
+use `npm run deprovision:demo` in `server/`, which asks for confirmation twice.
+CI and `scripts/verify.mjs` always run development mode with seeding forced,
+because every suite asserts against the seeded accounts.
+
+Before publishing: CI must be green on the commit being deployed. It runs the
+contract audit and 143 assertions against a real MongoDB; a job that passes
+locally but fails there usually means a route was never mounted, or a suite was
+written against state that only this machine's database happens to have.
 
 ## Health and diagnosis
 
+One command checks everything, and it is the same command CI runs:
+
+```bash
+node scripts/verify.mjs
+```
+
+It starts an isolated MongoDB and its own API process (port 3111, so it will not
+disturb a server already running on 3000), waits for `/api/health`, then runs the
+contract audit and the suites below, and prints one line per group. It exits
+non-zero if any of them fails. To point it at a database that already exists,
+set `MONGODB_URI`; to use a different port, `VERIFY_PORT`.
+
+| Group | What it proves |
+| --- | --- |
+| `server/scripts/audit/api-contract.mjs` | Every `api.get/post/...` path in the client resolves to a mounted server route (323 calls). |
+| `scripts/session_e2e.mjs` | 60 assertions: each of the eight consoles can sign in, be refused after logout with the same token, and sign in again. |
+| `scripts/safety_e2e.mjs` | 17: prescription gating and concurrent stock reservation. |
+| `scripts/catalog_access_e2e.mjs` | 27: catalogue visibility and role access. |
+| `scripts/dispatch_e2e.mjs` | 21: the delivery dispatch cascade. |
+| `scripts/partner_flow_e2e.mjs` | 18: partner report, earnings, payout. |
+
+The audit is there because a client call that hits no route is invisible: the
+server's fallback answers 404, most callers catch it, and the operator sees an
+empty list or a generic "failed to load". Four consoles were doing exactly that
+- their Logout buttons called a route that had never existed.
+
+### Reading a live system
+
 | Check | Command |
 | --- | --- |
-| API alive | `curl -s localhost:5000/api/health` |
+| API alive | `curl -s localhost:3000/api/health` |
+| What it is unhealthy about | the same response names the failing dependency (`status: "degraded"`) |
+| Traffic, latency, errors | `curl -s -H "Authorization: Bearer <admin token>" localhost:3000/api/metrics` |
 | Seeded logins work | `POST /api/auth/login` with a seeded account |
 | Frontend served | `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` |
-| Delivery dispatch | `node scripts/dispatch_e2e.mjs` (21 assertions, needs seeded logins) |
-| Partner report and payout loop | `node scripts/partner_flow_e2e.mjs` (18 assertions) |
-| Catalogue and role access | `node scripts/catalog_access_e2e.mjs` (27 assertions) |
 | Websocket up | connect, then look for `Client connected` in the server log |
 
-Log locations: stdout of `node server.js` for API and seed messages; in development the API
-is terminal 1 and the SPA proxy logs requests in terminal 2. Browser console network errors
-name the failing path, which is the fastest way to tell an API 500 from a client shape bug.
+Every response carries `X-Request-Id`, and every request over 1s or with a 5xx
+status writes one JSON line to stdout with the same `id`. So a user report of
+"it failed at 14:02" becomes: find the line, read the `id`, and every log entry
+and metrics sample for that request lines up. `/api/metrics` is admin-only and
+in-process only - it resets on restart, and its slow-request ring buffer keeps
+the last 25.
+
+### Forcing someone off a session
+
+Access tokens are bearer JWTs. They used to be valid until expiry no matter what
+happened afterwards, so "sign out this user" was not an operation the system
+could perform. Now each token carries a session id (`jti`), and
+`POST .../logout` records its hash in `RevokedSession`;
+`server/middleware/sessionGuard.js` rejects that session on every future API
+call, for all eight consoles, before any route runs.
+
+To sign somebody out without their cooperation, insert the row yourself:
+
+```js
+const revoked = await import('./server/services/session.js');
+// keys are sha256 of the jti, so you need the token to compute one
+await RevokedSession.create({ key: revoked.sessionKey({ decoded, token }), role, expiresAt });
+```
+
+Records expire with the token they revoke (TTL index), so the collection cannot
+grow. The trade to know about: an emergency is now the one case where a token
+must be looked up, so if Mongo is unreachable the revocation check is skipped
+rather than rejecting every request - a signed-out session can finish its
+in-flight calls during a database blip, which is smaller than the storefront
+going dark.
+
 
 ## Delivery dispatch, end to end
 
@@ -257,6 +322,16 @@ Stated plainly so nothing is mistaken for done.
   `returnWindowDays`. A product with the field unset falls back to the platform's
   7 days; there is no per-category default table yet.
 - Saved addresses have add and select at checkout, but no edit or delete UI.
+- Because a console keeps one token in storage shared by every tab, signing out
+  in one tab now ends the session in the others too. That is the intended
+  meaning of Logout; before session ids existed it was the opposite problem,
+  where Logout changed nothing outside the tab that clicked it.
+- A partner withdrawal records `payout_<timestamp>` and moves the balance to
+  withdrawn even when `RAZORPAY2_KEY_ID`/`SECRET` are unset, so the withdrawal
+  history shows an id that no payment system ever issued. Until payouts go
+  through the approval queue, treat those ids as bookkeeping, not receipts.
+- Session revocation lives in one middleware mounted at `/api`. A future route
+  outside that prefix would not be covered, and nothing would notice.
 - Store location at seller sign-up is resolved from the PIN code unless the browser
   is permitted to share a precise position. Two sellers in one city therefore sit at
   the same distance; swap `services/geo.js` for a real geocoder if that clustering

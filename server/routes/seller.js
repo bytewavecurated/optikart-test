@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { signSession, revokeAuthorization } from '../services/session.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
@@ -16,7 +17,7 @@ import { createOrder as createRazorpayOrder } from '../services/razorpay.js';
 const router = express.Router();
 
 const generateSellerToken = (sellerId) => {
-  return jwt.sign({ id: sellerId, sellerId }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  return signSession({ id: sellerId, sellerId }, { expiresIn: '24h' });
 };
 
 router.post('/register', authLimiter, sellerRegisterValidation, async (req, res) => {
@@ -259,6 +260,9 @@ router.post('/logout', verifySeller, async (req, res) => {
   try {
     req.seller.isOnline = false;
     await req.seller.save();
+    // Dropping the browser copy was never enough: anything signed in with this
+    // token - a second tab, a borrowed laptop - kept working for 24 hours.
+    await revokeAuthorization(req.headers.authorization, 'seller');
 
     res.json({ success: true, message: 'Logged out successfully.' });
   } catch (error) {

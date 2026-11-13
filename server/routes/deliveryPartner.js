@@ -1,4 +1,5 @@
 import { otpBypassAllowed } from '../config/authMode.js';
+import { signSession, logoutHandler } from '../services/session.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
@@ -18,8 +19,15 @@ import {
 
 const router = express.Router();
 
+/*
+ * Ends this session server-side. Without it, signing out only discarded the
+ * token in one browser, and any other copy of that string kept working until it
+ * expired on its own. See services/session.js.
+ */
+router.post('/logout', verifyDeliveryPartner, logoutHandler('deliveryPartner'));
+
 const generateDeliveryPartnerToken = (partnerId) => {
-  return jwt.sign({ id: partnerId, partnerId, role: 'deliveryPartner' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  return signSession({ id: partnerId, partnerId, role: 'deliveryPartner' }, { expiresIn: '24h' });
 };
 
 /**

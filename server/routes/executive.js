@@ -1,4 +1,5 @@
 import express from 'express';
+import { signSession, logoutHandler } from '../services/session.js';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
@@ -14,8 +15,15 @@ import { otpBypassAllowed } from '../config/authMode.js';
 
 const router = express.Router();
 
+/*
+ * Ends this session server-side. Without it, signing out only discarded the
+ * token in one browser, and any other copy of that string kept working until it
+ * expired on its own. See services/session.js.
+ */
+router.post('/logout', verifyExecutive, logoutHandler('executive'));
+
 const generateExecutiveToken = (executiveId) => {
-  return jwt.sign({ id: executiveId, executiveId, role: 'executive' }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  return signSession({ id: executiveId, executiveId, role: 'executive' }, { expiresIn: '24h' });
 };
 
 // Executive Login

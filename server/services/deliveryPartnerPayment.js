@@ -1,10 +1,11 @@
 import Razorpay from 'razorpay';
 
-// Initialize Razorpay instance for delivery partners (Razorpay2)
-const razorpay2 = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+/*
+ * No instance here. This file used to construct one at import time, which meant
+ * the API could not start without RAZORPAY keys even though nothing read that
+ * variable - the payouts below build their own client, and only when
+ * RAZORPAY2_* credentials are actually configured.
+ */
 
 /**
  * Calculate delivery fee based on distance

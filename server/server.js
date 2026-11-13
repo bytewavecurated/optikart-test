@@ -1,3 +1,4 @@
+import { verifyToken, verifyAdmin } from './middleware/auth.js';
 import dns from 'node:dns';
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
@@ -58,6 +59,8 @@ import { sweepExpiredPartnerOffers } from './services/partnerDispatch.js';
 import siteContentRoutes from './routes/siteContent.js';
 import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
+import { requestContext, snapshot as metricSnapshot, recordError } from './middleware/requestContext.js';
+import sessionGuard from './middleware/sessionGuard.js';
 
 dotenv.config();
 
@@ -115,6 +118,18 @@ uploadDirs.forEach(dir => {
 });
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// First in the chain, so a rate-limited or malformed request still has an id a
+// customer can quote.
+app.use(requestContext);
+
+/*
+ * Mounted once, for every /api path, instead of inside each role middleware.
+ * Eleven verify functions already exist and two routes decode tokens
+ * themselves; a revoked session that got through one gap would be completely
+ * invisible, because a signed-out token looks exactly like a live one.
+ */
+app.use('/api', sessionGuard);
+
 app.use(apiLimiter);
 
 app.use('/api/auth', authRoutes);
@@ -161,12 +176,39 @@ app.use('/api/site-content', siteContentRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/seller-stock', sellerStockRoutes);
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
+app.get('/api/health', async (req, res) => {
+  // A readiness check that only proves the process is awake is of limited use:
+  // this app is nothing without MongoDB, and a boot that could not connect keeps
+  // serving 500s from every route.
+  const mongoose = (await import('mongoose')).default;
+  /*
+   * Mongoose numbers these 0=disconnected, 1=connected, 2=connecting,
+   * 3=disconnecting - connected is 1, not 2. Read as a list, a healthy process
+   * reports itself degraded and answers 503: an uptime check would restart a
+   * working server, and the error counter would fill with failures that never
+   * happened.
+   */
+  const STATES = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
+  const db = STATES[mongoose.connection.readyState] || 'unknown';
+  const ready = db === 'connected';
+  res.status(ready ? 200 : 503).json({
+    success: ready,
+    status: ready ? 'ok' : 'degraded',
     message: 'Eyewear Platform API is running',
-    timestamp: new Date().toISOString()
+    requestId: req.id,
+    timestamp: new Date().toISOString(),
+    service: 'optikart-api',
+    environment: process.env.NODE_ENV || 'development'
   });
+});
+
+/*
+ * Operational numbers for the running process. Admin-only: which routes get
+ * traffic, what is slow and what broke last are exactly the things an attacker
+ * or a competitor would like to see.
+ */
+app.get('/api/metrics', verifyToken, verifyAdmin, (req, res) => {
+  res.json({ success: true, metrics: metricSnapshot() });
 });
 
 io.on('connection', (socket) => {
@@ -230,7 +272,11 @@ app.get('*', (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
+  // Same failure logged five times in a row is indistinguishable in plain
+  // console output; the id links this response to that log line.
+  const recorded = recordError(req, err);
+  console.error(JSON.stringify({ event: 'error', id: req.id, path: req.originalUrl, message: recorded.message }));
+  console.error(err.stack || err);
 
   if (err.name === 'MulterError') {
     if (err.code === 'LIMIT_FILE_SIZE') {

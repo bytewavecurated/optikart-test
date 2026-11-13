@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "deprovision:demo": "node scripts/deprovisionDemoData.js"
+    "deprovision:demo": "node scripts/deprovisionDemoData.js",
+    "audit:contract": "node scripts/audit/api-contract.mjs"
   },
   "dependencies": {
     "aws-sdk": "^2.1693.0",

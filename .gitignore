@@ -51,3 +51,6 @@ server/.mongo.mjs
 
 # browser automation scratch output
 .playwright-cli/
+
+# verification harness output
+.verify-logs/

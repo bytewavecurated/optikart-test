@@ -1,4 +1,5 @@
 import express from 'express';
+import { signSession, revokeAuthorization } from '../services/session.js';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import User from '../models/User.js';
@@ -14,7 +15,7 @@ import { otpBypassAllowed } from '../config/authMode.js';
 const router = express.Router();
 
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId, userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  return signSession({ id: userId, userId }, { expiresIn: '7d' });
 };
 
 router.post('/register', authLimiter, registerValidation, async (req, res) => {
@@ -273,6 +274,7 @@ router.post('/logout', verifyToken, async (req, res) => {
   try {
     req.user.loginTokenExpiry = null;
     await req.user.save();
+    await revokeAuthorization(req.headers.authorization, 'user');
 
     res.json({ success: true, message: 'Logged out successfully.' });
   } catch (error) {
