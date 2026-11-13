@@ -468,6 +468,47 @@ const startServer = async () => {
       console.error(JSON.stringify({ event: 'listing_migration_failed', message: String(lgErr.message).slice(0, 200) }));
     }
 
+    /*
+     * Retailer copies that lost their link to the brand catalogue.
+     *
+     * Relinked only when exactly one brand product matches on brand plus model
+     * number inside the same manufacturer - ambiguous ones are left alone and
+     * counted, because inventing a link would attach a shop's stock to the
+     * wrong frame and quietly misroute every approval for it. Copies that
+     * already had a `listing` state keep it; only the pointer is repaired.
+     */
+    try {
+      const { default: Product } = await import('./models/Product.js');
+      const { default: Manufacturer } = await import('./models/Manufacturer.js');
+      const orphans = await Product.find({
+        manufacturerSellerId: { $exists: true, $ne: null },
+        manufacturerProduct: { $exists: false }
+      }).limit(500);
+      let repaired = 0;
+      let ambiguous = 0;
+      for (const copy of orphans) {
+        const parentBrand = await Manufacturer.findById(copy.manufacturer).select('_id').lean();
+        if (!parentBrand) { ambiguous += 1; continue; }
+        const matches = await Product.find({
+          manufacturer: parentBrand._id,
+          brand: copy.brand,
+          modelNumber: copy.modelNumber
+        }).limit(2).lean();
+        if (matches.length === 1) {
+          copy.manufacturerProduct = matches[0]._id;
+          await copy.save();
+          repaired += 1;
+        } else {
+          ambiguous += 1;
+        }
+      }
+      if (orphans.length) {
+        console.log(`Brand-catalogue links repaired on ${repaired} retailer copies${ambiguous ? `; ${ambiguous} left unlinked because the match was not unique` : ''}.`);
+      }
+    } catch (linkErr) {
+      console.error(JSON.stringify({ event: 'listing_relink_failed', message: String(linkErr.message).slice(0, 200) }));
+    }
+
     httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
 

@@ -1,5 +1,6 @@
+import mongoose from 'mongoose';
 import Order from '../models/Order.js';
-import Review from '../models/Review.js';
+import Product from '../models/Product.js';
 import ReturnRequest from '../models/ReturnRequest.js';
 import Seller from '../models/Seller.js';
 
@@ -55,23 +56,18 @@ const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
  * hand them a perfect score they have not earned.
  */
 export const metricsForSellers = async (sellerIds, { now = new Date() } = {}) => {
-  const ids = [...new Set(sellerIds.map(String))];
+  /*
+   * ObjectIds, kept as ObjectIds. Passing string ids through `$in` against an
+   * ObjectId path matches nothing at all - a query that returns no rows, no
+   * error and no hint - so every seller would read as having no history, and
+   * the ranking would fall back to neutral scores while looking healthy.
+   */
+  const keys = [...new Set(sellerIds.filter(Boolean).map(String))];
+  const ids = keys.map((v) => new mongoose.Types.ObjectId(v));
   const since = new Date(now.getTime() - WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
-  const orders = await Order.find({
-    seller: { $in: ids },
-    createdAt: { $gte: since }
-  })
-    .select('seller status deliveredAt orderDate createdAt')
-    .lean();
-
-  const returns = await ReturnRequest.find({
-    seller: { $in: ids },
-    createdAt: { $gte: since }
-  }).select('seller').lean();
-
   const bySeller = new Map();
-  for (const id of ids) {
+  for (const id of keys) {
     bySeller.set(id, {
       sellerId: id,
       orders: 0,
@@ -84,6 +80,18 @@ export const metricsForSellers = async (sellerIds, { now = new Date() } = {}) =>
       since
     });
   }
+
+  const orders = await Order.find({
+    seller: { $in: ids },
+    createdAt: { $gte: since }
+  })
+    .select('seller status deliveredAt orderDate createdAt')
+    .lean();
+
+  const returns = await ReturnRequest.find({
+    seller: { $in: ids },
+    createdAt: { $gte: since }
+  }).select('seller').lean();
 
   for (const o of orders) {
     const row = bySeller.get(String(o.seller?._id || o.seller));
@@ -106,16 +114,29 @@ export const metricsForSellers = async (sellerIds, { now = new Date() } = {}) =>
     if (row) row.returns += 1;
   }
 
-  // Aggregate cannot match a list of string ids against an ObjectId path, so
-  // ratings are read as documents and summed here.
-  const reviewRows = await Review.find({ seller: { $in: ids }, createdAt: { $gte: since } })
-    .select('seller rating')
-    .lean();
-  for (const rev of reviewRows) {
-    const row = bySeller.get(String(rev.seller?._id || rev.seller));
-    if (row) {
-      row.reviewCount += 1;
-      row.reviewSum += Number(rev.rating || 0);
+  /*
+   * Customer ratings.
+   *
+   * Reviews are not stored in the Review model - the review endpoint appends
+   * them to `product.ratings`, which carries no seller field, and a query
+   * against `Review.find({ seller })` simply returned nothing, forever, without
+   * erroring. That is why this reads the seller's own catalogue and counts the
+   * ratings on those products. The same silent-empty read is what made a
+   * ranking factor that looked implemented behave as if it were absent.
+   */
+  const ownedProducts = await Product.find({
+    seller: { $in: ids },
+    'ratings.createdAt': { $gte: since }
+  }).select('seller ratings').lean();
+
+  for (const prod of ownedProducts) {
+    const row = bySeller.get(String(prod.seller?._id || prod.seller));
+    if (!row) continue;
+    for (const r of prod.ratings || []) {
+      if (new Date(r.createdAt || 0) >= since) {
+        row.reviewCount += 1;
+        row.reviewSum += Number(r.rating || 0);
+      }
     }
   }
 
@@ -143,11 +164,23 @@ const speedScore = (days) => {
   return 100 * (1 - (days - 1) / 6);
 };
 
-const reliabilityScore = (returnPct) => {
-  if (returnPct === null || returnPct === undefined) return NEUTRAL;
-  if (returnPct <= 2) return 100;
-  if (returnPct >= 25) return 0;
-  return 100 * (1 - (returnPct - 2) / 23);
+const reliabilityScore = (returnPct, cancellationPct) => {
+  const base = (() => {
+    if (returnPct === null || returnPct === undefined) return NEUTRAL;
+    if (returnPct <= 2) return 100;
+    if (returnPct >= 25) return 0;
+    return 100 * (1 - (returnPct - 2) / 23);
+  })();
+
+  /*
+   * A cancelled order is worse than a returned one for the buyer, who never
+   * got the glasses. This was measured and then never scored, so a seller who
+   * cancelled a third of their orders carried the same reliability as one who
+   * never cancelled.
+   */
+  if (cancellationPct === null || cancellationPct === undefined) return base;
+  const penalty = Math.min(40, cancellationPct * 1.6);
+  return Math.max(0, base - penalty);
 };
 
 const ratingScore = (avg) => (avg === null || avg === undefined ? NEUTRAL : (avg / 5) * 100);
@@ -186,7 +219,7 @@ export const rankCandidates = async (candidates, { radiusKm = 10, completeCovera
 
     const factors = {
       speed: speedScore(m.avgDeliveryDays),
-      reliability: reliabilityScore(m.returnPct),
+      reliability: reliabilityScore(m.returnPct, m.cancellationPct),
       price: priceScore,
       distance: distanceScore(c.distance, radiusKm),
       rating: ratingScore(m.avgRating)
@@ -202,6 +235,9 @@ export const rankCandidates = async (candidates, { radiusKm = 10, completeCovera
     reasons.push(m.returnPct === null
       ? 'No returns recorded yet'
       : `${m.returnPct.toFixed(1)}% of orders ended in a return`);
+    if (m.cancellationPct > 0) {
+      reasons.push(`${m.cancellationPct.toFixed(1)}% of orders were cancelled by this seller`);
+    }
     reasons.push(c.distance === null || c.distance === undefined
       ? 'Distance to the buyer is not measured'
       : `${c.distance.toFixed(1)} km from the buyer`);

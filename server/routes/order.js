@@ -430,6 +430,42 @@ router.post('/:id/review', verifyToken, async (req, res) => {
 
     const totalRating = product.ratings.reduce((sum, r) => sum + r.rating, 0);
     product.totalRatings = product.ratings.length;
+
+    /*
+     * Materialise the seller's rating from the ratings that actually exist.
+     *
+     * `Seller.rating` was declared with a default of 0, displayed on the seller
+     * profile and in the admin shortlist, and never written by anything - so
+     * every shop read as "Rated 0", including the good ones, and the ranking
+     * that used to score on it was scoring on a blank field. It is now a cached
+     * average over the seller's catalogue, recomputed whenever a review lands.
+     */
+    try {
+      const { default: Seller } = await import('../models/Seller.js');
+      const sellerId = product.seller;
+      if (sellerId) {
+        const catalogue = await Product.find({ seller: sellerId }).select('ratings').lean();
+        let sum = 0;
+        let count = 0;
+        for (const row of catalogue) {
+          for (const r of row.ratings || []) {
+            sum += Number(r.rating || 0);
+            count += 1;
+          }
+        }
+        const sellerDoc = await Seller.findById(sellerId);
+        if (sellerDoc) {
+          // Only `rating` is set: Seller has no totalRatings path, and writing
+          // a field the schema does not declare is precisely the bug being
+          // fixed here - it looks like it worked and stores nothing.
+          sellerDoc.rating = count ? Math.round((sum / count) * 10) / 10 : 0;
+          await sellerDoc.save();
+        }
+      }
+    } catch (rateErr) {
+      // A stale display average must not refuse the customer's review.
+      console.error(JSON.stringify({ event: 'seller_rating_recompute_failed', message: String(rateErr.message).slice(0, 160) }));
+    }
     
     await product.save();
 

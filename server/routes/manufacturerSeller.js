@@ -12,6 +12,24 @@ import { otpBypassAllowed } from '../config/authMode.js';
 const router = express.Router();
 
 /*
+ * One shape for every branch of the toggle.
+ *
+ * The declare, pause and re-declare paths each assembled their own response, and
+ * a caller reading `product.verificationStatus` got `undefined` from the two
+ * branches that omitted it - which is how a test can "pass" against a listing it
+ * never actually looked at, and how a UI shows a blank status for a claim that is
+ * sitting in a queue.
+ */
+const listingSummary = (doc) => ({
+  _id: doc._id,
+  title: doc.title,
+  verificationStatus: doc.verificationStatus,
+  isListed: !!doc.isListed,
+  price: doc.price,
+  listing: doc.listing
+});
+
+/*
  * Ends this session server-side. Without it, signing out only discarded the
  * token in one browser, and any other copy of that string kept working until it
  * expired on its own. See services/session.js.
@@ -261,7 +279,8 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
         return res.json({
           success: true,
           state: result.state,
-          message: 'Listing re-declared. It goes back through the brand and the platform before it sells again; your price, variants and stock are unchanged.'
+          message: 'Listing re-declared. It goes back through the brand and the platform before it sells again; your price, variants and stock are unchanged.',
+          product: listingSummary(existing)
         });
       }
       const paused = await pauseListing({
@@ -271,7 +290,7 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
         reason: req.body?.reason || ''
       });
       return res.json(paused.success
-        ? { success: true, state: 'paused', message: paused.message }
+        ? { success: true, state: 'paused', message: paused.message, product: listingSummary(existing) }
         : { success: false, message: paused.message });
     }
 
@@ -334,7 +353,7 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
       success: true,
       state: declared.state,
       message: declared.message,
-      product: { _id: sellerProduct._id, title: sellerProduct.title, status: sellerProduct.status, listing: sellerProduct.listing }
+      product: listingSummary(sellerProduct)
     });
   } catch (error) {
     console.error('Toggle product error:', error);

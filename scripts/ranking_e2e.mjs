@@ -64,8 +64,10 @@ async function main() {
   const order = (await call('/orders?limit=1', { token: customer })).json.orders?.[0];
   if (!check('order placed', !!order, placed.text)) return finish();
 
-  await call(`/seller/orders/${order._id}/status`, { token: seller, body: { status: 'confirmed' }, method: 'PUT' });
-  await call(`/seller/orders/${order._id}/status`, { token: seller, body: { status: 'packed' }, method: 'PUT' });
+  const toConfirmed = await call(`/seller/orders/${order._id}/status`, { token: seller, body: { status: 'confirmed' }, method: 'PUT' });
+  const toPacked = await call(`/seller/orders/${order._id}/status`, { token: seller, body: { status: 'packed' }, method: 'PUT' });
+  check('the seller can move the order to packed, which starts routing',
+    toPacked.status === 200, `confirm=${toConfirmed.status} ${JSON.stringify(toConfirmed.json).slice(0, 70)} pack=${JSON.stringify(toPacked.json).slice(0, 70)}`);
   await sleep(2500);
 
   const queue = await call('/order-routing/queue', { token: admin });

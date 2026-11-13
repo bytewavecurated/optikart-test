@@ -230,6 +230,18 @@ const productSchema = new mongoose.Schema({
   discontinuedAt: { type: Date },
   discontinuedBy: { type: mongoose.Schema.Types.ObjectId },
   manufacturerSellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'ManufacturerSeller' },
+  /*
+   * Which brand catalogue entry this shop's copy was made from.
+   *
+   * The toggle route has written this field since it was first coded, but the
+   * schema never declared it, so Mongoose dropped it on save - and the copy
+   * could never be found again. The visible symptom was the retailer's own: a
+   * shop toggling a product off then on again accumulated duplicate listings
+   * of the same frame, because the code that "removes the existing copy" had
+   * nothing to match on, and every approval queue that asks "which brand is
+   * this a claim about" had no answer.
+   */
+  manufacturerProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', index: true },
   // Movement audit so a stock number can always be explained, and so a
   // cancellation/return is never applied twice.
   stockMovementLog: [{
@@ -386,7 +398,18 @@ productSchema.statics.fillMissingNames = async function fillMissingNames() {
  */
 productSchema.pre('save', function (next) {
   const listing = this.listing || {};
-  if (listing.brandLinked === true && listing.state !== 'live') {
+  /*
+   * Only a save that changed the listing itself may downgrade verification.
+   *
+   * Without this condition the rule reached into unrelated writes - a view
+   * counter bump, an image edit, a price change - and could move a product that
+   * had been verified out of the storefront, silently. That is exactly the kind
+   * of guard that must only fire on the transition it is about: the listing
+   * state and the verification flag are written together by
+   * services/listingApproval.js, and nothing else should touch the pair.
+   */
+  const listingChanged = this.isModified('listing');
+  if (listingChanged && listing.brandLinked === true && listing.state !== 'live') {
     if (this.isModified('verificationStatus') || this.verificationStatus === 'verified') {
       this.verificationStatus = 'pending';
       if (listing.state === 'awaiting_manufacturer') {

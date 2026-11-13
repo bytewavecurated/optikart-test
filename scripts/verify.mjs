@@ -65,7 +65,21 @@ const teardown = () => {
   for (const child of started) {
     try { child.kill('SIGTERM'); } catch { /* already gone */ }
   }
+  /*
+   * Remove the isolated database this run created - and only this run's, by
+   * exact path. Each one is ~200MB and nothing else deletes them, so repeated
+   * verification runs filled the temp filesystem and the failure surfaced as an
+   * unrelated-looking extraction error.
+   */
+  if (ownDbPath && ownDbPath.includes('mongo-mem-')) {
+    try {
+      fs.rmSync(ownDbPath, { recursive: true, force: true });
+      console.log(`removed the isolated database directory (${ownDbPath})`);
+    } catch { /* a still-held directory is left for the OS temp cleanup */ }
+  }
 };
+
+let ownDbPath = '';
 process.on('SIGINT', () => { teardown(); process.exit(130); });
 
 /* ------------------------------------------------------------------ database */
@@ -78,6 +92,11 @@ if (!mongoUri) {
   started.push(child);
   child.stdout.pipe(out);
   child.stderr.pipe(out);
+  const dbpathListener = (chunk) => {
+    const line = chunk.toString().split('\n').find((l) => l.startsWith('MONGO_DBPATH'));
+    if (line) ownDbPath = line.split(' ').pop().trim();
+  };
+  child.stdout.on('data', dbpathListener);
   mongoUri = await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('database did not report ready within 120s (see .verify-logs/mongo.log)')), 120000);
     child.stdout.on('data', (chunk) => {

@@ -14,6 +14,24 @@ import { notifyAdmins, notifyAccount } from './notifications.js';
  * unapproved in one place and selling in another.
  */
 
+/*
+ * Write the decided state with an explicit update.
+ *
+ * The decision setters assigned `verificationStatus` on the document and saved,
+ * and in memory the document said `verified` while the row in MongoDB still said
+ * `pending` - the hook chain was not the writer, and debugging that rabbit hole
+ * costs more than this answer is worth: a decision must land as the exact fields
+ * it means, so the transition is written by `$set` on the paths that matter and
+ * then re-read. If some other writer disagrees afterwards, the queue will show
+ * it, rather than the admin being told "verified" about a row still marked
+ * pending - which is the failure mode this whole feature exists to prevent.
+ */
+const persistTransition = async (kind, id, fields) => {
+  const target = kind === 'storefront' ? Product : SellerStock;
+  await target.updateOne({ _id: id }, { $set: fields });
+  return target.findById(id).lean();
+};
+
 const clone = (v) => JSON.parse(JSON.stringify(v || {}));
 
 /** A listing exists in one of two documents; resolve it by kind. */
@@ -106,6 +124,7 @@ export const declareSupply = async ({
   };
   pushListingEvent(doc.listing, reDeclared ? 're-declared' : 'declared', actorLabel, `${kindOf} ${reference || note}`);
 
+  doc.markModified('listing');
   // Nothing about this copy sells until both agree, whatever the route wanted.
   // `verificationStatus` is what the storefront query filters on. An earlier
   // version of this file set `doc.status`, a path the Product schema does not
@@ -194,8 +213,20 @@ export const decideAsManufacturer = async ({ listingKind, id, decision, reason, 
     doc.isListed = false;
   }
 
-  doc.listing = listing;
+  // A fresh object plus markModified: `listing` is a Mixed path, so mutating
+  // the object Mongoose already holds changes nothing it will write - the
+  // brand's approval was reported as succeeded, and the queue still said the
+  // brand had not answered.
+  doc.listing = clone(listing);
+  doc.markModified('listing');
   await doc.save();
+  await persistTransition(kind, doc._id, {
+    isListed: false,
+    ...(kind === 'storefront' ? { verificationStatus: chosen === 'approve' ? 'pending' : 'rejected' } : {}),
+    'listing.state': listing.state,
+    'listing.manufacturerReview': listing.manufacturerReview,
+    'listing.adminReview': listing.adminReview
+  });
 
   await notifyAdmins({
     title: chosen === 'approve' ? `Brand approved a listing - needs verification` : `Brand refused a listing`,
@@ -251,22 +282,42 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
     listing.state = 'live';
     listing.adminReview = { ...listing.adminReview, status: 'approved', by: actorLabel, at: new Date(), reason: String(reason || '') };
     pushListingEvent(listing, 'verified', actorLabel, reason);
-    doc.listing = listing;
+    doc.listing = clone(listing);
+    doc.markModified('listing');
     if (kind === 'storefront') doc.verificationStatus = 'verified';
     doc.isListed = true;
+    doc.__transition = {
+      isListed: true,
+      ...(kind === 'storefront' ? { verificationStatus: 'verified' } : {}),
+      'listing.state': 'live',
+      'listing.adminReview': listing.adminReview
+    };
   } else {
     listing.state = 'rejected';
     listing.adminReview = { ...listing.adminReview, status: 'rejected', by: actorLabel, at: new Date(), reason: String(reason || '') };
     pushListingEvent(listing, 'admin-rejected', actorLabel, reason);
-    doc.listing = listing;
+    doc.listing = clone(listing);
+    doc.markModified('listing');
     if (kind === 'storefront') doc.verificationStatus = 'rejected';
     doc.isListed = false;
+    doc.__transition = {
+      isListed: false,
+      ...(kind === 'storefront' ? { verificationStatus: 'rejected' } : {}),
+      'listing.state': 'rejected',
+      'listing.adminReview': listing.adminReview
+    };
   }
   await doc.save();
+  const stored = await persistTransition(kind, doc._id, doc.__transition || {});
+  if (stored?.listing) doc.listing = stored.listing;
+  if (kind === 'storefront') doc.verificationStatus = stored?.verificationStatus;
+  doc.isListed = stored?.isListed;
 
   return {
     success: true,
     state: listing.state,
+    storedState: stored?.listing?.state ?? null,
+    storedVerification: kind === 'storefront' ? (stored?.verificationStatus ?? null) : undefined,
     listing: describe(doc, kind),
     message: chosen === 'approve' ? 'Verified. The listing is live and routing may offer orders to it.' : 'Rejected. It stays invisible.'
   };
@@ -294,10 +345,16 @@ export const pauseListing = async ({ listingKind, id, actorLabel, reason }) => {
   listing.pausedAt = new Date();
   listing.pausedBy = String(actorLabel || '');
   pushListingEvent(listing, 'paused', actorLabel, reason);
-  doc.listing = listing;
+  doc.listing = clone(listing);
+  doc.markModified('listing');
   doc.isListed = false;
   if (kind === 'storefront') doc.verificationStatus = 'pending';
   await doc.save();
+  await persistTransition(kind, doc._id, {
+    isListed: false,
+    ...(kind === 'storefront' ? { verificationStatus: 'pending' } : {}),
+    'listing.state': 'paused'
+  });
 
   return {
     success: true,
@@ -310,7 +367,14 @@ export const pauseListing = async ({ listingKind, id, actorLabel, reason }) => {
 /** Everything the brand should be looking at, oldest first. */
 export const brandQueue = async (brandId) => {
   const products = await Product.find({ manufacturer: brandId }).select('_id title brand').lean();
-  const ids = products.map((x) => String(x._id));
+  /*
+   * ObjectIds, not strings. `String(_id)` in a `$in` against an ObjectId path
+   * matches nothing, and the failure is silent and total: the brand's queue came
+   * back empty for every claim, which looks exactly like "no shop has asked to
+   * list your brand" - the one state in which a brand does nothing and a
+   * diversion succeeds anyway.
+   */
+  const ids = products.map((x) => x._id);
 
   const clones = await Product.find({ manufacturerProduct: { $in: ids }, 'listing.state': 'awaiting_manufacturer' })
     .sort({ updatedAt: 1 })
