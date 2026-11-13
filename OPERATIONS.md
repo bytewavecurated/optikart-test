@@ -154,6 +154,40 @@ lists are capped at 24 entries. Problems come back per field - `Category tiles i
 2: icon "NotARealIcon" is not one of ...` - because dropping a broken tile silently
 is how a promotion goes missing unnoticed.
 
+## Going live without locking yourself out
+
+Two ways to make a production install unreachable are wired against at boot, and the
+process **exits** rather than starting broken:
+
+| Condition | Why it stops |
+| --- | --- |
+| `SEED_ON_BOOT=true` in production | the seed deletes the collections it owns before writing demo fixtures |
+| no SMTP in production | every role sign-in requires an emailed OTP; without mail no account can be reached again, including the first one |
+| missing/short/placeholder `JWT_SECRET` | a known secret lets anyone mint a session for any role, admin included |
+
+`BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD` / `_NAME` create exactly one administrator when no
+active admin exists. It is skipped silently when an admin already exists, refuses a weak
+password, and never logs the password. Do a real OTP sign-in, then delete the password
+from the environment.
+
+Demo fixtures are removed by an explicit operator command, never at boot:
+
+```bash
+cd server
+DANGEROUS_CONFIRM=yes npm run deprovision:demo            # demo logins only
+DANGEROUS_CONFIRM=yes REMOVE_DEMO_CATALOGUE=yes npm run deprovision:demo   # plus every product
+```
+
+The second form deletes **all** products, including real ones in that collection -
+import the catalogue afterwards, or leave the flag off. After running it the script tells
+you if no administrator is left, which is the one state that would need a restart with
+the bootstrap variables set.
+
+Authentication attempts are now counted against the **account** being targeted, with the
+address as fallback, so an office or a mobile carrier sharing one IP no longer means one
+failed neighbour blocks everyone; the window is 5 minutes, and payment intents key on the
+signed-in user.
+
 ## Troubleshooting
 
 `ERR_ERL_PERMISSIVE_TRUST_PROXY` in the server log

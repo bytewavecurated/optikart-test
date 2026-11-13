@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "deprovision:demo": "node scripts/deprovisionDemoData.js"
   },
   "dependencies": {
     "aws-sdk": "^2.1693.0",

@@ -257,6 +257,55 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
+/**
+ * Bootstrap administrator.
+ *
+ * Production removes the seeded demo accounts and every role sign-in then
+ * requires an emailed OTP - so with no admin left, nobody can sign in to create
+ * one. That is a locked door, not a secure one. When BOOTSTRAP_ADMIN_EMAIL is
+ * set and no active admin exists, this creates exactly one, from values the
+ * operator supplies; nothing here is invented or defaulted.
+ *
+ * The password is never logged, and anything guessable is refused: this account
+ * carries more authority than the demo logins it replaces.
+ */
+const ensureBootstrapAdmin = async () => {
+  const email = String(process.env.BOOTSTRAP_ADMIN_EMAIL || '').trim().toLowerCase();
+  const password = String(process.env.BOOTSTRAP_ADMIN_PASSWORD || '');
+  if (!email) {
+    if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
+      console.warn('BOOTSTRAP_ADMIN_EMAIL is not set: with demo logins removed and OTP required, nobody can sign in to create an administrator.');
+    }
+    return null;
+  }
+
+  const { default: User } = await import('./models/User.js');
+  const existing = await User.findOne({ role: 'admin', isActive: true, isBanned: false }).catch(() => null);
+  if (existing) return null;
+
+  const weak = ['change-me', 'admin123', 'password', 'bootstrap', '12345678'];
+  if (password.length < 12 || weak.some((w) => password.toLowerCase().includes(w))) {
+    console.error(`BOOTSTRAP_ADMIN_PASSWORD is too weak (${password.length < 12 ? 'under 12 characters' : 'contains a common word'}); no administrator was created.`);
+    return null;
+  }
+
+  try {
+    const created = await User.create({
+      name: String(process.env.BOOTSTRAP_ADMIN_NAME || 'Administrator').trim(),
+      email,
+      password,
+      role: 'admin'
+    });
+    console.log(`Bootstrap administrator created for ${created.email}. Remove BOOTSTRAP_ADMIN_PASSWORD from the environment once you have signed in.`);
+    return created;
+  } catch (error) {
+    // A duplicate email or a half-finished run must not stop the API booting.
+    console.error('Bootstrap administrator could not be created:', error.message);
+    return null;
+  }
+};
+
+
 const startServer = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI;
@@ -276,6 +325,25 @@ const startServer = async () => {
     });
     console.log('✅ Connected to MongoDB');
     
+    /*
+     * A production process that can wipe real collections, issue sessions on a
+     * placeholder secret, or demand an OTP it has no way to deliver is not secure
+     * - it is broken in a way nobody notices until data is gone. These conditions
+     * stop the boot rather than log a warning beside a running server.
+     */
+    const { productionBootErrors } = await import('./config/authMode.js');
+    const seedFlag = String(process.env.SEED_ON_BOOT || 'auto').toLowerCase();
+    const bootErrors = productionBootErrors({ seedForced: ['true', '1'].includes(seedFlag) });
+    if (bootErrors.length) {
+      bootErrors.forEach((line) => console.error(`CONFIGURATION ERROR: ${line}`));
+      console.error('Refusing to start. Fix the environment, then start again.');
+      process.exit(1);
+    }
+
+    // A production install with the demo logins removed needs one real admin to
+    // exist, or the console can never be reached.
+    await ensureBootstrapAdmin();
+
     // Seed script.
     //
     // The seed deletes the collections it owns before writing its fixtures, so

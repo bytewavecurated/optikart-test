@@ -5,6 +5,7 @@ import ManufacturerSeller from '../models/ManufacturerSeller.js';
 import Product from '../models/Product.js';
 import { sendOTP } from '../services/email.js';
 import { verifyManufacturerSeller } from '../middleware/auth.js';
+import { otpBypassAllowed } from '../config/authMode.js';
 
 const router = express.Router();
 
@@ -72,8 +73,7 @@ router.post('/login', async (req, res) => {
     const testManufacturerSellerEmails = ['rayban.retailer1@optikart.com'];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
-    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
-    const isTestCredential = allowOtpBypass && testManufacturerSellerEmails.includes(email);
+    const isTestCredential = otpBypassAllowed(testManufacturerSellerEmails, email);
 
     if (isTestCredential) {
       // Direct login for test credentials

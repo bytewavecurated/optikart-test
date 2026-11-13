@@ -9,6 +9,7 @@ import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifyToken } from '../middleware/auth.js';
 import { uploadPrescription } from '../middleware/upload.js';
 import { sendOTP, sendPasswordReset } from '../services/email.js';
+import { otpBypassAllowed } from '../config/authMode.js';
 
 const router = express.Router();
 
@@ -109,8 +110,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     const testEmails = ['testuser@optikart.com', 'demo@optikart.com', 'samedayopticians@gmail.com', 'priya.staff@optikart.com', 'meera.staff@optikart.com'];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
-    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
-    const isTestCredential = allowOtpBypass && testEmails.includes(email);
+    const isTestCredential = otpBypassAllowed(testEmails, email);
 
     if (isTestCredential) {
       // Direct login for test credentials

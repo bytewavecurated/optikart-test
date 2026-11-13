@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import User from '../models/User.js';
 import { sendOTP } from '../services/email.js';
+import { otpBypassAllowed } from '../config/authMode.js';
 
 const router = express.Router();
 
@@ -74,8 +75,7 @@ router.post('/login', async (req, res) => {
     const testAdminEmails = ['samedayopticians@gmail.com'];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
-    const allowOtpBypass = process.env.NODE_ENV !== 'production' && process.env.AUTH_OTP_BYPASS !== 'false';
-    const isTestCredential = allowOtpBypass && testAdminEmails.includes(email);
+    const isTestCredential = otpBypassAllowed(testAdminEmails, email);
 
     if (isTestCredential) {
       // Direct login for test credentials
