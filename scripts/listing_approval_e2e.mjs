@@ -49,7 +49,31 @@ async function main() {
    */
   const owned = await call('/manufacturer/products?limit=10', { token: brand });
   const brandProducts = (owned.json?.products || owned.json?.data || []).filter((x) => x._id);
-  const brandProduct = brandProducts[0];
+
+  /*
+   * Pick a product this shop has never claimed, and withdraw any claim it still
+   * holds from a previous run.
+   *
+   * Without this the suite only works against a freshly seeded database: a
+   * second run found a leftover copy sitting in `paused`, so the very first
+   * assertion - "listing without saying where the stock came from is refused" -
+   * received a successful pause instead, and a suite that changes meaning
+   * depending on what ran before it is worse than no suite, because its green
+   * result stops meaning anything. The withdrawal below is also the missing
+   * capability itself: a shop should be able to retract its own unapproved
+   * claim without leaving it in a queue forever.
+   */
+  const existingClones = (await call('/manufacturer-seller/products', { token: retailer })).json;
+  const claimedProductIds = new Set(
+    (existingClones?.products || existingClones?.data || [])
+      .map((row) => String(row.manufacturerProduct || ''))
+      .filter(Boolean)
+  );
+  for (const staleId of claimedProductIds) {
+    await call(`/manufacturer-seller/products/${staleId}/withdraw`, { token: retailer, body: {} });
+  }
+
+  const brandProduct = brandProducts.find((x) => !claimedProductIds.has(String(x._id))) || brandProducts[0];
   if (!check('the brand has a product to claim', !!brandProduct, JSON.stringify(owned.json).slice(0, 110))) return finish();
 
   /* ---------------------------------------------------------- declaring */

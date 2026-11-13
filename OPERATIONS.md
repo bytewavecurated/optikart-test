@@ -73,6 +73,16 @@ contract audit and 143 assertions against a real MongoDB; a job that passes
 locally but fails there usually means a route was never mounted, or a suite was
 written against state that only this machine's database happens to have.
 
+## Running the suites more than once
+
+`scripts/listing_approval_e2e.mjs` and `scripts/charges_e2e.mjs` are written to
+be re-runnable against a database that already has data in it: each starts by
+withdrawing or narrowing to state it can reason about, rather than assuming a
+fresh seed. That property matters because a suite whose meaning changes with
+leftover state is worse than none - its green result stops proving anything, and
+the failure only appears on the second run of the day. `node scripts/verify.mjs`
+still gives every run an isolated database, so CI and local runs agree.
+
 ## Health and diagnosis
 
 One command checks everything, and it is the same command CI runs:
@@ -262,6 +272,10 @@ Rules that hold this together:
 - Refusals need a reason of at least a few words, and `other` sources need a
   sentence rather than "got it". A queue of claims nobody can check is the same
   problem wearing a different shirt.
+- A shop can withdraw its own unapproved claim (`POST /api/manufacturer-seller/products/:id/withdraw`),
+  which takes the copy out of the brand's queue. An approved listing is refused there rather than
+  unmade silently: orders and a stock ledger may point at it, so removal belongs to the admin with
+  reasons on the record.
 - Rows that existed before the rule are `grandfathered`: they keep selling and
   are listed separately as never confirmed. An absent record is not a record of
   approval.

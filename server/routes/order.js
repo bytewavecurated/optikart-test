@@ -379,13 +379,36 @@ router.post('/quote', async (req, res) => {
 
     const lines = [];
     for (const entry of items.slice(0, 100)) {
+      /*
+       * `variants` has to be selected, and the chosen colour/size has to be
+       * resolved with the same `matchVariant` the order route uses.
+       *
+       * Without them this endpoint silently priced every line at the
+       * product-level figure, so a buyer selecting a variant that carries its
+       * own price saw a lower total at checkout than the order charged. That is
+       * the whole reason this endpoint exists - to make the displayed number and
+       * the billed number come from one place - and a partial copy of the
+       * pricing rules quietly defeats it: the quote said ₹2,910 and the order
+       * charged ₹2,930 for the same basket.
+       */
       const product = await Product.findById(entry.product || entry.productId || entry._id)
-        .select('price discountedPrice title').lean();
+        .select('price discountedPrice title variants seller manufacturerSellerId')
+        .lean();
       if (!product) continue;
-      const effective = Number(product.discountedPrice) > 0 ? product.discountedPrice : product.price;
+
+      const chosenVariant = matchVariant(product, entry.variant || {});
+      const variantPrice = chosenVariant
+        ? (chosenVariant.discountedPrice || chosenVariant.price)
+        : null;
+      const effective = variantPrice || (Number(product.discountedPrice) > 0 ? product.discountedPrice : product.price);
+
       lines.push({
         price: Number(effective) || 0,
-        quantity: Math.max(1, Number(entry.quantity) || 1)
+        quantity: Math.max(1, Number(entry.quantity) || 1),
+        // The label the price panel can show next to a line, and the grouping
+        // key so the quote splits the basket the way the order will.
+        title: product.title,
+        seller: String(product.seller || product.manufacturerSellerId || 'single')
       });
     }
 

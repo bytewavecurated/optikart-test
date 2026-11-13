@@ -12,6 +12,58 @@ import { otpBypassAllowed } from '../config/authMode.js';
 const router = express.Router();
 
 /*
+ * Withdraw a claim the shop made about a brand product.
+ *
+ * Pausing keeps a listing (that is deliberate: it preserves price, variants and
+ * order history), but a claim that was never approved has no history worth
+ * keeping, and until now there was no way for a shop to retract one. It stayed
+ * in the brand's queue indefinitely - which is worse for the brand than for the
+ * shop, because it looks like a request needing an answer.
+ *
+ * Approved listings are refused here rather than silently unmade: withdrawing
+ * something that has been sold against would orphan orders and their stock
+ * ledger. That removal belongs to the admin, with the reasons on the record.
+ */
+router.post('/products/:id/withdraw', verifyManufacturerSeller, async (req, res) => {
+  try {
+    const brandProduct = await Product.findById(req.params.id).select('_id').lean();
+    if (!brandProduct) return res.status(404).json({ success: false, message: 'Product not found.' });
+
+    const clone = await Product.findOne({
+      manufacturerProduct: brandProduct._id,
+      seller: req.manufacturerSeller._id
+    });
+    if (!clone) {
+      return res.status(404).json({ success: false, message: 'You have no listing from that brand product.' });
+    }
+
+    if (clone.listing?.state === 'live') {
+      return res.status(400).json({
+        success: false,
+        reason: 'approved_listing',
+        message: 'This listing was approved and may have orders against it. Ask OptiKart to remove it, or pause it instead.'
+      });
+    }
+
+    const seller = await ManufacturerSeller.findById(req.manufacturerSeller._id);
+    await Product.deleteOne({ _id: clone._id });
+    if (seller) {
+      seller.products = (seller.products || []).filter((p) => String(p) !== String(clone._id));
+      await seller.save();
+    }
+
+    res.json({
+      success: true,
+      message: 'Claim withdrawn. It is out of the brand\'s queue and nothing was ever visible to buyers.',
+      withdrew: { id: String(clone._id), previousState: clone.listing?.state || 'unknown' }
+    });
+  } catch (error) {
+    console.error('Withdraw claim error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/*
  * One shape for every branch of the toggle.
  *
  * The declare, pause and re-declare paths each assembled their own response, and
