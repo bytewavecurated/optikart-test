@@ -12,6 +12,15 @@ const CategoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState('popularity');
   const [brands, setBrands] = useState([]);
+  /*
+   * Brands are the facet most likely to lie: a brand that sells nothing in this
+   * category still appeared in the list, and choosing it gave "no products".
+   * They now come from the facet endpoint, which computes the brand list with
+   * the shopper's other filters applied, already grouped by initial so a long
+   * list is scannable instead of scrollable.
+   */
+  const [brandsByLetter, setBrandsByLetter] = useState({});
+  const [facetFailed, setFacetFailed] = useState(false);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [priceRange, setPriceRange] = useState('all');
 
@@ -26,16 +35,33 @@ const CategoryPage = () => {
           if (min) params.minPrice = min;
           if (max) params.maxPrice = max;
         }
-        const [prodRes, brandRes] = await Promise.all([
+        const facetParams = {
+          category,
+          ...(selectedBrands.length ? { brand: selectedBrands[0] } : {}),
+          ...(priceRange !== 'all' ? { minPrice: priceRange.split('-')[0], maxPrice: priceRange.split('-')[1] } : {})
+        };
+        const [prodRes, facetRes] = await Promise.all([
           products.getByCategory(category, params),
-          products.getBrands(),
+          products.getFilters(facetParams),
         ]);
         setProductsList(prodRes.data.products || []);
-        if (Array.isArray(brandRes.data.brands)) {
-          setBrands(brandRes.data.brands);
+        const list = facetRes?.data?.filters?.brands;
+        if (Array.isArray(list)) {
+          setBrands(list);
+          setBrandsByLetter(facetRes.data.filters.brandsByLetter || {});
+          setFacetFailed(false);
+        } else {
+          // A brand list left over from the previous category is not current
+          // data; keep it out of sight rather than offering it as if it were.
+          setBrands([]);
+          setBrandsByLetter({});
+          setFacetFailed(true);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Browse failed:', err);
+        setBrands([]);
+        setBrandsByLetter({});
+        setFacetFailed(true);
       } finally {
         setLoading(false);
       }
@@ -89,16 +115,44 @@ const CategoryPage = () => {
 
               {brands.length > 0 && (
                 <div>
-                  <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Brand</h4>
-                  <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {brands.map((brand) => (
-                      <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={selectedBrands.includes(brand)} onChange={() => toggleBrand(brand)} style={{ accentColor: 'var(--primary)' }} />
-                        {brand}
-                      </label>
+                  <h4 style={{ fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+                    Brand
+                    <span style={{ fontWeight: 400, color: 'var(--text-light)', fontSize: 11.5, marginLeft: 6 }}>
+                      {selectedBrands.length > 0 ? `${selectedBrands.length} selected` : 'available in this category'}
+                    </span>
+                  </h4>
+                  <div style={{ maxHeight: '220px', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                    {Object.entries(brandsByLetter).map(([letter, group]) => (
+                      <div key={letter}>
+                        <div style={{ fontSize: '10.5px', fontWeight: 700, color: 'var(--text-light)', letterSpacing: '.6px', padding: '6px 0 2px' }}>{letter}</div>
+                        {group.map((brand) => (
+                          <label key={brand} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 0', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={selectedBrands.includes(brand)} onChange={() => toggleBrand(brand)} style={{ accentColor: 'var(--primary)' }} />
+                            {brand}
+                          </label>
+                        ))}
+                      </div>
                     ))}
                   </div>
+                  {selectedBrands.length > 0 && (
+                    <button type="button" onClick={() => setSelectedBrands([])} style={{ marginTop: '6px', background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontSize: '12px', cursor: 'pointer' }}>
+                      Clear brands
+                    </button>
+                  )}
                 </div>
+              )}
+              {/*
+               * Shown when the brand list came back empty or the facet call
+               * failed. Silence here reads as "this category has no brands";
+               * the honest message says the filters excluded them all, which is
+               * a different problem with a different fix.
+               */}
+              {brands.length === 0 && (
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                  {facetFailed
+                    ? 'The brand list could not be loaded right now. Products below are unfiltered by brand and will update when you reload.'
+                    : 'No brands match these filters. Clear the price range or brand selection, or browse another category.'}
+                </p>
               )}
             </div>
 

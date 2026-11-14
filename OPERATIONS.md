@@ -44,6 +44,21 @@ Each degrades safely; see the table in README for what still works without it.
 
 ## Deploying
 
+The API serves its own `server/build`, which is committed, while `client/build` is
+gitignored. The two drift silently otherwise, so the copy is a named step:
+
+```bash
+cd server && npm run build:client   # builds client/, replaces server/build
+```
+
+If a page shows behaviour that does not match the source, check which bundle is
+being served before reading the component - `grep -c <a string you just added>
+server/build/static/js/*.js`. A stale bundle was responsible for two dead ends in
+this project's history: a page that "still" showed a link the code no longer
+rendered, and a brand filter that appeared broken while the fix was in a chunk the
+browser had never fetched.
+
+
 1. `cd client && npm run build`
 2. `cd ../server && npm ci --omit=dev && node server.js`
 

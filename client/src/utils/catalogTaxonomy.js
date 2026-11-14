@@ -20,6 +20,8 @@ const PRICE_BANDS = [
 ];
 
 export const EYEWEAR_FACETS = [
+  { key: 'brand', label: 'Brand', optionsKey: 'brands', dynamic: true, grouped: true },
+
   { key: 'frameShape', label: 'Face shape', optionsKey: 'frameShapes' },
   { key: 'frameType', label: 'Frame type', optionsKey: 'frameTypes' },
   { key: 'material', label: 'Material', optionsKey: 'materials' },
@@ -233,6 +235,8 @@ const ACCESSORY_FACETS = [
 ];
 
 const KIDS_FACETS = [
+  { key: 'brand', label: 'Brand', optionsKey: 'brands', dynamic: true, grouped: true },
+
   { key: 'subGender', label: 'Boy / Girl', values: [{ v: 'boys', l: 'Boys' }, { v: 'girls', l: 'Girls' }] },
   { key: 'ageGroup', label: 'Age', values: [
     { v: '0-3', l: '0-3 years' }, { v: '3-6', l: '3-6 years' }, { v: '6-9', l: '6-9 years' },
@@ -244,6 +248,8 @@ const KIDS_FACETS = [
 ];
 
 const POWERED_FACETS = [
+  { key: 'brand', label: 'Brand', optionsKey: 'brands', dynamic: true, grouped: true },
+
   { key: 'prescriptionLensTypes', label: 'Prescription lens', values: [
     { v: 'single-vision', l: 'Single vision' }, { v: 'bifocal', l: 'Bifocal' }, { v: 'progressive', l: 'Progressive' }
   ] },
@@ -254,6 +260,8 @@ const POWERED_FACETS = [
 ];
 
 const SPORTS_FACETS = [
+  { key: 'brand', label: 'Brand', optionsKey: 'brands', dynamic: true, grouped: true },
+
   { key: 'lensType', label: 'Lens', values: [
     { v: 'polarized', l: 'Polarised' }, { v: 'photochromic', l: 'Photochromic' }, { v: 'bluCut', l: 'Blue-cut' }
   ] },

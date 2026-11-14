@@ -38,7 +38,8 @@ const SUITES = [
   ['brand supply claims', 'scripts/listing_approval_e2e.mjs'],
   ['customer charges', 'scripts/charges_e2e.mjs'],
   ['idle session decision', 'scripts/session_idle_unit.mjs'],
-  ['idle sign-out (boots its own server)', 'scripts/session_idle_e2e.mjs']
+  ['idle sign-out (boots its own server)', 'scripts/session_idle_e2e.mjs'],
+  ['catalogue facets and upload criteria', 'scripts/catalog_facets_e2e.mjs']
 ];
 
 // Static checks: no server needed, but they gate the same push.

@@ -32,6 +32,9 @@ export default function ProductsBrowse() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { category: categorySlug } = useParams();
   const [items, setItems] = useState([]);
+  // A facet call that fails must not leave last visit's options on screen
+  // looking current; the panel says what happened instead.
+  const [facetError, setFacetError] = useState(false);
   const [facets, setFacets] = useState({ brands: [], frameShapes: [], frameTypes: [], materials: [], genders: [], frameSizes: [], frameColors: [] });
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -57,19 +60,41 @@ export default function ProductsBrowse() {
     return out;
   }, [searchParams, facetGroups]);
 
+  /*
+   * Facets are refetched with the shopper's current selection.
+   *
+   * They used to be fetched once, unscoped, on mount - so the brand row listed
+   * every brand on the site whatever the category, and tapping one that sells
+   * nothing here returned "no products" with a filter chip that looked like the
+   * shopper's mistake. The endpoint now counts each facet with the OTHER chosen
+   * filters applied, which is what makes the list both accurate and still
+   * changeable: choose a brand and the material row narrows, while brand keeps
+   * its other options so the choice can be revised.
+   */
   useEffect(() => {
     let cancelled = false;
     const fetchFacets = async () => {
       try {
-        const res = await products.getFilters();
-        if (!cancelled) setFacets((prev) => ({ ...prev, ...(res.data.filters || {}) }));
+        const res = await products.getFilters({
+          ...(category ? { category } : {}),
+          ...(brand ? { brand } : {}),
+          ...Object.fromEntries(Object.entries(facetValues).filter(([k, v]) => v && k !== 'brand')),
+          ...(priceBand && priceBand.includes('-')
+            ? { minPrice: priceBand.split('-')[0], maxPrice: priceBand.split('-')[1] }
+            : {})
+        });
+        if (!cancelled && res.data?.filters) {
+          setFacets((prev) => ({ ...prev, ...res.data.filters }));
+          setFacetError(false);
+        }
       } catch (err) {
         console.error('Filters fetch error:', err);
+        if (!cancelled) setFacetError(true);
       }
     };
     fetchFacets();
     return () => { cancelled = true; };
-  }, []);
+  }, [category, brand, facetValues, priceBand]);
 
   useEffect(() => {
     let cancelled = false;
@@ -164,24 +189,51 @@ export default function ProductsBrowse() {
         // Dynamic facets read their values from the live facet response;
         // fixed facets (correction type, age band, bottle size) are declared.
         const options = group.optionsKey ? (facets[group.optionsKey] || []) : (group.values || []).map((o) => (typeof o === 'string' ? o : o.v));
+        /*
+         * A brand list is the one facet long enough to need structure: 20+ names
+         * in a wrapping row is a hunt, and grouped under their initial letter it
+         * is a scan. The grouping comes from the server's scoped list, so the
+         * letters shown only ever contain brands that can actually be bought with
+         * the filters already applied.
+         */
+        // Brand is the one facet long enough to need an index: 20+ names in a
+        // wrapping row is a hunt, grouped under their initial it is a scan. The
+        // grouping comes from the server's scoped list, so a letter only appears
+        // when a brand under it can actually be bought with the filters applied.
+        const letters = group.optionsKey === 'brands'
+          ? Object.entries(facets.brandsByLetter || {}).filter(([, list]) => list && list.length)
+          : null;
         if (!options.length) return null;
+
+        const chip = (opt) => (
+          <Link
+            key={`${group.key}-${opt}`}
+            to="?"
+            onClick={(e) => {
+              e.preventDefault();
+              updateParam(group.key, facetValues[group.key] === opt ? '' : opt);
+            }}
+            style={chipStyle(facetValues[group.key] === opt)}
+          >
+            {opt}
+          </Link>
+        );
+
         return (
           <div key={group.key}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.4 }}>{group.label}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {options.map((opt) => (
-                <Link
-                  key={opt}
-                  to="?"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    updateParam(group.key, facetValues[group.key] === opt ? '' : opt);
-                  }}
-                  style={chipStyle(facetValues[group.key] === opt)}
-                >
-                  {opt}
-                </Link>
-              ))}
+              {(letters
+                ? letters.flatMap(([letter, list]) => [
+                    <span
+                      key={`letter-${letter}`}
+                      style={{ alignSelf: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-light)', letterSpacing: '.5px', minWidth: 10 }}
+                    >
+                      {letter}
+                    </span>,
+                    ...list.map((opt) => chip(opt))
+                  ])
+                : options.map(chip))}
             </div>
           </div>
         );

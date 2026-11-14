@@ -284,10 +284,26 @@ router.get('/manufacturer-brands', async (req, res) => {
   }
 });
 
+/*
+ * The brand list, scoped to what the shopper is currently looking at.
+ *
+ * With no category this is every brand, as it always was. With one, brands that
+ * sell nothing in that category are dropped: a dropdown that offers "Ola" inside
+ * Sunglasses and returns zero results when chosen is not a filter, it is a dead
+ * end the shopper has to discover. `gender` narrows it the same way, because the
+ * men/women split is the other control sitting next to it on every browse page.
+ */
 router.get('/brands', async (req, res) => {
   try {
-    const brands = await Product.distinct('brand', { isActive: true });
-    res.json({ success: true, brands: brands.sort() });
+    const { category, gender } = req.query;
+    const scope = { isActive: true };
+    if (category) scope.category = String(category).toLowerCase();
+    if (gender && ['men', 'women', 'unisex', 'kids'].includes(String(gender).toLowerCase())) {
+      scope.gender = String(gender).toLowerCase();
+    }
+    const brands = await Product.distinct('brand', scope);
+    const list = brands.filter(Boolean).sort((a, b) => String(a).localeCompare(String(b)));
+    res.json({ success: true, brands: list, scoped: !!(category || gender) });
   } catch (error) {
     console.error('Get brands error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -363,42 +379,107 @@ router.get('/random', async (req, res) => {
   }
 });
 
+/**
+ * Facets that answer to the filters already chosen.
+ *
+ * Every list here used to be a `distinct` over all active products, so the brand
+ * dropdown offered brands that cannot match the category in view, and choosing
+ * one produced "no products" - the shopper has to discover for themselves that
+ * the control lied. Each facet is now computed with the OTHER selected facets
+ * applied and its own constraint withheld, which is what makes a dropdown both
+ * accurate and still changeable: pick Sunglasses and the brand list becomes the
+ * brands that make sunglasses, while the category list keeps every category so
+ * the shopper can move on to Eyeglasses.
+ *
+ * A facet with nothing left in it comes back empty rather than padded, because
+ * an option that yields no products is exactly what we are trying to stop
+ * offering. `applied` is echoed so the panel can label an empty list as "nothing
+ * matches these filters" instead of a silent blank.
+ */
 router.get('/filters', async (req, res) => {
   try {
-    const brands = await Product.distinct('brand', { isActive: true });
-    const frameShapes = await Product.distinct('frameShape', { isActive: true });
-    const frameTypes = await Product.distinct('frameType', { isActive: true });
-    const materials = await Product.distinct('frameMaterial', { isActive: true });
-    const frameColors = await Product.distinct('frameColor', { isActive: true });
-    const lensTypes = await Product.distinct('lensType', { isActive: true });
-    const genders = await Product.distinct('gender', { isActive: true });
-    const frameSizes = await Product.distinct('frameSize', { isActive: true });
-    const categories = await Product.distinct('category', { isActive: true });
-    
-    const priceRange = await Product.aggregate([
-      { $match: { isActive: true } },
+    const q = req.query || {};
+    const wanted = {
+      category: q.category ? String(q.category).toLowerCase() : '',
+      brand: q.brand ? String(q.brand) : '',
+      gender: q.gender ? String(q.gender).toLowerCase() : '',
+      frameShape: q.frameShape ? String(q.frameShape) : '',
+      frameType: q.frameType ? String(q.frameType) : '',
+      material: q.material ? String(q.material) : '',
+      frameColor: q.frameColor ? String(q.frameColor) : '',
+      lensType: q.lensType ? String(q.lensType) : '',
+      frameSize: q.frameSize ? String(q.frameSize) : ''
+    };
+
+    // The scope used to count one facet: every chosen filter except that facet's
+    // own, so the list can still be changed by the shopper.
+    const scopeFor = (except) => {
+      const scope = { isActive: true };
+      if (wanted.category && except !== 'category') scope.category = wanted.category;
+      if (wanted.brand && except !== 'brand') scope.brand = wanted.brand;
+      if (wanted.gender && except !== 'gender') scope.gender = wanted.gender;
+      if (wanted.frameShape && except !== 'frameShape') scope.frameShape = wanted.frameShape;
+      if (wanted.frameType && except !== 'frameType') scope.frameType = wanted.frameType;
+      if (wanted.material && except !== 'frameMaterial') scope.frameMaterial = wanted.material;
+      if (wanted.frameColor && except !== 'frameColor') scope.frameColor = wanted.frameColor;
+      if (wanted.lensType && except !== 'lensType') scope.lensType = wanted.lensType;
+      if (wanted.frameSize && except !== 'frameSize') scope.frameSize = wanted.frameSize;
+      const min = Number(q.minPrice);
+      const max = Number(q.maxPrice);
+      if (Number.isFinite(min) && min > 0) scope.price = { ...scope.price, $gte: min };
+      if (Number.isFinite(max) && max > 0) scope.price = { ...scope.price, $lte: max };
+      return scope;
+    };
+
+    const FIELDS = [
+      ['brand', 'brands'], ['frameShape', 'frameShapes'], ['frameType', 'frameTypes'],
+      ['frameMaterial', 'materials'], ['frameColor', 'frameColors'], ['lensType', 'lensTypes'],
+      ['gender', 'genders'], ['frameSize', 'frameSizes'], ['category', 'categories']
+    ];
+
+    const pairs = await Promise.all(FIELDS.map(async ([field, key]) => {
+      const values = await Product.distinct(field, scopeFor(field));
+      return [key, values
+        .filter((v) => v !== null && v !== undefined && String(v).trim() !== '')
+        .sort((a, b) => String(a).localeCompare(String(b)))];
+    }));
+
+    const facets = Object.fromEntries(pairs);
+
+    /*
+     * Brands grouped under their first letter. A brand list of 40 entries in a
+     * flat <select> is a scroll, not a choice; grouped and labelled it is
+     * scannable, and the grouping is computed from the same scoped list so the
+     * letters shown only ever contain brands that can actually be bought with
+     * the current filters.
+     */
+    const initial = (b) => {
+      const c = String(b).trim().charAt(0).toUpperCase();
+      return c >= 'A' && c <= 'Z' ? c : '#';
+    };
+    const brandsByLetter = (facets.brands || []).reduce((acc, b) => {
+      const k = initial(b);
+      if (!acc[k]) acc[k] = [];
+      acc[k].push(b);
+      return acc;
+    }, {});
+
+    const priced = await Product.aggregate([
+      { $match: scopeFor('__none__') },
       { $group: { _id: null, min: { $min: '$price' }, max: { $max: '$price' } } }
     ]);
 
     res.json({
       success: true,
       filters: {
-        brands: brands.filter(Boolean).sort(),
-        frameShapes: frameShapes.filter(Boolean).sort(),
-        frameTypes: frameTypes.filter(Boolean).sort(),
-        materials: materials.filter(Boolean).sort(),
-        frameColors: frameColors.filter(Boolean).sort(),
-        lensTypes: lensTypes.filter(Boolean).sort(),
-        genders: genders.filter(Boolean).sort(),
-        frameSizes: frameSizes.filter(Boolean).sort(),
-        categories: categories.filter(Boolean).sort(),
-        priceRange: {
-          min: priceRange[0]?.min || 0,
-          max: priceRange[0]?.max || 10000
-        }
+        ...facets,
+        brandsByLetter,
+        priceRange: { min: priced[0]?.min || 0, max: priced[0]?.max || 10000 },
+        applied: Object.fromEntries(Object.entries(wanted).filter(([, v]) => v))
       }
     });
   } catch (error) {
+    console.error('Get filters error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });

@@ -87,8 +87,19 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
     let parsed;
     try { parsed = new URL(url); } catch { throw new Error(`"${url}" is not a valid image URL`); }
     if (!/^https?:$/.test(parsed.protocol)) throw new Error(`"${url}" is not an http(s) URL`);
+    /*
+     * The extension check used to reject any URL whose path ended without
+     * `.jpg`/`.png`, which refused image hosts that carry the transform in the
+     * path tail or the query string (`…/seed/x/800/800`, `…?format=jpg`,
+     * signed CDN URLs) - and the error told the brand the link "does not point
+     * at an image file" when it pointed at one perfectly well.
+     *
+     * The content type is the actual evidence, so the request answers that
+     * question instead, and the stored extension comes from it. A path
+     * extension is still used first when present, since it is the more specific
+     * hint and keeps existing sheets producing the same filenames.
+     */
     const extMatch = parsed.pathname.match(IMAGE_HOSTS_ALLOW);
-    if (!extMatch) throw new Error(`"${url}" does not point at an image file`);
 
     let res;
     try {
@@ -97,6 +108,20 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
       throw new Error(`could not download ${url}: ${e.message}`);
     }
     if (!res.ok) throw new Error(`could not download ${url} (HTTP ${res.status})`);
+
+    const type = String(res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const TYPE_EXT = {
+      'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png',
+      'image/webp': '.webp', 'image/avif': '.avif', 'image/gif': '.gif'
+    };
+    if (!TYPE_EXT[type]) {
+      throw new Error(
+        `"${url}" did not return an image (content-type "${type || 'unknown'}"). `
+        + 'Use a direct link to the image file, not a page that shows it.'
+      );
+    }
+    const ext = extMatch ? extMatch[0] : TYPE_EXT[type];
+
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.length === 0) throw new Error(`${url} returned no data`);
     if (buf.length > 8 * 1024 * 1024) throw new Error(`${url} is larger than 8 MB`);
@@ -104,7 +129,7 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
     const { fileURLToPath } = dirMod;
     const dir = pathMod.join(pathMod.dirname(fileURLToPath(import.meta.url)), '..', 'uploads', subdir);
     fsMod.mkdirSync(dir, { recursive: true });
-    const safe = `${ownerHint}-${Date.now()}-${Math.round(Math.random() * 1e9)}${extMatch[0]}`;
+    const safe = `${ownerHint}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
     fsMod.writeFileSync(pathMod.join(dir, safe), buf);
     out.push(`/uploads/${subdir}/${safe}`);
   }
@@ -563,7 +588,20 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
     // Sunglasses and eyeglasses must arrive in separate files: mixed uploads
     // are the commonest cause of a whole sheet being mapped to one category.
     const categoriesSeen = new Set();
-    const list = (v, map) => String(v ?? '').split('|').map((x) => map ? map(x) : x.trim()).filter(Boolean);
+    /*
+     * A `|`-separated cell becomes a list of real values.
+     *
+     * Filtered twice: empty tokens, and the words `undefined`/`null` that
+     * spreadsheets pick up from export tools. Those were stored verbatim, so a
+     * product ended up offering a material called "undefined" and a size called
+     * "undefined" - values a shopper can select and no lens can be ground to.
+     * The same class of defect the scalar fields were fixed for; lists are where
+     * it actually reached the customer, because they render as options.
+     */
+    const list = (v, map) => String(v ?? '')
+      .split('|')
+      .map((x) => (map ? map(x) : String(x).trim()))
+      .filter((x) => x && String(x).trim().toLowerCase() !== 'undefined' && String(x).trim().toLowerCase() !== 'null');
 
     // sheet_to_json() already uses the first spreadsheet line as the column
     // names, so data[0] is a real product row. Starting at 1 silently dropped the
@@ -583,6 +621,29 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         return undefined;
       };
 
+      /*
+       * An absent cell means "not provided", not the text "undefined".
+       *
+       * Every field below was written `String(get(...)).trim()`, so a blank cell
+       * became the four-character string "undefined". For fields the parser
+       * already requires, that string passes the emptiness check and is stored -
+       * a product with modelNumber "undefined" is searchable by nothing and shows
+       * nothing useful. For optional enum fields it is worse: `frameShape:
+       * "undefined"` is not a member of the enum, so importing a bottle of
+       * solution failed with "frameShape is not one of rectangle, cateye, ..." -
+       * a rule about eyewear being applied to a lens cleaner, because a missing
+       * value had been turned into a wrong one.
+       */
+      const text = (...keys) => {
+        const value = get(...keys);
+        if (value === undefined || value === null) return '';
+        const out = String(value).trim();
+        return out === 'undefined' || out === 'null' ? '' : out;
+    };
+      const optText = (...keys) => text(...keys) || undefined;
+
+
+
       const title = String(get('title', 'name', 'productname') ?? '').trim();
       const price = Number(get('price', 'sellingprice'));
       const categoryRaw = String(get('category') ?? '').trim();
@@ -597,6 +658,27 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       if (!String(get('description') ?? '').trim()) missing.push('description');
       if (!String(get('modelnumber', 'modelno', 'model') ?? '').trim()) missing.push('modelNumber');
       if (!String(get('productcode', 'productid', 'sku') ?? '').trim()) missing.push('productCode');
+
+      // Category-specific required columns, checked here so the message names
+      // the spreadsheet row and the column, rather than surfacing later as a
+      // model error about an object the uploader never sees.
+      const catPre = String(categoryRaw).toLowerCase().replace(/[\s_-]/g, '');
+      if (catPre === 'solution') {
+        if (!Number(get('volumeml', 'volume'))) missing.push('volumeMl');
+        if (!String(get('packpricing', 'packs') ?? '').trim()) missing.push('packPricing (for example 2:1499|3:2099)');
+      }
+      if (catPre === 'accessories' && !String(get('accessorytype') ?? '').trim()) {
+        missing.push('accessoryType (case, twezers, applicator, suction-cup, travel-pouch, cleaning-kit)');
+      }
+      if (catPre === 'contactlenses') {
+        const pt = String(get('powertype') ?? 'distance').toLowerCase();
+        if (pt === 'toric' && !(Number(get('cylindermax')) < 0 && get('axismax') !== undefined)) {
+          missing.push('cylinderMax and axisMax (toric lenses need a cylinder and axis range)');
+        }
+        if (pt === 'multifocal' && !(Number(get('additionmax')) > Number(get('additionmin')))) {
+          missing.push('additionMin and additionMax (multi-focal lenses need an ADD range)');
+        }
+      }
 
       const category = String(categoryRaw).toLowerCase().replace(/[\s_-]/g, '');
       const EYEWEAR = ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'];
@@ -618,7 +700,7 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
           || (sizeParts.lens && sizeParts.temple)
           || ['width', 'height', 'bridge', 'temple'].every((k) => Number(String(get('dim' + k) ?? '')) > 0);
         if (!dimGiven) missing.push('dimensions (one string like 54 x 52 x 16 x 145, or the four dimWidth/dimHeight/dimBridge/dimTemple columns)');
-        if (!String(get('framecolor', 'color', 'colours') ?? '').trim()) missing.push('frameColor');
+        if (!String(get('framecolor', 'framecolour', 'color', 'colour', 'colours') ?? '').trim()) missing.push('frameColor');
         if (/^kids$/.test(category) || String(genderRaw).toLowerCase() === 'kids') {
           if (!String(get('subgender', 'boygirl') ?? '').trim()) missing.push('subGender (boys or girls)');
           if (!String(get('agegroup', 'age') ?? '').trim()) missing.push('ageGroup');
@@ -665,15 +747,20 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         category,
         brand,
         stock: parseInt(get('stock')) || 0,
-        modelNumber: String(get('modelnumber', 'modelno', 'model')).trim(),
-        productCode: String(get('productcode', 'productid', 'sku')).trim(),
-        gender: String(genderRaw).toLowerCase(),
-        subGender: ['boys', 'girls'].includes(String(get('subgender') ?? '').toLowerCase()) ? String(get('subgender')).toLowerCase() : undefined,
-        ageGroup: String(get('agegroup') ?? '').trim() || undefined,
-        frameShape: String(get('frameshape', 'faceshape')).trim(),
-        frameType: String(get('frametype')).trim(),
-        frameMaterial: String(get('framematerial', 'material')).trim(),
-        frameColor: String(get('framecolor', 'color', 'colours')).trim(),
+        modelNumber: text('modelnumber', 'modelno', 'model'),
+        productCode: text('productcode', 'productid', 'sku'),
+        // A blank cell must not reach an enum as the empty string: the model
+        // rejects `` for `gender`, which meant every solution and accessory row
+        // was refused over a column that only eyewear has. Same reason
+        // subGender/ageGroup below keep `|| undefined`.
+        gender: String(genderRaw ?? '').toLowerCase() || undefined,
+        subGender: ['boys', 'girls'].includes(String(get('subgender') ?? '').toLowerCase())
+          ? String(get('subgender')).toLowerCase() : undefined,
+        ageGroup: optText('agegroup'),
+        frameShape: optText('frameshape', 'faceshape'),
+        frameType: optText('frametype'),
+        frameMaterial: optText('framematerial', 'material'),
+        frameColor: optText('framecolor', 'framecolour', 'color', 'colour', 'colours'),
         // Frame size is typed by the manufacturer, not chosen from three labels.
         frameSize: frameSizeBucket(get('framesize', 'size')),
         sizes: list(get('sizes')),
@@ -717,7 +804,67 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
             waterContent: Number(get('watercontent')),
             allowsZeroPower: ['true', 'yes'].includes(String(get('allowszeropower') ?? '').toLowerCase()),
             isCosmetic: ['true', 'yes'].includes(String(get('iscosmetic', 'coloured', 'color') ?? '').toLowerCase()),
-            colorTone: String(get('colortone') ?? '')
+            colorTone: String(get('colortone') ?? ''),
+            /*
+             * Toric and multifocal ranges. The model refuses a toric lens without
+             * a negative cylinder range and an axis range, and a multifocal without
+             * an ADD range where max > min - but the parser never read the columns,
+             * so those lenses failed against fields no template mentioned and could
+             * only be created one at a time.
+             */
+            cylinderMin: get('cylindermin') !== undefined ? Number(get('cylindermin')) : undefined,
+            cylinderMax: get('cylindermax') !== undefined ? Number(get('cylindermax')) : undefined,
+            axisMin: get('axismin') !== undefined ? Number(get('axismin')) : undefined,
+            axisMax: get('axismax') !== undefined ? Number(get('axismax')) : undefined,
+            additionMin: get('additionmin') !== undefined ? Number(get('additionmin')) : undefined,
+            additionMax: get('additionmax') !== undefined ? Number(get('additionmax')) : undefined,
+            step: get('step') !== undefined ? Number(get('step')) : undefined
+          }
+        } : {}),
+        /*
+         * Solution needs a bottle volume and at least one pack price; accessories
+         * need a type. The model checks all three and the parser supplied none of
+         * them, which meant no solution or accessory could ever be imported in
+         * bulk - the rows failed with a message about a column that did not exist
+         * in any template.
+         *
+         * Pack pricing is written `2:1499|3:2099` (multipack size : price) because
+         * the saving is the point of the field and one number per row cannot hold
+         * it. An unknown accessory type is dropped rather than guessed at, so the
+         * row fails loudly about the column instead of quietly filing a case as a
+         * cleaning kit.
+         */
+        ...(category === 'solution' ? {
+          solution: {
+            volumeMl: Number(get('volumeml', 'volume')) || undefined,
+            packPricing: String(get('packpricing', 'packs') ?? '')
+              .split('|')
+              .map((chunk) => {
+                const [packSize, price] = chunk.split(':').map((x) => Number(String(x).trim()));
+                return Number.isFinite(packSize) && Number.isFinite(price) && packSize >= 1
+                  ? { packSize, price }
+                  : null;
+              })
+              .filter(Boolean),
+            suitableFor: String(get('suitablefor') ?? '')
+              .split('|')
+              .map((x) => x.trim().toLowerCase().replace(/\s+/g, '-'))
+              .filter((x) => ['soft', 'silicone-hydrogel', 'rigid-gas-permeable', 'coloured', 'extended-wear'].includes(x)),
+            volumePerBottle: String(get('volumeperbottle') ?? ''),
+            disinfects: get('disinfects') === undefined ? true : ['true', 'yes', '1'].includes(String(get('disinfects')).toLowerCase()),
+            peroxideBased: ['true', 'yes', '1'].includes(String(get('peroxidebased') ?? '').toLowerCase()),
+            preservativeFree: ['true', 'yes', '1'].includes(String(get('preservativefree') ?? '').toLowerCase())
+          }
+        } : {}),
+        ...(category === 'accessories' ? {
+          accessory: {
+            accessoryType: ['case', 'twezers', 'applicator', 'suction-cup', 'travel-pouch', 'cleaning-kit']
+              .includes(String(get('accessorytype') ?? '').trim().toLowerCase())
+              ? String(get('accessorytype')).trim().toLowerCase()
+              : String(get('accessorytype') ?? '').trim() || undefined,
+            materialName: String(get('materialname') ?? ''),
+            compartmentCount: get('compartmentcount') !== undefined ? Number(get('compartmentcount')) : undefined,
+            colours: String(get('colours') ?? '').split('|').map((x) => x.trim()).filter(Boolean)
           }
         } : {})
       });

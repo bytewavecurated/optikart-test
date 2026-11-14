@@ -166,11 +166,11 @@ export const products = {
     api.post(`/products/${id}/images`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  getBrands: () => api.get('/products/brands'),
+  getBrands: (params) => api.get('/products/brands', { params }),
   getByCategory: (category, params) => api.get('/products', { params: { ...params, category } }),
   getOffers: (params) => api.get('/products/offers', { params }),
   getRandom: (params) => api.get('/products/random', { params }),
-  getFilters: () => api.get('/products/filters'),
+  getFilters: (params) => api.get('/products/filters', { params }),
   getRelated: (id) => api.get(`/products/${id}/related`),
 };
 
