@@ -80,23 +80,34 @@ const Stat = ({ label, value, hint }) => (
 );
 
 /** One listing row: price, discount, stock, and the two toggles that matter. */
-const ListingRow = ({ row, onToggle, onList, onEdit }) => {
+const ListingRow = ({ row, onToggle, onList, onSave, busy }) => {
+  /*
+   * "Edit" used to call a handler whose whole body was a toast telling the
+   * seller to go and edit somewhere else - while the endpoint behind this very
+   * table already accepts `sellingPrice` and `variants`. A button that announces
+   * itself and changes nothing is worse than no button: the seller believes the
+   * price they just edited is the price buyers see.
+   */
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const fresh = () => ({ price: String(row.sellingPrice || ''), variants: (row.variants || []).map((v) => ({ ...v })) });
+  const [draft, setDraft] = useState(fresh);
+  const close = () => { setDraft(fresh()); setEditing(false); };
+  const save = (r, d, done) => { setSaving(true); onSave(r, d, () => { setSaving(false); done(); }); };
   const p = row.product || {};
   const discount = row.mrp && row.sellingPrice && row.mrp > row.sellingPrice
     ? Math.round(((row.mrp - row.sellingPrice) / row.mrp) * 100)
     : 0;
   const units = (row.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0);
   /*
-   * A shop can price one colour/size differently. Showing only the headline
-   * price hid the fact that most of the row was priced elsewhere, which is how a
-   * seller ends up surprised by their own listing - and the value used to be
-   * accepted by the form and dropped by the API.
-   */
-  /*
-   * Per-configuration pricing does not exist yet: the price a shop sets is the
-   * listing's `sellingPrice`, and checkout reads the catalogue product's price,
-   * so a number entered per colour/size today would be stored and ignored. The
-   * form therefore asks only for quantity per configuration.
+   * One price per listing, and quantities per colour and size.
+   *
+   * Two earlier comments here contradicted each other - one describing
+   * per-configuration pricing as existing, the next as not existing - which is
+   * what happens when a half-finished feature is annotated instead of removed.
+   * The truth is the second: the listing carries a single `sellingPrice`, and a
+   * per-variant figure stored here today would be ignored by checkout, so the
+   * form asks only for what the server acts on.
    */
   return (
     <tr style={{ background: row.isListed === false ? 'var(--bg-subtle)' : undefined }}>
@@ -152,8 +163,45 @@ const ListingRow = ({ row, onToggle, onList, onEdit }) => {
             ? (row.listing?.state === 'paused' ? 'Re-declare' : 'List')
             : 'Pause'}
         </button>
-        <button onClick={() => onEdit(row)} className="btn btn-link" style={{ marginLeft: 8, fontSize: 12.5 }}>Edit</button>
+        <button onClick={() => (editing ? close() : setEditing(true))} className="btn btn-link" style={{ marginLeft: 8, fontSize: 12.5 }}>
+          {editing ? 'Cancel' : 'Edit'}
+        </button>
       </td>
+      {editing && (
+        <td colSpan={6} style={{ ...td, background: 'var(--bg-soft, #fafafa)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)' }}>
+              Your price
+              <input className="input" type="number" min="1" value={draft.price} style={{ width: 120, marginTop: 3 }}
+                onChange={(e) => setDraft((d) => ({ ...d, price: e.target.value }))} />
+              {row.mrp && Number(draft.price) > Number(row.mrp) && (
+                <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>above the {inr(row.mrp)} listed MRP</div>
+              )}
+            </label>
+            {(draft.variants || []).map((v, vi) => (
+              <label key={`${v.color}-${v.size}-${vi}`} style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)' }}>
+                {(v.color || 'any')}/{(v.size || 'any')}
+                <input className="input" type="number" min="0" value={v.stock} style={{ width: 84, marginTop: 3 }}
+                  onChange={(e) => setDraft((d) => ({
+                    ...d,
+                    variants: d.variants.map((r, ri) => (ri === vi ? { ...r, stock: Math.max(0, Number(e.target.value) || 0) } : r))
+                  }))} />
+              </label>
+            ))}
+            <button
+              className="btn btn-primary"
+              style={{ padding: '7px 14px', fontSize: 12.5 }}
+              disabled={saving || !Number(draft.price) || (row.mrp && Number(draft.price) > Number(row.mrp))}
+              onClick={() => save(row, draft, () => setEditing(false))}
+            >
+              {saving ? 'Saving' : 'Save'}
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-light)', marginTop: 6 }}>
+            Changes this listing only; the brand's catalogue entry is untouched.
+          </div>
+        </td>
+      )}
     </tr>
   );
 };
@@ -409,6 +457,29 @@ export default function SellerStock() {
     } finally { setBusy(''); }
   };
 
+  const saveListingEdit = async (row, values, done) => {
+    setBusy(String(row._id));
+    try {
+      await cartApi.updateStock(row._id, {
+        sellingPrice: Number(values.price),
+        variants: (values.variants || []).map((v) => ({
+          color: v.color || '',
+          size: v.size || '',
+          stock: Math.max(0, Number(v.stock) || 0)
+        }))
+      });
+      toast.success('Listing updated.');
+      await load();
+      done();
+    } catch (error) {
+      // The server's reason beats a generic one: a price above the listed MRP and
+      // a lost network need different answers from the seller.
+      toastError(error, error.response?.data?.message || 'The listing could not be updated.');
+    } finally {
+      setBusy('');
+    }
+  };
+
   const saveNew = async (draft) => {
     setSaving(true);
     try {
@@ -504,7 +575,14 @@ export default function SellerStock() {
                   </tr></thead>
                   <tbody>
                     {filtered.map((r) => (
-                      <ListingRow key={r._id} row={r} onToggle={togglePower} onList={toggleListed} onEdit={() => toast('Edit prices from Inventory, then use Stock a product to relist.')} />
+                      <ListingRow
+                        key={r._id}
+                        row={r}
+                        busy={busy === r._id}
+                        onToggle={togglePower}
+                        onList={toggleListed}
+                        onSave={saveListingEdit}
+                      />
                     ))}
                   </tbody>
                 </table>

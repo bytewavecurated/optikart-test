@@ -73,6 +73,24 @@ contract audit and 143 assertions against a real MongoDB; a job that passes
 locally but fails there usually means a route was never mounted, or a suite was
 written against state that only this machine's database happens to have.
 
+## Auditing controls that only announce success
+
+`node scripts/audit/fake-actions.mjs` (in the harness, so CI runs it) scans every
+client file for a success message, `alert`, or "coming soon" string with no effect
+of any kind within 14 lines above or 10 below - no request, no `await`, no state
+write, no navigation, no storage change. It found the seller's "Edit" button, whose
+entire handler was a toast telling the seller to edit somewhere else.
+
+It is a heuristic and says so: a handler whose effect is a parent callback can be
+flagged, so each hit is either fixed or annotated in place with
+
+    // fake-action-audit: ok - <what actually happens>
+
+which is the point. The annotation is a record that someone looked, and the audit
+fails while nobody has looked. A control that reports success and changes nothing
+survives code review and a green build - sellers and shops found these by coming
+back the next day and discovering their listing, payout or session was untouched.
+
 ## Running the suites more than once
 
 `scripts/listing_approval_e2e.mjs` and `scripts/charges_e2e.mjs` are written to

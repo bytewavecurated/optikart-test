@@ -306,6 +306,34 @@ router.put('/:id', verifyAnySeller, async (req, res) => {
 
     const { sellingPrice, variants, isListed, isReturnable, isExchangeable, sellsWithPower, powerLensTypes } = req.body;
 
+    /*
+     * The same two price rules `POST` enforces, applied here as well.
+     *
+     * Editing a listing had no price validation at all: a buyer could be charged
+     * above the product's listed MRP, and a stray zero or negative figure became a
+     * real price, because only the create path checked. A rule that guards one of
+     * two writers is not a rule - and the fix is not a client-side input
+     * restriction, since the request is the thing that must be honest.
+     *
+     * MRP is read from the stock row itself (`row.mrp`), which the create path set
+     * from the catalogue price at listing time, so this does not depend on the
+     * product still carrying the same figure.
+     */
+    if (sellingPrice !== undefined) {
+      const price = Number(sellingPrice);
+      if (!Number.isFinite(price) || price <= 0) {
+        return res.status(400).json({ success: false, message: 'A selling price above zero is required.' });
+      }
+      const mrp = Number(row.mrp) || 0;
+      if (mrp > 0 && price > mrp) {
+        return res.status(400).json({
+          success: false,
+          message: `Selling price cannot exceed the MRP of ₹${mrp.toLocaleString('en-IN')} on this listing.`
+        });
+      }
+      row.sellingPrice = price;
+    }
+
     if (variants !== undefined) {
       row.variants = (Array.isArray(variants) ? variants : []).map((v) => ({
         color: String(v.color || ''),
