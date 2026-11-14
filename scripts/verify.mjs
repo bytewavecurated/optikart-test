@@ -36,7 +36,9 @@ const SUITES = [
   ['seller ranking', 'scripts/ranking_e2e.mjs'],
   ['partner flow', 'scripts/partner_flow_e2e.mjs'],
   ['brand supply claims', 'scripts/listing_approval_e2e.mjs'],
-  ['customer charges', 'scripts/charges_e2e.mjs']
+  ['customer charges', 'scripts/charges_e2e.mjs'],
+  ['idle session decision', 'scripts/session_idle_unit.mjs'],
+  ['idle sign-out (boots its own server)', 'scripts/session_idle_e2e.mjs']
 ];
 
 // Static checks: no server needed, but they gate the same push.
@@ -51,7 +53,20 @@ const logStream = (name) => {
 };
 
 const run = (cmd, args, opts = {}) => new Promise((resolve) => {
-  const child = spawn(cmd, args, { cwd: ROOT, ...opts });
+  /*
+   * Suites are handed the database URI they cannot otherwise know.
+   *
+   * One of them has to start its own API process with a shortened idle window,
+   * because the timeout cannot be tested by waiting an hour. Without this it
+   * would have to guess a port and a connection string, and a suite that guesses
+   * is a suite that fails in whichever way the environment happens to differ
+   * from the laptop it was written on.
+   */
+  const child = spawn(cmd, args, {
+    cwd: ROOT,
+    env: { ...process.env, MONGODB_URI: mongoUriForSuites || '', VERIFY_PORT: String(PORT) },
+    ...opts
+  });
   let tail = '';
   const capture = (chunk) => {
     tail += chunk.toString();
@@ -62,6 +77,7 @@ const run = (cmd, args, opts = {}) => new Promise((resolve) => {
   child.on('exit', (code) => resolve({ code: code ?? 1, tail }));
 });
 
+let mongoUriForSuites = '';
 const started = [];
 const teardown = () => {
   for (const child of started) {
@@ -116,8 +132,10 @@ if (!mongoUri) {
       reject(new Error(`database exited with code ${code}. If the log shows a download or extraction failure, check free space in the temp directory (du -sh /tmp/mongo-mem-* after a run; each isolated database leaves one behind while it lives).`));
     });
   });
+  mongoUriForSuites = mongoUri;
   console.log('ready');
 } else {
+  mongoUriForSuites = process.env.MONGODB_URI;
   console.log(`using the database already configured: ${process.env.MONGODB_URI}`);
 }
 

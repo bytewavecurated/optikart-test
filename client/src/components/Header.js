@@ -8,6 +8,31 @@ import Logo from './Logo';
 import { STOREFRONT_NAV } from '../utils/catalogTaxonomy';
 import { useSiteFooter } from '../services/homeContent';
 
+/*
+ * Destinations each console offers from the avatar menu. Keyed by the same
+ * `activeRole` the guards use, so a new role gets its entries in one place
+ * instead of another conditional bolted onto the JSX.
+ */
+const CONSOLE_LINKS = {
+  seller: [
+    { label: 'Seller Dashboard', path: '/seller/dashboard' },
+    { label: 'My Products', path: '/seller/products' },
+    { label: 'My Orders', path: '/seller/orders' },
+    { label: 'My Listings', path: '/seller/stock' }
+  ],
+  admin: [
+    { label: 'Admin Panel', path: '/admin' },
+    { label: 'Orders', path: '/admin/orders' },
+    { label: 'Supply Claims', path: '/admin/supply-claims' },
+    { label: 'Cash Reconciliation', path: '/admin/cash-reconciliation' }
+  ],
+  staff: [{ label: 'Staff Workspace', path: '/staff' }],
+  executive: [{ label: 'Executive Desk', path: '/executive/dashboard' }],
+  manufacturer: [{ label: 'Manufacturer Portal', path: '/manufacturer/dashboard' }],
+  manufacturerSeller: [{ label: 'Manufacturer-Seller Portal', path: '/manufacturer-seller/dashboard' }],
+  deliveryPartner: [{ label: 'Partner Dashboard', path: '/delivery-partner/dashboard' }]
+};
+
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -224,11 +249,25 @@ const Header = () => {
                         <Link to="/wishlist" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>Wishlist</Link>
                       </>
                     )}
-                    {seller && (
+                    {/*
+                     * The role's own destinations, from the same table the console
+                     * link above uses. This block used to hard-code three seller
+                     * routes, so a manufacturer signed in at this header saw a
+                     * "Seller Products" entry that was not theirs and a "Customer
+                     * Profile" entry that 401s for a console token.
+                     */}
+                    {CONSOLE_LINKS[activeRole] && (
                       <>
-                        <Link to="/seller/dashboard" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>Dashboard</Link>
-                        <Link to="/seller/products" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>Products</Link>
-                        <Link to="/seller/orders" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>Orders</Link>
+                        {CONSOLE_LINKS[activeRole].map((l) => (
+                          <Link
+                            key={l.path}
+                            to={l.path}
+                            onClick={() => setProfileDropdown(false)}
+                            style={{ display: 'block', padding: '10px 16px', fontSize: '14px', color: 'var(--text-primary)', textDecoration: 'none', borderBottom: '1px solid var(--border-light)' }}
+                          >
+                            {l.label}
+                          </Link>
+                        ))}
                       </>
                     )}
                     <button onClick={handleLogout} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 16px', fontSize: '14px', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>Logout</button>
@@ -236,7 +275,7 @@ const Header = () => {
                 )}
               </AnimatePresence>
             </div>
-          ) : (
+          ) : roleConsole ? null : (
             <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontSize: '14px', fontWeight: 600, padding: '6px 24px', background: 'var(--text-white)', borderRadius: 'var(--radius-xs)', textDecoration: 'none' }}>
               <FiUser size={16} />
               Login
@@ -267,19 +306,21 @@ const Header = () => {
             </div>
           )}
 
-          <Link to="/wishlist" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>
+          {!roleConsole && (<Link to="/wishlist" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>
             <FiHeart size={18} />
-          </Link>
+          </Link>)}
 
-          <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, position: 'relative', textDecoration: 'none' }}>
-            <FiShoppingCart size={18} />
-            {totalItems > 0 && (
-              <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--secondary)', color: 'var(--text-primary)', fontSize: '10px', fontWeight: 700, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {totalItems}
-              </span>
-            )}
-            Cart
-          </Link>
+          {!roleConsole && (
+            <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, position: 'relative', textDecoration: 'none' }}>
+              <FiShoppingCart size={18} />
+              {totalItems > 0 && (
+                <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--secondary)', color: 'var(--text-primary)', fontSize: '10px', fontWeight: 700, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {totalItems}
+                </span>
+              )}
+              Cart
+            </Link>
+          )}
         </nav>
 
         {/* Mobile Icons - Flipkart style */}
@@ -289,22 +330,29 @@ const Header = () => {
             <FiSearch size={22} />
           </button>
 
-          {/* Cart icon - always visible on mobile */}
-          <Link to="/cart" style={{ position: 'relative', color: 'var(--text-white)', display: 'flex', alignItems: 'center' }}>
-            <FiShoppingCart size={22} />
-            {totalItems > 0 && (
-              <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: 'var(--secondary)', color: 'var(--text-primary)', fontSize: '9px', fontWeight: 700, width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {totalItems}
-              </span>
-            )}
-          </Link>
+          {/* Cart icon: a console session has no shopping cart to open. */}
+          {!roleConsole && (
+            <Link to="/cart" style={{ position: 'relative', color: 'var(--text-white)', display: 'flex', alignItems: 'center', padding: '4px' }}>
+              <FiShoppingCart size={22} />
+              {totalItems > 0 && (
+                <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: 'var(--primary)', color: '#fff', fontSize: '10px', fontWeight: '700', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                  {totalItems}
+                </span>
+              )}
+            </Link>
+          )}
 
-          {/* Account icon - shows Login if not authenticated, user icon if authenticated */}
-          {isAuthenticated ? (
+          {/*
+           * The person icon means "your shopping account". In a console session it
+           * pointed at a customer profile the API refuses for a seller, admin or
+           * partner token, so a shop saw an account menu whose every entry failed.
+           * Consoles get the labelled link above instead.
+           */}
+          {isCustomerAuthenticated ? (
             <Link to="/profile" style={{ color: 'var(--text-white)', display: 'flex', alignItems: 'center' }}>
               <FiUser size={22} />
             </Link>
-          ) : (
+          ) : roleConsole ? null : (
             <Link to="/login" style={{ color: 'var(--text-white)', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, gap: '4px' }}>
               <FiUser size={20} />
               <span style={{ fontSize: '12px' }}>Login</span>
@@ -436,7 +484,7 @@ const Header = () => {
               <Link to="/coupons" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Offers</Link>
               <Link to="/blog" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Blog</Link>
               <Link to="/help" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Help</Link>
-              {isAuthenticated && (
+              {isCustomerAuthenticated && (
                 <>
                   <Link to="/profile" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>My Profile</Link>
                   <Link to="/orders" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>My Orders</Link>

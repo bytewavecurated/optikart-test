@@ -106,6 +106,9 @@ export const auth = {
   getMe: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/update-profile', data),
   logout: () => api.post('/auth/logout'),
+  // Idle window as the server enforces it, so the console's countdown cannot
+  // disagree with the rule that ends the session.
+  sessionPolicy: () => api.get('/auth/session-policy'),
   // Prescriptions
   getPrescriptions: () => api.get('/auth/prescriptions'),
   addPrescription: (data) => api.post('/auth/prescriptions', data),
@@ -484,5 +487,12 @@ export const toast = {
   error: (message, options) => hotToast.error(message, options),
   loading: (message, options) => hotToast.loading(message, options),
   custom: (render, options) => hotToast.custom(render, options),
-  info: (message, options) => hotToast(message, { icon: '\u2139\uFE0F', duration: 3500, ...options })
+  info: (message, options) => hotToast(message, { icon: '\u2139\uFE0F', duration: 3500, ...options }),
+  /*
+   * `toast.warn` was called for by the idle countdown and did not exist, so the
+   * warning that exists to stop someone losing work would have thrown instead of
+   * appearing. Styled as a warning rather than an error: nothing here went wrong
+   * yet, which is the entire point of a countdown.
+   */
+  warn: (message, options) => hotToast(message, { icon: '\u23F1\uFE0F', duration: 6000, ...options })
 };

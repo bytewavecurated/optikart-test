@@ -61,6 +61,7 @@ import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { requestContext, snapshot as metricSnapshot, recordError } from './middleware/requestContext.js';
 import sessionGuard from './middleware/sessionGuard.js';
+import { logSessionIdlePolicy } from './services/sessionActivity.js';
 
 dotenv.config();
 
@@ -511,6 +512,13 @@ const startServer = async () => {
 
     httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      /*
+       * The idle window changes behaviour invisibly, so the process says which
+       * rule it is running. A mistyped SESSION_IDLE_MINUTES otherwise looks like
+       * an unstable console - sessions dropping after nine seconds, or never
+       * expiring - with nothing in the log to explain either.
+       */
+      logSessionIdlePolicy();
 
       // Expire unanswered seller offers every minute so the 30-minute window is
       // actually honoured: each lapse cascades to the next seller, and once all

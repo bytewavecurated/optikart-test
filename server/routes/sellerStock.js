@@ -80,7 +80,18 @@ router.post('/', verifyAnySeller, async (req, res) => {
       color: String(v.color || ''),
       size: String(v.size || ''),
       stock: Math.max(0, Number(v.stock) || 0),
-      price: Number(v.price) || price
+      /*
+       * Deliberately the listing's price, not a per-row one.
+       *
+       * A price entered here today would be stored and then ignored: checkout
+       * prices a line from the catalogue product
+       * (`routes/order.js` reads `product.variants` and never `SellerStock`), so
+       * a per-configuration price on the stock row would be a box that changes
+       * nothing - the same decoration defect this project keeps hunting. When
+       * per-seller pricing is wired into checkout, this is where it lands, and
+       * the input on the listing screen stops being cosmetic in the same change.
+       */
+      price
     }));
 
     /*

@@ -7,10 +7,11 @@ import Prescription from '../models/Prescription.js';
 import { submitForVerification } from '../services/prescriptionVerification.js';
 import { registerValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
-import { verifyToken } from '../middleware/auth.js';
+import { verifyToken , verifyAnyPrincipal } from '../middleware/auth.js';
 import { uploadPrescription } from '../middleware/upload.js';
 import { sendOTP, sendPasswordReset } from '../services/email.js';
 import { otpBypassAllowed } from '../config/authMode.js';
+import { idleWindowMinutes, sessionState, CONTROLLED_ROLES } from '../services/sessionActivity.js';
 
 const router = express.Router();
 
@@ -280,6 +281,32 @@ router.post('/logout', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ success: false, message: 'Server error during logout.', error: error.message });
+  }
+});
+
+/*
+ * The idle rule, in one number.
+ *
+ * The console screens need to warn before a session drops, and a countdown has
+ * to count down to the same thing the server will enforce. Hard-coding the
+ * window in the browser is how the two disagree the day someone tightens the
+ * setting - the warning promises an hour and the API refuses after fifteen
+ * minutes, which is worse than no warning at all.
+ */
+router.get('/session-policy', verifyAnyPrincipal, async (req, res) => {
+  try {
+    const state = await sessionState(req.headers.authorization);
+    res.json({
+      success: true,
+      policy: {
+        windowMinutes: idleWindowMinutes(),
+        controlledRoles: CONTROLLED_ROLES,
+        ...state
+      }
+    });
+  } catch (error) {
+    console.error('Session policy error:', error);
+    res.status(500).json({ success: false, message: 'Could not read the session policy.' });
   }
 });
 

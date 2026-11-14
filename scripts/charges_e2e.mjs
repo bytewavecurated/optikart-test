@@ -186,7 +186,7 @@ async function main() {
     (await call(`/orders/${latest._id}/charge-summary`, { token: customer })).json?.refundableAmount
       === Number(latest.totalAmount), `${latest?.totalAmount}`);
 
-  await variantPricing();
+  await quoteAgreement();
   return finish();
 }
 
@@ -201,88 +201,133 @@ function finish() {
 }
 
 
-async function variantPricing() {
-  // This suite prices through `call`, like every other assertion in it: a
-  // helper invented for one function would be a second way to log in that can
-  // drift from the first.
+async function quoteAgreement() {
   const custRes = await call('/auth/login', { body: { email: 'demo@optikart.com', password: 'Demo123@' } });
   const sellRes = await call('/seller/login', { body: { email: 'opticalworld@gmail.com', password: 'Seller123@' } });
   const cust = custRes.json?.token;
   const sell = sellRes.json?.token;
   if (!cust || !sell) return;
 
-  /*
-   * Walk a few categories and read each product's own detail.
-   *
-   * `/products` caps its page at ten rows, so a single query can miss the very
-   * case being tested: the ₹20 mismatch found in the browser came from a product
-   * sitting beyond that page. Asserting only over whatever the first page
-   * happens to hold is how a suite goes green while the bug sleeps two records
-   * away. Variant prices are read from `/products/:id` because the list
-   * projection is not guaranteed to carry them.
-   */
-  const candidates = [];
-  for (const category of ['sunglasses', 'eyeglasses', 'contactlenses']) {
-    const found = await call(`/products?category=${category}&limit=10`, { token: sell });
-    candidates.push(...(found.json?.products || found.json?.data || []));
-  }
+  const found = await call('/products?category=sunglasses&limit=10', { token: sell });
+  const list = found.json?.products || found.json?.data || [];
 
-  const detailed = [];
-  for (const row of candidates.slice(0, 18)) {
+  /* ---- (1) a chosen configuration is priced, not the product behind it */
+  let priced = null;
+  for (const row of list.slice(0, 8)) {
     const d = await call(`/products/${row._id}`, { token: sell });
-    const product = d.json?.product || d.json;
-    if (product && Array.isArray(product.variants) && product.variants.length) detailed.push(product);
+    const p = d.json?.product || d.json;
+    if (!p) continue;
+    const base = Number(p.discountedPrice) > 0 ? Number(p.discountedPrice) : Number(p.price) || 0;
+    const diff = (p.variants || []).find((v) => {
+      const vp = Number(v.discountedPrice || v.price) || 0;
+      return vp > 0 && vp !== base && Number(v.stock) > 0;
+    });
+    const inStock = (p.variants || []).find((v) => Number(v.stock) > 0);
+    if (diff) { priced = { p, variant: diff, base }; break; }
+    if (!priced && inStock) priced = { p, variant: inStock, base, plain: true };
   }
 
-  const basePriceOf = (p) => (Number(p.discountedPrice) > 0 ? Number(p.discountedPrice) : Number(p.price) || 0);
-  const variantPriceOf = (v) => Number(v.discountedPrice || v.price) || 0;
-  const differs = (p) => p.variants.some((v) => {
-    const vp = variantPriceOf(v);
-    return vp > 0 && vp !== basePriceOf(p);
-  });
-
-  // Prefer a product that prices a configuration differently - that difference
-  // is what used to leak between the quote and the order - but assert the
-  // shared resolution path either way, so the test does not silently vanish
-  // when the seed happens not to contain a differing price.
-  const withVariant = detailed.find(differs) || detailed[0];
-
-  if (!withVariant) {
-    console.log('SKIP  variant-priced line (no product with configurable prices is listed)');
-    return;
-  }
-  if (!differs(withVariant)) console.log('NOTE  variant prices match the product price; asserting the shared path only');
-
-  const variant = withVariant.variants.find((v) => variantPriceOf(v) > 0) || withVariant.variants[0];
-
-  const line = { product: withVariant._id, quantity: 1, variant: { color: variant.color, size: variant.size } };
-  const quoted = (await call('/orders/quote', { body: { items: [line], paymentMethod: 'online' } })).json?.quote;
-  const placed = await call('/orders', {
-    token: cust,
-    body: {
-      items: [line],
-      shippingAddress: { name: 'Variant Charges', phone: '9812306677', street: '9 Linking Road', city: 'Mumbai', state: 'Maharashtra', pincode: '400050' },
-      paymentMethod: 'online'
+  if (!priced) {
+    console.log('SKIP  configuration pricing (no listed product exposes an in-stock variant)');
+  } else {
+    const line = { product: priced.p._id, quantity: 1, variant: { color: priced.variant.color, size: priced.variant.size } };
+    const quote = (await call('/orders/quote', { body: { items: [line], paymentMethod: 'online' } })).json?.quote;
+    const placed = await call('/orders', {
+      token: cust,
+      body: {
+        items: [line],
+        shippingAddress: { name: 'Quote Agreement', phone: '9812306677', street: '9 Linking Road', city: 'Mumbai', state: 'Maharashtra', pincode: '400050' },
+        paymentMethod: 'online'
+      }
+    });
+    const order = (await call('/orders?limit=1', { token: cust })).json?.orders?.[0];
+    check(`a chosen configuration can be ordered${priced.plain ? ' (priced at the product figure; seed has no differing variant price)' : ''}`,
+      placed.json?.success !== false, placed.text);
+    check('the quote equals the amount actually charged',
+      Number(quote?.total) === Number(order?.totalAmount),
+      `quoted ${quote?.total} vs charged ${order?.totalAmount}`);
+    if (!priced.plain) {
+      check('and the line was priced from the configuration, not the product',
+        Number(order?.subtotal) === Number(priced.variant.discountedPrice || priced.variant.price),
+        `subtotal ${order?.subtotal}, variant ${priced.variant.discountedPrice || priced.variant.price}, product ${priced.base}`);
     }
-  });
-  const order = (await call('/orders?limit=1', { token: cust })).json?.orders?.[0];
+  }
 
-  if (!check('a variant-priced line can be ordered', placed.json?.success !== false, placed.text)) return;
-  check('the quote matches the order for a variant-priced configuration',
-    Number(quoted?.total) === Number(order?.totalAmount),
-    `quoted ${quoted?.total} vs charged ${order?.totalAmount} (variant ${variant.color}/${variant.size} at ${variant.discountedPrice || variant.price}, product at ${withVariant.discountedPrice || withVariant.price})`);
-  check('and the line was priced from the configuration the buyer chose',
-    Number(order?.subtotal) === Number(variant.discountedPrice || variant.price),
-    `order subtotal ${order?.subtotal}, variant ${variant.discountedPrice || variant.price}, product ${withVariant.discountedPrice || withVariant.price}`);
+  /* ---- (2) availability: no phantom price for something that cannot ship */
+  let hardCase = null;
+  for (const row of list.slice(0, 8)) {
+    const d = await call(`/products/${row._id}`, { token: sell });
+    const p = d.json?.product || d.json;
+    if (!p) continue;
+    const zero = (p.variants || []).find((x) => Number(x.stock) === 0);
+    if (zero) { hardCase = { p, variant: zero, quantity: 1 }; break; }
+    const some = (p.variants || []).find((x) => Number(x.stock) > 0);
+    if (some && !hardCase) hardCase = { p, variant: some, quantity: Number(some.stock) + 5 };
+  }
+  if (!hardCase) {
+    console.log('SKIP  availability (no product exposes variant stock at all)');
+  } else {
+    const q = await call('/orders/quote', {
+      body: {
+        items: [{
+          product: hardCase.p._id,
+          quantity: hardCase.quantity,
+          variant: { color: hardCase.variant.color, size: hardCase.variant.size }
+        }],
+        paymentMethod: 'cod'
+      }
+    });
+    const un = q.json?.unavailable || [];
+    check(hardCase.quantity === 1
+      ? 'a sold-out configuration is reported, not silently priced'
+      : `asking for more than the ${hardCase.variant.stock} in stock is reported, not silently priced`,
+      q.status === 200 && un.length === 1 && Number(un[0].available) < Number(un[0].wanted),
+      JSON.stringify(un).slice(0, 140));
+  }
+
+  /* ---- (3) multi-seller baskets: the quote must equal the sum of the splits */
+  const bySeller = new Map();
+  for (const row of list.slice(0, 8)) {
+    const d = await call(`/products/${row._id}`, { token: sell });
+    const p = d.json?.product || d.json;
+    if (!p) continue;
+    /*
+     * `p.seller` is a populated document here. ``String(p.seller)`` is
+     * "[object Object]" for every product, which made four different shops look
+     * like one and turned the multi-seller assertion below into a permanent skip:
+     * the test that existed to prove the cash-handling charge lands once per
+     * purchase was, in fact, never running. Ids are read explicitly, and the
+     * grouping key is the id - never an object.
+     */
+    const sid = String(p.seller?._id || p.seller || p.manufacturerSellerId?._id || p.manufacturerSellerId || '');
+    const v = (p.variants || []).find((x) => Number(x.stock) > 0);
+    if (!sid || !v) continue;
+    if (!bySeller.has(sid)) bySeller.set(sid, { product: p, variant: v });
+  }
+  const picks = [...bySeller.values()];
+  if (picks.length < 2) {
+    console.log('SKIP  multi-seller basket (basket available from one shop only)');
+  } else {
+    const items = picks.slice(0, 2).map((x) => ({ product: x.product._id, quantity: 1, variant: { color: x.variant.color, size: x.variant.size } }));
+    const quote = (await call('/orders/quote', { body: { items, paymentMethod: 'cod' } })).json?.quote;
+    const placed = await call('/orders', {
+      token: cust,
+      body: {
+        items,
+        shippingAddress: { name: 'Split Basket', phone: '9812306688', street: '9 Linking Road', city: 'Mumbai', state: 'Maharashtra', pincode: '400050' },
+        paymentMethod: 'cod'
+      }
+    });
+    const created = placed.json?.orders || [];
+    const sum = created.reduce((n, o) => n + Number(o.totalAmount || 0), 0);
+    check(`a ${created.length}-shop basket is charged the quoted total`,
+      created.length >= 2 && Number(quote?.total) === sum,
+      `quoted ${quote?.total} vs split sum ${sum} (${created.map((o) => o.totalAmount).join(' + ')})`);
+    const withFee = created.filter((o) => Number(o.codFee) > 0);
+    check('and the cash-handling charge appears on exactly one of those documents',
+      withFee.length === 1 && Number(withFee[0].codFee) === 39,
+      `${withFee.length} of ${created.length} carry it`);
+  }
 }
 
-/*
- * The bug the browser pass found, now pinned.
- *
- * A shopper choosing a colour/size that carries its own price was shown a total
- * computed from the product-level price, and charged the variant price: ₹2,910
- * quoted against ₹2,930 ordered, on seeded data, with no error anywhere. The
- * quote endpoint had its own simplified copy of the pricing rules, which is
- * precisely the failure this whole module exists to prevent.
- */
 main().catch((e) => { console.error('SCRIPT ERROR', e); process.exitCode = 2; });

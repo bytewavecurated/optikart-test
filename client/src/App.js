@@ -1,7 +1,8 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth, CUSTOMER_ROLE, STORAGE_ROLE_USER } from './contexts/AuthContext';
 import AIChatbot from './components/AIChatbot';
+import SessionIdleWatch from './components/SessionIdleWatch';
 
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
@@ -161,7 +162,17 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     // browse the storefront too; nothing else crosses over.
     const hasRole = allowedRoles.some((r) => {
       if (r === activeRole) return true;
-      if (r === 'user' && activeRole === 'customer') return true;
+      /*
+       * Routes are declared with the storage word ('user'), while `activeRole`
+       * reports 'customer' to screens - the two vocabularies this codebase uses
+       * for a shopper. Both are accepted here, and the console roles do NOT
+       * cross over: an admin or staff member browsing the storefront carries
+       * 'admin'/'staff' and is matched by the line above only if a route asks for
+       * it. I deleted this arm earlier in error, believing `activeRole` returned
+       * 'user'; that would have bounced staff and admins out of any page declared
+       * as `allowedRoles={['user']}`, which is most of the storefront.
+       */
+      if (r === STORAGE_ROLE_USER && activeRole === CUSTOMER_ROLE) return true;
       return false;
     });
 
@@ -211,6 +222,13 @@ const StaffRoute = ({ children }) => (
 function App() {
   return (
     <Suspense fallback={<LoadingFallback />}>
+      {/*
+       * Mounted once, above the routes, rather than inside each console layout:
+       * six consoles duplicating an idle timer is six chances for five of them to
+       * disagree with the server. The component no-ops unless the session belongs
+       * to a controlled role, so a shopper never sees it.
+       */}
+      <SessionIdleWatch />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

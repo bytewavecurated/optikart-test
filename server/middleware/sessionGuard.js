@@ -1,4 +1,5 @@
 import { isRevoked } from '../services/session.js';
+import { touchSession } from '../services/sessionActivity.js';
 
 /**
  * One place that rejects signed-out tokens.
@@ -18,6 +19,23 @@ const sessionGuard = async (req, res, next) => {
   if (!authorization || !authorization.startsWith('Bearer ')) return next();
 
   try {
+    /*
+     * Idle expiry is checked before revocation because they fail differently: a
+     * stale session should be told "signed out after 60 minutes", which is a
+     * fact about their own inactivity, while a revoked one is a security event.
+     * Order also keeps the activity row's throttled write off the revoked path,
+     * where refreshing a dead session would be actively wrong.
+     */
+    const activity = await touchSession(authorization);
+    if (!activity.allowed) {
+      return res.status(401).json({
+        success: false,
+        message: activity.message,
+        code: activity.code,
+        idleSeconds: activity.idleSeconds
+      });
+    }
+
     if (await isRevoked(authorization)) {
       return res.status(401).json({
         success: false,

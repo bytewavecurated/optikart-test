@@ -86,6 +86,18 @@ const ListingRow = ({ row, onToggle, onList, onEdit }) => {
     ? Math.round(((row.mrp - row.sellingPrice) / row.mrp) * 100)
     : 0;
   const units = (row.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0);
+  /*
+   * A shop can price one colour/size differently. Showing only the headline
+   * price hid the fact that most of the row was priced elsewhere, which is how a
+   * seller ends up surprised by their own listing - and the value used to be
+   * accepted by the form and dropped by the API.
+   */
+  /*
+   * Per-configuration pricing does not exist yet: the price a shop sets is the
+   * listing's `sellingPrice`, and checkout reads the catalogue product's price,
+   * so a number entered per colour/size today would be stored and ignored. The
+   * form therefore asks only for quantity per configuration.
+   */
   return (
     <tr style={{ background: row.isListed === false ? 'var(--bg-subtle)' : undefined }}>
       <td style={td}>
@@ -246,9 +258,11 @@ const AddListing = ({ catalogBrands, onSave, onCancel, saving }) => {
       {productId && variantRows.length > 0 && (
         <div style={{ marginTop: 16, overflowX: 'auto' }}>
           <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: .5, color: 'var(--text-secondary)', marginBottom: 8 }}>Quantity you hold, per colour and size</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: -4, marginBottom: 8 }}>
+          </div>
           <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 460 }}>
             <thead><tr>
-              <th style={th}>Colour</th><th style={th}>Size</th><th style={th}>Stock</th><th style={th}>Price (optional)</th>
+              <th style={th}>Colour</th><th style={th}>Size</th><th style={th}>Stock</th>
             </tr></thead>
             <tbody>
               {variantRows.map((v, i) => (
@@ -262,6 +276,7 @@ const AddListing = ({ catalogBrands, onSave, onCancel, saving }) => {
                   <td style={{ ...td, width: 130 }}>
                     <input className="input" type="number" min="0" value={v.price} style={{ width: 110 }}
                       onChange={(e) => setVariantRows((rows) => rows.map((r, j) => (j === i ? { ...r, price: Number(e.target.value) || 0 } : r)))} />
+
                   </td>
                 </tr>
               ))}

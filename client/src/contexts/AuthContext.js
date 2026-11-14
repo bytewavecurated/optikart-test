@@ -8,6 +8,19 @@ const AuthContext = createContext(null);
 const TOKEN_KEY = 'optikart_token';
 const ROLE_KEY = 'optikart_role';
 const USER_KEY = 'optikart_user';
+
+/*
+ * The role a shopper's session carries.
+ *
+ * `role: 'user'` in storage (that is the value the login handler writes and the
+ * shape `/auth/me` returns), but `activeRole` reports 'customer' to screens. The
+ * mismatch is only a trap when the literals are typed by hand: a header comparing
+ * `activeRole === 'user'` sees a signed-in shopper as signed out, and a route
+ * guard comparing `=== 'customer'` refuses them entry. Naming both sides in one
+ * place means the next reader does not have to remember which word this file uses.
+ */
+export const STORAGE_ROLE_USER = 'user';
+export const CUSTOMER_ROLE = 'customer';
 const SESSION_EXPIRY_KEY = 'optikart_session_expiry';
 
 const SESSION_DURATION = {
@@ -748,10 +761,61 @@ export const AuthProvider = ({ children }) => {
     : manufacturer ? 'manufacturer'
     : manufacturerSeller ? 'manufacturerSeller'
     : deliveryPartner ? 'deliveryPartner'
-    : user ? 'customer'
+    : user ? CUSTOMER_ROLE
     : null;
 
-  const isCustomerAuthenticated = isAuthenticated && activeRole === 'customer';
+  /*
+   * Derived from the role, not from the `isAuthenticated` flag.
+   *
+   * That flag is set by the login handlers, so a session restored from storage
+   * after a page reload - a shopper who simply came back to the tab - was left
+   * `false` while `user` held a perfectly valid identity. Gating the header's
+   * account link on it hid the profile from signed-in customers who reloaded,
+   * which is most of them. If the identity resolved to a shopper, they are
+   * signed in; the flag adds nothing to that and is a second source of truth.
+   */
+  /*
+   * Derived from the identities this provider actually holds, not from the
+   * `isAuthenticated` flag or a single object.
+   *
+   * Two defects hid the account link from signed-in shoppers. The flag is set by
+   * the login handlers and by the restore path, so any gap between those left a
+   * valid session looking signed out - the header showed "Login" next to a token
+   * that `/auth/me` accepted with 200. And `user` is cleared on paths that keep a
+   * session (a staff or admin browsing the storefront), so requiring it removed
+   * the profile link from people who are genuinely signed in. A shopper session is
+   * exactly "a token, a user-role, and nobody else's console" - which is what this
+   * now asks.
+   */
+  /*
+   * "This session belongs to a shopper" - derived, never stored.
+   *
+   * It used to read `isAuthenticated`, a flag set by the login handlers and by
+   * the restore path, which left gaps: a session that `/auth/me` accepted with a
+   * 200 and a token in storage still rendered the header as signed out, because
+   * the flag had not been set on that particular route in. Deriving from the
+   * resolved role removes the whole class of bug - there is no second truth to
+   * fall out of step.
+   *
+   * `getAccessToken()` reads the same storage the guard wrote, so it cannot
+   * disagree with `activeRole` about whether anyone is signed in at all.
+   */
+  /*
+   * "A shopper is signed in", derived rather than stored.
+   *
+   * This used to read `isAuthenticated`, a flag set separately by every login
+   * handler and by the restore path. Anything that resolved a session without
+   * also setting the flag showed a signed-out header to a signed-in person - the
+   * storefront displayed "Login" beside a token that `/auth/me` had just accepted
+   * with a 200. It also previously required `user` to be non-null, so an admin or
+   * staff member browsing the storefront lost their account link, because that
+   * role keeps its identity elsewhere.
+   *
+   * `activeRole` is computed from the identities this provider resolved, so if it
+   * says 'user' then a customer session exists: one source, no flag to fall out
+   * of step.
+   */
+  const isCustomerAuthenticated = activeRole === CUSTOMER_ROLE;
 
   const roleConsole = {
     seller: { label: 'Seller Console', path: '/seller/dashboard' },

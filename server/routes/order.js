@@ -378,6 +378,7 @@ router.post('/quote', async (req, res) => {
     }
 
     const lines = [];
+    const unavailable = [];
     for (const entry of items.slice(0, 100)) {
       /*
        * `variants` has to be selected, and the chosen colour/size has to be
@@ -396,20 +397,46 @@ router.post('/quote', async (req, res) => {
         .lean();
       if (!product) continue;
 
-      const chosenVariant = matchVariant(product, entry.variant || {});
+      const selection = entry.variant || {};
+      const chosenVariant = matchVariant(product, selection);
       const variantPrice = chosenVariant
         ? (chosenVariant.discountedPrice || chosenVariant.price)
         : null;
       const effective = variantPrice || (Number(product.discountedPrice) > 0 ? product.discountedPrice : product.price);
 
+      /*
+       * A chosen configuration with nothing in it is not a priceable line.
+       *
+       * The order route refuses it ("Insufficient stock for X (Black / 54 mm).
+       * Only 0 available"), and a quote that happily priced it would show a
+       * total the customer then cannot get to - which is a worse experience than
+       * a message, because the checkout has already asked them to enter an
+       * address by that point. Availability is stated here so the screen can say
+       * it in the right column, before any of that effort.
+       */
+      const wanted = Math.max(1, Number(entry.quantity) || 1);
+      const available = chosenVariant
+        ? Number(chosenVariant.stock) || 0
+        : Number(product.stock) || 0;
+
       lines.push({
         price: Number(effective) || 0,
-        quantity: Math.max(1, Number(entry.quantity) || 1),
+        quantity: wanted,
         // The label the price panel can show next to a line, and the grouping
         // key so the quote splits the basket the way the order will.
         title: product.title,
         seller: String(product.seller || product.manufacturerSellerId || 'single')
       });
+
+      if (available < wanted) {
+        unavailable.push({
+          title: product.title,
+          color: chosenVariant?.color || selection.color || '',
+          size: chosenVariant?.size || selection.size || '',
+          available,
+          wanted
+        });
+      }
     }
 
     if (!lines.length) {
@@ -439,6 +466,10 @@ router.post('/quote', async (req, res) => {
 
     res.json({
       success: true,
+      // The quote still prices what is available; this says what cannot be had,
+      // so a basket with one sold-out configuration is explained rather than
+      // silently cheaper or mysteriously unorderable at the last step.
+      unavailable,
       quote: {
         ...charges,
         couponApplied: coupon ? coupon.code : null,
