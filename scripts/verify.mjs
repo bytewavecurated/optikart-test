@@ -52,7 +52,8 @@ const SUITES = [
   ['catalogue facets and upload criteria', 'scripts/catalog_facets_e2e.mjs'],
   ['global search and facet controls', 'scripts/search_facets_e2e.mjs'],
   ['partner payout settlement queue', 'scripts/payout_console_e2e.mjs'],
-  ['notification fan-out', 'scripts/notifications_fanout_e2e.mjs']
+  ['notification fan-out', 'scripts/notifications_fanout_e2e.mjs'],
+  ['delivery distance ceilings', 'scripts/delivery_radii_e2e.mjs']
 ];
 
 // Static checks: no server needed, but they gate the same push.

@@ -24,7 +24,41 @@ export const PARTNER_RATE_PER_KM = 10;
  * offered it to the partner standing next to the shop. Anything longer is a
  * courier job, so it goes to the admin instead of the offer queue.
  */
-export const PARTNER_MAX_LEAD_KM = 60;
+/*
+ * The two distances that decide whether a run is a bicycle job at all.
+ *
+ * PARTNER_PICKUP_RADIUS_KM (4.5) is how far a partner may be from the STORE and
+ * still be asked to come and collect. The number being paid is ₹10 per km of the
+ * delivery leg, not of the trip to the shop, so a partner 20 km away would spend
+ * fuel and an hour reaching a counter for a run that pays them a few rupees -
+ * which is why offering to them is not a courtesy but a bad instruction. Beyond
+ * this radius nobody is asked and the run goes to the desk instead.
+ *
+ * MAX_DELIVERY_LEG_KM (23) is the longest store-to-buyer distance a partner is
+ * given. It replaced 60 km: at the ₹10/km rate a 60 km lead pays ₹600 for a
+ * single hand-over and keeps the buyer waiting a day, and a Mumbai-to-Kolkata
+ * parcel was previously only rejected because it exceeded that ceiling. Anything
+ * longer than 23 km is a courier job, and saying so at assignment time is what
+ * stops a partner accepting run they cannot finish.
+ *
+ * Both are overridable by environment for a city where the geography differs;
+ * an unset or unusable value falls back to the two above rather than to zero,
+ * because a zero radius means "ask nobody, ever" and reads like a broken
+ * dispatch engine.
+ */
+const positiveNumber = (raw, fallback) => {
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+};
+
+export const PARTNER_PICKUP_RADIUS_KM = positiveNumber(process.env.PARTNER_PICKUP_RADIUS_KM, 4.5);
+export const MAX_DELIVERY_LEG_KM = positiveNumber(process.env.MAX_DELIVERY_LEG_KM, 23);
+
+// Historical name kept as an alias so no call site can keep a stale copy of the
+// ceiling. It is the same number, by definition, and drift between the two
+// would mean the manual assignment path and the cascade disagree about what is
+// deliverable - the exact class of bug this file has already been bitten by.
+export const PARTNER_MAX_LEAD_KM = MAX_DELIVERY_LEG_KM;
 
 /** One coordinate pair, whatever shape the caller had. */
 export const pointOf = (value) => {

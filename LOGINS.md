@@ -23,7 +23,7 @@ and every login requires the emailed code again.
 | Manufacturer's retailer | http://localhost:3000/manufacturer-seller/login | `rayban.retailer1@optikart.com` | `Retailer123@` |
 | Delivery partner (Bandra) | http://localhost:3000/delivery-partner/login | `suresh.partner@optikart.com` | `Partner123@` |
 | Delivery partner (Andheri) | http://localhost:3000/delivery-partner/login | `anjali.partner@optikart.com` | `Partner123@` |
-| Delivery partner (Thane, outside the 12 km radius of the Bandra stores) | http://localhost:3000/delivery-partner/login | `ramesh.partner@optikart.com` | `Partner123@` |
+| Delivery partner (Thane, outside the 4.5 km pickup radius of the Bandra stores) | http://localhost:3000/delivery-partner/login | `ramesh.partner@optikart.com` | `Partner123@` |
 
 ## Where each one lands
 

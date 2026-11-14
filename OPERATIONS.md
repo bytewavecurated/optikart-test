@@ -106,6 +106,28 @@ fails while nobody has looked. A control that reports success and changes nothin
 survives code review and a green build - sellers and shops found these by coming
 back the next day and discovering their listing, payout or session was untouched.
 
+
+### Distance ceilings, and why they are these numbers
+
+| Constant | Default | Meaning |
+| --- | --- | --- |
+| `PARTNER_PICKUP_RADIUS_KM` | 4.5 km | how far a partner may be from the **store** and still be asked to collect. Pay is ₹10 per km of the delivery leg, so a distant partner would burn fuel and an hour reaching a counter for a few rupees - asking them is not a courtesy, it is a bad instruction. |
+| `MAX_DELIVERY_LEG_KM` | 23 km | the longest **store-to-buyer** leg a partner may be given, on either the cascade or the desk's manual assignment path. `PARTNER_MAX_LEAD_KM` is an alias for the same value so the two paths cannot disagree. |
+
+Both moved from the previous 12 km / 60 km. At 60 km the rate pays ₹600 for one
+hand-over, the buyer waits most of a day, and a Mumbai-to-Kolkata parcel was only
+rejected because it exceeded even that. Anything over 23 km is a courier job, and
+the refusal says so. Each is overridable by environment for a city with different
+geography; unset or unusable values fall back to the two above rather than to
+zero, because a zero radius means "ask nobody, ever" and looks like a broken
+dispatch engine.
+
+`scripts/delivery_radii_e2e.mjs` (10 assertions) drives the boundary: an order
+800 km out is refused with `tooFar` and `maxKm: 23`, it stays on the desk's
+unassigned list rather than disappearing, an in-city run is still assignable, and
+partners are still offered work at all - that last one because tightening a radius
+is exactly the kind of change that can silently empty a queue.
+
 ## Notifications reach the account they are about
 
 Four account types, three collections: a shopper is a `User`, a shop is a
@@ -253,14 +275,14 @@ going dark.
 1. A seller moves an order to `packed` (`PUT /api/seller/orders/:id/status`). That
    transition fires `offerQueue` best-effort: any failure is logged, never
    returned to the seller, because their action already succeeded.
-2. `recommendPartners` ranks available partners within 12 km of the store. If the
+2. `recommendPartners` ranks available partners within `PARTNER_PICKUP_RADIUS_KM` (4.5 km) of the store. If the
    store has no usable position the order is marked for manual assignment instead
    of being offered to nobody in particular.
 3. Up to three partners are offered the run one at a time, each with a 30-minute
    window (`PARTNER_OFFER_WINDOW_MINUTES`). A decline advances immediately; a
    window that lapses is closed by the `partnerSweep` timer in `server.js`.
 4. Accepting sets `assignedDeliveryPartner`, prices the leg at ₹10/km and books the
-   partner. Anything longer than `PARTNER_MAX_LEAD_KM` (60 km) is not a bicycle
+   partner. Anything longer than `MAX_DELIVERY_LEG_KM` (23 km; `PARTNER_MAX_LEAD_KM` is the same number cycle
    run at any price: it is escalated to the admin as a courier job, and the manual
    `/assign` route refuses it too.
 5. Nobody answered, or too far: the order appears under "Waiting for a partner" in
@@ -277,7 +299,7 @@ asked and why), `GET /api/delivery-partner/unassigned` (what is waiting),
 chain in 21 checks.
 
 The demo data carries **three** partners at different distances from the seeded Bandra
-stores (Bandra 0.2 km, Andheri 5.9 km, Thane beyond the 12 km radius). With a single
+stores (Bandra 0.2 km, inside the 4.5 km pickup radius; Andheri 5.9 km and Thane are not asked to collect). With a single
 partner none of this is observable - ranking, the radius, and cascading to a second
 courier all need more than one person in the pool - and the newly seeded logins must
 also be added to the OTP skip-list in `routes/deliveryPartner.js`, or their printed
