@@ -454,11 +454,17 @@ Stated plainly so nothing is mistaken for done.
   and a consent UI).
 
 ### Smaller rough edges worth knowing
-- `routes/notification.js` and `routes/notifications.js` are both mounted at
-  `/api/notifications` (`server.js` lines that call `app.use`). Express tries the
-  first, so `GET /`, `PUT /:id/read` and `PUT /read-all` from the second file are
-  unreachable - only its unique `POST /subscribe` and `DELETE /:id` are live.
-  Consolidating them is part of finishing the notification fan-out.
+- Notifications: fixed. Both `routes/notification.js` and `routes/notifications.js`
+  were mounted at `/api/notifications`, and because Express answers from the first
+  router that matches, the second file's `GET /`, `PUT /:id/read` and
+  `PUT /read-all` were unreachable - different auth, different query parameters,
+  no effect whatever, and completely normal-looking. The duplicates are gone (the
+  second file now holds only its unique `DELETE /:id` and `POST /subscribe`), and
+  `server/scripts/audit/routes-mounted.mjs` fails the build if any path is ever
+  declared by two routers on one prefix again. It is worth knowing that this audit
+  was referenced by `.github/workflows/ci.yml` for a while before the file existed -
+  CI was green because the step never ran, which is its own lesson about verifying
+  a check by breaking it on purpose rather than by reading it.
 
 
 - Return and exchange eligibility is evaluated per line against that product's

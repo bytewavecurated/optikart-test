@@ -1,3 +1,19 @@
+/*
+ * Push-subscription and deletion half of the notifications API.
+ *
+ * This file used to declare `GET /`, `PUT /:id/read` and `PUT /read-all` as
+ * well, and `server.js` mounted BOTH this router and `routes/notification.js`
+ * at `/api/notifications`. Express tries the first and only falls through when
+ * nothing matched, so those three lived here as unreachable code: the served
+ * behaviour came from `notification.js`, this file appeared to offer a second
+ * implementation of the same routes (with a different auth call and different
+ * query parameters), and any edit made here looked correct on screen and changed
+ * nothing in production.
+ *
+ * The rule an endpoint follows now: exactly one router per path, one file per
+ * prefix. The two remaining handlers here (`DELETE /:id`, `POST /subscribe`)
+ * are unique to this file and always were the only live ones.
+ */
 import express from 'express';
 import { verifyToken, verifyAnyPrincipal } from '../middleware/auth.js';
 import {
@@ -13,98 +29,16 @@ const router = express.Router();
  * GET /api/notifications
  * Get user notifications
  */
-router.get('/', verifyAnyPrincipal, async (req, res) => {
-  try {
-    const userId = req.principal.id;
-    const { limit = 20, unreadOnly = false } = req.query;
-
-    const result = await getUserNotifications(req.principal.user ? req.principal.user._id : userId, parseInt(limit), unreadOnly === 'true');
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.notifications,
-        unreadCount: result.unreadCount
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
-    }
-  } catch (error) {
-    console.error('Error in get notifications route:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
 
 /**
  * PUT /api/notifications/:id/read
  * Mark notification as read
  */
-router.put('/:id/read', verifyToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user.id;
-
-    const result = await markAsRead(id, userId);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        message: 'Notification marked as read',
-        data: result.notification
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
-    }
-  } catch (error) {
-    console.error('Error in mark as read route:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
 
 /**
  * PUT /api/notifications/read-all
  * Mark all notifications as read
  */
-router.put('/read-all', verifyToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const result = await markAllAsRead(userId);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        message: result.message
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error
-      });
-    }
-  } catch (error) {
-    console.error('Error in mark all as read route:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-});
 
 /**
  * DELETE /api/notifications/:id

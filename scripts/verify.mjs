@@ -41,7 +41,8 @@ const SUITES = [
 
 // Static checks: no server needed, but they gate the same push.
 const AUDITS = [
-  ['client/API contract', 'server/scripts/audit/api-contract.mjs']
+  ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
+  ['mounted routes', 'server/scripts/audit/routes-mounted.mjs']
 ];
 
 const logStream = (name) => {

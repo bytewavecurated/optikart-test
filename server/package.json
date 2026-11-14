@@ -6,7 +6,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "deprovision:demo": "node scripts/deprovisionDemoData.js",
-    "audit:contract": "node scripts/audit/api-contract.mjs"
+    "audit:contract": "node scripts/audit/api-contract.mjs",
+    "audit:routes": "node scripts/audit/routes-mounted.mjs"
   },
   "dependencies": {
     "aws-sdk": "^2.1693.0",
