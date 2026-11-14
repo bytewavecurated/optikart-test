@@ -104,7 +104,6 @@ const CommissionDashboard = lazy(() => import('./pages/admin/CommissionDashboard
 const OrderAssignment = lazy(() => import('./pages/admin/OrderAssignment'));
 const ProductVerification = lazy(() => import('./pages/admin/ProductVerification'));
 const LensSelection = lazy(() => import('./pages/LensSelection'));
-const AdvancedSearch = lazy(() => import('./components/AdvancedSearch'));
 const ContactLenses = lazy(() => import('./pages/ContactLenses'));
 const ContactLensConfigure = lazy(() => import('./pages/contactLenses/ContactLensConfigure'));
 const DeliveryRouteOptimization = lazy(() => import('./pages/deliveryPartner/DeliveryRouteOptimization'));

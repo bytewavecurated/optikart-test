@@ -99,7 +99,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     // Only approved catalogue is publicly visible; sellers may list whatever
     // they have been assigned, but it reaches shoppers after verification.
-    const VISIBLE = { isActive: true, verificationStatus: 'verified' };
+    const VISIBLE = VISIBLE_PRODUCTS;
     const query = { ...VISIBLE };
     // All contact-lens sub-fields merge into one object; overwriting it per
     // filter would let the last one win and silently drop the others.
@@ -260,14 +260,14 @@ router.get('/manufacturer-brands', async (req, res) => {
     const limitPerBrand = Math.min(parseInt(req.query.perBrand || 8, 10) || 8, 24);
 
     const brandNames = await Product.distinct('brand', {
-      isActive: true,
+      ...VISIBLE_PRODUCTS,
       isManufacturerProduct: true,
       manufacturer: { $ne: null }
     });
 
     const brands = [];
     for (const brandName of brandNames.filter(Boolean).sort()) {
-      const filter = { isActive: true, isManufacturerProduct: true, brand: brandName };
+      const filter = { ...VISIBLE_PRODUCTS, isManufacturerProduct: true, brand: brandName };
       const [products, productCount] = await Promise.all([
         Product.find(filter).sort({ createdAt: -1 }).limit(limitPerBrand)
           .populate('seller', 'storeName storeLogo rating').lean(),
@@ -293,10 +293,23 @@ router.get('/manufacturer-brands', async (req, res) => {
  * end the shopper has to discover. `gender` narrows it the same way, because the
  * men/women split is the other control sitting next to it on every browse page.
  */
+/*
+ * What a shopper is allowed to see, in one place.
+ *
+ * This pair of conditions lived inside the list handler as a local `VISIBLE`
+ * while the facet, brand-rail and category-count queries each re-typed
+ * `isActive: true` on their own - so the facets offered colours and brands that
+ * existed only on products still awaiting verification. The effect was visible
+ * to a shopper as a filter option that returned nothing, and it is exactly the
+ * failure the scoped-facet work was supposed to remove: a control that lies
+ * because the rule was written twice and drifted.
+ */
+const VISIBLE_PRODUCTS = { isActive: true, verificationStatus: 'verified' };
+
 router.get('/brands', async (req, res) => {
   try {
     const { category, gender } = req.query;
-    const scope = { isActive: true };
+    const scope = { ...VISIBLE_PRODUCTS };
     if (category) scope.category = String(category).toLowerCase();
     if (gender && ['men', 'women', 'unisex', 'kids'].includes(String(gender).toLowerCase())) {
       scope.gender = String(gender).toLowerCase();
@@ -317,7 +330,7 @@ router.get('/categories', async (req, res) => {
     const categoryCounts = await Promise.all(
       categories.map(async (cat) => ({
         name: cat,
-        count: await Product.countDocuments({ category: cat, isActive: true })
+        count: await Product.countDocuments({ category: cat, ...VISIBLE_PRODUCTS })
       }))
     );
 
@@ -333,7 +346,7 @@ router.get('/offers', async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
 
     const products = await Product.find({
-      isActive: true,
+      ...VISIBLE_PRODUCTS,
       $or: [
         { 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } },
         { isUnderSaleEvent: true }
@@ -345,7 +358,7 @@ router.get('/offers', async (req, res) => {
     .limit(parseInt(limit));
 
     const total = await Product.countDocuments({
-      isActive: true,
+      ...VISIBLE_PRODUCTS,
       $or: [
         { 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } },
         { isUnderSaleEvent: true }
@@ -362,7 +375,7 @@ router.get('/random', async (req, res) => {
   try {
     const { limit = 10, category } = req.query;
 
-    const query = { isActive: true, verificationStatus: 'verified' };
+    const query = { ...VISIBLE_PRODUCTS };
     if (category) query.category = normalizeCategory(category);
 
     const count = await Product.countDocuments(query);
@@ -414,7 +427,7 @@ router.get('/filters', async (req, res) => {
     // The scope used to count one facet: every chosen filter except that facet's
     // own, so the list can still be changed by the shopper.
     const scopeFor = (except) => {
-      const scope = { isActive: true };
+      const scope = { ...VISIBLE_PRODUCTS };
       if (wanted.category && except !== 'category') scope.category = wanted.category;
       if (wanted.brand && except !== 'brand') scope.brand = wanted.brand;
       if (wanted.gender && except !== 'gender') scope.gender = wanted.gender;

@@ -106,6 +106,22 @@ fails while nobody has looked. A control that reports success and changes nothin
 survives code review and a green build - sellers and shops found these by coming
 back the next day and discovering their listing, payout or session was untouched.
 
+## Search facets and what an empty combination means
+
+`/search` renders its filters from `GET /products/filters`, which computes each
+facet with the shopper's other selections applied and the facet's own constraint
+withheld - so the brand list only contains brands that sell something in the chosen
+category, while the category list stays complete enough to move sideways. Choices
+are written into the URL, which is what makes Back return to the previous filter
+set and a filtered view shareable; `scripts/search_facets_e2e.mjs` asserts both the
+narrowing and the "no dead-end options" property.
+
+One consequence is worth knowing when reading that suite: a *combination* can still
+legitimately return nothing (the seeded sunglasses include no `men` frames, so
+`category=sunglasses&gender=men` is empty), because each option is valid on its own.
+The results page handles that with an explicit empty state plus the **Clear filters**
+control rather than hiding options - counts per facet would be the next refinement.
+
 ## Running the suites more than once
 
 `scripts/listing_approval_e2e.mjs` and `scripts/charges_e2e.mjs` are written to

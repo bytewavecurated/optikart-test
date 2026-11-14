@@ -49,7 +49,8 @@ const SUITES = [
   // partner through the offer path the cascade actually used (or ask for a
   // dev-only earnings fixture) - not to loosen the assertion. Until then the file
   // is run by hand and the contract it covers is exercised in OPERATIONS.md.
-  ['catalogue facets and upload criteria', 'scripts/catalog_facets_e2e.mjs']
+  ['catalogue facets and upload criteria', 'scripts/catalog_facets_e2e.mjs'],
+  ['global search and facet controls', 'scripts/search_facets_e2e.mjs']
 ];
 
 // Static checks: no server needed, but they gate the same push.

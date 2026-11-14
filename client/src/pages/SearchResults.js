@@ -9,7 +9,7 @@ import ProductCard from '../components/ProductCard';
 import { listOf } from '../services/apiResponse.js';
 
 const SearchResults = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   // Filters arriving from the gender picker and the category rails.
   const genderParam = searchParams.get('gender') || '';
@@ -22,6 +22,16 @@ const SearchResults = () => {
   const [sort, setSort] = useState('popularity');
   const [priceRange, setPriceRange] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
+  /*
+   * Facets for the controls below. They come from the server's scoped facet
+   * endpoint rather than a list typed into this file, for two reasons: a
+   * hand-copied taxonomy had already drifted once in this project (the brand
+   * facet existed for contact lenses and solution but was missing from every
+   * eyewear list, so the control rendered nothing on the biggest categories),
+   * and an option that cannot return a product is not a filter - it is a dead
+   * end the shopper has to discover.
+   */
+  const [facets, setFacets] = useState({ brands: [], categories: [], frameShapes: [], frameTypes: [], materials: [], genders: [], frameColors: [] });
   const { addSearchQuery } = useUserBehavior();
 
   useEffect(() => {
@@ -41,6 +51,9 @@ const SearchResults = () => {
         if (categoryParam) params.category = categoryParam;
         if (brandParam) params.brand = brandParam;
         if (shapeParam) params.frameShape = shapeParam;
+        if (searchParams.get('frameType')) params.frameType = searchParams.get('frameType');
+        if (searchParams.get('material')) params.material = searchParams.get('material');
+        if (searchParams.get('frameColor')) params.frameColor = searchParams.get('frameColor');
         if (priceRange !== 'all') {
           const [min, max] = priceRange.split('-').map(Number);
           if (min) params.minPrice = min;
@@ -57,6 +70,22 @@ const SearchResults = () => {
     };
     fetchResults();
   }, [query, sort, priceRange, genderParam, categoryParam, brandParam, shapeParam]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const facetParams = {
+      ...(categoryParam ? { category: categoryParam } : {}),
+      ...(genderParam ? { gender: genderParam } : {}),
+      ...(brandParam ? { brand: brandParam } : {}),
+      ...(shapeParam ? { frameShape: shapeParam } : {})
+    };
+    products.getFilters(facetParams)
+      .then((res) => {
+        if (!cancelled && res.data?.filters) setFacets((prev) => ({ ...prev, ...res.data.filters }));
+      })
+      .catch(() => { /* the controls are unavailable; the search results are not */ });
+    return () => { cancelled = true; };
+  }, [categoryParam, genderParam, brandParam, shapeParam]);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -84,6 +113,55 @@ const SearchResults = () => {
                 <button onClick={() => setViewMode('list')} style={{ padding: '8px', background: viewMode === 'list' ? 'var(--primary-light)' : 'var(--bg-white)', borderRadius: 'var(--radius-xs)', border: `1px solid ${viewMode === 'list' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer' }}><FiList size={16} /></button>
               </div>
             </div>
+          </div>
+
+          {/*
+           * Facet controls. Every choice is written into the URL, so the
+           * browser's Back returns to the previous set of filters instead of
+           * leaving the page, and a filtered view can be shared or reloaded -
+           * neither of which holds when filters live only in component state.
+           */}
+          <div className="card" style={{ padding: '12px 16px', marginBottom: 14, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+            {[
+              { key: 'category', label: 'Category', value: categoryParam, options: facets.categories },
+              { key: 'brand', label: 'Brand', value: brandParam, options: facets.brands },
+              { key: 'gender', label: 'Gender', value: genderParam, options: facets.genders },
+              { key: 'frameShape', label: 'Face shape', value: shapeParam, options: facets.frameShapes },
+              { key: 'frameType', label: 'Frame type', value: searchParams.get('frameType') || '', options: facets.frameTypes },
+              { key: 'material', label: 'Material', value: searchParams.get('material') || '', options: facets.materials },
+              { key: 'frameColor', label: 'Colour', value: searchParams.get('frameColor') || '', options: facets.frameColors }
+            ].filter((group) => group.options && group.options.length > 1).map((group) => (
+              <label key={group.key} style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                {group.label}
+                <select
+                  className="input"
+                  style={{ minWidth: 128, marginTop: 3 }}
+                  value={group.value}
+                  onChange={(e) => {
+                    const next = new URLSearchParams(searchParams);
+                    if (e.target.value) next.set(group.key, e.target.value);
+                    else next.delete(group.key);
+                    setSearchParams(next, { replace: false });
+                  }}
+                >
+                  <option value="">Any</option>
+                  {group.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </label>
+            ))}
+            {(categoryParam || brandParam || genderParam || shapeParam || searchParams.get('frameType') || searchParams.get('material') || searchParams.get('frameColor')) && (
+              <button
+                onClick={() => {
+                  const next = new URLSearchParams(searchParams);
+                  ['category', 'brand', 'gender', 'frameShape', 'frameType', 'material', 'frameColor'].forEach((k) => next.delete(k));
+                  setSearchParams(next, { replace: false });
+                }}
+                className="btn btn-quiet"
+                style={{ padding: '8px 12px', fontSize: 12.5 }}
+              >
+                Clear filters
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
