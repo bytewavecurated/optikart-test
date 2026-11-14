@@ -758,6 +758,26 @@ router.post('/assign', verifyToken, verifyAdmin, async (req, res) => {
       });
       await order.save();
     }
+    /*
+     * An assignment the partner is never told about is an assignment that looks
+     * ignored. The offers page already notifies on the cascade path; the desk's
+     * manual assignment did not, so the one run an operations person chose by hand
+     * was the quietest kind.
+     */
+    try {
+      const { notifyPartner } = await import('../services/notifications.js');
+      await notifyPartner({
+        partnerId,
+        title: 'A run was assigned to you',
+        message: `Order ${order.orderNumber || 'assigned to you'} is yours${order.shippingAddress?.city ? ` - delivery to ${order.shippingAddress.city}` : ''}.`,
+        type: 'delivery',
+        data: { orderId: String(orderId), orderNumber: order.orderNumber },
+        io: req.app.get('io')
+      });
+    } catch (assignNoteErr) {
+      console.error(JSON.stringify({ event: 'assign_notify_failed', message: String(assignNoteErr.message).slice(0, 140) }));
+    }
+
     res.json({ success: true, message: 'Partner assigned.' });
   } catch (error) {
     console.error('Manual partner assignment error:', error);

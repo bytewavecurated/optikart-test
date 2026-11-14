@@ -56,13 +56,21 @@ export const verifyAnyPrincipal = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-    const id = decoded.id || decoded.userId || decoded.sellerId || decoded.executiveId;
+    const id = decoded.id || decoded.userId || decoded.sellerId || decoded.executiveId || decoded.partnerId;
 
     const principal = { id, role: decoded.role || 'user', decoded };
 
     // Attach the matching document when it exists, without failing otherwise.
     try {
-      if (decoded.role === 'seller') {
+      if (decoded.role === 'manufacturerSeller') {
+        const { default: MongRetailer } = await import('../models/ManufacturerSeller.js');
+        const retailerDoc = await MongRetailer.findById(id);
+        if (retailerDoc) { req.manufacturerSeller = retailerDoc; principal.retailer = retailerDoc; principal.doc = retailerDoc; }
+      } else if (decoded.role === 'deliveryPartner') {
+        const { default: MongPartner } = await import('../models/DeliveryPartner.js');
+        const partnerDoc = await MongPartner.findById(id);
+        if (partnerDoc) { req.partner = partnerDoc; principal.partner = partnerDoc; principal.doc = partnerDoc; }
+      } else if (decoded.role === 'seller') {
         const { default: MongSeller } = await import('../models/Seller.js');
         const sellerDoc = await MongSeller.findById(id);
         if (sellerDoc) { req.seller = sellerDoc; principal.seller = sellerDoc; principal.doc = sellerDoc; }

@@ -406,7 +406,50 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
         order.cashCollectedBy = `seller:${String(order.seller?._id || order.seller || '')}`;
       }
     }
-    await order.save();
+    await order.save()
+
+    /*
+     * Telling the buyer what just happened to their order.
+     *
+     * This used to be an email only, so a customer watching the app saw nothing
+     * change until an inbox arrived (or never, when SMTP is not configured - which
+     * is the development and CI state), and the seller's own status update looked
+     * like it had no effect at all. The row goes to the person who owns the order;
+     * the assigned partner is told because they are now expected to be somewhere.
+     */
+    try {
+      const { notifyAccount, notifyPartner } = await import('../services/notifications.js');
+      const statusLines = {
+        confirmed: ['Order confirmed', 'The shop confirmed your order and is preparing it.'],
+        packed: ['Order packed', 'Your order is packed and waiting to be picked up.'],
+        shipped: ['Order shipped', 'Your order is on its way.'],
+        out_for_delivery: ['Out for delivery', 'A delivery partner is bringing your order today.'],
+        delivered: ['Delivered', 'Your order has been delivered.'],
+        cancelled: ['Order cancelled', 'The shop cancelled this order. Any payment is refunded to the original method.']
+      };
+      const line = statusLines[status] || [`Order ${status}`, `Your order status is now ${status}.`];
+      await notifyAccount({
+        user: order.user,
+        title: line[0],
+        message: `${order.orderNumber}: ${line[1]}`,
+        type: 'order',
+        data: { orderId: String(order._id), orderNumber: order.orderNumber, status: status },
+        io: req.app.get('io')
+      });
+      if (['packed', 'picked_up', 'in_transit'].includes(status) && order.assignedDeliveryPartner) {
+        await notifyPartner({
+          partnerId: order.assignedDeliveryPartner,
+          title: orderStatus === 'packed' ? 'A run is ready for pickup' : 'Your run is live',
+          message: `${order.orderNumber} is ${status.replace(/_/g, ' ')}${order.pickupLocation?.address ? ` - pickup at ${order.pickupLocation.address}` : ''}.`,
+          type: 'delivery',
+          data: { orderId: String(order._id), orderNumber: order.orderNumber },
+          io: req.app.get('io')
+        });
+      }
+    } catch (noteErr) {
+      // The status change already succeeded; a missed notification is reported, never allowed to fail the seller's action.
+      console.error(JSON.stringify({ event: 'order_status_notify_failed', order: order.orderNumber, message: String(noteErr.message).slice(0, 140) }));
+    };
 
     // Tell the customer what changed. Populated lazily so the mail carries the
     // buyer address; a failure here must never break the seller's action.

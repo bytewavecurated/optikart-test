@@ -1,6 +1,7 @@
 import express from 'express';
 import Notification from '../models/Notification.js';
 import { verifyToken, verifySeller, verifyAnyPrincipal } from '../middleware/auth.js';
+import { recipientScopeFor } from '../services/notifications.js';
 
 const router = express.Router();
 
@@ -11,9 +12,7 @@ router.get('/', verifyAnyPrincipal, async (req, res) => {
 
     // Scope notifications to whoever is asking: sellers see their own,
     // customers see theirs. Never fail just because the caller is not a User.
-    const scope = principal.seller
-      ? { seller: principal.id }
-      : { user: principal.id };
+    const scope = recipientScopeFor(principal);
 
     const query = { ...scope };
     if (type) query.type = type;

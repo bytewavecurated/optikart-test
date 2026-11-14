@@ -295,6 +295,25 @@ export const settlePartnerWithdrawal = async ({ partnerId, withdrawalId, referen
   partner.totalPlatformFees = (partner.totalPlatformFees || 0) + Number(row.platformFee || 0);
   await partner.save();
 
+  /*
+   * The partner whose money just moved must be told, in the same operation that
+   * moved it. A settlement recorded only in the desk's queue means the person
+   * owed goes back to checking their balance by hand - which is how a paid
+   * withdrawal looks unpaid.
+   */
+  try {
+    const { notifyPartner } = await import('./notifications.js');
+    await notifyPartner({
+      partnerId: partner._id,
+      title: 'Withdrawal paid',
+      message: `₹${row.netPaid} for your withdrawal of ₹${row.amount} was settled by the desk${cleanReference ? ` (reference ${cleanReference})` : ''}.`,
+      type: 'payment',
+      data: { withdrawalId: String(row._id), amount: row.amount, netPaid: row.netPaid, reference: cleanReference }
+    });
+  } catch (payNoteErr) {
+    console.error(JSON.stringify({ event: 'settle_notify_failed', message: String(payNoteErr.message).slice(0, 140) }));
+  }
+
   return {
     success: true,
     message: 'Withdrawal marked as settled.',

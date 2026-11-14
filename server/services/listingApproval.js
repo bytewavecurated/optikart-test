@@ -32,6 +32,39 @@ const persistTransition = async (kind, id, fields) => {
   return target.findById(id).lean();
 };
 
+/*
+ * Tell the shop that made a supply claim what happened to it.
+ *
+ * The claim is the shop's own action, so its outcome belongs to them: a retailer
+ * waiting to know whether a frame may sell, a seller waiting to know whether the
+ * brand recognised the stock. Both decision paths used to write the state and
+ * stop there, so the only way to find out was to reload the listing screen and
+ * hope. The two account types live in different collections, which is why the
+ * address is taken from the document rather than assumed from the route.
+ */
+const notifyShop = async ({ doc, kind, stage, title, reason, io = null }) => {
+  try {
+    const { notifySeller, notifyRetailer } = await import('./notifications.js');
+    const listing = doc.listing || {};
+    const proof = listing.sellerProof || {};
+    const payload = {
+      title: `Supply claim ${stage}`,
+      message: `${title} - ${doc.title || doc.brand || 'your listing'}`
+        + `${proof.reference ? ` (${proof.reference})` : ''}${reason ? `. Reason: ${reason}` : ''}`,
+      type: 'listing',
+      data: { listingId: String(doc._id), listingKind: kind, stage }
+    };
+    if (kind === 'storefront' && doc.manufacturerSellerId) {
+      await notifyRetailer({ retailerId: doc.manufacturerSellerId, io, ...payload });
+    } else if (doc.seller) {
+      await notifySeller({ sellerId: doc.seller?._id || doc.seller, io, ...payload });
+    }
+  } catch (shopNoteErr) {
+    // A recorded decision is not undone by a notification that could not be addressed.
+    console.error(JSON.stringify({ event: 'shop_notify_failed', message: String(shopNoteErr.message).slice(0, 160) }));
+  }
+};
+
 const clone = (v) => JSON.parse(JSON.stringify(v || {}));
 
 /** A listing exists in one of two documents; resolve it by kind. */
@@ -228,6 +261,16 @@ export const decideAsManufacturer = async ({ listingKind, id, decision, reason, 
     'listing.adminReview': listing.adminReview
   });
 
+  await notifyShop({
+    doc,
+    kind,
+    stage: chosen === 'approve' ? 'approved by the brand' : 'refused by the brand',
+    title: chosen === 'approve'
+      ? 'The brand confirmed it supplied this stock; OptiKart verifies it next'
+      : 'The brand says it did not supply this stock',
+    reason: String(reason || '')
+  });
+
   await notifyAdmins({
     title: chosen === 'approve' ? `Brand approved a listing - needs verification` : `Brand refused a listing`,
     message: chosen === 'approve'
@@ -307,6 +350,19 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
       'listing.adminReview': listing.adminReview
     };
   }
+  await doc.save();
+  // The shop is told from the state as decided here; `persistTransition` below
+  // writes the decided fields explicitly and re-reads them, which is why the
+  // message is sent before it rather than from a value that may be re-read.
+  await notifyShop({
+    doc,
+    kind,
+    stage: chosen === 'approve' ? 'verified by OptiKart' : 'refused by OptiKart',
+    title: chosen === 'approve'
+      ? 'Verified - this listing is now visible to buyers'
+      : 'OptiKart did not verify this listing',
+    reason: String(reason || '')
+  });
   await doc.save();
   const stored = await persistTransition(kind, doc._id, doc.__transition || {});
   if (stored?.listing) doc.listing = stored.listing;

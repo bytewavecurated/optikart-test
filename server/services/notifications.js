@@ -49,6 +49,41 @@ export const notifyAdmins = async ({ title, message, type = 'system', data = {},
   return { success: true, delivered: created.length };
 };
 
+/*
+ * Which stored document an id of this kind refers to.
+ *
+ * Four account types, three collections: admins/staff/executive-desk people are
+ * Users or their own docs, sellers are Seller, partners are DeliveryPartner. The
+ * notification model addresses them with separate fields, and a wrong pairing
+ * writes a row no read path can ever return - which is silent, because the
+ * writer succeeds.
+ */
+export const recipientFieldFor = (kind) => ({ user: 'user', seller: 'seller', partner: 'partner' }[kind]);
+
+/** The read-side scope for whoever is asking. */
+export const recipientScopeFor = (principal) => {
+  if (principal?.partner) return { partner: principal.id };
+  if (principal?.retailer) return { retailer: principal.id };
+  if (principal?.seller) return { seller: principal.id };
+  if (principal?.executive) return { user: principal.id };
+  return { user: principal.id };
+};
+
+export const notifySeller = async ({ sellerId, title, message, type = 'order', data = {}, io = null }) =>
+  notifyAccount({ seller: sellerId, title, message, type, data, io });
+
+export const notifyRetailer = async ({ retailerId, title, message, type = 'listing', data = {}, io = null }) => {
+  const doc = await Notification.create({ retailer: retailerId, type, title, message, data });
+  emit(io, `manufacturerSeller_${retailerId}`, doc.toObject());
+  return { success: true, id: String(doc._id) };
+};
+
+export const notifyPartner = async ({ partnerId, title, message, type = 'delivery', data = {}, io = null }) => {
+  const doc = await Notification.create({ partner: partnerId, type, title, message, data });
+  emit(io, `deliveryPartner_${partnerId}`, doc.toObject());
+  return { success: true, id: String(doc._id) };
+};
+
 /** Tell one specific account something, by whichever document represents it. */
 export const notifyAccount = async ({ user, seller, title, message, type = 'system', data = {}, io = null }) => {
   const row = { type, title, message, data };

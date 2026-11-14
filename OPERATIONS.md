@@ -106,6 +106,51 @@ fails while nobody has looked. A control that reports success and changes nothin
 survives code review and a green build - sellers and shops found these by coming
 back the next day and discovering their listing, payout or session was untouched.
 
+## Notifications reach the account they are about
+
+Four account types, three collections: a shopper is a `User`, a shop is a
+`Seller`, a brand's own retail console is a `ManufacturerSeller`, and a delivery
+partner is a `DeliveryPartner`. `Notification` carries a field per type
+(`user`, `seller`, `retailer`, `partner`) and reads are scoped by
+`recipientScopeFor(req.principal)`.
+
+Before that split existed, the model could address only `user` and `seller`. A
+partner or a brand-retailer signing in resolved, through `verifyAnyPrincipal`, to
+**neither** - so their read fell through to `{ user: <their own id> }` and
+returned a tidy empty list, while any writer addressing them produced rows no
+query could ever return. That is the most deceptive failure in this codebase:
+nothing errors, the endpoint answers 200, and the feature is simply dead. Admins
+and staff were already reachable because they genuinely are Users.
+
+What now tells whom:
+
+| Event | Who is told |
+| --- | --- |
+| Shop confirms/packs/ships/delivers/cancels | the buyer, with the order number in the text |
+| Order packed or picked up while a partner is assigned | that partner |
+| Desk assigns a run by hand | that partner |
+| Withdrawal settled by the desk | that partner, with net paid and the bank reference |
+| Brand approves or refuses a supply claim | the shop that made it |
+| Platform verifies or refuses a listing | the same shop |
+
+Notification failures never fail the action they report: the order status,
+assignment, settlement and decision are all already committed when the note is
+attempted, so a lost note is logged as `shop_notify_failed` /
+`assign_notify_failed` / `settle_notify_failed` and the API still returns success
+- which is the only honest arrangement, and the reason the log lines exist.
+
+Two notes for whoever changes this next. A socket `io` is *not* available in
+`services/listingApproval.js`; the first pass of the fan-out passed `io` into the
+decision functions from scope they never received, which turns the request into a
+`ReferenceError` at the moment a brand clicks approve - a syntax check cannot see
+it, and it is why the fan-out suite drives those exact endpoints rather than
+proving the helper in isolation. Sellers' own status names come from
+`req.body.status` (`packed`, `picked_up`, `in_transit`), not from a variable named
+`orderStatus`; reading the handler beat assuming it.
+
+`scripts/notifications_fanout_e2e.mjs` (16 assertions) exercises all of the above
+end to end, including that each console reads only its own rows.
+
 ## Search facets and what an empty combination means
 
 `/search` renders its filters from `GET /products/filters`, which computes each
