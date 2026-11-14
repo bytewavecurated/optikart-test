@@ -50,7 +50,8 @@ const SUITES = [
   // dev-only earnings fixture) - not to loosen the assertion. Until then the file
   // is run by hand and the contract it covers is exercised in OPERATIONS.md.
   ['catalogue facets and upload criteria', 'scripts/catalog_facets_e2e.mjs'],
-  ['global search and facet controls', 'scripts/search_facets_e2e.mjs']
+  ['global search and facet controls', 'scripts/search_facets_e2e.mjs'],
+  ['partner payout settlement queue', 'scripts/payout_console_e2e.mjs']
 ];
 
 // Static checks: no server needed, but they gate the same push.
@@ -197,6 +198,7 @@ console.log('healthy');
 
 /* ------------------------------------------------------------------- results */
 const results = [];
+let totalSkipped = 0;
 for (const [label, script] of AUDITS) {
   const r = await run('node', [script]);
   results.push({ label, ok: r.code === 0, tail: r.tail });
@@ -210,12 +212,32 @@ teardown();
 
 for (const r of results) {
   console.log(`\n${r.ok ? 'PASS' : 'FAIL'}  ${r.label}`);
-  if (!r.ok) console.log(r.tail.split('\n').filter((l) => /FAIL|Error|expected/iu.test(l)).slice(-20).join('\n'));
-  else console.log(r.tail.trim().split('\n').filter(Boolean).pop());
+  if (!r.ok) {
+    console.log(r.tail.split('\n').filter((l) => /FAIL|Error|expected/iu.test(l)).slice(-20).join('\n'));
+  } else {
+    console.log(r.tail.trim().split('\n').filter(Boolean).pop());
+    /*
+     * Skipped checks are printed on a passing group, and counted.
+     *
+     * A suite that SKIPs quietly still reports "all assertions passed", so the
+     * harness goes green having measured less than its name suggests - the
+     * payout suite does this legitimately (it settles nothing when no withdrawal
+     * is queued) but the number of skipped guarantees has to be visible or the
+     * coverage claim is decoration. Anything skipped without a documented reason
+     * is a bug that is being ignored rather than found.
+     */
+    const skipped = r.tail.split('\n').filter((l) => /^SKIP/iu.test(l.trim()));
+    if (skipped.length) {
+      console.log(`     ${skipped.length} check(s) skipped by this group:`);
+      for (const line of skipped) console.log(`       ${line.trim()}`);
+      totalSkipped += skipped.length;
+    }
+  }
 }
 
 const failed = results.filter((r) => !r.ok);
-console.log(`\n${results.length - failed.length}/${results.length} checks green`);
+console.log(`\n${results.length - failed.length}/${results.length} checks green`
+  + (totalSkipped ? ` - with ${totalSkipped} individual check(s) skipped, listed above` : ''));
 if (failed.length) {
   console.log(`logs kept in ${LOG_DIR}`);
   process.exitCode = 1;
