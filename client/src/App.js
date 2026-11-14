@@ -49,7 +49,6 @@ const OrderDetail = lazy(() => import('./pages/OrderDetail'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
 const UserProfile = lazy(() => import('./pages/UserProfile'));
 const SearchResults = lazy(() => import('./pages/SearchResults'));
-const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const Categories = lazy(() => import('./pages/Categories'));
 const AllBrands = lazy(() => import('./pages/AllBrands'));
 const BlogList = lazy(() => import('./pages/BlogList'));

@@ -123,48 +123,63 @@ Facets Travel Case,499,accessories,Ray-Ban,FAC-ACC-1,FAC-ACC-1,Rigid travel case
   /* ---- required columns are refused, and blank optionals stay absent ---- */
   const withImage = (cols) => `${cols},images
 ${firstImg}`;
-  const bad = `title,price,category,brand,product code,model number,description,volumeml,pack pricing
-No Pack Solution,599,solution,Ray-Ban,FAC-SOL-2,FAC-SOL-2,Missing its pack pricing row,350,`;
-  const fd2 = new FormData();
-  fd2.append('file', new Blob([bad], { type: 'text/csv' }), 'bad.csv');
-  const res2 = await fetch(`${API}/manufacturer/products/bulk-upload`, {
-    method: 'POST', headers: { Authorization: `Bearer ${brand}` }, body: fd2
-  });
-  const j2 = await res2.json().catch(() => null);
-  check('a missing required per-category column is refused by name',
-    j2?.success === false && JSON.stringify(j2?.errors || []).includes('packPricing'),
-    JSON.stringify(j2 || {}).slice(0, 150));
-
   /*
-   * A complete eyewear row whose OPTIONAL cells contain the literal word
-   * "undefined" - exactly what a sheet exported from a tool with a null bug
-   * produces. Before the blank-value fix these were stored as the string
-   * "undefined", or sent an enum field `["undefined"]` to the model. The row must
-   * either import with those cells absent, or be refused naming the real problem;
-   * what must never happen is a product filed with the word "undefined" in a
-   * shopper-facing field.
+   * A sheet whose optional cells contain the literal words `undefined`/`null`,
+   * which is what a spreadsheet export leaves behind.
+   *
+   * Asserted as outcomes only. The first version of this check was written
+   * "either fails cleanly or imports without the word", and it passed while the
+   * row had in fact failed for an unrelated reason (an omitted `images` column) -
+   * a conditional assertion that certifies nothing and hides a regression.
    */
-  const weird = [
-    'title,price,category,brand,product code,model number,description,gender,frame shape,frame type,frame material,frame colour,frame size,frame width,frame weight,frame dimensions,sub gender,age group,materials,sizes',
-    `Ghost Frames,1299,eyeglasses,Ray-Ban,FAC-GEN-2,FAC-GEN-2,A row full of the word undefined,unisex,round,full-rim,acetate,black,medium,52,18,54 x 52 x 16 x 145,,, undefined ,undefined`
+  const placeholderSheet = [
+    'title,price,category,brand,product code,model number,description,images,gender,frame shape,frame type,frame material,frame colour,frame size,frame width,frame weight,frame dimensions,materials,sizes',
+    `Placeholder Frames,1299,sunglasses,Ray-Ban,FAC-UND-1,FAC-UND-1,Cells holding the word undefined,${firstImg},unisex,round,full-rim,acetate,black,medium,52,18,52 x 40 x 18 x 140, undefined | acetate , undefined `
   ].join('\n');
-  const fd3 = new FormData();
-  fd3.append('file', new Blob([weird], { type: 'text/csv' }), 'weird.csv');
-  const res3 = await fetch(`${API}/manufacturer/products/bulk-upload`, {
-    method: 'POST', headers: { Authorization: `Bearer ${brand}` }, body: fd3
-  });
-  const j3 = await res3.json().catch(() => null);
-  const mineNow = (await call('/manufacturer/products?limit=300', { token: brand })).json?.products || [];
-  const ghost = mineNow.find((r) => /Ghost Frames/.test(r.title || ''));
-  check('a sheet of literal "undefined" cells either fails cleanly or imports without the word',
-    j3?.success === false
-      ? JSON.stringify(j3.errors || []).includes('Row 2') && !/is not a valid enum value for path `gender`/.test(JSON.stringify(j3.errors))
-      : !!ghost && !JSON.stringify(ghost).includes('undefined'),
-    JSON.stringify({ uploaded: !!ghost, errors: (j3?.errors || []).slice(0, 1) }).slice(0, 170));
-  check('the imported row, if created, has no placeholder left in materials or sizes',
-    !ghost || ((!ghost.materials || !ghost.materials.includes('undefined'))
-      && (!ghost.sizes || !ghost.sizes.includes('undefined'))),
-    JSON.stringify({ materials: ghost?.materials, sizes: ghost?.sizes }).slice(0, 120));
+
+  // One helper, so the multipart shape cannot drift between these cases.
+  const uploadCsv = async (name, text) => {
+    const form = new FormData();
+    form.append('file', new Blob([text], { type: 'text/csv' }), name);
+    const res = await fetch(`${API}/manufacturer/products/bulk-upload`, {
+      method: 'POST', headers: { Authorization: `Bearer ${brand}` }, body: form
+    });
+    return { status: res.status, json: await res.json().catch(() => null) };
+  };
+
+  const ph = await uploadCsv('placeholder.csv', placeholderSheet);
+  check('a placeholder-filled sheet imports rather than being rejected over those words',
+    ph.json?.success === true, JSON.stringify(ph.json || {}).slice(0, 160));
+
+  const stored = ((await call('/manufacturer/products?limit=400', { token: brand })).json?.products || [])
+    .find((r) => r.modelNumber === 'FAC-UND-1');
+  check('the row is stored', !!stored);
+  check('no placeholder reaches a list a shopper could choose',
+    !!stored
+      && !(stored.materials || []).includes('undefined')
+      && !(stored.sizes || []).includes('undefined')
+      && !JSON.stringify(stored).includes('"undefined"'),
+    JSON.stringify({ materials: stored?.materials, sizes: stored?.sizes }).slice(0, 130));
+  check('the real value sharing that cell is kept - filtering is not deleting',
+    (stored?.materials || []).includes('acetate'), JSON.stringify(stored?.materials));
+  check('and the row is held for verification like any other import',
+    stored?.verificationStatus === 'pending', `verificationStatus=${stored?.verificationStatus}`);
+
+  const blankEyewearCols = await uploadCsv('blankgender.csv',
+    `title,price,category,brand,product code,model number,description,images,volumeml,pack pricing
+Blank Gender Solution,699,solution,Ray-Ban,FAC-UND-2,FAC-UND-2,A solution with no gender or frame columns,${firstImg},400,2:1299`);
+  check('a non-eyewear row with no eyewear columns imports (gender used to arrive as an empty enum)',
+    blankEyewearCols.json?.success === true, JSON.stringify(blankEyewearCols.json || {}).slice(0, 170));
+
+  const missingColumn = await uploadCsv('missing.csv',
+    `title,price,category,brand,product code,model number,description,images,volumeml,pack pricing
+No Pack Solution,599,solution,Ray-Ban,FAC-UND-3,FAC-UND-3,Missing its pack pricing row,${firstImg},350,`);
+  check('a genuinely missing required column is refused, named, with the row number',
+    missingColumn.json?.success === false
+      && JSON.stringify(missingColumn.json?.errors || []).includes('packPricing')
+      && /Row 2/.test(JSON.stringify(missingColumn.json?.errors || [])),
+    JSON.stringify(missingColumn.json || {}).slice(0, 160));
+
 
   return finish();
 }
