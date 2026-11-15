@@ -12,6 +12,7 @@ import { sendOTP } from '../services/email.js';
 import multer from 'multer';
 import xlsx from 'xlsx';
 import { verifyManufacturer } from '../middleware/auth.js';
+import { registerProfileRoutes } from './manufacturerProfile.js';
 
 import {
   deleteManufacturerSeller,
@@ -397,6 +398,9 @@ router.post('/verify-login-otp', async (req, res) => {
 });
 
 // Get Manufacturer Profile
+/* Manufacturer self-service profile; see routes/manufacturerProfile.js. */
+registerProfileRoutes(router);
+
 router.get('/me', verifyManufacturer, async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];

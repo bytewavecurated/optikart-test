@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import ManufacturerProfileCard from '../../components/manufacturer/ManufacturerProfileCard';
 import SupplyClaimQueue from '../../components/SupplyClaimQueue';
 import { useNavigate } from 'react-router-dom';
 import { FiPackage, FiUsers, FiPlus, FiUpload, FiLogOut, FiEdit, FiTrash2, FiEye, FiCamera, FiX } from 'react-icons/fi';
@@ -586,6 +587,13 @@ const ManufacturerDashboard = () => {
             stage="the brand"
           />
         </div>
+
+        {/*
+         * Company and brand profile, above the catalogue: the GST and PAN here
+         * end up on buyer invoices, and the brand list is what the home page groups
+         * products by, so getting these wrong shows up elsewhere in the shop.
+         */}
+        <ManufacturerProfileCard />
 
         {/* Products Section */}
         <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)', marginBottom: '24px' }}>

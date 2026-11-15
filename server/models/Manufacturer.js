@@ -17,6 +17,8 @@ const manufacturerSchema = new mongoose.Schema({
     pincode: String,
     country: { type: String, default: 'India' }
   },
+  website: { type: String, default: '' },
+  description: { type: String, default: '' },
   brands: [{ type: String }], // Brands they manufacture
   isActive: { type: Boolean, default: true },
   isBanned: { type: Boolean, default: false },
