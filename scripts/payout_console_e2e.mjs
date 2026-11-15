@@ -73,6 +73,72 @@ async function main() {
    * verify. When it runs alone against a seeded database, the queued row from its
    * own funding path is there and every assertion below executes.
    */
+  /*
+   * Fund the test subject, then create the withdrawal under test.
+   *
+   * This file used to read the desk queue and skip when it was empty, which in a
+   * full harness run it always was: `partner_flow_e2e.mjs` withdraws first, so the
+   * settlement half of the contract went unasserted while the group still reported
+   * green - a check that quietly declines to check.
+   *
+   * Earnings come from completed runs assigned by the desk rather than from the
+   * cascade, because offers also reach other partners and an earlier suite can
+   * take the run, which made the tally drift. Ten digits in the phone field
+   * matters too: a nine-digit value failed address validation, every funding order
+   * was rejected, and the suite reported "available 0" for a reason that had
+   * nothing to do with payouts.
+   */
+  const customer = await login('/auth/login', 'demo@optikart.com', 'Demo123@');
+  const my = (await call('/delivery-partner/me', { t: partner })).json?.data || {};
+  const partnerId = my.partner?._id;
+  if (!check('this suite can reach its partner and the desk roles', !!partnerId && !!seller && !!customer)) return finish();
+
+  await call('/delivery-partner/location', { t: partner, b: { latitude: 19.076, longitude: 72.877 } });
+  await call('/delivery-partner/availability', { t: partner, b: { isAvailable: true }, m: 'PUT' });
+
+  const products = ((await call('/products?category=sunglasses&limit=6')).json?.products) || [];
+  let available = Number(my.availableBalance ?? 0);
+  for (let attempt = 0; attempt < 12 && available < 100; attempt += 1) {
+    const product = products[attempt % Math.max(1, products.length)];
+    if (!product) break;
+    await call('/orders', {
+      t: customer,
+      b: {
+        items: [{ product: product._id, quantity: 1 }],
+        shippingAddress: {
+          name: 'Console Fund', phone: `98${String(Date.now()).slice(-8)}`,
+          street: '4 Linking Road', city: 'Mumbai', state: 'Maharashtra', pincode: '400050'
+        },
+        paymentMethod: 'cod'
+      }
+    });
+    const order = ((await call('/orders?limit=1', { t: customer })).json?.orders || [])[0];
+    if (!order) break;
+    await call(`/seller/orders/${order._id}/status`, { t: seller, b: { status: 'confirmed' }, m: 'PUT' });
+    await call(`/seller/orders/${order._id}/status`, { t: seller, b: { status: 'packed' }, m: 'PUT' });
+    await sleep(1200);
+    const assigned = await call('/delivery-partner/assign', { t: admin, b: { orderId: order._id, partnerId } });
+    if (assigned.json?.success !== true) continue;
+    const done = await call(`/delivery-partner/complete/${order._id}`, { t: partner, b: {} });
+    if (done.json?.success !== true) continue;
+    available = Number(((await call('/delivery-partner/me', { t: partner })).json?.data || {}).availableBalance ?? 0);
+  }
+  check('the partner accrued a withdrawable balance', available >= 50, `available ${available}`);
+
+  // Withdraw ₹50 when the daily rule allows it; otherwise settle the row
+  // `partner_flow_e2e.mjs` queued, so the settlement half runs either way.
+  let queuedAmount = 0;
+  const withdrawnBefore = Number(((await call('/delivery-partner/me', { t: partner })).json?.data || {}).totalWithdrawn ?? 0);
+  if (available >= 50) {
+    const wd = await call('/delivery-partner/withdraw', { t: partner, b: { amount: 50 } });
+    if (wd.json?.data?.status === 'awaiting_settlement') {
+      queuedAmount = 50;
+      check('a fresh withdrawal is queued rather than marked paid', true);
+    } else {
+      console.log('NOTE  daily withdrawal limit already used - settling the row partner_flow queued');
+    }
+  }
+
   const queue = await call('/delivery-partner/payouts/pending', { t: admin });
   check('the queue endpoint answers the desk',
     queue.status === 200 && Array.isArray(queue.json?.withdrawals)
@@ -86,9 +152,14 @@ async function main() {
   const anon = await call('/delivery-partner/payouts/pending', {});
   check('and nothing is readable without a session', anon.status === 401, `status ${anon.status}`);
 
-  const row = (queue.json?.withdrawals || [])[0];
+  const row = (queue.json?.withdrawals || []).find((w) => queuedAmount && Number(w.amount) === queuedAmount)
+    || (queue.json?.withdrawals || [])[0];
   if (!row) {
-    console.log('SKIP  settlement assertions: no queued withdrawal (partner_flow settles its own in a full run)');
+    // Not "nothing to do". With two suites withdrawing against the same database,
+    // an empty queue here means neither managed to queue anything, which is the
+    // failure this group exists to catch - so it fails the run instead of
+    // reporting green.
+    check('a withdrawal is queued and waiting for the desk', false, 'queue came back empty');
     return finish();
   }
 
