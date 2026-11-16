@@ -1,4 +1,17 @@
 import express from 'express';
+import { foldBrand } from '../services/brandOwnership.js';
+
+/*
+ * Brand filtering by the shared fold - see services/brandOwnership.js.
+ *
+ * `query.brand = brand` was an exact, case-sensitive equality: products stored as
+ * "Ray-Ban" and a brand page asking for "Ray Ban" (which is what the URL slug
+ * `ray-ban` decodes to) simply returned nothing, for every brand carrying
+ * punctuation - and the empty result looked like an out-of-stock brand rather
+ * than a broken lookup. Spellings are enumerated from the data (one `distinct`),
+ * folded in JS, and matched with `$in`, so no regular expression is ever built
+ * from a query string.
+ */
 import Product from '../models/Product.js';
 import { verifySeller, optionalAuth } from '../middleware/auth.js';
 import { productValidation } from '../middleware/validate.js';
@@ -222,7 +235,16 @@ router.get('/', optionalAuth, async (req, res) => {
       });
     }
 
-    if (brand) query.brand = brand;
+    if (brand) {
+      const want = foldBrand(brand);
+      const spellings = want
+        ? (await Product.distinct('brand', { isActive: true })).filter((b) => b && foldBrand(b) === want)
+        : [];
+      // Nothing folds to the request: apply the raw value so the result is an
+      // honest empty list (and a countable near-miss) rather than an unfiltered
+      // catalogue.
+      query.brand = spellings.length ? { $in: spellings } : brand;
+    }
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = parseInt(minPrice);

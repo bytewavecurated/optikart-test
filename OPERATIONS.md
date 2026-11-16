@@ -675,3 +675,40 @@ Rules, with the reason each exists:
   (`/uploads/...` or `https://...`), not one backend's spelling.
 - Storage in use is visible without reading config: `GET /api/admin/brand-queue` returns
   `storage`, and `GET /api/storage/status`.
+
+## Brand rails read the catalogue
+
+`client/src/components/BrandRail.jsx` is what the home page rails are built from.
+Before it, `BrandSection.js` and `ContactLensBrandSection.js` each held a hardcoded
+array of six brands with invented "starting at" prices and taglines, and linked URLs
+derived from those invented slugs. Both rails now call `GET /api/brands/with-logos`,
+which is gated by the same visibility rule as the product list and returns, per brand:
+real live product count, real minimum price (`null` when nothing is priced - rendered
+as nothing, never as ₹0), the approved logo, and a one-letter fallback.
+
+Brand identity has two slugs, deliberately:
+
+| Field     | Example   | Used by                                                                                     |
+| --------- | --------- | ------------------------------------------------------------------------------------------- |
+| `slug`    | `rayban`  | the one-brand-one-owner fold: the Brand unique index, ownership disputes, manifest grouping |
+| `urlSlug` | `ray-ban` | `/brands/:brand`, which re-spaces and title-cases for display                               |
+
+They are not interchangeable. Putting the fold in a URL gives `/brands/rayban` and a
+page that decodes it back as the literal word `Rayban`; putting the URL form in the
+fold-based lookup splits one brand into two.
+
+Lookups by brand name (`GET /api/products?brand=`) match by the fold, so `Ray-Ban`,
+`ray ban`, `RAY BAN`, `ray-ban` and `Ray Ban` all return the same products. Previously
+this was an exact string comparison, so the brand page - which decodes `ray-ban` to
+`Ray Ban` - found nothing for every brand with punctuation in its name, and looked
+like an empty brand rather than a broken lookup.
+
+## Brand decisions and what they cover
+
+`PUT /api/admin/brands/:id/decision` approves or rejects a pending brand and returns
+the **manifest**: the brand's own products with their individual verification states.
+Approving a brand does not publish a listing - each product keeps its own verification -
+so the response, the notification, and `GET /api/manufacturer/brands/:slug/manifest`
+all state that in the payload rather than relying on the reader to infer it. The
+manifest is scoped to the brand that was decided; company-wide totals are present as
+`manufacturerOverview` and are never what the decision message quotes.

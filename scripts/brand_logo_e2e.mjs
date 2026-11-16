@@ -453,6 +453,33 @@ async function main() {
       (approveReal.json?.manifest?.brands || []).some((b) => b.slug === 'rayban' && b.total >= 1),
     JSON.stringify(approveReal.json?.manifest?.totals)
   );
+  /*
+   * The distinction the fix was about: the number in the approval message must
+   * be about the brand that was decided, and the company-wide view must be
+   * clearly labelled as such rather than silently mixed into the same figure.
+   */
+  const approvedManifest = approveReal.json?.manifest;
+  check(
+    'the approval manifest is scoped to the brand that was decided',
+    approvedManifest?.scope === 'brand' &&
+      approvedManifest?.scopeSlug === 'rayban' &&
+      approvedManifest.brands.length === 1,
+    JSON.stringify(approvedManifest && { scope: approvedManifest.scope, brands: approvedManifest.brands.length })
+  );
+  check(
+    'the totals describe that brand, not every listing the company owns',
+    approvedManifest?.totals?.products === approvedManifest?.brands?.[0]?.total &&
+      approvedManifest.manufacturerOverview?.products >= approvedManifest.totals.products,
+    JSON.stringify(
+      approvedManifest && { brand: approvedManifest.totals, company: approvedManifest.manufacturerOverview }
+    )
+  );
+  check(
+    'and the company-wide overview is still present and larger (multi-brand seed)',
+    approvedManifest?.manufacturerOverview?.brands >= 2,
+    JSON.stringify(approvedManifest?.manufacturerOverview)
+  );
+
   const raybanEntry = (approveReal.json?.manifest?.brands || []).find((b) => b.slug === 'rayban');
   check(
     'every product line carries a state and a human label for it',
@@ -529,6 +556,32 @@ async function main() {
     'and an inbox that is empty for a reason is reported as empty, not as an error',
     otherInbox.status === 200 && Array.isArray(otherInbox.json?.notifications),
     `HTTP ${otherInbox.status}`
+  );
+
+  /* ------ brand lookup by spelling the shopper actually has (URL slug form) */
+  const spellings = ['Ray-Ban', 'ray ban', 'RAYBAN', 'ray-ban', 'Ray Ban'];
+  const counts = [];
+  for (const s of spellings) {
+    const r = await call(`/products?brand=${encodeURIComponent(s)}&limit=50`);
+    counts.push([s, r.json?.pagination?.total ?? r.json?.count ?? 0]);
+  }
+  const total0 = counts[0][1];
+  check(
+    "every spelling that folds to one brand returns that brand's products",
+    total0 > 0 && counts.every(([, n]) => n === total0),
+    JSON.stringify(counts)
+  );
+  const notABrand = await call('/products?brand=NoSuchBrandAnywhere&limit=5');
+  check(
+    'a brand that folds to nothing is an empty list, not the whole catalogue',
+    notABrand.status === 200 && (notABrand.json?.pagination?.total ?? notABrand.json?.products?.length ?? 0) === 0,
+    `total=${notABrand.json?.pagination?.total}`
+  );
+  const noBrandParam = await call('/products?limit=1');
+  check(
+    'and no brand parameter at all still lists everything (the branch cannot over-filter)',
+    noBrandParam.status === 200 && (noBrandParam.json?.pagination?.total ?? 0) >= total0,
+    `all=${noBrandParam.json?.pagination?.total} vs rayban=${total0}`
   );
 
   return finish();

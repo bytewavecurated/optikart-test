@@ -334,12 +334,14 @@ router.put('/admin/brands/:id/decision', verifyToken, verifyAdmin, async (req, r
       });
     }
 
-    const products = await Product.find({ manufacturer: brand.ownerManufacturer, brand: { $exists: true, $ne: null } })
-      .select(
-        'brand title sku price stock category isActive isDiscontinued verificationStatus rejectionReason verificationNotes'
-      )
-      .lean();
-    const manifest = buildBrandManifest({ products, brandRecords: [brand.toObject()] });
+    /*
+     * Scoped to THIS brand. The first version summarised every product the
+     * manufacturer has, so approving Ray-Ban (3 live listings) told the
+     * manufacturer "12 products under it" - a number about the company, not
+     * about the brand they were told about. The company-wide view is still
+     * available, as manufacturerOverview, and is never what the message quotes.
+     */
+    const manifest = await manifestFor(brand, { scopeToBrand: true });
 
     if (decision === 'approve') {
       brand.status = 'approved';
@@ -451,31 +453,69 @@ router.get('/manufacturer/brands/:slug/manifest', verifyManufacturer, async (req
  */
 router.get('/brands/with-logos', async (req, res) => {
   try {
+    /*
+     * Same visibility gate as the product list (routes/product.js VISIBLE_PRODUCTS),
+     * so a rail can never advertise a brand whose products the storefront hides.
+     */
     const scope = { isActive: true, verificationStatus: 'verified' };
     if (req.query.category) scope.category = String(req.query.category).toLowerCase();
-    const names = await Product.distinct('brand', scope);
-    const slugs = names.map((n) => foldBrand(n));
+
+    /*
+     * One aggregation instead of a distinct() plus a per-brand count: the rails
+     * need name, how many live products, and the cheapest real price. `minPrice`
+     * used to be a number typed into the client component - shoppers were shown
+     * "from ₹2,999" for a price that existed in no database - so it must come
+     * from the products or not at all.
+     */
+    const rows = await Product.aggregate([
+      { $match: scope },
+      { $group: { _id: '$brand', count: { $sum: 1 }, minPrice: { $min: '$price' } } },
+      { $match: { _id: { $nin: [null, ''] } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const slugs = rows.map((r) => foldBrand(r._id));
     const approved = await Brand.find({ slug: { $in: slugs }, status: 'approved' })
       .select('name slug logo')
       .lean();
     const bySlug = new Map(approved.map((b) => [b.slug, b]));
-    const list = names
-      .filter(Boolean)
-      .sort((a, b) => String(a).localeCompare(String(b)))
-      .map((name) => {
-        const record = bySlug.get(foldBrand(name)) || null;
-        return {
-          name,
-          slug: foldBrand(name),
-          logoUrl: record?.logo?.url || null,
-          letter: String(name).trim().charAt(0).toUpperCase(),
-          verified: Boolean(record),
-        };
-      });
+
+    const list = rows.map((r) => {
+      const slug = foldBrand(r._id);
+      const record = bySlug.get(slug) || null;
+      const letter = String(r._id).trim().charAt(0).toUpperCase();
+      const name = record?.name || String(r._id).trim();
+      return {
+        name,
+        /*
+         * Two different "slugs", because they answer two different questions and
+         * conflating them is how a storefront link lands on /brands/null.
+         *   slug     - the fold, the one-brand-one-owner key (ray-ban -> rayban)
+         *   urlSlug  - what the existing /brands/:brand page decodes (ray-ban ->
+         *              "Ray Ban"): it re-spaces and title-cases, so the display
+         *              name has to survive as words, not as a normalised token.
+         */
+        slug,
+        urlSlug: name
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, ''),
+        logoUrl: record?.logo?.url || null,
+        letter,
+        verified: Boolean(record),
+        productCount: r.count,
+        // null rather than 0: "we have no price" must not render as "from ₹0".
+        minPrice: Number.isFinite(r.minPrice) ? r.minPrice : null,
+      };
+    });
+
     res.json({
       success: true,
       brands: list,
       withLogos: list.filter((b) => b.logoUrl).length,
+      // Honest about where the fallback is still the whole story.
+      letterOnly: list.filter((b) => !b.logoUrl).length,
       scoped: Boolean(req.query.category),
     });
   } catch (error) {

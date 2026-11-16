@@ -49,8 +49,21 @@ const mounts = [];
 // The base may have more than one segment ('/api/admin/auth'), which the
 // single-segment version of this pattern silently dropped - so those mounts
 // looked like they did not exist and their routes were reported unreachable.
-for (const m of serverSource.matchAll(/app\.use\(\s*'(\/api\/[a-z0-9\/-]+)'\s*,\s*(\w+)\s*\)/gi)) {
-  mounts.push({ base: m[1].replace(/^\/api\//, ''), identifier: m[2] });
+for (const mountLine of serverSource.matchAll(/app\.use\(\s*'(\/api\/[a-z0-9\/\-]+)'\s*,\s*(\w+)\s*\)/gi)) {
+  mounts.push({ base: mountLine[1].replace(/^\/api\//, ''), identifier: mountLine[2] });
+}
+
+/*
+ * Routers mounted on the API root. Without this pattern the audit could not see
+ * `app.use('/api', someRouter)` at all, because the regex above requires
+ * something after /api/. Such a route file is then absent from the registry and
+ * every client call into it reads as "no route at this path" - a false alarm
+ * about working code. The worse half of the same blind spot: a route that is
+ * genuinely missing under a root mount could never be caught either. Partner
+ * ranking and the brand rails are both mounted this way.
+ */
+for (const rootMount of serverSource.matchAll(/app\.use\(\s*'\/api'\s*,\s*(\w+)\s*\)/gi)) {
+  mounts.push({ base: '', identifier: rootMount[1] });
 }
 
 /**
@@ -116,11 +129,20 @@ for (const file of listFiles(CLIENT)) {
 /* ------------------------------------------------------------------ resolve */
 const problems = [];
 for (const call of calls) {
-  const atSamePath = registry.filter(
-    (r) =>
-      call.target === r.base ||
-      (call.target.startsWith(`${r.base}/`) && r.match(call.target.slice(r.base.length))) ||
-      (call.target === r.base && r.match(''))
+  /*
+   * Resolving a call against the registry. A root mount (`app.use('/api', r)`)
+   * has an empty base, and every clause below that tests `r.base` for truthiness
+   * therefore skipped root-mounted routes entirely: the audit could not see them
+   * and, worse, could never report one missing. That is the same shape of blind
+   * spot as an unawaited promise - the check runs, finds nothing, and reports
+   * success. Root-mounted routes are now matched on their full path.
+   */
+  const atSamePath = registry.filter((r) =>
+    r.base === ''
+      ? r.match(call.target)
+      : call.target === r.base ||
+        (call.target.startsWith(`${r.base}/`) && r.match(call.target.slice(r.base.length))) ||
+        (call.target === r.base && r.match(''))
   );
   if (!atSamePath.length) {
     problems.push({ ...call, kind: 'no route at this path' });
