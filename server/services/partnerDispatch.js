@@ -126,7 +126,7 @@ const describe = (order) => ({
  * `storeLocationUnknown` is honest: without a store position there is nothing to
  * rank, and guessing would send a partner to the wrong address.
  */
-export const recommendPartners = async (orderOrId, { radiusKm = 12, limit = PARTNER_RECOMMENDATION_COUNT } = {}) => {
+export const recommendPartners = async (orderOrId, { radiusKm = PARTNER_PICKUP_RADIUS_KM, limit = PARTNER_RECOMMENDATION_COUNT } = {}) => {
   try {
     // Callers pass either an id or a document, and the document is not always
     // populated - without the seller's store position there is nothing to rank

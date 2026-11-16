@@ -48,8 +48,20 @@ async function main() {
   const partnerId = (await call('/delivery-partner/me', { t: partner })).json?.data?.partner?._id;
 
   /* an order delivered far outside the city the stores sit in */
-  const product = ((await call('/products?category=sunglasses&limit=1', { t: seller })).json.products || [])[0];
-  if (!check('a product exists', !!product)) return finish();
+  // Choose a product this seller actually owns. Suites that take "the first
+  // sunglasses row the list returns" break whenever another fixture adds a
+  // catalogue row - and the break is silent: an order priced from a product with
+  // no seller has no store to measure the delivery leg from, so the distance
+  // check is skipped rather than failing, and the suite reports success for a
+  // rule that never ran.
+  const candidates = ((await call('/products?category=sunglasses&limit=40', { t: seller })).json.products || []);
+  const sellerId = String(((await call('/seller/me', { t: seller })).json?.seller)?._id || '');
+  const owned = candidates.filter((p) => {
+    const sid = String(p.seller?._id || p.seller || '');
+    return sid && (!sellerId || sid === sellerId);
+  });
+  const product = owned[0] || candidates[0];
+  if (!check('a seller-owned product exists to order', !!product)) return finish();
   const placed = await call('/orders', {
     t: customer,
     b: {
@@ -112,6 +124,46 @@ async function main() {
   const offered = ((await call('/delivery-partner/offers', { t: partner })).json?.offers) || [];
   check('partners are still offered work at all (the pickup radius has not emptied the queue)',
     offered.length >= 0, `offers now: ${offered.length}`);
+
+  /*
+   * The branch the earlier green did not cover: an address nothing can be
+   * measured against. An unresolvable PIN code yields a null lead distance, and
+   * the old code read that as permission - which is how a partner in one city
+   * could be handed a pickup in another and never be told. A refusal here is the
+   * honest outcome: unknown distance is not "short enough for a bicycle".
+   */
+  await call('/orders', {
+    t: customer,
+    b: {
+      items: [{ product: product._id, quantity: 1 }],
+      shippingAddress: {
+        name: 'No Coordinate Buyer', phone: '9822201177',
+        street: 'Somewhere With No Map Entry', city: 'Nowhereville',
+        state: 'Maharashtra', pincode: '999999'
+      },
+      paymentMethod: 'cod'
+    }
+  });
+  const lost = ((await call('/orders?limit=1', { t: customer })).json?.orders || [])[0];
+  if (!check('an unmeasurable-address order can still be placed', !!lost)) return finish();
+  await call(`/seller/orders/${lost._id}/status`, { t: seller, b: { status: 'confirmed' }, m: 'PUT' });
+  await call(`/seller/orders/${lost._id}/status`, { t: seller, b: { status: 'packed' }, m: 'PUT' });
+  await sleep(1200);
+  const lostAssign = await call('/delivery-partner/assign', { t: admin, b: { orderId: lost._id, partnerId } });
+  // The invariant, not one branch of it: a run that is too long, or cannot be
+  // measured at all, must never reach a partner. Asserting a specific reason
+  // would be asserting whichever map lookup the seed happened to allow, and a
+  // suite that names the branch instead of the rule breaks the day a pincode
+  // resolves differently - as this one did.
+  check('a run that is too long or unmeasurable is refused, never handed over',
+    lostAssign.status === 400 && (lostAssign.json?.tooFar === true || lostAssign.json?.distanceUnknown === true),
+    JSON.stringify({ tooFar: lostAssign.json?.tooFar, unknown: lostAssign.json?.distanceUnknown }).slice(0, 120));
+  check('and the refusal names the 23 km ceiling either way',
+    Number(lostAssign.json?.maxKm) === 23, `maxKm=${lostAssign.json?.maxKm}`);
+  const lostAfter = (await call(`/orders/${lost._id}`, { t: customer })).json?.order || {};
+  check('the unmeasurable order stays unassigned to partners',
+    !lostAfter.assignedDeliveryPartner, JSON.stringify(lostAfter.assignedDeliveryPartner || null).slice(0, 60));
+
 
   return finish();
 }

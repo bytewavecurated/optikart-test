@@ -181,6 +181,56 @@ No Pack Solution,599,solution,Ray-Ban,FAC-UND-3,FAC-UND-3,Missing its pack prici
     JSON.stringify(missingColumn.json || {}).slice(0, 160));
 
 
+  /*
+   * Brand gate: a sheet that mixes brands, and a sheet naming a brand the
+   * manufacturer has never declared on their profile.
+   *
+   * Both are refused whole - a half-imported sheet leaves one brand's products
+   * filed under another name, which the shopper reads as the brand selling
+   * frames it never listed. Both name the brand and the row, not "invalid", so
+   * the fix is a locate-and-split rather than a hunt through the spreadsheet,
+   * and the unlisted-brand error shows the allowed list: the brand belongs on
+   * the profile before it can own any catalogue row.
+   */
+  const MIX = [
+    'title,price,category,brand,product code,model number,description,images,gender,frame shape,frame type,frame material,frame colour,frame size,frame width,frame weight,frame dimensions',
+    `Gate A Frame,2499,sunglasses,Ray-Ban,MIX-A1,MIX-A1,First brand row,${firstImg},unisex,round,full-rim,acetate,black,medium,52,18,52 x 40 x 18 x 140`,
+    `Gate B Frame,2599,sunglasses,Fastrack,MIX-B1,MIX-B1,A different brand row,${firstImg},unisex,round,full-rim,acetate,black,medium,52,18,52 x 40 x 18 x 140`
+  ].join('\n');
+  const mixRes = await uploadCsv('mixed-brand.csv', MIX);
+  check('a sheet mixing brands is refused outright, not half imported',
+    mixRes.status === 400 && mixRes.json?.mixedBrands?.length === 2,
+    JSON.stringify(mixRes.json || {}).slice(0, 170));
+  check('each offending row names its own brand and the row number',
+    (mixRes.json?.errors || []).filter((e) => /Row \d+.*(?:Ray-Ban|Fastrack)/i.test(e)).length >= 2,
+    JSON.stringify((mixRes.json?.errors || []).slice(0, 2)).slice(0, 200));
+  check('and the message says to split by brand',
+    /one brand per file|split .*by brand/i.test(mixRes.json?.message || ''),
+    String(mixRes.json?.message || '').slice(0, 120));
+
+  const NOTHING_IMPORTED = (await call('/manufacturer/products?limit=400', { token: brand })).json?.products || [];
+  check('nothing from the refused sheet reached the catalogue',
+    !NOTHING_IMPORTED.some((p2) => /^Gate [AB] Frame$/.test(p2.title || '')),
+    `checked ${NOTHING_IMPORTED.length} products`);
+
+  const UNLISTED = [
+    'title,price,category,brand,product code,model number,description,images,gender,frame shape,frame type,frame material,frame colour,frame size,frame width,frame weight,frame dimensions',
+    `Unknown Brand Frame,3099,sunglasses,NikeEyeWEAR,MIX-C1,MIX-C1,A brand this manufacturer never declared,${firstImg},unisex,round,full-rim,acetate,black,medium,52,18,52 x 40 x 18 x 140`
+  ].join('\n');
+  const unlisted = await uploadCsv('unlisted-brand.csv', UNLISTED);
+  check('a brand that is not on the manufacturer profile is refused per row and named',
+    unlisted.status === 400
+      && (unlisted.json?.errors || []).some((e) => /NikeEyeWEAR/.test(e) && /profile|Brands manufactured/i.test(e)),
+    JSON.stringify((unlisted.json?.errors || [unlisted.json?.message]).slice(0, 1)).slice(0, 190));
+
+  const listed = await uploadCsv('listed-brand.csv', [
+    'title,price,category,brand,product code,model number,description,images,gender,frame shape,frame type,frame material,frame colour,frame size,frame width,frame weight,frame dimensions',
+    `Allowed Brand Frame,2799,sunglasses,Ray-Ban,MIX-D1,MIX-D1,A declared brand still imports normally,${firstImg},unisex,round,full-rim,acetate,black,medium,52,18,52 x 40 x 18 x 140`
+  ].join('\n'));
+  check('a declared single brand still imports (the gate does not block valid sheets)',
+    listed.json?.success === true, JSON.stringify(listed.json || {}).slice(0, 130));
+
+
   return finish();
 }
 

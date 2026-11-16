@@ -192,3 +192,32 @@ endpoint without depending on the internet.
 | <code>\`\` is not a valid enum value for path \`gender\`</code> | seen before the blank-value fix: an empty cell arrived as `""` (or the literal `"undefined"`) and was validated as a value. Blank optional cells are stored as absent now |
 | `No file uploaded` | the multipart field must be named `file` |
 | `No rows could be imported…` | nothing survived; `errors[]` says why |
+
+----------------------------------------------------------------------
+## 8. One brand per file, and only brands on your profile
+
+Two gates run before anything is written, and both refuse the **whole sheet** —
+a half-imported file leaves one brand's frames filed under another name, which
+customers read as the brand selling things it never listed.
+
+| Rule | What you see |
+| --- | --- |
+| Every row's `brand` must be identical | `One brand per file. This sheet mixes 2 brands ("Ray-Ban", "Fastrack") - split it by brand and upload each separately.` plus one line **per offending row** naming the brand on that row and its row number |
+| That brand must already be declared on the manufacturer profile (`Brands manufactured`) | `Row 3: brand "NikeEyeWEAR" is not on this manufacturer's profile. Add it under "Brands manufactured" first (currently: ray-ban); a brand nobody declared cannot own catalogue rows.` |
+| Profile with no brands at all | `brand "X" cannot be imported - this manufacturer has no brands declared yet. Add the brand to the profile first.` |
+
+Matching is case-insensitive (`ray-ban` ≡ `Ray-Ban`), and repeated brand names in
+one file are refused rather than merged. Response shape on a mixed sheet:
+
+```json
+{ "success": false, "mixedBrands": [{ "brand": "Ray-Ban", "rows": [2] },
+                                     { "brand": "Fastrack", "rows": [3] }],
+  "message": "One brand per file. …", "errors": [ "Row 2: …", "Row 3: …" ] }
+```
+
+To fix a rejected sheet: put one brand in one file, and if a brand is missing
+from the list, add it first at **Manufacturer → Company & brand profile →
+Brands manufactured**, where the screen also warns which brand names still carry
+products. The same rule applies to brand logos: a brand with no logo falls back
+to text treatment, so declaring a brand here is what makes the storefront able to
+show it properly.

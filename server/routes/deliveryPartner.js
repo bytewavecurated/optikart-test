@@ -726,10 +726,28 @@ router.post('/assign', verifyToken, verifyAdmin, async (req, res) => {
     // A run longer than a local delivery is not a bicycle job at any price: at
     // the ₹10/km partner rate a Mumbai-to-Kolkata parcel would pay ₹16,548, so
     // the cap is enforced here as well as in the cascade. Send it by courier.
-    const { leadKm, PARTNER_MAX_LEAD_KM } = await import('../services/partnerDispatch.js');
+    const { leadKm, PARTNER_MAX_LEAD_KM, MAX_DELIVERY_LEG_KM } = await import('../services/partnerDispatch.js');
     const preview = await Order.findById(orderId).populate('seller', 'storeName address location');
     const distance = preview ? await leadKm(preview) : null;
-    if (distance !== null && distance > PARTNER_MAX_LEAD_KM) {
+    /*
+     * A leg nobody can measure is not a leg that can be handed to a cyclist.
+     *
+     * `leadKm` returns null when either end lacks a usable position. Silently
+     * carrying on with "unknown" was worse than an over-long run: a partner in
+     * the wrong city could be given pickups hundreds of kilometres away and the
+     * system would never say so, because a missing number read as permission.
+     * The desk can still route it by courier, or fix the store position - the
+     * reason is named either way.
+     */
+    if (distance === null) {
+      return res.status(400).json({
+        success: false,
+        distanceUnknown: true,
+        maxKm: MAX_DELIVERY_LEG_KM,
+        message: `The delivery distance for this order cannot be measured (no usable store or drop position), so it cannot be handed to a delivery partner within the ${MAX_DELIVERY_LEG_KM} km limit. Set the store location, or send it by courier.`
+      });
+    }
+    if (distance > PARTNER_MAX_LEAD_KM) {
       return res.status(400).json({
         success: false,
         tooFar: true,

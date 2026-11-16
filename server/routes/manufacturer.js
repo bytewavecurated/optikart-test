@@ -591,7 +591,31 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
 
     // Sunglasses and eyeglasses must arrive in separate files: mixed uploads
     // are the commonest cause of a whole sheet being mapped to one category.
+    // A mixed-brand sheet is caught the same way above, with per-row brands.
     const categoriesSeen = new Set();
+    /*
+     * Brand gate state, collected before rows are validated.
+     *
+     * Two separate rules apply to a single sheet, and they matter because
+     * products group by brand on the home page and in filters:
+     *
+     *  - one brand per file, like the existing one-category rule. A mixed-brand
+     *    sheet otherwise half-imports and leaves two brands' products filed under
+     *    whichever name happened to appear per row, which reads to a shopper as a
+     *    brand carrying frames it never listed. Each offending row gets its own
+     *    error naming the brand on that row, so the fix is a locate-and-split and
+     *    not a hunt through a spreadsheet.
+     *  - a brand must exist on this manufacturer's profile (`brands`). A brand
+     *    nobody declared cannot own a catalogue entry: it would show a new name
+     *    on the storefront that no approval queue, retailer page or brand logo
+     *    was ever set up for. Naming allowed brands in the error tells the
+     *    manufacturer where to add it rather than leaving them guessing.
+     */
+    const allowedBrands = new Set(((req.manufacturer?.brands) || [])
+      .map((b) => String(b).trim().toLowerCase())
+      .filter(Boolean));
+    const brandFirstRow = new Map();   // case-folded brand -> sheet row numbers
+    const brandLabels = new Map();     // case-folded brand -> display value
     /*
      * A `|`-separated cell becomes a list of real values.
      *
@@ -654,11 +678,31 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       const brand = String(get('brand', 'brandname') ?? '').trim();
       const genderRaw = String(get('gender') ?? '').trim();
 
+      // Record sightings before any skip so mixed-brand detection sees every
+      // row, including rows that later fail a different check.
+      if (brand) {
+        const folded = brand.toLowerCase();
+        if (!brandFirstRow.has(folded)) { brandFirstRow.set(folded, []); brandLabels.set(folded, brand); }
+        brandFirstRow.get(folded).push(line);
+      }
+
       const missing = [];
       if (!title) missing.push('title');
       if (!Number.isFinite(price) || price <= 0) missing.push('price');
       if (!categoryRaw) missing.push('category');
       if (!brand) missing.push('brand');
+      else if (allowedBrands.size && !allowedBrands.has(brand.toLowerCase())) {
+        // Per-row and named: a generic reject would make the manufacturer hunt
+        // for which row invented which brand, on a sheet of 60 rows.
+        errors.push(`Row ${line}: brand "${brand}" is not on this manufacturer's profile. Add it under "Brands manufactured" first (currently: ${[...allowedBrands].join(', ') || 'none declared'}); a brand nobody declared cannot own catalogue rows.`);
+        continue;
+      } else if (!allowedBrands.size) {
+        // An empty brand list is not "anything goes": it is a profile nobody has
+        // set up, and importing on top of it leaves the store grouping by a brand
+        // with no logo, no approval queue and no retailer access.
+        errors.push(`Row ${line}: brand "${brand}" cannot be imported - this manufacturer has no brands declared yet. Add the brand to the profile first.`);
+        continue;
+      }
       if (!String(get('description') ?? '').trim()) missing.push('description');
       if (!String(get('modelnumber', 'modelno', 'model') ?? '').trim()) missing.push('modelNumber');
       if (!String(get('productcode', 'productid', 'sku') ?? '').trim()) missing.push('productCode');
@@ -874,6 +918,22 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       });
     }
 
+    /*
+     * A sheet that names two brands is refused in full, and each row that names
+     * a different brand from the sheet's first gets its own line in the error
+     * list. This mirrors the mixed-category rule below rather than inventing a
+     * third style: failing the whole file is what keeps a brand's catalogue
+     * whole, and naming rows is what makes the fix fast.
+     */
+    if (brandFirstRow.size > 1) {
+      const labels = [...brandFirstRow.keys()].map((f) => brandLabels.get(f));
+      for (const [f, rows] of brandFirstRow.entries()) {
+        for (const row of rows) {
+          errors.push(`Row ${row}: sheet mixes ${brandFirstRow.size} brands (${labels.map((l) => `"${l}"`).join(', ')}), and one file must carry one brand. Split this file by brand and upload it again.`);
+        }
+      }
+    }
+
     // Mixed-category sheets are refused rather than silently half-imported.
     const sunCount = categoriesSeen.has('sunglasses');
     const eyeCount = [...categoriesSeen].some((c) => ['eyeglasses', 'readingglasses', 'kids', 'sportseyewear'].includes(c));
@@ -881,6 +941,21 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       return res.status(400).json({
         success: false,
         message: 'Sunglasses and eyeglasses must be uploaded in separate files. This sheet mixes both categories.'
+      });
+    }
+
+    // Mixed-brand refusal: per-row errors already assembled above; reject the
+    // whole file before any create happens.
+    if (brandFirstRow.size > 1) {
+      const labelList = [...brandFirstRow.keys()].map((f) => `"${brandLabels.get(f)}"`).join(', ');
+      return res.status(400).json({
+        success: false,
+        mixedBrands: [...brandFirstRow.keys()].map((f) => ({
+          brand: brandLabels.get(f),
+          rows: brandFirstRow.get(f)
+        })),
+        message: `One brand per file. This sheet mixes ${brandFirstRow.size} brands (${labelList}) - split it by brand and upload each separately.`,
+        errors: errors.slice(0, 50)
       });
     }
 
