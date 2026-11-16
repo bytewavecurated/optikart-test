@@ -43,11 +43,21 @@ const serverRoot = path.resolve(new URL(import.meta.url).pathname, '..', '..');
 /* ------------------------------------------------ 1. the field map matches truth */
 let mongo = null;
 try {
-  if (!process.env.MONGODB_URI) {
+  /*
+   * When the harness hands us a URI, use it exactly as given. Appending a
+   * database name to it - which is what this line did - turns
+   * `mongodb://localhost:27017/eyewear-platform` into
+   * `.../eyewear-platform/storage-guard-unit`, and MongoDB rejects a database
+   * name containing '/'. CI caught it in seconds because CI is the one place
+   that hands a URI with a path; locally the variable is empty and this file
+   * brought up its own server, so the bug was invisible to every run I made
+   * before pushing. `entity_ids_unit.mjs` already had the right convention.
+   */
+  if (process.env.MONGODB_URI) {
+    await mongoose.connect(process.env.MONGODB_URI);
+  } else {
     mongo = await MongoMemoryServer.create();
     await mongoose.connect(mongo.getUri('storage-guard'));
-  } else {
-    await mongoose.connect(process.env.MONGODB_URI.replace(/\/$/, '') + '/storage-guard-unit');
   }
 
   const drift = await validateAssetFieldMap();

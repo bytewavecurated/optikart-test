@@ -18,6 +18,7 @@
  * nobody is testing.
  */
 import { spawn } from 'node:child_process';
+import { assertDiskHeadroom } from './verifyDiskGuard.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -80,6 +81,7 @@ const AUDITS = [
   ['product upload requirements', 'scripts/product_requirements_unit.mjs'],
   ['entity code generation', 'server/scripts/entity_ids_unit.mjs'],
   ['storage guards and asset inventory', 'server/scripts/storage_upload_guards_unit.mjs'],
+  ['harness disk guard', 'scripts/disk_headroom_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],
   ['controls that only announce success', 'scripts/audit/fake-actions.mjs'],
@@ -215,6 +217,7 @@ process.on('SIGINT', () => {
 let mongoUri = process.env.MONGODB_URI || '';
 let mongoOut = null;
 if (!mongoUri) {
+  assertDiskHeadroom();
   process.stdout.write('starting an isolated database... ');
   const out = logStream('mongo');
   const child = spawn('node', ['.mongo.mjs'], { cwd: path.join(ROOT, 'server'), stdio: ['ignore', 'pipe', 'pipe'] });
