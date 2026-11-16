@@ -713,7 +713,6 @@ all state that in the payload rather than relying on the reader to infer it. The
 manifest is scoped to the brand that was decided; company-wide totals are present as
 `manufacturerOverview` and are never what the decision message quotes.
 
-
 ## Upload requirements are one module, not three lists
 
 `server/services/productRequirements.js` is consulted by the single-product
@@ -733,7 +732,7 @@ Two failures worth remembering, because both were invisible to the code as writt
   batch — HTTP 500, our error text in the response, and no row number for a
   manufacturer holding seventy-eight lines. It now awaits the full `validate()`
   and reports `Row 2 (title): packPricing - Solution needs at least one pack
-  price so multi-buy can be priced`.
+price so multi-buy can be priced`.
 - The bulk column list and the form's client-side list had drifted in both
   directions. They are one list now, and `scripts/product_upload_parity_e2e.mjs`
   posts the same defect through both doors and requires identical words.

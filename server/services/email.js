@@ -51,6 +51,47 @@ const undeliverable = (otp, email) => {
   return { success: true, delivered: false, devCode: String(otp), reason: 'dev-no-smtp' };
 };
 
+/*
+ * One delivery path for every transactional mail in the app.
+ *
+ * `sendOTP` was rewritten to build its transport lazily, but the other nine
+ * senders below kept calling the module-level `transporter`, which no longer
+ * exists. They each caught the resulting "Cannot read properties of undefined
+ * (reading 'sendMail')" and returned { success: false }, so order confirmations,
+ * invoices, pickup and delivery alerts silently stopped sending while the log
+ * filled with TypeErrors - our own CI output proved it. Reproducing the failure
+ * here in the open, instead of a second time in a support ticket:
+ *
+ *   Error sending email: TypeError: Cannot read properties of undefined (reading 'sendMail')
+ *
+ * A machine without SMTP now says what is missing rather than pretending to try.
+ * Delivery is still reported, never assumed: callers that ignore this result are
+ * the remaining half of the fix and are tracked as such.
+ */
+async function deliver(mailOptions, what = 'email') {
+  const transport = mailTransport();
+  if (!transport) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error(`[mail] ${what} not sent: SMTP is not configured in production (${mailOptions.to}).`);
+      return { success: false, delivered: false, reason: 'smtp-unconfigured' };
+    }
+    console.warn(`[mail] ${what} not sent: no SMTP configured on this machine (to ${mailOptions.to}).`);
+    return { success: false, delivered: false, reason: 'dev-no-smtp' };
+  }
+  try {
+    const info = await transport.sendMail(mailOptions);
+    return { success: true, delivered: true, messageId: info.messageId };
+  } catch (error) {
+    console.error(`[mail] ${what} failed:`, String(error?.message || error).slice(0, 160));
+    return {
+      success: false,
+      delivered: false,
+      reason: 'send-failed',
+      error: String(error?.message || error).slice(0, 200),
+    };
+  }
+}
+
 export const sendOTP = async (email, otp, type = 'login') => {
   const subjectMap = {
     login: 'Your Login OTP',
@@ -180,8 +221,7 @@ export const sendOrderConfirmation = async (email, order) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendOrderConfirmation');
   } catch (error) {
     console.error('Error sending order confirmation:', error);
     return { success: false, error: error.message };
@@ -212,8 +252,7 @@ export const sendPickupAlert = async (email, pickupDetails) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendPickupAlert');
   } catch (error) {
     console.error('Error sending pickup alert:', error);
     return { success: false, error: error.message };
@@ -243,8 +282,7 @@ export const sendPasswordReset = async (email, otp) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendPasswordReset');
   } catch (error) {
     console.error('Error sending password reset email:', error);
     return { success: false, error: error.message };
@@ -278,8 +316,7 @@ export const sendShippingUpdate = async (email, order) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendShippingUpdate');
   } catch (error) {
     console.error('Error sending shipping update:', error);
     return { success: false, error: error.message };
@@ -314,8 +351,7 @@ export const sendDeliveryConfirmation = async (email, order) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendDeliveryConfirmation');
   } catch (error) {
     console.error('Error sending delivery confirmation:', error);
     return { success: false, error: error.message };
@@ -351,8 +387,7 @@ export const sendSellerOrderNotification = async (email, order, seller) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendSellerOrderNotification');
   } catch (error) {
     console.error('Error sending seller order notification:', error);
     return { success: false, error: error.message };
@@ -386,8 +421,7 @@ export const sendLowStockAlert = async (email, product, seller) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendLowStockAlert');
   } catch (error) {
     console.error('Error sending low stock alert:', error);
     return { success: false, error: error.message };
@@ -423,8 +457,7 @@ export const sendWishlistPriceDropAlert = async (email, product, user, oldPrice,
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendWishlistPriceDropAlert');
   } catch (error) {
     console.error('Error sending wishlist price drop alert:', error);
     return { success: false, error: error.message };
@@ -467,8 +500,7 @@ export const sendReturnConfirmation = async (email, returnRequest) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendReturnConfirmation');
   } catch (error) {
     console.error('Error sending return confirmation:', error);
     return { success: false, error: error.message };
@@ -491,8 +523,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
       html: html || `<p>${text || subject}</p>`,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    return deliver(mailOptions, 'sendEmail');
   } catch (error) {
     console.error('Error sending email:', error);
     return { success: false, error: error.message };
