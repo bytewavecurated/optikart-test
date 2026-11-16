@@ -3,6 +3,8 @@ import multer from 'multer';
 import Brand from '../models/Brand.js';
 import Manufacturer from '../models/Manufacturer.js';
 import Product from '../models/Product.js';
+import { buildBrandManifest, manifestSummaryText } from '../services/brandManifest.js';
+import { notifyManufacturer } from '../services/notifications.js';
 import { verifyToken, verifyAdmin, verifyManufacturer } from '../middleware/auth.js';
 import { assessLogo, MIN_LOGO_EDGE_PX, MAX_LOGO_BYTES } from '../services/brandLogo.js';
 import { foldBrand } from '../services/brandOwnership.js';
@@ -296,6 +298,189 @@ router.get('/admin/brand-queue', verifyToken, verifyAdmin, async (req, res) => {
   } catch (error) {
     console.error('Brand queue failed:', String(error.message).slice(0, 180));
     res.status(500).json({ success: false, message: 'The verification queue could not be read.' });
+  }
+});
+
+/*
+ * The desk's decision. A brand may be approved or rejected; pending is the only
+ * state it can leave, and a rejection must carry a reason the manufacturer can
+ * act on - "rejected" with no explanation is a support ticket waiting to be filed.
+ *
+ * Approving is not publishing. This is the rule the manifest exists to state,
+ * because it is the assumption every manufacturer arrives with: approving the
+ * mark does not verify the listings underneath it, and each product keeps its
+ * own verification state. The response therefore carries the manifest and the
+ * notification repeats it in one line.
+ */
+router.put('/admin/brands/:id/decision', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { decision, reason = '' } = req.body || {};
+    if (!['approve', 'reject'].includes(String(decision))) {
+      return res.status(400).json({ success: false, message: 'decision must be "approve" or "reject".' });
+    }
+    const brand = await Brand.findById(req.params.id);
+    if (!brand) return res.status(404).json({ success: false, message: 'No such brand record.' });
+    if (brand.status !== 'pending') {
+      return res.status(409).json({
+        success: false,
+        message: `This brand is already ${brand.status.split('_').join(' ')}. Reopen it from the queue instead of deciding it twice.`,
+      });
+    }
+    if (decision === 'reject' && !String(reason).trim()) {
+      return res.status(400).json({
+        success: false,
+        field: 'reason',
+        message: 'A rejection needs the reason the manufacturer will be shown.',
+      });
+    }
+
+    const products = await Product.find({ manufacturer: brand.ownerManufacturer, brand: { $exists: true, $ne: null } })
+      .select(
+        'brand title sku price stock category isActive isDiscontinued verificationStatus rejectionReason verificationNotes'
+      )
+      .lean();
+    const manifest = buildBrandManifest({ products, brandRecords: [brand.toObject()] });
+
+    if (decision === 'approve') {
+      brand.status = 'approved';
+      brand.decision = { by: req.user.id, at: new Date(), logoSeenAt: new Date(), note: String(reason).trim() || null };
+    } else {
+      /*
+       * One status value only. `rejected_logo` was invented here and is not in the
+       * schema's enum, so the save would have failed with a ValidationError and the
+       * desk would have seen a 400 they could not interpret. The distinction the
+       * admin intended is carried by `decision.note`, which is what the manufacturer
+       * is actually shown.
+       */
+      brand.status = 'rejected';
+      brand.decision = { by: req.user.id, at: new Date(), note: String(reason).trim() };
+    }
+    await brand.save();
+
+    await notifyManufacturer({
+      manufacturerId: brand.ownerManufacturer,
+      title: decision === 'approve' ? `"${brand.name}" approved` : `"${brand.name}" not approved`,
+      message:
+        decision === 'approve'
+          ? manifestSummaryText(manifest, brand.name)
+          : `"${brand.name}" was not approved: ${brand.decision.note}`,
+      type: 'brand',
+      data: { brandId: String(brand._id), slug: brand.slug, decision: brand.status, totals: manifest.totals },
+      io: req.app.get('io'),
+    });
+
+    res.json({
+      success: true,
+      message:
+        decision === 'approve'
+          ? `Approved. The manifest below is what "approved" actually covers - products do not go live from this decision.`
+          : `Refused. The manufacturer can correct the file and re-register it.`,
+      brand: publicBrand(brand, 'admin'),
+      manifest,
+    });
+  } catch (error) {
+    if (error?.name === 'ValidationError' || /logo|ownership/i.test(String(error.message))) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    console.error('Brand decision failed:', String(error.message).slice(0, 180));
+    res
+      .status(500)
+      .json({ success: false, message: 'The decision could not be recorded. The brand is still pending.' });
+  }
+});
+
+/*
+ * The manifest on demand, for the owner's own brand list and for the desk.
+ * Scoped by the brand's owner even when the caller is the owner - a manufacturer
+ * asking for a slug they do not hold is answered the same way as one that does
+ * not exist, so the endpoint cannot be used to enumerate who owns what.
+ */
+/**
+ * The manifest, scoped to one brand by default.
+ *
+ * A route addressed as `/brands/:slug/manifest` must answer about that brand.
+ * The first version returned every brand the manufacturer has, which is a
+ * different question - and the difference matters when the manifest is read as
+ * "what did approving THIS brand cover": an unfiltered answer quietly includes
+ * listings under unrelated brands. The whole-manufacturer totals are still
+ * available, under their own honest name.
+ */
+async function manifestFor(brand, { scopeToBrand = true } = {}) {
+  const products = await Product.find({ manufacturer: brand.ownerManufacturer, brand: { $exists: true, $ne: null } })
+    .select(
+      'brand title sku price stock isActive isDiscontinued verificationStatus rejectionReason verificationNotes category'
+    )
+    .lean();
+  const full = buildBrandManifest({ products, brandRecords: [brand] });
+  if (!scopeToBrand) return full;
+  const brands = full.brands.filter((b) => b.slug === brand.slug);
+  return {
+    ...full,
+    scope: 'brand',
+    scopeSlug: brand.slug,
+    brands,
+    totals: {
+      brands: brands.length,
+      products: brands.reduce((n, b) => n + b.total, 0),
+      live: brands.reduce((n, b) => n + (b.byState?.live || 0), 0),
+    },
+    manufacturerOverview: { ...full.totals, withoutBrandRows: full.skipped?.withoutBrand ?? 0 },
+  };
+}
+
+router.get('/manufacturer/brands/:slug/manifest', verifyManufacturer, async (req, res) => {
+  try {
+    const slug = foldBrand(req.params.slug);
+    const brand = await Brand.findOne({ slug, ownerManufacturer: req.manufacturer._id });
+    if (!brand)
+      return res.status(404).json({ success: false, message: 'You have no brand registered under that name.' });
+    const manifest = await manifestFor(brand);
+    res.json({ success: true, brand: publicBrand(brand, 'manufacturer'), manifest });
+  } catch (error) {
+    console.error('Brand manifest failed:', String(error.message).slice(0, 160));
+    res.status(500).json({ success: false, message: 'The manifest could not be built.' });
+  }
+});
+
+/*
+ * Storefront rails. Returns one entry per brand that is actually on sale, with
+ * the approved logo when there is one - so the rails show a mark instead of an
+ * initial, without ever falling back to a fabricated image. Only approved
+ * brands' logos are published: a pending submission is not public information,
+ * and rendering it would leak a name the desk has not cleared.
+ */
+router.get('/brands/with-logos', async (req, res) => {
+  try {
+    const scope = { isActive: true, verificationStatus: 'verified' };
+    if (req.query.category) scope.category = String(req.query.category).toLowerCase();
+    const names = await Product.distinct('brand', scope);
+    const slugs = names.map((n) => foldBrand(n));
+    const approved = await Brand.find({ slug: { $in: slugs }, status: 'approved' })
+      .select('name slug logo')
+      .lean();
+    const bySlug = new Map(approved.map((b) => [b.slug, b]));
+    const list = names
+      .filter(Boolean)
+      .sort((a, b) => String(a).localeCompare(String(b)))
+      .map((name) => {
+        const record = bySlug.get(foldBrand(name)) || null;
+        return {
+          name,
+          slug: foldBrand(name),
+          logoUrl: record?.logo?.url || null,
+          letter: String(name).trim().charAt(0).toUpperCase(),
+          verified: Boolean(record),
+        };
+      });
+    res.json({
+      success: true,
+      brands: list,
+      withLogos: list.filter((b) => b.logoUrl).length,
+      scoped: Boolean(req.query.category),
+    });
+  } catch (error) {
+    console.error('Brand rail lookup failed:', String(error.message).slice(0, 160));
+    res.status(500).json({ success: false, message: 'Brand list could not be read.' });
   }
 });
 

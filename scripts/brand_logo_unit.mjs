@@ -396,6 +396,34 @@ check(
   process.env.NODE_ENV === originalEnv.NODE_ENV && describeStorage() !== undefined
 );
 
+/* ------------------------------------------- notification addressing guard */
+/*
+ * `notifyAccount` used to accept a call with neither user nor seller: it created
+ * a Notification with no recipient field, emitted to nobody, and returned
+ * {success:true}. The guard throws before touching the database, so it is
+ * assertable here with no connection - and the case that matters (no recipient)
+ * is exactly the one that used to succeed silently.
+ */
+const { notifyAccount } = await import('../server/services/notifications.js');
+const silentRow = await notifyAccount({ title: 'x', message: 'y' }).catch((e) => e);
+check(
+  'a notification with no recipient is an error, not a silent success',
+  silentRow instanceof Error && /exactly one recipient/.test(silentRow.message),
+  String(silentRow).slice(0, 140)
+);
+const twoTargets = await notifyAccount({ title: 'x', message: 'y', user: 'a', seller: 'b' }).catch((e) => e);
+check(
+  'and so is one addressed to two principals at once',
+  twoTargets instanceof Error && /user,seller/.test(twoTargets.message),
+  String(twoTargets).slice(0, 140)
+);
+const namesListed = /user, seller, retailer, partner, manufacturer/.test(String(silentRow.message));
+check(
+  'the message names every allowed recipient field (a guess-free remedy)',
+  namesListed,
+  String(silentRow.message).slice(0, 140)
+);
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} brand/logo/storage checks passed`);
 failed.forEach((f) => console.log(`  - ${f.name}`));

@@ -82,6 +82,24 @@ export const verifyAnyPrincipal = async (req, res, next) => {
           principal.partner = partnerDoc;
           principal.doc = partnerDoc;
         }
+      } else if (decoded.role === 'manufacturer') {
+        /*
+         * Without this branch a manufacturer token fell to the catch-all below,
+         * where `User.findById(manufacturerId)` and then `Seller.findById(...)`
+         * both return null - so `principal` gained no recipient field at all and
+         * recipientScopeFor answered `{ user: id }`. Their notification inbox then
+         * queried a User document by a Manufacturer id: always empty, and never an
+         * error. Notifications the desk sends (brand decisions, supply claims) had
+         * no way to arrive, which is exactly what made the approval flow look
+         * broken from the manufacturer's side.
+         */
+        const { default: MongManufacturer } = await import('../models/Manufacturer.js');
+        const mDoc = await MongManufacturer.findById(id);
+        if (mDoc) {
+          req.manufacturer = mDoc;
+          principal.manufacturer = mDoc;
+          principal.doc = mDoc;
+        }
       } else if (decoded.role === 'seller') {
         const { default: MongSeller } = await import('../models/Seller.js');
         const sellerDoc = await MongSeller.findById(id);

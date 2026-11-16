@@ -71,6 +71,7 @@ export const recipientFieldFor = (kind) => ({ user: 'user', seller: 'seller', pa
 export const recipientScopeFor = (principal) => {
   if (principal?.partner) return { partner: principal.id };
   if (principal?.retailer) return { retailer: principal.id };
+  if (principal?.manufacturer) return { manufacturer: principal.id };
   if (principal?.seller) return { seller: principal.id };
   if (principal?.executive) return { user: principal.id };
   return { user: principal.id };
@@ -92,12 +93,29 @@ export const notifyPartner = async ({ partnerId, title, message, type = 'deliver
 };
 
 /** Tell one specific account something, by whichever document represents it. */
-export const notifyAccount = async ({ user, seller, title, message, type = 'system', data = {}, io = null }) => {
-  const row = { type, title, message, data };
-  if (user) row.user = user;
-  if (seller) row.seller = seller;
-  const doc = await Notification.create(row);
-  if (user) emit(io, `user_${user}`, doc.toObject());
-  if (seller) emit(io, `seller_${seller}`, doc.toObject());
-  return { success: true, id: String(doc._id) };
+/*
+ * Every notification must name exactly one principal field: user, seller,
+ * retailer, partner or manufacturer. `notifyAccount` used to build a row from
+ * whichever of the two it was passed, so a call with neither created an
+ * address-less document, emitted nothing, and still returned success - the same
+ * class of bug as a UI button that toasts "Updated" over a request that never
+ * happened. Now the recipient is validated before the row is built, and the
+ * result says which channel actually received it.
+ */
+const RECIPIENT_FIELDS = ['user', 'seller', 'retailer', 'partner', 'manufacturer'];
+
+export const notifyAccount = async ({ title, message, type = 'system', data = {}, io = null, ...rest }) => {
+  const targets = RECIPIENT_FIELDS.filter((f) => rest[f]);
+  if (targets.length !== 1) {
+    throw new Error(
+      `notifyAccount needs exactly one recipient of [${RECIPIENT_FIELDS.join(', ')}]; got ${targets.length ? targets.join(',') : 'none'}.`
+    );
+  }
+  const field = targets[0];
+  const doc = await Notification.create({ type, title, message, data, [field]: rest[field] });
+  emit(io, `${field}_${rest[field]}`, doc.toObject());
+  return { success: true, id: String(doc._id), deliveredTo: { [field]: String(rest[field]) } };
 };
+
+export const notifyManufacturer = ({ manufacturerId, ...rest }) =>
+  notifyAccount({ ...rest, manufacturer: manufacturerId });

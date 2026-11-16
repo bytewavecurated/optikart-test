@@ -346,6 +346,191 @@ async function main() {
   );
   check('and neither can an anonymous request', (await call('/storage/status')).status === 401);
 
+  /* ------------------------------------------------------- the decision path */
+  const brandId = created.json?.brand?._id;
+  const decideAsOwner = await call(`/admin/brands/${brandId}/decision`, {
+    token: ownerA,
+    body: { decision: 'approve' },
+    method: 'PUT',
+  });
+  check(
+    'a manufacturer cannot approve their own brand',
+    decideAsOwner.status === 401 || decideAsOwner.status === 403,
+    `status ${decideAsOwner.status}`
+  );
+  const rejectNoReason = await call(`/admin/brands/${brandId}/decision`, {
+    token: admin,
+    body: { decision: 'reject' },
+    method: 'PUT',
+  });
+  check(
+    'a rejection without a reason is refused (no state change)',
+    rejectNoReason.status === 400 && /reason/i.test(String(rejectNoReason.json?.message)),
+    String(rejectNoReason.json?.message).slice(0, 130)
+  );
+  check(
+    'and the brand is still pending afterward',
+    (await call('/manufacturer/brands', { token: ownerA })).json?.brands?.find((b) => b.slug === 'vertiflexoptics')
+      ?.status === 'pending'
+  );
+  const approve = await call(`/admin/brands/${brandId}/decision`, {
+    token: admin,
+    body: { decision: 'approve' },
+    method: 'PUT',
+  });
+  check(
+    'approval succeeds and the desk gets the manifest in the same response',
+    approve.json?.brand?.status === 'approved' && Array.isArray(approve.json?.manifest?.brands),
+    `${approve.status} ${String(approve.json?.message).slice(0, 120)}`
+  );
+  check(
+    'the manifest states its own limits (approval is not publication)',
+    (approve.json?.manifest?.limitations || []).some((l) => /does not publish|verification/i.test(l)),
+    JSON.stringify(approve.json?.manifest?.limitations || []).slice(0, 150)
+  );
+  check(
+    'the manifest totals are counts, not prose',
+    typeof approve.json?.manifest?.totals?.brands === 'number' &&
+      typeof approve.json?.manifest?.totals?.products === 'number' &&
+      typeof approve.json?.manifest?.totals?.live === 'number',
+    JSON.stringify(approve.json?.manifest?.totals)
+  );
+  const twice = await call(`/admin/brands/${brandId}/decision`, {
+    token: admin,
+    body: { decision: 'approve' },
+    method: 'PUT',
+  });
+  check(
+    'deciding twice is refused rather than silently re-approved',
+    twice.status === 409 && /already approved/i.test(String(twice.json?.message)),
+    String(twice.json?.message).slice(0, 130)
+  );
+
+  /* --------------------------------------------------------- public rails */
+  const rails0 = await call('/brands/with-logos', { token: admin });
+  check(
+    'rails list the brands that actually have live products',
+    rails0.status === 200 && (rails0.json?.brands || []).length > 0,
+    `rows=${(rails0.json?.brands || []).length}`
+  );
+  const unverifiedRow = (rails0.json?.brands || []).find((b) => b.slug === 'rayban');
+  check(
+    'a brand with no APPROVED record is listed with a letter, not a logo',
+    !!unverifiedRow &&
+      unverifiedRow.logoUrl === null &&
+      unverifiedRow.verified === false &&
+      unverifiedRow.letter === 'R',
+    JSON.stringify(unverifiedRow)
+  );
+  check(
+    'no internal field is exposed on the public rail projection',
+    !['ownerManufacturer', 'decision', 'storage', 'publicId'].some((k) => k in (unverifiedRow || {})),
+    Object.keys(unverifiedRow || {}).join(',')
+  );
+  /*
+   * multipart, not JSON: this route takes the logo as a file. The assertion used
+   * the JSON helper, so it uploaded nothing and failed for a reason that had
+   * nothing to do with the feature - and my first two attempts to fix it no-oped
+   * silently because the regexes could not see prettier's wrapped lines.
+   */
+  const seedTry = await upload('/manufacturer/brands', { token: ownerA, fields: { name: 'Ray-Ban' }, file: logoPng });
+  const pendingMark = seedTry.json;
+  check(
+    'registering the already-owned seed brand gives a pending record (not published)',
+    pendingMark?.brand?.slug === 'rayban' && pendingMark?.brand?.status === 'pending',
+    `HTTP ${seedTry.status} ${JSON.stringify(pendingMark?.brand || pendingMark?.message || String(seedTry.text).slice(0, 120))}`
+  );
+
+  /* ------------------------------------- approve a brand that owns products */
+  const approveReal = await call(`/admin/brands/${pendingMark.brand._id}/decision`, {
+    token: admin,
+    body: { decision: 'approve' },
+    method: 'PUT',
+  });
+  check(
+    'approving it returns a manifest that covers real listings',
+    approveReal.json?.brand?.status === 'approved' &&
+      (approveReal.json?.manifest?.brands || []).some((b) => b.slug === 'rayban' && b.total >= 1),
+    JSON.stringify(approveReal.json?.manifest?.totals)
+  );
+  const raybanEntry = (approveReal.json?.manifest?.brands || []).find((b) => b.slug === 'rayban');
+  check(
+    'every product line carries a state and a human label for it',
+    raybanEntry?.products?.every((p) => p.state && p.stateLabel),
+    JSON.stringify((raybanEntry?.products || []).map((p) => p.state))
+  );
+  check(
+    'the live count only counts what the storefront gate itself would show',
+    raybanEntry?.byState?.live === approveReal.json?.manifest?.totals?.live ||
+      raybanEntry?.products?.filter((p) => p.state === 'live').length === raybanEntry?.byState?.live,
+    JSON.stringify([raybanEntry?.byState, approveReal.json?.manifest?.totals])
+  );
+  const rails1 = await call('/brands/with-logos', { token: admin });
+  const railRow = (rails1.json?.brands || []).find((b) => b.slug === 'rayban');
+  check(
+    'the approved brand now appears on rails with its real logo',
+    railRow?.logoUrl && railRow.verified === true,
+    JSON.stringify(railRow)
+  );
+  check(
+    'and a brand whose logo was rejected never appears as approved',
+    (rails1.json?.brands || []).every((b) => !(b.slug === 'mismatchmark' && !b.logoUrl && b.verified === true)),
+    JSON.stringify((rails1.json?.brands || []).filter((b) => b.slug === 'mismatchmark'))
+  );
+  const railsCat = await call('/brands/with-logos?category=sunglasses', { token: admin });
+  check(
+    'the rail list scopes by category (same gate as the product list)',
+    railsCat.status === 200 && (railsCat.json?.brands || []).length > 0,
+    String(railsCat.json?.brands?.length)
+  );
+
+  /* ------------------------------------------- a brand with no products yet */
+  const emptyManifest = await call('/manufacturer/brands/vertiflexoptics/manifest', { token: ownerA });
+  check(
+    'an approved brand with no listings reads back as empty, not as an error',
+    emptyManifest.status === 200 &&
+      emptyManifest.json?.manifest?.brands?.length === 0 &&
+      emptyManifest.json?.manifest?.totals?.products === 0,
+    JSON.stringify(emptyManifest.json?.manifest?.totals)
+  );
+  check(
+    'and it still carries the limitations text that explains what is missing',
+    (emptyManifest.json?.manifest?.limitations || []).length >= 2,
+    String((emptyManifest.json?.manifest?.limitations || []).length)
+  );
+  const strangerManifest = await call('/manufacturer/brands/vertiflexoptics/manifest', { token: ownerB });
+  const noSuch = await call('/manufacturer/brands/zz-not-real/manifest', { token: ownerA });
+  check(
+    'another manufacturer is answered exactly like a nonexistent brand (no owner enumeration)',
+    strangerManifest.status === 404 && strangerManifest.json?.message === noSuch.json?.message,
+    String(strangerManifest.json?.message).slice(0, 110)
+  );
+  /* The decision has to arrive somewhere (manufacturer inbox isolation). */
+  const inbox = await call('/notifications?limit=50', { token: ownerA });
+  const brandNotes = (inbox.json?.notifications || []).filter((d) => d.type === 'brand');
+  check(
+    'the approved manufacturer actually receives the decision',
+    inbox.status === 200 && brandNotes.length >= 1,
+    `HTTP ${inbox.status} count=${brandNotes.length} unread=${inbox.json?.unreadCount}`
+  );
+  check(
+    'the notification names the brand and says what approval covered',
+    brandNotes.some((d) => /Vertiflex Optics/.test(`${d.title} ${d.message}`)) &&
+      brandNotes.some((d) => /Manifest:|no products under it/i.test(d.message)),
+    JSON.stringify(brandNotes.map((d) => d.title))
+  );
+  const otherInbox = await call('/notifications?limit=50', { token: ownerB });
+  check(
+    "a different manufacturer does not see another company's brand mail",
+    (otherInbox.json?.notifications || []).every((d) => !/Vertiflex Optics|Ray-Ban/.test(`${d.title} ${d.message}`)),
+    JSON.stringify((otherInbox.json?.notifications || []).filter((d) => d.type === 'brand').map((d) => d.title))
+  );
+  check(
+    'and an inbox that is empty for a reason is reported as empty, not as an error',
+    otherInbox.status === 200 && Array.isArray(otherInbox.json?.notifications),
+    `HTTP ${otherInbox.status}`
+  );
+
   return finish();
 }
 

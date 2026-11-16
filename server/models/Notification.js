@@ -2,6 +2,16 @@ import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema(
   {
+    /*
+     * Added for brand decisions. Before this, a notification intended only for a
+     * manufacturer had no field: `notifyAccount` built the row, Mongoose dropped
+     * the unrecognised property, and the message became invisible to everyone
+     * while the API still reported success. Making "delivered to whom" a real
+     * column is also what makes `recipientScopeFor` able to say
+     * "this inbox, and only this inbox".
+     */
+    manufacturer: { type: mongoose.Schema.Types.ObjectId, ref: 'Manufacturer', default: null },
+
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     seller: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller' },
     /*
