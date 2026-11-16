@@ -18,6 +18,7 @@ import {
   FiX,
   FiShield,
   FiMessageCircle,
+  FiHardDrive,
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import Logo from '../../components/Logo';
@@ -54,6 +55,7 @@ const AdminLayout = () => {
     { label: 'Delivery Partners', path: '/admin/delivery-partners', icon: <FiTruck /> },
     { label: 'Supply Claims', path: '/admin/supply-claims', icon: <FiFileText /> },
     { label: 'Cash Reconciliation', path: '/admin/cash-reconciliation', icon: <FiDollarSign /> },
+    { label: 'Storage', path: '/admin/storage', icon: <FiHardDrive /> },
     { label: 'Partner Payouts', path: '/admin/partner-payouts', icon: <FiDollarSign /> },
     { label: 'Storefront Content', path: '/admin/site-content', icon: <FiImage /> },
     { label: 'Footer & Nav', path: '/admin/site-footer', icon: <FiImage /> },

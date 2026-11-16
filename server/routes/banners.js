@@ -1,4 +1,5 @@
 import express from 'express';
+import { persistMulterFile } from '../services/storage.js';
 import Banner from '../models/Banner.js';
 import { verifyToken, verifyAdmin } from '../middleware/auth.js';
 import { uploadSingleImage } from '../middleware/upload.js';
@@ -71,7 +72,7 @@ router.post('/', verifyToken, verifyAdmin, uploadSingleImage, async (req, res) =
       return res.status(400).json({ success: false, message: 'A banner image file is required.' });
     }
 
-    const imageUrl = `/uploads/banners/${req.file.filename}`;
+    const imageUrl = await persistMulterFile(req.file, 'banners');
 
     const banner = await Banner.create({
       title: String(title).trim(),
@@ -123,7 +124,7 @@ router.put('/:id', verifyToken, verifyAdmin, uploadSingleImage, async (req, res)
     }
 
     const existingUrl = banner.images?.desktop?.url || '';
-    const nextUrl = req.file ? `/uploads/banners/${req.file.filename}` : existingUrl;
+    const nextUrl = req.file ? await persistMulterFile(req.file, 'banners') : existingUrl;
 
     banner.title = title || banner.title;
     banner.subtitle = subtitle ?? banner.subtitle;

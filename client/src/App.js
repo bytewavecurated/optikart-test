@@ -30,6 +30,7 @@ const ManageDeliveryPartners = lazy(() => import('./pages/admin/ManageDeliveryPa
 const SiteContentManagement = lazy(() => import('./pages/admin/SiteContentManagement'));
 const SupplyClaims = lazy(() => import('./pages/admin/SupplyClaims'));
 const CashReconciliation = lazy(() => import('./pages/admin/CashReconciliation'));
+const StorageManagement = lazy(() => import('./pages/admin/StorageManagement'));
 const PartnerPayoutQueue = lazy(() => import('./pages/admin/PartnerPayoutQueue'));
 const SiteFooterManagement = lazy(() => import('./pages/admin/SiteFooterManagement'));
 const AdminPrescriptionQueue = lazy(() => import('./pages/admin/PrescriptionVerificationQueue'));
@@ -374,6 +375,7 @@ function App() {
           <Route path="supply-claims" element={<SupplyClaims />} />
           {/* Cash collected at the door, reconciled against what was due. */}
           <Route path="cash-reconciliation" element={<CashReconciliation />} />
+          <Route path="storage" element={<StorageManagement />} />
           {/* Partner withdrawals awaiting a bank settlement. */}
           <Route path="partner-payouts" element={<PartnerPayoutQueue />} />
           <Route path="site-footer" element={<SiteFooterManagement />} />

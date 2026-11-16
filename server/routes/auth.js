@@ -1,4 +1,5 @@
 import express from 'express';
+import { persistMulterFile } from '../services/storage.js';
 import { signSession, revokeAuthorization } from '../services/session.js';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
@@ -449,7 +450,14 @@ router.post('/prescription-upload', verifyToken, uploadPrescription, async (req,
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Choose a prescription image or PDF to upload.' });
     }
-    const url = `/uploads/prescriptions/${req.file.filename}`;
+    /*
+     * The old line assumed multer had written the file to disk under a name this
+     * route could interpolate. It is buffered now, and the bytes go through the
+     * storage service: same `/uploads/...` shape in development, a CDN URL when
+     * Cloudinary is configured - and a refusal that names the reason instead of
+     * storing a path to nothing.
+     */
+    const url = await persistMulterFile(req.file, 'prescriptions');
     res.status(201).json({
       success: true,
       url,

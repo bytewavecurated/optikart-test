@@ -1,4 +1,5 @@
 import express from 'express';
+import { persistMulterFile } from '../services/storage.js';
 import { foldBrand } from '../services/brandOwnership.js';
 
 /*
@@ -813,7 +814,10 @@ router.post('/:id/images', verifySeller, uploadProductImages, async (req, res) =
       return res.status(400).json({ success: false, message: 'No images uploaded.' });
     }
 
-    const imageUrls = req.files.map((file) => `/uploads/products/${file.filename}`);
+    // Buffered upload -> stored through the service, which owns the name and the
+    // provider. Building paths from file.filename here would have recorded
+    // /uploads/products/undefined for every image in the set.
+    const imageUrls = await persistMulterFile(req.files, 'products');
     product.images.push(...imageUrls);
     await product.save();
 

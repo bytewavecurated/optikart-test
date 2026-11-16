@@ -9,6 +9,7 @@ import { verifyToken, verifyAdmin, verifyManufacturer } from '../middleware/auth
 import { assessLogo, MIN_LOGO_EDGE_PX, MAX_LOGO_BYTES } from '../services/brandLogo.js';
 import { foldBrand } from '../services/brandOwnership.js';
 import { saveUpload, removeUpload, storageStatus, StoragePolicyError } from '../services/storage.js';
+import { storageInventory, validateAssetFieldMap } from '../services/storageInventory.js';
 import { notifyAdmins } from '../services/notifications.js';
 
 /**
@@ -196,6 +197,36 @@ router.post('/manufacturer/brands', verifyManufacturer, logoUpload.single('logo'
  * any secret-derived value: this is the answer to "did my logo go to the CDN or
  * to the disk", and it should be readable without granting config access.
  */
+/*
+ * The inventory: what the database actually points at, per collection and field.
+ *
+ * A "what is stored where" page has one way to be useless: read a list of
+ * fields somebody typed. If an entry no longer exists - a field renamed, a
+ * model dropped - the query returns nothing and the page reports zero assets
+ * with total confidence. So the route refuses to answer until its own field map
+ * matches the live schemas, and says which entry is wrong.
+ */
+router.get('/admin/storage-inventory', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const drift = await validateAssetFieldMap();
+    if (drift.length) {
+      return res.status(500).json({
+        success: false,
+        message:
+          'The asset inventory cannot be trusted because its field map no longer matches the schemas. ' +
+          'Nothing was counted, rather than counting the wrong thing.',
+        drift,
+      });
+    }
+    const sampleLimit = Math.min(20, Math.max(0, Number(req.query.sampleLimit) || 3));
+    const inventory = await storageInventory({ sampleLimit });
+    res.json({ success: true, storage: storageStatus(), inventory, countedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('Storage inventory failed:', String(error.message).slice(0, 160));
+    res.status(500).json({ success: false, message: 'The asset inventory could not be read.' });
+  }
+});
+
 router.get('/storage/status', verifyToken, verifyAdmin, async (req, res) => {
   res.json({ success: true, storage: storageStatus() });
 });

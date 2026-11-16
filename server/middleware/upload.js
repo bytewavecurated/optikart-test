@@ -5,32 +5,18 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    let uploadDir = 'uploads';
-
-    if (file.fieldname === 'productImage' || file.fieldname === 'productImages') {
-      uploadDir = 'uploads/products';
-    } else if (file.fieldname === 'prescription') {
-      uploadDir = 'uploads/prescriptions';
-    } else if (file.fieldname === 'storeLogo' || file.fieldname === 'storeBanner') {
-      uploadDir = 'uploads/store';
-    } else if (file.fieldname === 'avatar') {
-      uploadDir = 'uploads/avatars';
-    } else if (file.fieldname === 'blogImage' || file.fieldname === 'coverImage') {
-      uploadDir = 'uploads/blogs';
-    } else if (file.fieldname === 'image' || file.fieldname === 'bannerImage') {
-      uploadDir = 'uploads/banners';
-    }
-
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
-  },
-});
+/*
+ * memoryStorage, deliberately: this app's rule is that user files belong in the
+ * storage service (services/storage.js), and a disk temp file created by multer
+ * *is* a local copy - written whatever the deployment was configured to do, and
+ * left behind if the route then refused the file. The routes below hand the
+ * buffer to saveUpload(), which owns the folder whitelist, the generated name,
+ * the type policy and the Cloudinary-or-local decision in one place.
+ *
+ * `limits` stays here because the byte cap protects the request body from a
+ * hostile upload before any of that runs.
+ */
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/;

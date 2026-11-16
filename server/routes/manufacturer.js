@@ -1,4 +1,5 @@
 import { otpBypassAllowed } from '../config/authMode.js';
+import { saveUpload, StoragePolicyError } from '../services/storage.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import { brandOwnersByFoldedName, foldBrand } from '../services/brandOwnership.js';
 import { missingProductFields, describeRequired, sheetTextFor } from '../services/productRequirements.js';
@@ -78,6 +79,131 @@ router.post('/logout', verifyManufacturer, logoutHandler('manufacturer'));
  * rather than publishing a broken product.
  */
 const IMAGE_HOSTS_ALLOW = /\.(jpe?g|png|webp|gif|avif|svg)$/i;
+/*
+ * The URL forms that mean "a file this app already stores", for both the
+ * relative and absolute spelling.
+ *
+ * Host matching is done on the *hostname*, never on a substring of the URL, so
+ * `http://127.0.0.1.evil.test/uploads/...` cannot borrow our own-host allowance:
+ * its hostname is `127.0.0.1.evil.test`, which is not in the set. Ports are
+ * ignored on purpose (the app is behind a proxy, a dev server, or a container
+ * and the port differs between them) and the path must start with the uploads
+ * directory rather than merely contain it.
+ */
+const OWN_UPLOAD_PREFIX = '/uploads/';
+const localHostnames = new Set(['localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0']);
+
+/** Returns the canonical relative /uploads path, or null. */
+export function ownUploadsPath(value) {
+  const text = String(value || '').trim();
+  if (text.startsWith(OWN_UPLOAD_PREFIX)) return text;
+  let parsed;
+  try {
+    parsed = new URL(text);
+  } catch {
+    return null;
+  }
+  if (!/^https?:$/.test(parsed.protocol)) return null;
+  const host = parsed.hostname.replace(/^\[|\]$/g, '');
+  const isSelf = localHostnames.has(host) || host === '127.0.0.1' || host.endsWith('.localhost');
+  // FRONTEND_URL / PUBLIC_URL, when configured, is also "us".
+  const configured = [process.env.FRONTEND_URL, process.env.PUBLIC_URL, process.env.APP_URL]
+    .filter(Boolean)
+    .some((base) => {
+      try {
+        return new URL(base).hostname === parsed.hostname;
+      } catch {
+        return false;
+      }
+    });
+  if (!isSelf && !configured) return null;
+  if (!parsed.pathname.startsWith(OWN_UPLOAD_PREFIX)) {
+    throw new Error(
+      `"${text}" is this server's own address but not an uploaded file, and the app will not fetch itself.`
+    );
+  }
+  return parsed.pathname;
+}
+
+/*
+ * Guards for storeRemoteImages(). Kept next to its caller because they exist
+ * only for it; the behaviour is asserted by
+ * server/scripts/storage_upload_guards_unit.mjs so a future edit cannot quietly
+ * narrow the rule.
+ */
+const PRIVATE_HOST_PATTERNS = [
+  /^localhost$/i,
+  /^127\./,
+  /^10\./,
+  /^192\.168\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^169\.254\./,
+  /^0\./,
+  /^\[?::1\]?$/,
+  /^\[::\]/,
+  /^169\.254\.169\.254$/, // cloud provider metadata
+  /^metadata\.google.internal$/i,
+  /^host\.docker\.internal$/i,
+  /^\[::1\]$/,
+  /^100\.\d+\.\d+\.\d+$/, // carrier-grade NAT range often used by internal balancers
+];
+const LOCAL_TLDS = /\.local$/i;
+
+/** True when the hostname refers to this machine or its private network. */
+export const isDisallowedHost = (hostname) => {
+  const h = String(hostname || '').replace(/^\[|\]$/g, '');
+  if (!h) return true;
+  if (LOCAL_TLDS.test(h)) return true;
+  if (/^0\.0\.0\.0$/.test(h)) return true;
+  // A literal IPv6 loopback/unspecified, and any decimal/octal trick form of
+  // loopback (e.g. 2130706433 == 127.0.0.1) is refused by requiring dotted
+  // decimal to fall in a public range.
+  if (/^\d+$/.test(h)) {
+    const n = Number(h);
+    if (!Number.isFinite(n)) return true;
+    if (n >= 0 && n <= 0x7f000000 + 0x00ffffff) {
+      // anything resolving into 0.0.0.0/127.255.255.255 is loopback-adjacent
+      if (n <= 0x7fffffff) return true;
+    }
+    return false;
+  }
+  return PRIVATE_HOST_PATTERNS.some((re) => re.test(h));
+};
+
+class DisallowedRedirectError extends Error {
+  constructor(target) {
+    super(`"${target}" redirected to an address inside this server's own network, which the app will not fetch.`);
+    this.name = 'DisallowedRedirectError';
+  }
+}
+
+/**
+ * fetch() that re-checks every redirect hop.
+ *
+ * `redirect: 'follow'` on a user-supplied URL means the first host we approved
+ * chooses the second one, which is how an SSRF guard that only looks at the
+ * input is bypassed with a 302.
+ */
+export async function fetchSameOriginGuarded(url, { maxHops = 4, ...init } = {}) {
+  let current = String(url);
+  for (let hop = 0; hop <= maxHops; hop += 1) {
+    const parsed = new URL(current);
+    if (!/^https?:$/.test(parsed.protocol) || isDisallowedHost(parsed.hostname)) {
+      if (hop === 0) throw new Error('refused: host is not publicly reachable');
+      throw new DisallowedRedirectError(current);
+    }
+    const res = await fetch(current, { ...init, redirect: 'manual' });
+    if ([301, 302, 303, 307, 308].includes(res.status)) {
+      const location = res.headers.get('location');
+      if (!location) return res;
+      current = new URL(location, parsed).toString();
+      continue;
+    }
+    return res;
+  }
+  throw new Error('too many redirects while fetching an image URL');
+}
+
 const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir = 'products') => {
   const fsMod = await import('fs');
   const pathMod = await import('path');
@@ -86,8 +212,27 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
   for (const raw of urls) {
     const url = String(raw || '').trim();
     if (!url) continue;
-    if (url.startsWith('/uploads/')) {
-      out.push(url);
+    /*
+     * "This app's own stored file" is a legitimate answer in a sheet, and it has
+     * always been accepted in its relative form (`/uploads/products/x.png`, e.g.
+     * copied out of the media picker). The absolute spelling of the same thing -
+     * `http://127.0.0.1:3111/uploads/products/x.png` - was rejected by the SSRF
+     * guard added in this batch, which broke three passing rows in the suites:
+     * the manifest export produces absolute self-URLs, so a manufacturer
+     * round-tripping their own catalogue through the bulk sheet got "points at
+     * an address inside this server's own network". That is my guard mistaking
+     * *our own served files* for an internal service.
+     *
+     * So: recognise both spellings of our own uploads before the network guard,
+     * and reuse the path instead of fetching it. Deliberately restricted to the
+     * `/uploads/` prefix on our own host - any other path on loopback stays
+     * refused, because `http://127.0.0.1:3111/api/admin/users` is exactly what
+     * an SSRF attempt looks like, and a fix that stops guarding to make a test
+     * pass is not a fix.
+     */
+    const asUploadedPath = ownUploadsPath(url);
+    if (asUploadedPath) {
+      out.push(asUploadedPath);
       continue;
     }
     let parsed;
@@ -111,10 +256,30 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
      */
     const extMatch = parsed.pathname.match(IMAGE_HOSTS_ALLOW);
 
+    /*
+     * Server-side fetch of a URL that arrived in a spreadsheet, which is the
+     * definition of an SSRF surface: with no guard, a sheet row could point at
+     * the metadata endpoint of the cloud account, at a database or admin port on
+     * an internal address, and the response body would be written out as an
+     * "image" whose content-type was checked but whose *origin* never was.
+     * redirect:'follow' made it worse, because an allowed host could bounce to a
+     * forbidden one.
+     *
+     * So: reject any host that is a loopback/private/link-local name or literal,
+     * and follow redirects by hand so every hop passes the same test rather than
+     * only the first one. Image CDNs and ordinary public hosts are unaffected.
+     */
+    if (isDisallowedHost(parsed.hostname)) {
+      throw new Error(
+        `"${url}" points at an address inside this server's own network, which the app will not fetch. ` +
+          'Use a public image URL.'
+      );
+    }
     let res;
     try {
-      res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      res = await fetchSameOriginGuarded(url, { signal: AbortSignal.timeout(15000) });
     } catch (e) {
+      if (e && e.name === 'DisallowedRedirectError') throw e;
       throw new Error(`could not download ${url}: ${e.message}`);
     }
     if (!res.ok) throw new Error(`could not download ${url} (HTTP ${res.status})`);
@@ -143,12 +308,23 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
     if (buf.length === 0) throw new Error(`${url} returned no data`);
     if (buf.length > 8 * 1024 * 1024) throw new Error(`${url} is larger than 8 MB`);
 
-    const { fileURLToPath } = dirMod;
-    const dir = pathMod.join(pathMod.dirname(fileURLToPath(import.meta.url)), '..', 'uploads', subdir);
-    fsMod.mkdirSync(dir, { recursive: true });
-    const safe = `${ownerHint}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    fsMod.writeFileSync(pathMod.join(dir, safe), buf);
-    out.push(`/uploads/${subdir}/${safe}`);
+    /*
+     * The bytes used to be written here by hand, with `subdir` interpolated
+     * straight into a path built from __dirname. `subdir` is a parameter, so a
+     * caller (or a future one) that passed '../..' walked out of uploads - and
+     * even without that, this is the second place in the app that wrote user
+     * files to this container's disk whatever the deployment was configured to
+     * do, outside the folder whitelist and outside the inventory that reports
+     * what is stored where.
+     *
+     * saveUpload() now owns all of it: a whitelisted folder, a generated name
+     * that no caller can influence, the extension decided by a list rather than
+     * by string concatenation, and the Cloudinary-or-local decision in one
+     * place. `/uploads/...` early-returns above are untouched, because those are
+     * already this app's own stored assets.
+     */
+    const asset = await saveUpload({ buffer: buf, originalname: `remote${ext}`, mimeType: type, folder: subdir });
+    out.push(asset.url);
   }
   return out;
 };
@@ -280,7 +456,15 @@ router.post('/products/upload-images', verifyManufacturer, imageUpload.array('im
   }
 });
 
-const upload = multer({ dest: 'uploads/' });
+/*
+ * The uploaded sheet is an input, not an asset, and it used to be written to
+ * uploads/ by multer's default disk storage with a random name - then read
+ * and never deleted. Every bulk import therefore left a copy of a
+ * manufacturer's price list on the server forever, in the same directory the
+ * app serves to browsers. Buffering it keeps the bytes in memory only, and
+ * xlsx reads the buffer directly.
+ */
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const generateManufacturerToken = (manufacturerId) => {
   return signSession({ id: manufacturerId, manufacturerId, role: 'manufacturer' }, { expiresIn: '24h' });
@@ -752,7 +936,7 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
 
-    const workbook = xlsx.readFile(req.file.path);
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(sheet);
@@ -1407,7 +1591,7 @@ router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), a
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
 
-    const workbook = xlsx.readFile(req.file.path);
+    const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(sheet);

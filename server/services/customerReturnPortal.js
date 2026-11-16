@@ -9,6 +9,7 @@ import Product from '../models/Product.js';
 import { sendReturnConfirmation } from './email.js';
 import fs from 'fs';
 import path from 'path';
+import { saveUpload, removeUpload, StoragePolicyError } from './storage.js';
 
 // Used only where a product has not stated its own window.
 const DEFAULT_WINDOW_DAYS = 7;
@@ -308,23 +309,53 @@ export const uploadReturnImages = async (files, returnId) => {
       };
     }
 
+    /*
+     * This used to write the bytes by hand: mkdir, then
+     * `${returnId}_${Date.now()}_${file.originalname}` under process.cwd's
+     * uploads/returns. Three defects in one place, and all three are why user
+     * files now go through services/storage.js:
+     *
+     *  1. `originalname` belongs to whoever uploaded it. A name with a path
+     *     separator walked out of uploads/returns (nothing sanitised it), and two
+     *     files both called "invoice.png" arriving in the same millisecond wrote
+     *     the same path - on a return, that file is the customer's evidence.
+     *  2. It wrote to this container's disk whatever the deployment was
+     *     configured to do, so "user files live in Cloudinary" was true for brand
+     *     logos and silently false here. A write that bypasses the storage
+     *     service is also a write the inventory page cannot count.
+     *  3. No type or size policy at the point of writing - only whatever multer
+     *     happened to allow on the way in.
+     *
+     * saveUpload() owns naming (random, extension from a whitelist), the folder
+     * whitelist and the provider decision; removeUpload() can undo it. The shape
+     * returned to the client is unchanged.
+     */
     const imageUrls = [];
-    const uploadDir = path.join(process.cwd(), 'uploads', 'returns');
-
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
+    const stored = [];
     for (const file of files) {
-      const filename = `${returnId}_${Date.now()}_${file.originalname}`;
-      const filepath = path.join(uploadDir, filename);
-
-      // Move file to uploads directory
-      fs.writeFileSync(filepath, file.buffer);
-
-      const imageUrl = `/uploads/returns/${filename}`;
-      imageUrls.push(imageUrl);
+      try {
+        const asset = await saveUpload({
+          buffer: file.buffer,
+          originalname: file.originalname,
+          mimeType: file.mimetype,
+          folder: 'returns',
+        });
+        stored.push(asset);
+        imageUrls.push(asset.url);
+      } catch (uploadError) {
+        /*
+         * Half a set of evidence is worse than none: the customer would believe
+         * the return is documented. Undo whatever stored, then say so.
+         */
+        for (const asset of stored) await removeUpload(asset);
+        return {
+          success: false,
+          message:
+            uploadError && uploadError.name === 'StoragePolicyError'
+              ? `The photo could not be accepted: ${uploadError.message}`
+              : 'The photo could not be stored. Nothing was saved on this return - please try again.',
+        };
+      }
     }
 
     // Update return request with image URLs

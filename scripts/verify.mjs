@@ -79,6 +79,7 @@ const AUDITS = [
   ['weekly partner ranking (frozen clock)', 'scripts/partner_ranking_unit.mjs'],
   ['product upload requirements', 'scripts/product_requirements_unit.mjs'],
   ['entity code generation', 'server/scripts/entity_ids_unit.mjs'],
+  ['storage guards and asset inventory', 'server/scripts/storage_upload_guards_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],
   ['controls that only announce success', 'scripts/audit/fake-actions.mjs'],

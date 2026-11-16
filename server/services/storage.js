@@ -128,6 +128,17 @@ export function storageStatus() {
     fellBack: d.fellBack,
     prefix: d.backend === 'cloudinary' ? process.env.CLOUDINARY_FOLDER || 'optikart' : 'server/uploads',
     servedFrom: d.backend === 'cloudinary' ? 'https://res.cloudinary.com' : '/uploads (same origin)',
+    /*
+     * The two inputs that produced the answer, not just the answer. An operator
+     * looking at "local disk" cannot otherwise tell whether they set
+     * STORAGE_BACKEND=local, or left it at auto with no credentials, or set
+     * cloudinary and had the boot refuse - and those three situations need three
+     * different fixes. `fellBack` marks the second case specifically because it
+     * is the one that is invisible from the outside: the app works.
+     */
+    requested: process.env.STORAGE_BACKEND || 'auto',
+    credentialsFound: hasCloudinaryCredentials(),
+    acknowledgedLocal: Boolean(d.acknowledged),
     counters: { uploads: uploaded, bytes: uploadBytes },
   };
 }
@@ -175,7 +186,15 @@ function assertSvnPolicy(ext) {
   }
 }
 
-export async function saveUpload({ buffer, originalname, mimeType, folder = 'products' }) {
+export async function saveUpload({ buffer, originalname, mimeType, folder }) {
+  /*
+   * No default folder. There used to be a literal default, which meant a
+   * caller that passed undefined - a renamed variable, a route copied without
+   * its last argument - silently wrote user files into the product image folder,
+   * where the storefront lists them. The argument is required in every call site
+   * today, so a missing folder is a programming error and now reads as one
+   * instead of as a location choice.
+   */
   if (!Buffer.isBuffer(buffer) || buffer.length === 0)
     throw new StoragePolicyError('No file bytes were received.', { field: 'logo' });
   const f = assertFolder(folder);
@@ -247,4 +266,42 @@ export async function removeUpload(ref) {
 /** Tests and one-off migrations need to be able to re-read the environment. */
 export function _resetStorageDecisionForTests() {
   cached = undefined;
+}
+
+/**
+ * Store one multer file (or an array of them) through this service.
+ *
+ * Exists because multer is configured with memoryStorage in
+ * middleware/upload.js: the routes used to build a URL out of `file.filename`
+ * as though the bytes were on disk at a known name, which is exactly what a
+ * buffered upload does not provide. Without this helper, flipping the engine
+ * would have left four routes writing `/uploads/products/undefined` into the
+ * database - a broken image path that validates fine and only shows up as a
+ * blank tile on the storefront.
+ *
+ * The route says which folder; naming, the extension whitelist, the provider
+ * decision and the size/type policy stay here.
+ */
+export async function persistMulterFile(files, folder) {
+  const list = Array.isArray(files) ? files : [files];
+  const out = [];
+  const written = [];
+  for (const file of list) {
+    if (!file) continue;
+    try {
+      const asset = await saveUpload({
+        buffer: file.buffer,
+        originalname: file.originalname,
+        mimeType: file.mimetype,
+        folder,
+      });
+      written.push(asset);
+      out.push(asset.url);
+    } catch (error) {
+      // never half-store: undo the files already saved for this request
+      for (const asset of written) await removeUpload(asset);
+      throw error;
+    }
+  }
+  return Array.isArray(files) ? out : out[0];
 }
