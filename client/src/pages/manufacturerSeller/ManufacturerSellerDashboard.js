@@ -92,7 +92,7 @@ const ManufacturerSellerDashboard = () => {
         sizes: productData.sizes,
         proofKind: proof.kind,
         proofReference: proof.reference,
-        proofNote: proof.note
+        proofNote: proof.note,
       });
       toast.success(res.data?.message || 'Sent to the brand for approval.');
       setDeclaring(null);
@@ -110,19 +110,38 @@ const ManufacturerSellerDashboard = () => {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '50px', height: '50px', border: '4px solid #f3f3f3', borderTop: '4px solid #4facfe', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }}></div>
+          <div
+            style={{
+              width: '50px',
+              height: '50px',
+              border: '4px solid #f3f3f3',
+              borderTop: '4px solid #4facfe',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px',
+            }}
+          ></div>
           <p>Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
-  const myProductIds = myProducts.map(p => p.manufacturerProduct);
+  const myProductIds = myProducts.map((p) => p.manufacturerProduct);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-subtle)' }}>
       {/* Header */}
-      <div style={{ background: 'var(--bg-white)', boxShadow: 'var(--shadow-sm)', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div
+        style={{
+          background: 'var(--bg-white)',
+          boxShadow: 'var(--shadow-sm)',
+          padding: '16px 24px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: '700', margin: 0, color: 'var(--text-primary)' }}>My Inventory</h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
@@ -132,11 +151,23 @@ const ManufacturerSellerDashboard = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ textAlign: 'right' }}>
             <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-primary)' }}>{manufacturerSeller?.name}</p>
-            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>{manufacturerSeller?.email}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+              {manufacturerSeller?.email}
+            </p>
           </div>
           <button
             onClick={handleLogout}
-            style={{ padding: '8px 16px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+            style={{
+              padding: '8px 16px',
+              background: 'var(--danger)',
+              color: 'var(--text-white)',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
           >
             <FiLogOut /> Logout
           </button>
@@ -145,26 +176,73 @@ const ManufacturerSellerDashboard = () => {
 
       {/* Stats */}
       <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '20px',
+            marginBottom: '32px',
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg-white)',
+              borderRadius: 'var(--radius)',
+              padding: '24px',
+              boxShadow: 'var(--shadow)',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', background: 'var(--brand-tint)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--brand)' }}>
+              <div
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  background: 'var(--brand-tint)',
+                  borderRadius: 'var(--radius)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--brand)',
+                }}
+              >
                 <FiPackage size={24} />
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>Available Products</p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)' }}>{availableProducts.length}</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                  {availableProducts.length}
+                </h3>
               </div>
             </div>
           </div>
-          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
+          <div
+            style={{
+              background: 'var(--bg-white)',
+              borderRadius: 'var(--radius)',
+              padding: '24px',
+              boxShadow: 'var(--shadow)',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', background: 'var(--success-light)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)' }}>
+              <div
+                style={{
+                  width: '48px',
+                  height: '48px',
+                  background: 'var(--success-light)',
+                  borderRadius: 'var(--radius)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--success)',
+                }}
+              >
                 <FiPackage size={24} />
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>My Products</p>
-                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)' }}>{myProducts.length}</h3>
+                <h3 style={{ margin: '4px 0 0', fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                  {myProducts.length}
+                </h3>
               </div>
             </div>
           </div>
@@ -182,45 +260,90 @@ const ManufacturerSellerDashboard = () => {
         )}
 
         {/* Available Products from Manufacturer */}
-        <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
+        <div
+          style={{
+            background: 'var(--bg-white)',
+            borderRadius: 'var(--radius)',
+            padding: '24px',
+            boxShadow: 'var(--shadow)',
+          }}
+        >
           <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px', color: 'var(--text-primary)' }}>
             Available Products from Manufacturer
           </h2>
 
           {availableProducts.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>No products available from your manufacturer yet.</p>
+            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>
+              No products available from your manufacturer yet.
+            </p>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
               {availableProducts.map((product) => {
                 const existing = myProducts.find((x) => String(x.manufacturerProduct || '') === String(product._id));
                 const isInInventory = !!existing || myProductIds.includes(product._id);
                 const listingState = existing?.listing?.state;
-                const stateLabel = {
-                  live: 'Live in your store',
-                  paused: 'Paused by you',
-                  awaiting_manufacturer: 'Waiting on the brand',
-                  awaiting_admin: 'Waiting on OptiKart',
-                  rejected: 'Refused by the brand'
-                }[listingState] || (isInInventory ? 'Listed' : 'Not listed');
-                
+                const stateLabel =
+                  {
+                    live: 'Live in your store',
+                    paused: 'Paused by you',
+                    awaiting_manufacturer: 'Waiting on the brand',
+                    awaiting_admin: 'Waiting on OptiKart',
+                    rejected: 'Refused by the brand',
+                  }[listingState] || (isInInventory ? 'Listed' : 'Not listed');
+
                 return (
-                  <div key={product._id} style={{ background: 'var(--bg-page)', borderRadius: 'var(--radius)', padding: '16px', border: isInInventory ? '2px solid var(--success)' : '2px solid var(--border)' }}>
+                  <div
+                    key={product._id}
+                    style={{
+                      background: 'var(--bg-page)',
+                      borderRadius: 'var(--radius)',
+                      padding: '16px',
+                      border: isInInventory ? '2px solid var(--success)' : '2px solid var(--border)',
+                    }}
+                  >
                     {product.images?.[0] && (
-                      <img 
-                        src={product.images[0]} 
-                        alt={product.title} 
-                        style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: '12px' }} 
+                      <img
+                        src={product.images[0]}
+                        alt={product.title}
+                        style={{
+                          width: '100%',
+                          height: '200px',
+                          objectFit: 'cover',
+                          borderRadius: 'var(--radius-md)',
+                          marginBottom: '12px',
+                        }}
                       />
                     )}
-                    <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}>{product.title}</h3>
-                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Brand: {product.brand}</p>
-                    <p style={{ fontSize: 12, marginBottom: '8px', color: existing ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <h3
+                      style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: 'var(--text-primary)' }}
+                    >
+                      {product.title}
+                    </h3>
+                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      Brand: {product.brand}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        marginBottom: '8px',
+                        color: existing ? 'var(--primary)' : 'var(--text-secondary)',
+                      }}
+                    >
                       {stateLabel}
                       {listingState && listingState !== 'live' ? ' - customers cannot buy it yet' : ''}
                     </p>
-                    <p style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>₹{product.price}</p>
+                    <p
+                      style={{
+                        fontSize: '18px',
+                        fontWeight: '700',
+                        color: 'var(--text-primary)',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      ₹{product.price}
+                    </p>
                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                      Colors: {product.colors?.map(c => c.name).join(', ') || 'N/A'}
+                      Colors: {product.colors?.map((c) => c.name).join(', ') || 'N/A'}
                     </p>
                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                       Sizes: {product.sizes?.join(', ') || 'N/A'}
@@ -239,7 +362,7 @@ const ManufacturerSellerDashboard = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '8px',
-                        fontWeight: '600'
+                        fontWeight: '600',
                       }}
                     >
                       {isInInventory ? (

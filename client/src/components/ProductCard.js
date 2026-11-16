@@ -14,7 +14,7 @@ const styles = {
     transition: 'box-shadow 0.2s, transform 0.2s',
     cursor: 'pointer',
     position: 'relative',
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
@@ -199,13 +199,13 @@ export default function ProductCard({ product }) {
   const handleWishlistClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
       toast.error('Please login to add items to wishlist');
       navigate('/login');
       return;
     }
-    
+
     setWishlisted(!wishlisted);
     toast.success(wishlisted ? 'Removed from wishlist' : 'Added to wishlist');
   };
@@ -213,39 +213,39 @@ export default function ProductCard({ product }) {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
       toast.error('Please login to add items to cart');
       navigate('/login');
       return;
     }
-    
+
     addToCart(product);
   };
 
   const handleCompare = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Get current compare list from localStorage
     const compareList = JSON.parse(localStorage.getItem('optikart_compare') || '[]');
-    
+
     // Check if product already in compare list
-    if (compareList.find(p => p._id === (id || _id))) {
+    if (compareList.find((p) => p._id === (id || _id))) {
       toast.error('Product already in comparison');
       return;
     }
-    
+
     // Check if compare list is full
     if (compareList.length >= 4) {
       toast.error('Maximum 4 products can be compared');
       return;
     }
-    
+
     // Add product to compare list
     compareList.push({ _id: id || _id, name: title, brand, image, price });
     localStorage.setItem('optikart_compare', JSON.stringify(compareList));
-    
+
     toast.success('Added to comparison');
   };
 
@@ -304,7 +304,9 @@ export default function ProductCard({ product }) {
           )}
         </div>
         {soldOut ? (
-          <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 700, color: 'var(--danger)' }}>Currently unavailable</p>
+          <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 700, color: 'var(--danger)' }}>
+            Currently unavailable
+          </p>
         ) : lowStock ? (
           <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, color: 'var(--warning)' }}>Only {stock} left</p>
         ) : null}

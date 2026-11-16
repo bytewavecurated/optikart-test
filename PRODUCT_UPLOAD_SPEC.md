@@ -12,19 +12,21 @@ gate, because the same rules must hold for a product created one at a time in th
 dashboard. A row can therefore pass the sheet and still be refused by the model,
 and the error text names the field either way.
 
-----------------------------------------------------------------------
-## 1. File format
-----------------------------------------------------------------------
+---
 
-| Item | Requirement |
-| --- | --- |
-| Extensions | `.xlsx`, `.xls`, `.csv` |
-| Sheet | the **first** sheet is read; later sheets are ignored |
-| Header row | row 1 becomes column names (Excel export is fine) |
-| Data | starts at row 2, and the reported row numbers are spreadsheet rows, so an error saying "Row 7" points at row 7 |
-| Column matching | case- and spacing-insensitive: `Model Number`, `modelnumber`, `model_number` all resolve to `modelNumber`. Alternative names per column are listed below |
-| Empty rows | skipped silently (every cell blank) |
-| All-or-nothing | if **any** row fails the checks, nothing is imported. The response lists up to 50 problems. Half a catalogue is worse than none, because the sheet then gets re-uploaded and the brand ends up with duplicates of the rows that did land |
+## 1. File format
+
+---
+
+| Item            | Requirement                                                                                                                                                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Extensions      | `.xlsx`, `.xls`, `.csv`                                                                                                                                                                                                                  |
+| Sheet           | the **first** sheet is read; later sheets are ignored                                                                                                                                                                                    |
+| Header row      | row 1 becomes column names (Excel export is fine)                                                                                                                                                                                        |
+| Data            | starts at row 2, and the reported row numbers are spreadsheet rows, so an error saying "Row 7" points at row 7                                                                                                                           |
+| Column matching | case- and spacing-insensitive: `Model Number`, `modelnumber`, `model_number` all resolve to `modelNumber`. Alternative names per column are listed below                                                                                 |
+| Empty rows      | skipped silently (every cell blank)                                                                                                                                                                                                      |
+| All-or-nothing  | if **any** row fails the checks, nothing is imported. The response lists up to 50 problems. Half a catalogue is worse than none, because the sheet then gets re-uploaded and the brand ends up with duplicates of the rows that did land |
 
 ```
 curl -X POST http://localhost:3000/api/manufacturer/products/bulk-upload \
@@ -35,29 +37,33 @@ curl -X POST http://localhost:3000/api/manufacturer/products/bulk-upload \
 Accepted response: `{ "success": true, "message": "23 products uploaded successfully.", "count": 23 }`
 Rejected response: `{ "success": false, "message": "4 row(s) need attention before the file can be imported.", "errors": ["Row 7 (Aviator Classic): missing required frameShape, dimensions ...", ...] }`
 
-----------------------------------------------------------------------
+---
+
 ## 2. Columns every row needs
-----------------------------------------------------------------------
 
-| Column | Also accepted as | Rule |
-| --- | --- | --- |
-| `title` | `name`, `product name` | non-empty |
-| `price` | `selling price` | number > 0. This is the MRP the shopper sees struck through |
-| `discounted price` | — | optional; when present it is the actual selling price and must be ≤ `price` |
-| `category` | — | one of the eight values in §3 |
-| `brand` | `brand name` | non-empty. Must match a brand the account can list; the upload is filed under this brand |
-| `product code` | `product id`, `sku` | non-empty, and unique inside a brand — `brand + productCode` is how a product is found again, so a repeated code updates or collides with the earlier row |
-| `model number` | `model no`, `model` | non-empty |
-| `description` | — | non-empty |
-| `images` | `image`, `image links`, `image urls` | **at least one**, `|`-separated URLs. Images are fetched and stored on upload; a dead link fails the row, because a live product with no picture is the commonest support ticket |
-| `stock` | — | integer, default 0 (a product with 0 stock is listed but unbuyable) |
-| `warranty`, `tags` | tags `|`-separated | optional |
-| `return window days` | — | optional integer; unset falls back to the platform's 7 days |
-| `original price` | — | optional; the crossed-out figure if it differs from `price` |
+---
 
-----------------------------------------------------------------------
+| Column               | Also accepted as                     | Rule                                                                                                                                                      |
+| -------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`              | `name`, `product name`               | non-empty                                                                                                                                                 |
+| `price`              | `selling price`                      | number > 0. This is the MRP the shopper sees struck through                                                                                               |
+| `discounted price`   | —                                    | optional; when present it is the actual selling price and must be ≤ `price`                                                                               |
+| `category`           | —                                    | one of the eight values in §3                                                                                                                             |
+| `brand`              | `brand name`                         | non-empty. Must match a brand the account can list; the upload is filed under this brand                                                                  |
+| `product code`       | `product id`, `sku`                  | non-empty, and unique inside a brand — `brand + productCode` is how a product is found again, so a repeated code updates or collides with the earlier row |
+| `model number`       | `model no`, `model`                  | non-empty                                                                                                                                                 |
+| `description`        | —                                    | non-empty                                                                                                                                                 |
+| `images`             | `image`, `image links`, `image urls` | **at least one**, `                                                                                                                                       | `-separated URLs. Images are fetched and stored on upload; a dead link fails the row, because a live product with no picture is the commonest support ticket |
+| `stock`              | —                                    | integer, default 0 (a product with 0 stock is listed but unbuyable)                                                                                       |
+| `warranty`, `tags`   | tags `                               | `-separated                                                                                                                                               | optional                                                                                                                                                     |
+| `return window days` | —                                    | optional integer; unset falls back to the platform's 7 days                                                                                               |
+| `original price`     | —                                    | optional; the crossed-out figure if it differs from `price`                                                                                               |
+
+---
+
 ## 3. Categories and their extra requirements
-----------------------------------------------------------------------
+
+---
 
 `category` is lower-cased and stripped of spaces/underscores/dashes, so
 `Contact Lenses`, `contact-lenses` and `contactlenses` are the same value.
@@ -72,19 +78,19 @@ hundreds of rows to the wrong type.
 
 ### 3.1 Eyewear (all five categories)
 
-| Column | Also accepted as | Rule |
-| --- | --- | --- |
-| `gender` | — | `men`, `women`, `unisex`, `kids`. Required |
-| `frame shape` | `face shape` | required — this is what the face-shape browse lists from |
-| `frame type` | — | required: full rim, half rim, rimless |
-| `frame material` | `material` | required |
-| `frame colour` | `color`, `colours` | required |
-| `frame size` | `size` | required; bucketed to small/medium/large/extra-large from the lens width |
-| `frame width` | — | required, numeric (mm) |
-| `frame weight` | — | required, numeric (g) |
-| `frame dimensions` | `dimensions`, or `dim width`/`dim height`/`dim bridge`/`dim temple` separately | required in one of those forms. Either one string of four numbers (`54 x 52 x 16 x 145`) or the four columns |
-| `colours` / `sizes` | — | optional, `|`-separated; multiple colour names should come with matching colours per row so the shopper picks a real one |
-| `materials` | — | optional list |
+| Column              | Also accepted as                                                               | Rule                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `gender`            | —                                                                              | `men`, `women`, `unisex`, `kids`. Required                                                                   |
+| `frame shape`       | `face shape`                                                                   | required — this is what the face-shape browse lists from                                                     |
+| `frame type`        | —                                                                              | required: full rim, half rim, rimless                                                                        |
+| `frame material`    | `material`                                                                     | required                                                                                                     |
+| `frame colour`      | `color`, `colours`                                                             | required                                                                                                     |
+| `frame size`        | `size`                                                                         | required; bucketed to small/medium/large/extra-large from the lens width                                     |
+| `frame width`       | —                                                                              | required, numeric (mm)                                                                                       |
+| `frame weight`      | —                                                                              | required, numeric (g)                                                                                        |
+| `frame dimensions`  | `dimensions`, or `dim width`/`dim height`/`dim bridge`/`dim temple` separately | required in one of those forms. Either one string of four numbers (`54 x 52 x 16 x 145`) or the four columns |
+| `colours` / `sizes` | —                                                                              | optional, `                                                                                                  | `-separated; multiple colour names should come with matching colours per row so the shopper picks a real one |
+| `materials`         | —                                                                              | optional list                                                                                                |
 
 Kids (`category = kids`) additionally require **`sub gender`** (`boys`/`girls`) and
 **`age group`** — a parent filtering by age cannot help an unset value.
@@ -96,36 +102,37 @@ offered.
 
 ### 3.2 Contact lenses
 
-| Column | Rule |
-| --- | --- |
-| `power type` | `distance`, `toric`, `multifocal`, `none` |
-| `replacement period` | daily / fortnightly / monthly / quarterly / half-yearly / yearly |
-| `lenses per box` | integer ≥ 1 (defaults to 6 if blank at parse time; the model requires ≥ 1) |
-| `diameter` | numeric, mm |
-| `base curve` | numeric, mm |
+| Column                              | Rule                                                                                                                                                                      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `power type`                        | `distance`, `toric`, `multifocal`, `none`                                                                                                                                 |
+| `replacement period`                | daily / fortnightly / monthly / quarterly / half-yearly / yearly                                                                                                          |
+| `lenses per box`                    | integer ≥ 1 (defaults to 6 if blank at parse time; the model requires ≥ 1)                                                                                                |
+| `diameter`                          | numeric, mm                                                                                                                                                               |
+| `base curve`                        | numeric, mm                                                                                                                                                               |
 | `is cosmetic` + `allows zero power` | a coloured lens must state explicitly whether a zero-power option exists — a cosmetic lens bought as "no prescription" needs that answer, a clear corrective one does not |
-| `cylinder min`, `cylinder max` | **when `power type = toric`**; max must be negative |
-| `axis min`, `axis max` | **when `power type = toric`** |
-| `addition min`, `addition max` | **when `power type = multifocal`**, and max > min |
-| `step` | optional power increment (default 0.25) |
+| `cylinder min`, `cylinder max`      | **when `power type = toric`**; max must be negative                                                                                                                       |
+| `axis min`, `axis max`              | **when `power type = toric`**                                                                                                                                             |
+| `addition min`, `addition max`      | **when `power type = multifocal`**, and max > min                                                                                                                         |
+| `step`                              | optional power increment (default 0.25)                                                                                                                                   |
 
 Columns left blank are stored as absent, not as the text `undefined` — which used
 to happen, and turned a missing optional value into an invalid one (see §7).
 
 ### 3.3 Solution
 
-| Column | Rule |
-| --- | --- |
-| `volume ml` | required, numeric — the bottle size every price is quoted against |
-| `pack pricing` | required, at least one pack price so multi-buy can be priced (e.g. `2:1499|3:2099`) |
+| Column         | Rule                                                                       |
+| -------------- | -------------------------------------------------------------------------- |
+| `volume ml`    | required, numeric — the bottle size every price is quoted against          |
+| `pack pricing` | required, at least one pack price so multi-buy can be priced (e.g. `2:1499 | 3:2099`) |
 
 ### 3.4 Accessories
 
-| Column | Rule |
-| --- | --- |
+| Column           | Rule                                             |
+| ---------------- | ------------------------------------------------ |
 | `accessory type` | required: case, chain, cleaning kit, spray, etc. |
 
-----------------------------------------------------------------------
+---
+
 ## 4. Categories that previously could not be uploaded in bulk
 
 Worth recording because it shapes how the sheets were written: until now the
@@ -150,7 +157,8 @@ endpoint without depending on the internet.
 ---
 
 ## 5. What happens to an uploaded product
-----------------------------------------------------------------------
+
+---
 
 1. Created with `manufacturer` = the uploading brand, `isManufacturerProduct` = true
    and `verificationStatus` = **`pending`**.
@@ -164,9 +172,11 @@ endpoint without depending on the internet.
 4. Discount fields (`isUnderSaleEvent`, coupon stacking) are not settable by upload;
    they belong to sale-event administration.
 
-----------------------------------------------------------------------
+---
+
 ## 6. Checklist before sending a file
-----------------------------------------------------------------------
+
+---
 
 - [ ] one category per sheet
 - [ ] headers in row 1; no title rows or blank rows above the header
@@ -179,40 +189,49 @@ endpoint without depending on the internet.
 - [ ] colour lenses state whether zero power is offered
 - [ ] prices: `discounted price` ≤ `price`
 
-----------------------------------------------------------------------
+---
+
 ## 7. Errors you will see, and what they mean
-----------------------------------------------------------------------
 
-| Message | Meaning |
-| --- | --- |
-| `Row N (Title): missing required a, b, c` | parser-level §2/§3 columns absent |
-| `Row N: unknown category "x"` | value outside §3 |
-| `Row N: images are required …` | image column empty or unparseable |
-| `Title: <validation message>` | the product was assembled but the model refused it — §3 rules, reported per field |
+---
+
+| Message                                                         | Meaning                                                                                                                                                                   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Row N (Title): missing required a, b, c`                       | parser-level §2/§3 columns absent                                                                                                                                         |
+| `Row N: unknown category "x"`                                   | value outside §3                                                                                                                                                          |
+| `Row N: images are required …`                                  | image column empty or unparseable                                                                                                                                         |
+| `Title: <validation message>`                                   | the product was assembled but the model refused it — §3 rules, reported per field                                                                                         |
 | <code>\`\` is not a valid enum value for path \`gender\`</code> | seen before the blank-value fix: an empty cell arrived as `""` (or the literal `"undefined"`) and was validated as a value. Blank optional cells are stored as absent now |
-| `No file uploaded` | the multipart field must be named `file` |
-| `No rows could be imported…` | nothing survived; `errors[]` says why |
+| `No file uploaded`                                              | the multipart field must be named `file`                                                                                                                                  |
+| `No rows could be imported…`                                    | nothing survived; `errors[]` says why                                                                                                                                     |
 
-----------------------------------------------------------------------
+---
+
 ## 8. One brand per file, and only brands on your profile
 
 Two gates run before anything is written, and both refuse the **whole sheet** —
 a half-imported file leaves one brand's frames filed under another name, which
 customers read as the brand selling things it never listed.
 
-| Rule | What you see |
-| --- | --- |
-| Every row's `brand` must be identical | `One brand per file. This sheet mixes 2 brands ("Ray-Ban", "Fastrack") - split it by brand and upload each separately.` plus one line **per offending row** naming the brand on that row and its row number |
-| That brand must already be declared on the manufacturer profile (`Brands manufactured`) | `Row 3: brand "NikeEyeWEAR" is not on this manufacturer's profile. Add it under "Brands manufactured" first (currently: ray-ban); a brand nobody declared cannot own catalogue rows.` |
-| Profile with no brands at all | `brand "X" cannot be imported - this manufacturer has no brands declared yet. Add the brand to the profile first.` |
+| Rule                                                                                    | What you see                                                                                                                                                                                                |
+| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Every row's `brand` must be identical                                                   | `One brand per file. This sheet mixes 2 brands ("Ray-Ban", "Fastrack") - split it by brand and upload each separately.` plus one line **per offending row** naming the brand on that row and its row number |
+| That brand must already be declared on the manufacturer profile (`Brands manufactured`) | `Row 3: brand "NikeEyeWEAR" is not on this manufacturer's profile. Add it under "Brands manufactured" first (currently: ray-ban); a brand nobody declared cannot own catalogue rows.`                       |
+| Profile with no brands at all                                                           | `brand "X" cannot be imported - this manufacturer has no brands declared yet. Add the brand to the profile first.`                                                                                          |
 
 Matching is case-insensitive (`ray-ban` ≡ `Ray-Ban`), and repeated brand names in
 one file are refused rather than merged. Response shape on a mixed sheet:
 
 ```json
-{ "success": false, "mixedBrands": [{ "brand": "Ray-Ban", "rows": [2] },
-                                     { "brand": "Fastrack", "rows": [3] }],
-  "message": "One brand per file. …", "errors": [ "Row 2: …", "Row 3: …" ] }
+{
+  "success": false,
+  "mixedBrands": [
+    { "brand": "Ray-Ban", "rows": [2] },
+    { "brand": "Fastrack", "rows": [3] }
+  ],
+  "message": "One brand per file. …",
+  "errors": ["Row 2: …", "Row 3: …"]
+}
 ```
 
 **One brand name belongs to one manufacturer.** A sheet that names a brand some
@@ -228,14 +247,14 @@ The same rule blocks the profile list and the admin's manufacturer create/edit, 
 the clash cannot be introduced from any door. Ownership is checked **before** the
 "brand is not on your profile" message, because the advice differs: a name that is
 missing gets "add it under Brands manufactured" (the comma list at
-**Manufacturer → Company & brand profile**), while a name that is *taken* must never
+**Manufacturer → Company & brand profile**), while a name that is _taken_ must never
 be told to add it, since that is precisely the claim being refused.
 
 To fix a rejected sheet: put one brand in one file, and if a brand is missing from
 the list, add it first at **Manufacturer → Company & brand profile → Brands
 manufactured**, where the screen also warns which brand names still carry products.
 
-Brand *logos* are **not** part of this rule set yet: there is no logo upload or
+Brand _logos_ are **not** part of this rule set yet: there is no logo upload or
 brand record to attach one to, so no upload message mentions a logo. When the Brand
 model lands, the storefront rail will show a manufacturer's logo per brand and the
 upload requirement will grow accordingly — that will be a separate documented

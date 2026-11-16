@@ -51,7 +51,7 @@ const styles = {
   footer: {
     background: 'var(--bg-dark)',
     color: 'rgba(255,255,255,0.62)',
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
     fontSize: '12px',
   },
   topBanner: {
@@ -159,13 +159,16 @@ export default function Footer() {
   const social = FOOTER_LINKS.social;
   const columns = site.groups
     ? [
-        ...site.groups.map((group, i) => [`custom${i}`, {
-          title: group.title,
-          links: (group.links || []).map((l) => ({ label: l.name, href: l.link }))
-        }]),
+        ...site.groups.map((group, i) => [
+          `custom${i}`,
+          {
+            title: group.title,
+            links: (group.links || []).map((l) => ({ label: l.name, href: l.link })),
+          },
+        ]),
         // Editing the link columns must not make the social row disappear - a
         // footer that silently loses its icons reads as a bug, not an edit.
-        ['social', social]
+        ['social', social],
       ]
     : Object.entries(FOOTER_LINKS);
 
@@ -199,12 +202,7 @@ export default function Footer() {
               </div>
             ) : (
               col.links.map((link) => (
-                <Link
-                  key={link.label}
-                  to={link.href}
-                  style={styles.link}
-                  className="footer-link"
-                >
+                <Link key={link.label} to={link.href} style={styles.link} className="footer-link">
                   {link.label}
                 </Link>
               ))
@@ -222,8 +220,16 @@ export default function Footer() {
         <div style={{ padding: '0 40px 22px', fontSize: '12.5px', color: 'rgba(255,255,255,0.62)' }}>
           {site.footerNote && <div style={{ maxWidth: 880, marginBottom: 6 }}>{site.footerNote}</div>}
           <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap' }}>
-            {site.support?.email && <a href={`mailto:${site.support.email}`} style={{ color: 'rgba(255,255,255,0.78)' }}>{site.support.email}</a>}
-            {site.support?.phone && <a href={`tel:${site.support.phone.replace(/[^0-9+]/g, '')}`} style={{ color: 'rgba(255,255,255,0.78)' }}>{site.support.phone}</a>}
+            {site.support?.email && (
+              <a href={`mailto:${site.support.email}`} style={{ color: 'rgba(255,255,255,0.78)' }}>
+                {site.support.email}
+              </a>
+            )}
+            {site.support?.phone && (
+              <a href={`tel:${site.support.phone.replace(/[^0-9+]/g, '')}`} style={{ color: 'rgba(255,255,255,0.78)' }}>
+                {site.support.phone}
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -235,9 +241,15 @@ export default function Footer() {
         </span>
 
         <div style={styles.policyLinks}>
-          <Link to="/policy/privacy" style={styles.policyLink}>Privacy</Link>
-          <Link to="/policy/terms" style={styles.policyLink}>Terms</Link>
-          <Link to="/policy/return" style={styles.policyLink}>Returns</Link>
+          <Link to="/policy/privacy" style={styles.policyLink}>
+            Privacy
+          </Link>
+          <Link to="/policy/terms" style={styles.policyLink}>
+            Terms
+          </Link>
+          <Link to="/policy/return" style={styles.policyLink}>
+            Returns
+          </Link>
         </div>
       </div>
 

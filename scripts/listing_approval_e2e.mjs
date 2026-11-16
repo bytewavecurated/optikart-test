@@ -26,11 +26,15 @@ const call = async (path, { token, body, method } = {}) => {
   const res = await fetch(API + path, {
     method: method || (body ? 'POST' : 'GET'),
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: body ? JSON.stringify(body) : undefined
+    body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch { /* html */ }
+  try {
+    json = JSON.parse(text);
+  } catch {
+    /* html */
+  }
   return { status: res.status, json, text };
 };
 const login = (path, email, password) => call(path, { body: { email, password } }).then((r) => r.json?.token);
@@ -74,26 +78,39 @@ async function main() {
   }
 
   const brandProduct = brandProducts.find((x) => !claimedProductIds.has(String(x._id))) || brandProducts[0];
-  if (!check('the brand has a product to claim', !!brandProduct, JSON.stringify(owned.json).slice(0, 110))) return finish();
+  if (!check('the brand has a product to claim', !!brandProduct, JSON.stringify(owned.json).slice(0, 110)))
+    return finish();
 
   /* ---------------------------------------------------------- declaring */
   const noProof = await call(`/manufacturer-seller/products/${brandProduct._id}/toggle`, {
-    token: retailer, body: { price: 1590 }
+    token: retailer,
+    body: { price: 1590 },
   });
-  check('listing without saying where the stock came from is refused',
-    noProof.status === 400 && noProof.json?.reason === 'proof_kind_required', noProof.text);
+  check(
+    'listing without saying where the stock came from is refused',
+    noProof.status === 400 && noProof.json?.reason === 'proof_kind_required',
+    noProof.text
+  );
 
   const vagueOther = await call(`/manufacturer-seller/products/${brandProduct._id}/toggle`, {
-    token: retailer, body: { price: 1590, proofKind: 'other', proofNote: 'got it' }
+    token: retailer,
+    body: { price: 1590, proofKind: 'other', proofNote: 'got it' },
   });
-  check('a vague "other" source is refused, not queued',
-    vagueOther.status === 400 && vagueOther.json?.reason === 'note_required', vagueOther.text);
+  check(
+    'a vague "other" source is refused, not queued',
+    vagueOther.status === 400 && vagueOther.json?.reason === 'note_required',
+    vagueOther.text
+  );
 
   const purchaseNoRef = await call(`/manufacturer-seller/products/${brandProduct._id}/toggle`, {
-    token: retailer, body: { price: 1590, proofKind: 'manufacturer_purchase' }
+    token: retailer,
+    body: { price: 1590, proofKind: 'manufacturer_purchase' },
   });
-  check('a claimed purchase needs a reference the brand can look up',
-    purchaseNoRef.status === 400 && purchaseNoRef.json?.reason === 'reference_required', purchaseNoRef.text);
+  check(
+    'a claimed purchase needs a reference the brand can look up',
+    purchaseNoRef.status === 400 && purchaseNoRef.json?.reason === 'reference_required',
+    purchaseNoRef.text
+  );
 
   const declared = await call(`/manufacturer-seller/products/${brandProduct._id}/toggle`, {
     token: retailer,
@@ -101,100 +118,148 @@ async function main() {
       price: 1590,
       proofKind: 'manufacturer_purchase',
       proofReference: 'INV-2026-00451',
-      proofNote: 'bought against the March order'
-    }
+      proofNote: 'bought against the March order',
+    },
   });
   const clone = declared.json?.product || {};
   check('a proper declaration is accepted', declared.status === 201, declared.text);
-  check('the declared listing is not sellable yet',
+  check(
+    'the declared listing is not sellable yet',
     declared.json?.state === 'awaiting_manufacturer' && clone.verificationStatus === 'pending',
-    `${declared.json?.state} / ${clone.verificationStatus}`);
-  check('it is not merely hidden but unverified',
+    `${declared.json?.state} / ${clone.verificationStatus}`
+  );
+  check(
+    'it is not merely hidden but unverified',
     clone.isListed === false && clone.listing?.manufacturerReview?.status === 'pending',
-    JSON.stringify(clone.listing?.manufacturerReview));
+    JSON.stringify(clone.listing?.manufacturerReview)
+  );
 
   const publicList = (await call('/products?limit=100', { token: null })).json;
   const ids = (publicList.products || []).map((x) => String(x._id));
-  check('an unapproved copy does not reach the storefront',
-    !ids.includes(String(clone._id)), `found ${clone._id} in ${ids.length} public products`);
+  check(
+    'an unapproved copy does not reach the storefront',
+    !ids.includes(String(clone._id)),
+    `found ${clone._id} in ${ids.length} public products`
+  );
 
   /* ---------------------------------------------------- brand decides */
   const queue = await call('/manufacturer/listing-requests', { token: brand });
   const mine = (queue.json?.requests || []).find((r) => String(r.id) === String(clone._id));
-  check('the brand sees the claim', queue.status === 200 && !!mine,
-    `queue ${(queue.json?.requests || []).length}`);
-  check('the brand sees what was claimed',
-    mine?.listing?.sellerProof?.reference === 'INV-2026-00451', JSON.stringify(mine?.listing?.sellerProof));
-  check('the queue is labelled by how it reached the buyer, not by a table name',
-    mine?.listingKind === 'storefront', mine?.listingKind);
+  check('the brand sees the claim', queue.status === 200 && !!mine, `queue ${(queue.json?.requests || []).length}`);
+  check(
+    'the brand sees what was claimed',
+    mine?.listing?.sellerProof?.reference === 'INV-2026-00451',
+    JSON.stringify(mine?.listing?.sellerProof)
+  );
+  check(
+    'the queue is labelled by how it reached the buyer, not by a table name',
+    mine?.listingKind === 'storefront',
+    mine?.listingKind
+  );
 
   const premature = await call('/admin/listing-approvals/decide', {
-    token: admin, body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve' }
+    token: admin,
+    body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve' },
   });
-  check('the platform cannot verify before the brand has approved',
-    premature.status === 400 && premature.json?.reason === 'brand_first', premature.text);
+  check(
+    'the platform cannot verify before the brand has approved',
+    premature.status === 400 && premature.json?.reason === 'brand_first',
+    premature.text
+  );
 
   const otherBrand = await call('/manufacturer/listing-requests/decide', {
-    token: retailer, body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve' }
+    token: retailer,
+    body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve' },
   });
-  check('only the brand can answer for the brand', otherBrand.status === 401 || otherBrand.status === 403,
-    `status ${otherBrand.status}`);
+  check(
+    'only the brand can answer for the brand',
+    otherBrand.status === 401 || otherBrand.status === 403,
+    `status ${otherBrand.status}`
+  );
 
   const approved = await call('/manufacturer/listing-requests/decide', {
-    token: brand, body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve', reason: 'supplied in March' }
+    token: brand,
+    body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve', reason: 'supplied in March' },
   });
-  check('brand approval moves it to the platform, not to the customers',
-    approved.json?.state === 'awaiting_admin', approved.text);
+  check(
+    'brand approval moves it to the platform, not to the customers',
+    approved.json?.state === 'awaiting_admin',
+    approved.text
+  );
 
   const stillHidden = (await call(`/products/${clone._id}`, { token: null })).json;
-  check('brand-approved alone still does not make it buyable',
-    (stillHidden?.product?.verificationStatus || stillHidden?.verificationStatus) !== 'verified', JSON.stringify(stillHidden).slice(0, 90));
+  check(
+    'brand-approved alone still does not make it buyable',
+    (stillHidden?.product?.verificationStatus || stillHidden?.verificationStatus) !== 'verified',
+    JSON.stringify(stillHidden).slice(0, 90)
+  );
 
   const adminQueue = await call('/admin/listing-approvals', { token: admin });
   const awaiting = (adminQueue.json?.awaitingVerification || []).find((r) => String(r.id) === String(clone._id));
-  check('the platform queue shows the claim with the brand answer attached',
+  check(
+    'the platform queue shows the claim with the brand answer attached',
     !!awaiting && awaiting.listing?.manufacturerReview?.status === 'approved',
-    JSON.stringify(awaiting?.listing?.manufacturerReview));
-  check('the rows that predate the rule are shown as never confirmed',
-    Array.isArray(adminQueue.json?.grandfathered), (adminQueue.json?.grandfathered || []).length);
+    JSON.stringify(awaiting?.listing?.manufacturerReview)
+  );
+  check(
+    'the rows that predate the rule are shown as never confirmed',
+    Array.isArray(adminQueue.json?.grandfathered),
+    (adminQueue.json?.grandfathered || []).length
+  );
 
   const verified = await call('/admin/listing-approvals/decide', {
-    token: admin, body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve' }
+    token: admin,
+    body: { listingKind: 'storefront', listingId: clone._id, decision: 'approve' },
   });
-  check('platform verification is what makes it live',
-    verified.json?.state === 'live', verified.text);
+  check('platform verification is what makes it live', verified.json?.state === 'live', verified.text);
   const nowVisible = (await call(`/products/${clone._id}`, { token: null })).json;
-  check('and it is then genuinely buyable',
-    (nowVisible?.product?.verificationStatus || nowVisible?.verificationStatus) === 'verified', JSON.stringify(nowVisible).slice(0, 80));
+  check(
+    'and it is then genuinely buyable',
+    (nowVisible?.product?.verificationStatus || nowVisible?.verificationStatus) === 'verified',
+    JSON.stringify(nowVisible).slice(0, 80)
+  );
 
   /* -------------------------------------------------- pause and re-declare */
   const paused = await call(`/manufacturer-seller/products/${brandProduct._id}/toggle`, {
-    token: retailer, body: { reason: 'out of stock this month' }
+    token: retailer,
+    body: { reason: 'out of stock this month' },
   });
-  check('toggling off pauses instead of deleting',
-    paused.json?.state === 'paused', paused.text);
+  check('toggling off pauses instead of deleting', paused.json?.state === 'paused', paused.text);
 
   const surviving = await call(`/products/${clone._id}`, { token: retailer });
   const keptRow = surviving.json?.product || surviving.json;
-  check('a paused listing keeps the configuration the seller chose',
-    keptRow && Number(keptRow.price) === 1590, `price ${keptRow?.price}`);
+  check(
+    'a paused listing keeps the configuration the seller chose',
+    keptRow && Number(keptRow.price) === 1590,
+    `price ${keptRow?.price}`
+  );
 
   const resumeBlind = await call(`/manufacturer-seller/products/${brandProduct._id}/toggle`, {
-    token: retailer, body: { price: 1590 }
+    token: retailer,
+    body: { price: 1590 },
   });
-  check('resuming without a fresh declaration is refused',
-    resumeBlind.status === 400 && resumeBlind.json?.reason === 'proof_kind_required', resumeBlind.text);
+  check(
+    'resuming without a fresh declaration is refused',
+    resumeBlind.status === 400 && resumeBlind.json?.reason === 'proof_kind_required',
+    resumeBlind.text
+  );
 
   const resumed = await call(`/manufacturer-seller/products/${brandProduct._id}/toggle`, {
-    token: retailer, body: { price: 1590, proofKind: 'other', proofNote: 'bought the remainder from a closing shop' }
+    token: retailer,
+    body: { price: 1590, proofKind: 'other', proofNote: 'bought the remainder from a closing shop' },
   });
-  check('resuming re-enters the queue instead of restoring stale permission',
-    resumed.json?.state === 'awaiting_manufacturer', resumed.text);
+  check(
+    'resuming re-enters the queue instead of restoring stale permission',
+    resumed.json?.state === 'awaiting_manufacturer',
+    resumed.text
+  );
   const afterResume = (await call(`/products/${clone._id}`, { token: retailer })).json;
   const rl = (afterResume?.product || afterResume)?.listing || {};
-  check('the earlier approvals did not survive the pause',
+  check(
+    'the earlier approvals did not survive the pause',
     rl?.adminReview?.status === 'none' && rl?.declarationCount >= 2,
-    JSON.stringify({ admin: rl?.adminReview?.status, count: rl?.declarationCount }));
+    JSON.stringify({ admin: rl?.adminReview?.status, count: rl?.declarationCount })
+  );
 
   /* ------------------------------------------------- the stock claim path */
   const secondProduct = brandProducts[1] || brandProducts[0];
@@ -205,19 +270,26 @@ async function main() {
       sellingPrice: 1499,
       variants: [{ color: 'Matte Black', size: 'M', stock: 3 }],
       proofKind: 'other',
-      proofNote: 'secondary distributor lot, invoice attached in email'
-    }
+      proofNote: 'secondary distributor lot, invoice attached in email',
+    },
   });
   const stockRow = stockClaim.json?.data || {};
-  check('a seller claiming brand stock goes through the same two doors',
+  check(
+    'a seller claiming brand stock goes through the same two doors',
     stockClaim.json?.state === 'awaiting_manufacturer' && stockRow.isListed === false,
-    `${stockClaim.json?.state} / listed ${stockRow.isListed}`);
+    `${stockClaim.json?.state} / listed ${stockRow.isListed}`
+  );
 
   const forceListed = await call(`/seller-stock/${stockRow._id}`, {
-    token: seller, body: { isListed: true }, method: 'PUT'
+    token: seller,
+    body: { isListed: true },
+    method: 'PUT',
   });
-  check('an unapproved claim cannot be listed by editing the row directly',
-    forceListed.json?.data?.isListed === false, JSON.stringify(forceListed.json?.data?.listing));
+  check(
+    'an unapproved claim cannot be listed by editing the row directly',
+    forceListed.json?.data?.isListed === false,
+    JSON.stringify(forceListed.json?.data?.listing)
+  );
 
   /*
    * The path the seller's own console uses: pausing a claim, then trying to put
@@ -226,28 +298,45 @@ async function main() {
    * holds the line, because the button is not the only way to write this row.
    */
   const pausedStock = await call(`/seller-stock/${stockRow._id}`, {
-    token: seller, body: { isListed: false }, method: 'PUT'
+    token: seller,
+    body: { isListed: false },
+    method: 'PUT',
   });
-  check('a brand stock claim can be paused without losing its configuration',
-    pausedStock.status === 200 && pausedStock.json?.data?.isListed === false, pausedStock.text);
+  check(
+    'a brand stock claim can be paused without losing its configuration',
+    pausedStock.status === 200 && pausedStock.json?.data?.isListed === false,
+    pausedStock.text
+  );
   const myListings = await call('/seller-stock', { token: seller });
-  const stockKept = (myListings.json?.data || myListings.json?.stock || [])
-    .find((x) => String(x._id) === String(stockRow._id));
+  const stockKept = (myListings.json?.data || myListings.json?.stock || []).find(
+    (x) => String(x._id) === String(stockRow._id)
+  );
   check('the seller can see their own listings', !!stockKept, `${JSON.stringify(myListings.json).slice(0, 70)}`);
-  check('and pausing keeps the price and variants they chose',
-    stockKept && Number(stockKept.sellingPrice) === 1499
-      && Array.isArray(stockKept.variants) && stockKept.variants.length > 0
-      && Number(stockKept.variants[0].stock) === 3,
-    JSON.stringify({ price: stockKept?.sellingPrice, v: stockKept?.variants?.[0] }));
+  check(
+    'and pausing keeps the price and variants they chose',
+    stockKept &&
+      Number(stockKept.sellingPrice) === 1499 &&
+      Array.isArray(stockKept.variants) &&
+      stockKept.variants.length > 0 &&
+      Number(stockKept.variants[0].stock) === 3,
+    JSON.stringify({ price: stockKept?.sellingPrice, v: stockKept?.variants?.[0] })
+  );
 
   const relisted = await call(`/seller-stock/${stockRow._id}`, {
-    token: seller, body: { isListed: true }, method: 'PUT'
+    token: seller,
+    body: { isListed: true },
+    method: 'PUT',
   });
-  check('flipping the switch cannot relist an unapproved brand claim',
-    relisted.json?.data?.isListed === false, JSON.stringify(relisted.json?.data?.listing?.state));
-  check('and the row still says which approval it is waiting on',
+  check(
+    'flipping the switch cannot relist an unapproved brand claim',
+    relisted.json?.data?.isListed === false,
+    JSON.stringify(relisted.json?.data?.listing?.state)
+  );
+  check(
+    'and the row still says which approval it is waiting on',
     ['awaiting_manufacturer', 'awaiting_admin'].includes(relisted.json?.data?.listing?.state),
-    relisted.json?.data?.listing?.state);
+    relisted.json?.data?.listing?.state
+  );
 
   const redeclared = await call('/seller-stock', {
     token: seller,
@@ -256,22 +345,28 @@ async function main() {
       sellingPrice: 1499,
       variants: [{ color: 'Matte Black', size: 'M', stock: 3 }],
       proofKind: 'manufacturer_purchase',
-      proofReference: 'INV-RESTOCK-77'
-    }
+      proofReference: 'INV-RESTOCK-77',
+    },
   });
-  check('re-declaring the same product reuses the row instead of duplicating it',
+  check(
+    're-declaring the same product reuses the row instead of duplicating it',
     String(redeclared.json?.data?._id) === String(stockRow._id),
-    `${redeclared.json?.data?._id} vs ${stockRow._id}`);
-  check('a fresh declaration replaces the old reference',
-    redeclared.json?.data?.listing?.sellerProof?.reference === 'INV-RESTOCK-77'
-      && redeclared.json?.data?.listing?.state === 'awaiting_manufacturer',
-    JSON.stringify(redeclared.json?.data?.listing?.sellerProof));
-
+    `${redeclared.json?.data?._id} vs ${stockRow._id}`
+  );
+  check(
+    'a fresh declaration replaces the old reference',
+    redeclared.json?.data?.listing?.sellerProof?.reference === 'INV-RESTOCK-77' &&
+      redeclared.json?.data?.listing?.state === 'awaiting_manufacturer',
+    JSON.stringify(redeclared.json?.data?.listing?.sellerProof)
+  );
 
   const stockQueue = await call('/manufacturer/listing-requests', { token: brand });
   const stockEntry = (stockQueue.json?.requests || []).find((r) => String(r.id) === String(stockRow._id));
-  check('the brand sees the routing-side claim too', !!stockEntry && stockEntry.listingKind === 'stock',
-    JSON.stringify(stockEntry?.listing?.sellerProof));
+  check(
+    'the brand sees the routing-side claim too',
+    !!stockEntry && stockEntry.listingKind === 'stock',
+    JSON.stringify(stockEntry?.listing?.sellerProof)
+  );
 
   return finish();
 }
@@ -286,4 +381,7 @@ function finish() {
   }
 }
 
-main().catch((e) => { console.error('SCRIPT ERROR', e); process.exitCode = 2; });
+main().catch((e) => {
+  console.error('SCRIPT ERROR', e);
+  process.exitCode = 2;
+});

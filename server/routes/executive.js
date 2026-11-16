@@ -47,36 +47,36 @@ router.post('/login', async (req, res) => {
     // Check if account is locked
     if (executive.lockUntil && executive.lockUntil > new Date()) {
       const remainingTime = Math.ceil((executive.lockUntil - new Date()) / 1000 / 60);
-      return res.status(423).json({ 
-        success: false, 
+      return res.status(423).json({
+        success: false,
         message: `Account is locked. Please try again in ${remainingTime} minutes.`,
         locked: true,
-        lockUntil: executive.lockUntil
+        lockUntil: executive.lockUntil,
       });
     }
 
     const isMatch = await executive.comparePassword(password);
     if (!isMatch) {
       executive.failedLoginAttempts = (executive.failedLoginAttempts || 0) + 1;
-      
+
       if (executive.failedLoginAttempts >= 3) {
         executive.lockUntil = new Date(Date.now() + 3 * 60 * 1000);
         executive.failedLoginAttempts = 0;
         await executive.save();
-        
-        return res.status(423).json({ 
-          success: false, 
+
+        return res.status(423).json({
+          success: false,
           message: 'Too many failed attempts. Account locked for 3 minutes.',
           locked: true,
-          lockUntil: executive.lockUntil
+          lockUntil: executive.lockUntil,
         });
       }
-      
+
       await executive.save();
       const remainingAttempts = 3 - executive.failedLoginAttempts;
-      return res.status(401).json({ 
-        success: false, 
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`
+      return res.status(401).json({
+        success: false,
+        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
       });
     }
 
@@ -100,14 +100,14 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        executive: executive.toJSON()
+        executive: executive.toJSON(),
       });
     } else {
       // Generate OTP
-      const loginOtp = otpGenerator.generate(6, { 
-        upperCaseAlphabets: false, 
-        specialChars: false, 
-        lowerCaseAlphabets: false 
+      const loginOtp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
       });
 
       executive.loginOtp = loginOtp;
@@ -120,7 +120,7 @@ router.post('/login', async (req, res) => {
         success: true,
         requiresOTP: true,
         message: 'Login OTP sent to your email.',
-        executiveId: executive._id
+        executiveId: executive._id,
       });
     }
   } catch (error) {
@@ -162,7 +162,7 @@ router.post('/verify-login-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      executive: executive.toJSON()
+      executive: executive.toJSON(),
     });
   } catch (error) {
     console.error('Verify executive login OTP error:', error);
@@ -174,14 +174,14 @@ router.post('/verify-login-otp', async (req, res) => {
 router.get('/me', verifyExecutive, async (req, res) => {
   try {
     const executive = await Executive.findById(req.executive._id);
-    
+
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
     }
 
     res.json({
       success: true,
-      executive: executive.toJSON()
+      executive: executive.toJSON(),
     });
   } catch (error) {
     console.error('Get executive profile error:', error);
@@ -193,7 +193,7 @@ router.get('/me', verifyExecutive, async (req, res) => {
 router.get('/dashboard', verifyExecutive, async (req, res) => {
   try {
     const executive = await Executive.findById(req.executive._id);
-    
+
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
     }
@@ -223,7 +223,7 @@ router.get('/dashboard', verifyExecutive, async (req, res) => {
 
     res.json({
       success: true,
-      data: stats
+      data: stats,
     });
   } catch (error) {
     console.error('Get dashboard stats error:', error);
@@ -241,8 +241,15 @@ router.get('/dashboard', verifyExecutive, async (req, res) => {
  * could create. Both desks now manage the same User + StaffRole pair, and an
  * executive's view is limited to their own department.
  */
-const STAFF_ROLES = ['blog_manager', 'doc_verifier', 'user_manager', 'seller_manager',
-  'finance_manager', 'delivery_manager', 'pickup_manager'];
+const STAFF_ROLES = [
+  'blog_manager',
+  'doc_verifier',
+  'user_manager',
+  'seller_manager',
+  'finance_manager',
+  'delivery_manager',
+  'pickup_manager',
+];
 
 /** Only this department's records, unless a hire predates the department field. */
 const inOwnDepartment = (executive, staff) =>
@@ -274,13 +281,16 @@ router.post('/staff', verifyExecutive, async (req, res) => {
     if (!executive) return res.status(404).json({ success: false, message: 'Executive not found.' });
 
     const name = String(req.body.name || '').trim();
-    const email = String(req.body.email || '').trim().toLowerCase();
+    const email = String(req.body.email || '')
+      .trim()
+      .toLowerCase();
     const role = String(req.body.role || '').trim();
     const password = String(req.body.password || '');
     const permissions = Array.isArray(req.body.permissions) ? req.body.permissions.map(String) : [];
 
     if (!name || !email) return res.status(400).json({ success: false, message: 'Name and email are required.' });
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ success: false, message: 'A valid email address is required.' });
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+      return res.status(400).json({ success: false, message: 'A valid email address is required.' });
     if (!STAFF_ROLES.includes(role)) {
       return res.status(400).json({ success: false, message: `Role must be one of: ${STAFF_ROLES.join(', ')}` });
     }
@@ -299,7 +309,13 @@ router.post('/staff', verifyExecutive, async (req, res) => {
 
     let account = await User.findOne({ email });
     if (!account) {
-      account = await User.create({ name, email, password: tempPassword, phone: String(req.body.phone || ''), role: 'staff' });
+      account = await User.create({
+        name,
+        email,
+        password: tempPassword,
+        phone: String(req.body.phone || ''),
+        role: 'staff',
+      });
     } else if (!account.isActive) {
       account.isActive = true;
       await account.save();
@@ -312,7 +328,7 @@ router.post('/staff', verifyExecutive, async (req, res) => {
       name,
       role,
       permissions,
-      department: executive.department || ''
+      department: executive.department || '',
     });
 
     res.status(201).json({
@@ -320,7 +336,7 @@ router.post('/staff', verifyExecutive, async (req, res) => {
       message: 'Team member added.',
       tempPassword: generated ? tempPassword : undefined,
       loginCreated: !password && !!account,
-      data: staff
+      data: staff,
     });
   } catch (error) {
     console.error('Add team member error:', error);
@@ -385,7 +401,7 @@ router.delete('/staff/:id', verifyExecutive, async (req, res) => {
 router.get('/department-data', verifyExecutive, async (req, res) => {
   try {
     const executive = await Executive.findById(req.executive._id);
-    
+
     if (!executive) {
       return res.status(404).json({ success: false, message: 'Executive not found.' });
     }
@@ -412,7 +428,7 @@ router.get('/department-data', verifyExecutive, async (req, res) => {
 
     res.json({
       success: true,
-      data
+      data,
     });
   } catch (error) {
     console.error('Get department data error:', error);
@@ -430,7 +446,7 @@ router.get('/dashboard/stats', verifyExecutive, async (req, res) => {
       Order.countDocuments(scoped),
       Order.countDocuments({ ...scoped, orderStatus: 'delivered' }),
       Order.countDocuments({ ...scoped, orderStatus: { $in: ['packed', 'picked_up', 'in_transit'] } }),
-      Order.countDocuments({ ...scoped, orderStatus: { $in: ['pending', 'confirmed'] } })
+      Order.countDocuments({ ...scoped, orderStatus: { $in: ['pending', 'confirmed'] } }),
     ]);
 
     // Executives that are not yet attached to orders still get a meaningful
@@ -439,7 +455,7 @@ router.get('/dashboard/stats', verifyExecutive, async (req, res) => {
     if (totalOrders === 0) {
       queue = await Order.countDocuments({
         orderStatus: { $in: ['pending', 'confirmed', 'packed'] },
-        assignmentStatus: { $in: ['pending', 'pending_acceptance', 'assigned', 'admin_required'] }
+        assignmentStatus: { $in: ['pending', 'pending_acceptance', 'assigned', 'admin_required'] },
       });
     }
 
@@ -450,8 +466,8 @@ router.get('/dashboard/stats', verifyExecutive, async (req, res) => {
         completedOrders: delivered,
         inProgressOrders: inProgress,
         pendingOrders: pending || queue,
-        department: req.executive.department || 'delivery'
-      }
+        department: req.executive.department || 'delivery',
+      },
     });
   } catch (error) {
     console.error('Executive stats error:', error);
@@ -499,31 +515,39 @@ router.get('/deliveries/assigned', verifyExecutive, async (req, res) => {
       deliveryDistanceKm: o.deliveryDistanceKm || 0,
       deliveryAssignmentMode: o.deliveryAssignmentMode || 'none',
       // A run the partner flagged from the door; the desk triages these first.
-      deliveryIssue: o.deliveryIssue?.type ? {
-        type: o.deliveryIssue.type,
-        note: o.deliveryIssue.note || '',
-        reportedAt: o.deliveryIssue.reportedAt,
-        resolved: Boolean(o.deliveryIssue.resolvedAt)
-      } : null,
+      deliveryIssue: o.deliveryIssue?.type
+        ? {
+            type: o.deliveryIssue.type,
+            note: o.deliveryIssue.note || '',
+            reportedAt: o.deliveryIssue.reportedAt,
+            resolved: Boolean(o.deliveryIssue.resolvedAt),
+          }
+        : null,
       trackingId: o.shiprocketTrackingId || '',
       trackingUrl: o.shiprocketTrackingUrl || '',
       createdAt: o.createdAt,
       deliveredAt: o.deliveredAt || null,
       customer: o.user ? { name: o.user.name, email: o.user.email, phone: o.user.phone } : null,
-      seller: o.seller ? {
-        storeName: o.seller.storeName,
-        phone: o.seller.phone,
-        email: o.seller.email,
-        city: o.seller.address?.city || '',
-        address: [o.seller.address?.street, o.seller.address?.city, o.seller.address?.pincode].filter(Boolean).join(', ')
-      } : null,
-      deliveryPartner: o.assignedDeliveryPartner ? {
-        name: o.assignedDeliveryPartner.name,
-        phone: o.assignedDeliveryPartner.phone,
-        email: o.assignedDeliveryPartner.email,
-        vehicleType: o.assignedDeliveryPartner.vehicleType,
-        status: o.assignedDeliveryPartner.status
-      } : null,
+      seller: o.seller
+        ? {
+            storeName: o.seller.storeName,
+            phone: o.seller.phone,
+            email: o.seller.email,
+            city: o.seller.address?.city || '',
+            address: [o.seller.address?.street, o.seller.address?.city, o.seller.address?.pincode]
+              .filter(Boolean)
+              .join(', '),
+          }
+        : null,
+      deliveryPartner: o.assignedDeliveryPartner
+        ? {
+            name: o.assignedDeliveryPartner.name,
+            phone: o.assignedDeliveryPartner.phone,
+            email: o.assignedDeliveryPartner.email,
+            vehicleType: o.assignedDeliveryPartner.vehicleType,
+            status: o.assignedDeliveryPartner.status,
+          }
+        : null,
       shippingAddress: o.shippingAddress,
       pickupLocation: o.pickupLocation || null,
       deliveryLocation: o.deliveryLocation || null,
@@ -535,8 +559,8 @@ router.get('/deliveries/assigned', verifyExecutive, async (req, res) => {
         image: it.product?.images?.[0] || '',
         brand: it.product?.brand || '',
         variant: it.variant || {},
-        lensConfig: it.lensConfig || null
-      }))
+        lensConfig: it.lensConfig || null,
+      })),
     }));
 
     res.json({ success: true, data: deliveries });
@@ -569,7 +593,8 @@ router.get('/deliveries/:id', verifyExecutive, async (req, res) => {
         customer: order.user ? { name: order.user.name, email: order.user.email, phone: order.user.phone } : null,
         seller: order.seller ? { storeName: order.seller.storeName, phone: order.seller.phone } : null,
         deliveryPartner: order.assignedDeliveryPartner
-          ? { name: order.assignedDeliveryPartner.name, phone: order.assignedDeliveryPartner.phone } : null,
+          ? { name: order.assignedDeliveryPartner.name, phone: order.assignedDeliveryPartner.phone }
+          : null,
         shippingAddress: order.shippingAddress,
         pickupLocation: order.pickupLocation || null,
         deliveryLocation: order.deliveryLocation || null,
@@ -577,10 +602,13 @@ router.get('/deliveries/:id', verifyExecutive, async (req, res) => {
         trackingId: order.shiprocketTrackingId || '',
         trackingUrl: order.shiprocketTrackingUrl || '',
         items: (order.items || []).map((it) => ({
-          name: it.name || it.product?.title || it.product?.name || 'Item', quantity: it.quantity, price: it.price,
-          image: it.product?.images?.[0] || '', lensConfig: it.lensConfig || null
-        }))
-      }
+          name: it.name || it.product?.title || it.product?.name || 'Item',
+          quantity: it.quantity,
+          price: it.price,
+          image: it.product?.images?.[0] || '',
+          lensConfig: it.lensConfig || null,
+        })),
+      },
     });
   } catch (error) {
     console.error('Executive delivery detail error:', error);
@@ -635,7 +663,8 @@ router.put('/deliveries/:id/issue/resolve', verifyExecutive, async (req, res) =>
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
-    if (!order.deliveryIssue?.type) return res.status(400).json({ success: false, message: 'No open report on this run.' });
+    if (!order.deliveryIssue?.type)
+      return res.status(400).json({ success: false, message: 'No open report on this run.' });
     // Clearing is a one-way action: without this a second click appends another
     // "resolved" entry to the timeline as if something had been done.
     if (order.deliveryIssue.resolvedAt) {
@@ -672,7 +701,7 @@ router.get('/customers', verifyExecutive, async (req, res) => {
           phone: o.user.phone,
           orders: 0,
           spent: 0,
-          lastOrderAt: o.createdAt
+          lastOrderAt: o.createdAt,
         };
       }
       byUser[uid].orders += 1;
@@ -697,20 +726,32 @@ router.get('/reports', verifyExecutive, async (req, res) => {
     const [statusSplit, revenueAgg, dailyAgg] = await Promise.all([
       Order.aggregate([
         { $match: { assignedExecutive: new mongoose.Types.ObjectId(executiveId) } },
-        { $group: { _id: '$orderStatus', count: { $sum: 1 }, amount: { $sum: '$totalAmount' } } }
+        { $group: { _id: '$orderStatus', count: { $sum: 1 }, amount: { $sum: '$totalAmount' } } },
       ]),
       Order.aggregate([
         { $match: { assignedExecutive: new mongoose.Types.ObjectId(executiveId) } },
-        { $group: { _id: null, total: { $sum: '$totalAmount' }, count: { $sum: 1 },
-                    deliveryFees: { $sum: '$deliveryFee' }, distances: { $sum: '$deliveryDistanceKm' } } }
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$totalAmount' },
+            count: { $sum: 1 },
+            deliveryFees: { $sum: '$deliveryFee' },
+            distances: { $sum: '$deliveryDistanceKm' },
+          },
+        },
       ]),
       Order.aggregate([
         { $match: { assignedExecutive: new mongoose.Types.ObjectId(executiveId) } },
-        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-                    count: { $sum: 1 }, amount: { $sum: '$totalAmount' } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            count: { $sum: 1 },
+            amount: { $sum: '$totalAmount' },
+          },
+        },
         { $sort: { _id: 1 } },
-        { $limit: 30 }
-      ])
+        { $limit: 30 },
+      ]),
     ]);
 
     const totals = revenueAgg[0] || { total: 0, count: 0, deliveryFees: 0, distances: 0 };
@@ -723,10 +764,10 @@ router.get('/reports', verifyExecutive, async (req, res) => {
           orders: totals.count,
           revenue: totals.total,
           deliveryFees: totals.deliveryFees,
-          distanceKm: Math.round((totals.distances || 0) * 100) / 100
+          distanceKm: Math.round((totals.distances || 0) * 100) / 100,
         },
-        daily: dailyAgg.map((d) => ({ date: d._id, count: d.count, amount: d.amount }))
-      }
+        daily: dailyAgg.map((d) => ({ date: d._id, count: d.count, amount: d.amount })),
+      },
     });
   } catch (error) {
     console.error('Executive reports error:', error);

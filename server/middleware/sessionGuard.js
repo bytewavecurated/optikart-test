@@ -32,7 +32,7 @@ const sessionGuard = async (req, res, next) => {
         success: false,
         message: activity.message,
         code: activity.code,
-        idleSeconds: activity.idleSeconds
+        idleSeconds: activity.idleSeconds,
       });
     }
 
@@ -40,7 +40,7 @@ const sessionGuard = async (req, res, next) => {
       return res.status(401).json({
         success: false,
         message: 'This session has been signed out. Please sign in again.',
-        code: 'SESSION_REVOKED'
+        code: 'SESSION_REVOKED',
       });
     }
   } catch (error) {
@@ -48,7 +48,9 @@ const sessionGuard = async (req, res, next) => {
     // deliberate: a Mongo blip would otherwise 500 the whole storefront, worse
     // than letting an already-signed-out token finish its own in-flight calls.
     // The token is still checked again on the next request.
-    console.error(JSON.stringify({ event: 'session_guard_error', id: req.id || null, message: String(error.message).slice(0, 200) }));
+    console.error(
+      JSON.stringify({ event: 'session_guard_error', id: req.id || null, message: String(error.message).slice(0, 200) })
+    );
   }
   return next();
 };

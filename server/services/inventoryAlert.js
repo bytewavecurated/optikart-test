@@ -11,14 +11,14 @@ export const checkInventoryLevels = async (sellerId) => {
 
     for (const product of products) {
       const stock = product.stock || 0;
-      
+
       if (stock === OUT_OF_STOCK_THRESHOLD) {
         // Check if alert already exists
         const existingAlert = await InventoryAlert.findOne({
           seller: sellerId,
           product: product._id,
           type: 'out_of_stock',
-          isRead: false
+          isRead: false,
         });
 
         if (!existingAlert) {
@@ -28,7 +28,7 @@ export const checkInventoryLevels = async (sellerId) => {
             type: 'out_of_stock',
             currentStock: stock,
             threshold: OUT_OF_STOCK_THRESHOLD,
-            message: `"${product.title}" is out of stock. Please restock immediately.`
+            message: `"${product.title}" is out of stock. Please restock immediately.`,
           });
           alerts.push(alert);
         }
@@ -38,7 +38,7 @@ export const checkInventoryLevels = async (sellerId) => {
           seller: sellerId,
           product: product._id,
           type: 'low_stock',
-          isRead: false
+          isRead: false,
         });
 
         if (!existingAlert) {
@@ -48,7 +48,7 @@ export const checkInventoryLevels = async (sellerId) => {
             type: 'low_stock',
             currentStock: stock,
             threshold: LOW_STOCK_THRESHOLD,
-            message: `"${product.title}" is running low on stock (${stock} units remaining). Consider restocking soon.`
+            message: `"${product.title}" is running low on stock (${stock} units remaining). Consider restocking soon.`,
           });
           alerts.push(alert);
         }
@@ -78,11 +78,7 @@ export const getSellerAlerts = async (sellerId, limit = 20) => {
 
 export const markAlertAsRead = async (alertId) => {
   try {
-    const alert = await InventoryAlert.findByIdAndUpdate(
-      alertId,
-      { isRead: true },
-      { new: true }
-    );
+    const alert = await InventoryAlert.findByIdAndUpdate(alertId, { isRead: true }, { new: true });
     return alert;
   } catch (error) {
     console.error('Error marking alert as read:', error);
@@ -92,10 +88,7 @@ export const markAlertAsRead = async (alertId) => {
 
 export const markAllAlertsAsRead = async (sellerId) => {
   try {
-    await InventoryAlert.updateMany(
-      { seller: sellerId, isRead: false },
-      { isRead: true }
-    );
+    await InventoryAlert.updateMany({ seller: sellerId, isRead: false }, { isRead: true });
     return { success: true };
   } catch (error) {
     console.error('Error marking all alerts as read:', error);
@@ -107,7 +100,7 @@ export const getUnreadAlertCount = async (sellerId) => {
   try {
     const count = await InventoryAlert.countDocuments({
       seller: sellerId,
-      isRead: false
+      isRead: false,
     });
     return count;
   } catch (error) {

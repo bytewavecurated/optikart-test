@@ -1,6 +1,24 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiFileText, FiHome, FiUsers, FiShoppingBag, FiPackage, FiDollarSign, FiTrendingUp, FiTruck, FiTag, FiSettings, FiActivity, FiImage, FiLogOut, FiMenu, FiX, FiShield, FiMessageCircle } from 'react-icons/fi';
+import {
+  FiFileText,
+  FiHome,
+  FiUsers,
+  FiShoppingBag,
+  FiPackage,
+  FiDollarSign,
+  FiTrendingUp,
+  FiTruck,
+  FiTag,
+  FiSettings,
+  FiActivity,
+  FiImage,
+  FiLogOut,
+  FiMenu,
+  FiX,
+  FiShield,
+  FiMessageCircle,
+} from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import Logo from '../../components/Logo';
 import BackButton from '../../components/BackButton';
@@ -49,31 +67,33 @@ const AdminLayout = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-page)' }}>
       {/* Sidebar */}
-      <aside style={{
-        width: sidebarOpen ? '280px' : '80px',
-        background: 'var(--bg-white)',
-        borderRight: '1px solid #e8e8e8',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        height: '100vh',
-        zIndex: 100,
-        overflow: 'hidden',
-        boxShadow: '2px 0 8px rgba(0,0,0,0.04)'
-      }}>
-        {/* Logo Section */}
-        <div style={{
-          padding: sidebarOpen ? '24px' : '24px 16px',
-          borderBottom: '1px solid var(--bg-subtle)',
+      <aside
+        style={{
+          width: sidebarOpen ? '280px' : '80px',
+          background: 'var(--bg-white)',
+          borderRight: '1px solid #e8e8e8',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: sidebarOpen ? 'space-between' : 'center',
-          minHeight: '80px'
-        }}>
-          {sidebarOpen && (
-            <Logo variant="onLight" size={22} tagline={false} />
-          )}
+          flexDirection: 'column',
+          position: 'fixed',
+          height: '100vh',
+          zIndex: 100,
+          overflow: 'hidden',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.04)',
+        }}
+      >
+        {/* Logo Section */}
+        <div
+          style={{
+            padding: sidebarOpen ? '24px' : '24px 16px',
+            borderBottom: '1px solid var(--bg-subtle)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: sidebarOpen ? 'space-between' : 'center',
+            minHeight: '80px',
+          }}
+        >
+          {sidebarOpen && <Logo variant="onLight" size={22} tagline={false} />}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             style={{
@@ -86,7 +106,7 @@ const AdminLayout = () => {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--text-secondary)',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'var(--bg-subtle)';
@@ -121,7 +141,7 @@ const AdminLayout = () => {
                 fontSize: '14px',
                 transition: 'all 0.2s ease',
                 justifyContent: sidebarOpen ? 'flex-start' : 'center',
-                position: 'relative'
+                position: 'relative',
               }}
               title={!sidebarOpen ? item.label : ''}
               onMouseEnter={(e) => {
@@ -138,16 +158,18 @@ const AdminLayout = () => {
               }}
             >
               {isActive(item) && (
-                <div style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '4px',
-                  height: '24px',
-                  background: 'var(--brand)',
-                  borderRadius: '0 4px 4px 0'
-                }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: '4px',
+                    height: '24px',
+                    background: 'var(--brand)',
+                    borderRadius: '0 4px 4px 0',
+                  }}
+                />
               )}
               <span style={{ fontSize: '20px', flexShrink: 0 }}>{item.icon}</span>
               {sidebarOpen && <span>{item.label}</span>}
@@ -158,41 +180,49 @@ const AdminLayout = () => {
         {/* User Info & Logout */}
         <div style={{ padding: '16px 12px', borderTop: '1px solid var(--bg-subtle)' }}>
           {sidebarOpen && admin && (
-            <div style={{ 
-              padding: '16px',
-              marginBottom: '12px',
-              background: 'var(--bg-page)',
-              borderRadius: 'var(--radius)'
-            }}>
+            <div
+              style={{
+                padding: '16px',
+                marginBottom: '12px',
+                background: 'var(--bg-page)',
+                borderRadius: 'var(--radius)',
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: 'var(--radius)',
-                  background: 'var(--brand-tint)',
-                  color: 'var(--brand)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '16px',
-                  fontWeight: 700
-                }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--brand-tint)',
+                    color: 'var(--brand)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                  }}
+                >
                   {(admin.name || 'A')[0].toUpperCase()}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{admin.name}</p>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {admin.name}
+                  </p>
                   <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>{admin.email}</p>
                 </div>
               </div>
-              <div style={{
-                display: 'inline-block',
-                padding: '4px 10px',
-                background: 'var(--brand)',
-                color: 'var(--text-white)',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '11px',
-                fontWeight: 600
-              }}>
+              <div
+                style={{
+                  display: 'inline-block',
+                  padding: '4px 10px',
+                  background: 'var(--brand)',
+                  color: 'var(--text-white)',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                }}
+              >
                 Administrator
               </div>
             </div>
@@ -213,7 +243,7 @@ const AdminLayout = () => {
               fontSize: '14px',
               fontWeight: 600,
               justifyContent: sidebarOpen ? 'flex-start' : 'center',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
             }}
             title={!sidebarOpen ? 'Logout' : ''}
             onMouseEnter={(e) => {
@@ -230,51 +260,72 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div style={{
-        flex: 1,
-        marginLeft: sidebarOpen ? '280px' : '80px',
-        transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {/* Top Bar */}
-        <header style={{
-          background: 'var(--bg-white)',
-          borderBottom: '1px solid #e8e8e8',
-          padding: '20px 32px',
+      <div
+        style={{
+          flex: 1,
+          marginLeft: sidebarOpen ? '280px' : '80px',
+          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          boxShadow: 'var(--shadow-sm)'
-        }}>
+          flexDirection: 'column',
+        }}
+      >
+        {/* Top Bar */}
+        <header
+          style={{
+            background: 'var(--bg-white)',
+            borderBottom: '1px solid #e8e8e8',
+            padding: '20px 32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50,
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
           <div>
             <BackButton fallbackTo="/admin" label="Back" style={{ marginBottom: 4 }} />
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.5px' }}>
-              {menuItems.find(item => isActive(item))?.label || 'Admin Panel'}
+            <h1
+              style={{
+                fontSize: '24px',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                margin: 0,
+                letterSpacing: '-0.5px',
+              }}
+            >
+              {menuItems.find((item) => isActive(item))?.label || 'Admin Panel'}
             </h1>
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              padding: '8px 16px',
-              background: 'var(--brand-tint)',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}>
-              <div style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: 'var(--success)',
-                boxShadow: '0 0 8px #4caf50'
-              }} />
+            <div
+              style={{
+                padding: '8px 16px',
+                background: 'var(--brand-tint)',
+                borderRadius: 'var(--radius)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <div
+                style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: 'var(--success)',
+                  boxShadow: '0 0 8px #4caf50',
+                }}
+              />
               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>System Online</span>
             </div>
           </div>

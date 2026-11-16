@@ -13,13 +13,13 @@ export const deleteManufacturerSeller = async (sellerId, manufacturerId) => {
   try {
     const seller = await ManufacturerSeller.findOne({
       _id: sellerId,
-      manufacturer: manufacturerId
+      manufacturer: manufacturerId,
     });
 
     if (!seller) {
       return {
         success: false,
-        error: 'Seller not found or not authorized'
+        error: 'Seller not found or not authorized',
       };
     }
 
@@ -41,13 +41,13 @@ export const deleteManufacturerSeller = async (sellerId, manufacturerId) => {
 
     return {
       success: true,
-      message: 'Seller deleted successfully'
+      message: 'Seller deleted successfully',
     };
   } catch (error) {
     console.error('Error deleting manufacturer seller:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -59,13 +59,13 @@ export const banManufacturerSeller = async (sellerId, manufacturerId, reason) =>
   try {
     const seller = await ManufacturerSeller.findOne({
       _id: sellerId,
-      manufacturer: manufacturerId
+      manufacturer: manufacturerId,
     });
 
     if (!seller) {
       return {
         success: false,
-        error: 'Seller not found or not authorized'
+        error: 'Seller not found or not authorized',
       };
     }
 
@@ -77,21 +77,17 @@ export const banManufacturerSeller = async (sellerId, manufacturerId, reason) =>
     await seller.save();
 
     // Notify seller
-    await notify(
-      seller.email,
-      'Account Banned',
-      `Your seller account has been banned. Reason: ${reason}`
-    );
+    await notify(seller.email, 'Account Banned', `Your seller account has been banned. Reason: ${reason}`);
 
     return {
       success: true,
-      message: 'Seller banned successfully'
+      message: 'Seller banned successfully',
     };
   } catch (error) {
     console.error('Error banning manufacturer seller:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -102,13 +98,13 @@ export const banManufacturerSeller = async (sellerId, manufacturerId, reason) =>
  */
 export const validateBulkUpload = async (products) => {
   try {
-    const categories = new Set(products.map(p => p.category));
-    
+    const categories = new Set(products.map((p) => p.category));
+
     if (categories.size > 1) {
       return {
         success: false,
         error: 'Mixed products detected. Please upload sunglasses and eyeglasses in separate files.',
-        categories: Array.from(categories)
+        categories: Array.from(categories),
       };
     }
 
@@ -117,11 +113,11 @@ export const validateBulkUpload = async (products) => {
     const invalidProducts = [];
 
     products.forEach((product, index) => {
-      const missingFields = requiredFields.filter(field => !product[field]);
+      const missingFields = requiredFields.filter((field) => !product[field]);
       if (missingFields.length > 0) {
         invalidProducts.push({
           index: index + 1,
-          missingFields
+          missingFields,
         });
       }
     });
@@ -130,20 +126,20 @@ export const validateBulkUpload = async (products) => {
       return {
         success: false,
         error: 'Some products are missing required fields',
-        invalidProducts
+        invalidProducts,
       };
     }
 
     return {
       success: true,
       message: 'Bulk upload validation passed',
-      category: Array.from(categories)[0]
+      category: Array.from(categories)[0],
     };
   } catch (error) {
     console.error('Error validating bulk upload:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -156,7 +152,7 @@ export const convertImageLink = async (imageUrl, productId) => {
   try {
     // Download image
     const response = await axios.get(imageUrl, {
-      responseType: 'arraybuffer'
+      responseType: 'arraybuffer',
     });
 
     // Generate filename
@@ -208,13 +204,13 @@ export const processBulkUploadWithImages = async (products, manufacturerId) => {
     return {
       success: true,
       message: `Successfully processed ${processedProducts.length} products`,
-      products: processedProducts
+      products: processedProducts,
     };
   } catch (error) {
     console.error('Error processing bulk upload:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -226,19 +222,19 @@ export const getManufacturerPendingProducts = async (manufacturerId) => {
   try {
     const products = await Product.find({
       manufacturer: manufacturerId,
-      verificationStatus: 'pending'
+      verificationStatus: 'pending',
     }).sort({ createdAt: -1 });
 
     return {
       success: true,
       count: products.length,
-      products
+      products,
     };
   } catch (error) {
     console.error('Error getting pending products:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -251,13 +247,13 @@ export const updatePendingProduct = async (productId, updateData, manufacturerId
     const product = await Product.findOne({
       _id: productId,
       manufacturer: manufacturerId,
-      verificationStatus: { $in: ['pending', 'data_incorrect'] }
+      verificationStatus: { $in: ['pending', 'data_incorrect'] },
     });
 
     if (!product) {
       return {
         success: false,
-        error: 'Product not found or cannot be edited'
+        error: 'Product not found or cannot be edited',
       };
     }
 
@@ -271,13 +267,13 @@ export const updatePendingProduct = async (productId, updateData, manufacturerId
     return {
       success: true,
       message: 'Product updated and resubmitted for verification',
-      product
+      product,
     };
   } catch (error) {
     console.error('Error updating pending product:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -290,13 +286,13 @@ export const deletePendingProduct = async (productId, manufacturerId) => {
     const product = await Product.findOne({
       _id: productId,
       manufacturer: manufacturerId,
-      verificationStatus: { $in: ['pending', 'data_incorrect'] }
+      verificationStatus: { $in: ['pending', 'data_incorrect'] },
     });
 
     if (!product) {
       return {
         success: false,
-        error: 'Product not found or cannot be deleted'
+        error: 'Product not found or cannot be deleted',
       };
     }
 
@@ -304,13 +300,13 @@ export const deletePendingProduct = async (productId, manufacturerId) => {
 
     return {
       success: true,
-      message: 'Product deleted successfully'
+      message: 'Product deleted successfully',
     };
   } catch (error) {
     console.error('Error deleting pending product:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -323,5 +319,5 @@ export default {
   processBulkUploadWithImages,
   getManufacturerPendingProducts,
   updatePendingProduct,
-  deletePendingProduct
+  deletePendingProduct,
 };

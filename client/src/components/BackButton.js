@@ -26,18 +26,19 @@ export default function BackButton({ to, fallbackTo = '/', label = 'Back', style
 
   if (location.pathname === '/') return null;
 
-  const base = variant === 'pill'
-    ? {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        padding: '7px 14px',
-        borderRadius: 999,
-        border: '1px solid var(--border)',
-        background: 'var(--bg-white)',
-        color: 'var(--text-primary)'
-      }
-    : { background: 'none', border: 'none', padding: '6px 0' };
+  const base =
+    variant === 'pill'
+      ? {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '7px 14px',
+          borderRadius: 999,
+          border: '1px solid var(--border)',
+          background: 'var(--bg-white)',
+          color: 'var(--text-primary)',
+        }
+      : { background: 'none', border: 'none', padding: '6px 0' };
 
   return (
     <button
@@ -50,7 +51,7 @@ export default function BackButton({ to, fallbackTo = '/', label = 'Back', style
         fontSize: 13.5,
         fontWeight: 600,
         color: variant === 'pill' ? 'var(--text-primary)' : 'var(--text-secondary)',
-        ...style
+        ...style,
       }}
     >
       <FiArrowLeft size={16} />

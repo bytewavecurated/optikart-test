@@ -1,8 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  FiActivity, FiAirplay, FiAward, FiBookOpen, FiCamera, FiDroplet, FiEye, FiGift,
-  FiHeadphones, FiHexagon, FiLayers, FiMonitor, FiPercent, FiPhoneCall, FiRefreshCw,
-  FiShield, FiSmile, FiSun, FiTag, FiTool, FiTruck, FiUser, FiZap
+  FiActivity,
+  FiAirplay,
+  FiAward,
+  FiBookOpen,
+  FiCamera,
+  FiDroplet,
+  FiEye,
+  FiGift,
+  FiHeadphones,
+  FiHexagon,
+  FiLayers,
+  FiMonitor,
+  FiPercent,
+  FiPhoneCall,
+  FiRefreshCw,
+  FiShield,
+  FiSmile,
+  FiSun,
+  FiTag,
+  FiTool,
+  FiTruck,
+  FiUser,
+  FiZap,
 } from 'react-icons/fi';
 import api from './api';
 
@@ -21,13 +41,29 @@ import api from './api';
  * components we already ship, so a bad value cannot inject anything.
  */
 export const HOME_ICONS = {
-  Sun: FiSun, Eye: FiEye, Droplet: FiDroplet, BookOpen: FiBookOpen,
-  Activity: FiActivity, Zap: FiZap, Monitor: FiMonitor, Tool: FiTool,
-  Smile: FiSmile, Percent: FiPercent, Gift: FiGift, Award: FiAward,
-  Truck: FiTruck, Shield: FiShield, RefreshCw: FiRefreshCw,
-  Headphones: FiHeadphones, Tag: FiTag, User: FiUser,
-  Layers: FiLayers, Hexagon: FiHexagon, Camera: FiCamera,
-  Phone: FiPhoneCall, Airplay: FiAirplay
+  Sun: FiSun,
+  Eye: FiEye,
+  Droplet: FiDroplet,
+  BookOpen: FiBookOpen,
+  Activity: FiActivity,
+  Zap: FiZap,
+  Monitor: FiMonitor,
+  Tool: FiTool,
+  Smile: FiSmile,
+  Percent: FiPercent,
+  Gift: FiGift,
+  Award: FiAward,
+  Truck: FiTruck,
+  Shield: FiShield,
+  RefreshCw: FiRefreshCw,
+  Headphones: FiHeadphones,
+  Tag: FiTag,
+  User: FiUser,
+  Layers: FiLayers,
+  Hexagon: FiHexagon,
+  Camera: FiCamera,
+  Phone: FiPhoneCall,
+  Airplay: FiAirplay,
 };
 
 export const ICON_NAMES = Object.keys(HOME_ICONS).sort();
@@ -46,7 +82,7 @@ const DEFAULT_HEADINGS = {
   materialSub: 'The material decides the weight, feel and durability',
   offers: 'Offers',
   trending: 'Trending Now',
-  deals: 'Deals of the Day'
+  deals: 'Deals of the Day',
 };
 
 const DEFAULT_VISIBLE = {
@@ -55,7 +91,7 @@ const DEFAULT_VISIBLE = {
   frameTypeRail: true,
   materialRail: true,
   promoTiles: true,
-  gender: true
+  gender: true,
 };
 
 export function useHomeContent() {
@@ -84,20 +120,20 @@ export function useHomeContent() {
     reload: load,
     stored,
     hasOverrides: Boolean(
-      (stored.categoryRail || []).length
-      || (stored.promoTiles || []).length
-      || (stored.genderTiles || []).length
-      || Object.keys(stored.headings || {}).some((k) => (stored.headings[k] || '') !== '')
+      (stored.categoryRail || []).length ||
+      (stored.promoTiles || []).length ||
+      (stored.genderTiles || []).length ||
+      Object.keys(stored.headings || {}).some((k) => (stored.headings[k] || '') !== '')
     ),
     heading: (key) => (stored.headings && stored.headings[key]) || DEFAULT_HEADINGS[key] || '',
-    visible: (key) => stored.visible?.[key] !== undefined ? stored.visible[key] : DEFAULT_VISIBLE[key],
+    visible: (key) => (stored.visible?.[key] !== undefined ? stored.visible[key] : DEFAULT_VISIBLE[key]),
     categoryRail: (stored.categoryRail || []).length ? stored.categoryRail : null,
     promoTiles: (stored.promoTiles || []).length ? stored.promoTiles : null,
     genderTiles: (stored.genderTiles || []).length ? stored.genderTiles : null,
     faceShapes: (stored.faceShapes || []).length ? stored.faceShapes : null,
     frameTypes: (stored.frameTypes || []).length ? stored.frameTypes : null,
     frameMaterials: (stored.frameMaterials || []).length ? stored.frameMaterials : null,
-    defaults: { headings: DEFAULT_HEADINGS, visible: DEFAULT_VISIBLE }
+    defaults: { headings: DEFAULT_HEADINGS, visible: DEFAULT_VISIBLE },
   };
 }
 
@@ -112,16 +148,23 @@ export function useSiteFooter() {
 
   useEffect(() => {
     let alive = true;
-    api.get('/site-content/footer')
-      .then((res) => { if (alive) setStored(res.data.footer || {}); })
-      .catch(() => { if (alive) setStored({}); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+    api
+      .get('/site-content/footer')
+      .then((res) => {
+        if (alive) setStored(res.data.footer || {});
+      })
+      .catch(() => {
+        if (alive) setStored({});
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  const navList = (stored.nav || []).length
-    ? stored.nav.map((item) => ({ name: item.name, path: item.link }))
-    : null;
+  const navList = (stored.nav || []).length ? stored.nav.map((item) => ({ name: item.name, path: item.link })) : null;
 
   return {
     loading,
@@ -131,7 +174,12 @@ export function useSiteFooter() {
     support: stored.support || {},
     nav: navList,
     groups: (stored.footerGroups || []).length ? stored.footerGroups : null,
-    hasOverrides: Boolean((stored.nav || []).length || (stored.footerGroups || []).length
-      || stored.tagline || stored.footerNote || (stored.support && (stored.support.email || stored.support.phone)))
+    hasOverrides: Boolean(
+      (stored.nav || []).length ||
+      (stored.footerGroups || []).length ||
+      stored.tagline ||
+      stored.footerNote ||
+      (stored.support && (stored.support.email || stored.support.phone))
+    ),
   };
 }

@@ -25,14 +25,14 @@ Clients must not be able to choose the IP that the rate limiter and audit logs k
 
 ## Layers
 
-| Layer | Location | Responsibility |
-| --- | --- | --- |
-| Models | `server/models/` | Mongoose schemas, enums, derived amounts, pre-save defaults |
-| Middleware | `server/middleware/auth.js` | one verifier per principal, plus `verifyAnyPrincipal` |
-| Routes | `server/routes/` | HTTP shape, ownership checks, status-code correctness |
-| Services | `server/services/` | domain logic: settlement, routing, inventory, notifications |
-| Client services | `client/src/services/` | axios instance, response helpers, error text |
-| Client state | `client/src/contexts/` | AuthContext, CartContext, UserBehaviorContext |
+| Layer           | Location                    | Responsibility                                              |
+| --------------- | --------------------------- | ----------------------------------------------------------- |
+| Models          | `server/models/`            | Mongoose schemas, enums, derived amounts, pre-save defaults |
+| Middleware      | `server/middleware/auth.js` | one verifier per principal, plus `verifyAnyPrincipal`       |
+| Routes          | `server/routes/`            | HTTP shape, ownership checks, status-code correctness       |
+| Services        | `server/services/`          | domain logic: settlement, routing, inventory, notifications |
+| Client services | `client/src/services/`      | axios instance, response helpers, error text                |
+| Client state    | `client/src/contexts/`      | AuthContext, CartContext, UserBehaviorContext               |
 
 The rule that keeps this maintainable: **routes never reimplement arithmetic that a service
 already owns.** Commission, settlement and eligibility live in `services/`, so the admin
@@ -43,16 +43,16 @@ panel, the seller panel and the webhook all agree by construction.
 Eight principals share one JWT secret but not one verifier, because their tokens carry
 different claims:
 
-| Principal | Token claims | Verifier | Sends |
-| --- | --- | --- | --- |
-| Customer | `id`, `userId` | `verifyToken` | `Authorization: Bearer` |
-| Seller | `id`, `sellerId` | `verifySeller` | same |
-| Admin | `id`, `role: admin` | `verifyToken` + `verifyAdmin` | same |
-| Staff | customer token + `StaffRole` by email | `verifyStaff` | same |
-| Executive | `id`, `executiveId` | `verifyExecutive` | same |
-| Manufacturer | `id`, `manufacturerId` | `verifyManufacturer` | same |
-| Manufacturer seller | `id`, `sellerId` | `verifyManufacturerSeller` | same |
-| Delivery partner | `id`, `partnerId` | `verifyDeliveryPartner` | same |
+| Principal           | Token claims                          | Verifier                      | Sends                   |
+| ------------------- | ------------------------------------- | ----------------------------- | ----------------------- |
+| Customer            | `id`, `userId`                        | `verifyToken`                 | `Authorization: Bearer` |
+| Seller              | `id`, `sellerId`                      | `verifySeller`                | same                    |
+| Admin               | `id`, `role: admin`                   | `verifyToken` + `verifyAdmin` | same                    |
+| Staff               | customer token + `StaffRole` by email | `verifyStaff`                 | same                    |
+| Executive           | `id`, `executiveId`                   | `verifyExecutive`             | same                    |
+| Manufacturer        | `id`, `manufacturerId`                | `verifyManufacturer`          | same                    |
+| Manufacturer seller | `id`, `sellerId`                      | `verifyManufacturerSeller`    | same                    |
+| Delivery partner    | `id`, `partnerId`                     | `verifyDeliveryPartner`       | same                    |
 
 Two rules that prevent whole classes of bug:
 

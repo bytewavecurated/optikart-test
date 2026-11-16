@@ -19,7 +19,7 @@ const StaffLayout = () => {
   const getMenuItems = () => {
     const role = staff?.staffRole || staff?.role || 'blog_manager';
 
-    switch(role) {
+    switch (role) {
       case 'blog_manager':
         return [
           { label: 'Dashboard', path: '/staff', icon: <FiHome /> },
@@ -50,9 +50,7 @@ const StaffLayout = () => {
           { label: 'Manage Orders', path: '/staff/orders/manage', icon: <FiShoppingBag /> },
         ];
       default:
-        return [
-          { label: 'Dashboard', path: '/staff/dashboard', icon: <FiHome /> },
-        ];
+        return [{ label: 'Dashboard', path: '/staff/dashboard', icon: <FiHome /> }];
     }
   };
 
@@ -61,31 +59,45 @@ const StaffLayout = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-subtle)' }}>
       {/* Sidebar */}
-      <aside style={{
-        width: sidebarOpen ? '240px' : '64px',
-        background: 'var(--bg-white)',
-        borderRight: '1px solid var(--border)',
-        transition: 'width 0.3s ease',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        height: '100vh',
-        zIndex: 100,
-        overflow: 'hidden'
-      }}>
-        {/* Logo */}
-        <div style={{
-          padding: sidebarOpen ? '20px' : '20px 12px',
-          borderBottom: '1px solid var(--border)',
+      <aside
+        style={{
+          width: sidebarOpen ? '240px' : '64px',
+          background: 'var(--bg-white)',
+          borderRight: '1px solid var(--border)',
+          transition: 'width 0.3s ease',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: sidebarOpen ? 'space-between' : 'center',
-          minHeight: '64px'
-        }}>
+          flexDirection: 'column',
+          position: 'fixed',
+          height: '100vh',
+          zIndex: 100,
+          overflow: 'hidden',
+        }}
+      >
+        {/* Logo */}
+        <div
+          style={{
+            padding: sidebarOpen ? '20px' : '20px 12px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: sidebarOpen ? 'space-between' : 'center',
+            minHeight: '64px',
+          }}
+        >
           {sidebarOpen && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand)' }}>OptiKart</span>
-              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: 'var(--radius-xs)' }}>Staff</span>
+              <span
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--text-secondary)',
+                  background: 'var(--bg-subtle)',
+                  padding: '2px 8px',
+                  borderRadius: 'var(--radius-xs)',
+                }}
+              >
+                Staff
+              </span>
             </div>
           )}
           <button
@@ -99,7 +111,7 @@ const StaffLayout = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--text-secondary)'
+              color: 'var(--text-secondary)',
             }}
           >
             {sidebarOpen ? <FiX size={20} /> : <FiMenu size={20} />}
@@ -125,7 +137,7 @@ const StaffLayout = () => {
                 fontWeight: location.pathname === item.path ? 600 : 400,
                 fontSize: '14px',
                 transition: 'all 0.2s',
-                justifyContent: sidebarOpen ? 'flex-start' : 'center'
+                justifyContent: sidebarOpen ? 'flex-start' : 'center',
               }}
               title={!sidebarOpen ? item.label : ''}
             >
@@ -141,7 +153,16 @@ const StaffLayout = () => {
             <div style={{ padding: '8px 16px', marginBottom: '8px' }}>
               <p style={{ fontSize: '13px', fontWeight: 600, margin: 0 }}>{staff.name}</p>
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>{staff.email}</p>
-              <p style={{ fontSize: '10px', color: 'var(--text-light)', margin: '4px 0 0 0', textTransform: 'capitalize' }}>{staff.role?.replace('_', ' ')}</p>
+              <p
+                style={{
+                  fontSize: '10px',
+                  color: 'var(--text-light)',
+                  margin: '4px 0 0 0',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {staff.role?.replace('_', ' ')}
+              </p>
             </div>
           )}
           <button
@@ -159,7 +180,7 @@ const StaffLayout = () => {
               color: 'var(--danger)',
               fontSize: '14px',
               fontWeight: 500,
-              justifyContent: sidebarOpen ? 'flex-start' : 'center'
+              justifyContent: sidebarOpen ? 'flex-start' : 'center',
             }}
             title={!sidebarOpen ? 'Logout' : ''}
           >
@@ -170,28 +191,32 @@ const StaffLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <div style={{
-        flex: 1,
-        marginLeft: sidebarOpen ? '240px' : '64px',
-        transition: 'margin-left 0.3s ease',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
-        {/* Top Bar */}
-        <header style={{
-          background: 'var(--bg-white)',
-          borderBottom: '1px solid var(--border)',
-          padding: '16px 24px',
+      <div
+        style={{
+          flex: 1,
+          marginLeft: sidebarOpen ? '240px' : '64px',
+          transition: 'margin-left 0.3s ease',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 0,
-          zIndex: 50
-        }}>
+          flexDirection: 'column',
+        }}
+      >
+        {/* Top Bar */}
+        <header
+          style={{
+            background: 'var(--bg-white)',
+            borderBottom: '1px solid var(--border)',
+            padding: '16px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50,
+          }}
+        >
           <BackButton label="Back to dashboard" />
           <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-            {menuItems.find(item => location.pathname === item.path)?.label || 'Staff Panel'}
+            {menuItems.find((item) => location.pathname === item.path)?.label || 'Staff Panel'}
           </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{staff?.name || 'Staff'}</span>

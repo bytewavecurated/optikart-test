@@ -2,72 +2,72 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import {FiArrowRight} from 'react-icons/fi';
+import { FiArrowRight } from 'react-icons/fi';
 
 const ALL_CATEGORIES = [
-  { 
-    name: 'Sunglasses', 
-    image: '/assets/face-1.svg', 
-    link: '/category/sunglasses', 
+  {
+    name: 'Sunglasses',
+    image: '/assets/face-1.svg',
+    link: '/category/sunglasses',
     color: 'var(--brand)',
     description: 'Protect your eyes in style with our premium sunglasses collection',
-    count: '500+ Products'
+    count: '500+ Products',
   },
-  { 
-    name: 'Eyeglasses', 
-    image: '/assets/face-2.svg', 
-    link: '/category/eyeglasses', 
+  {
+    name: 'Eyeglasses',
+    image: '/assets/face-2.svg',
+    link: '/category/eyeglasses',
     color: 'var(--warning)',
     description: 'Find the perfect frames for your prescription needs',
-    count: '800+ Products'
+    count: '800+ Products',
   },
-  { 
-    name: 'Contact Lenses', 
-    image: '/assets/face-3.svg', 
-    link: '/category/contact-lenses', 
+  {
+    name: 'Contact Lenses',
+    image: '/assets/face-3.svg',
+    link: '/category/contact-lenses',
     color: 'var(--success)',
     description: 'Comfortable and clear vision with our contact lens range',
-    count: '200+ Products'
+    count: '200+ Products',
   },
-  { 
-    name: 'Sports Eyewear', 
-    image: '/assets/face-4.svg', 
-    link: '/category/sports', 
+  {
+    name: 'Sports Eyewear',
+    image: '/assets/face-4.svg',
+    link: '/category/sports',
     color: 'var(--danger)',
     description: 'Performance eyewear designed for athletes and active lifestyles',
-    count: '150+ Products'
+    count: '150+ Products',
   },
-  { 
-    name: 'Kids Eyewear', 
-    image: '/assets/face-5.svg', 
-    link: '/category/kids', 
+  {
+    name: 'Kids Eyewear',
+    image: '/assets/face-5.svg',
+    link: '/category/kids',
     color: 'var(--brand)',
     description: 'Durable and fun eyewear designed specifically for children',
-    count: '120+ Products'
+    count: '120+ Products',
   },
-  { 
-    name: 'Reading Glasses', 
-    image: '/assets/face-1.svg', 
-    link: '/category/reading', 
+  {
+    name: 'Reading Glasses',
+    image: '/assets/face-1.svg',
+    link: '/category/reading',
     color: 'var(--success)',
     description: 'Clear close-up vision for reading and detailed work',
-    count: '180+ Products'
+    count: '180+ Products',
   },
-  { 
-    name: 'Computer Glasses', 
-    image: '/assets/face-1.svg', 
-    link: '/category/computer', 
+  {
+    name: 'Computer Glasses',
+    image: '/assets/face-1.svg',
+    link: '/category/computer',
     color: 'var(--brand-dark)',
     description: 'Blue light blocking glasses for digital eye strain relief',
-    count: '250+ Products'
+    count: '250+ Products',
   },
-  { 
-    name: 'Safety Eyewear', 
-    image: '/assets/face-1.svg', 
-    link: '/category/safety', 
+  {
+    name: 'Safety Eyewear',
+    image: '/assets/face-1.svg',
+    link: '/category/safety',
     color: 'var(--danger)',
     description: 'Protective eyewear for industrial and workplace safety',
-    count: '100+ Products'
+    count: '100+ Products',
   },
 ];
 
@@ -178,12 +178,7 @@ export default function Categories() {
 
         <div style={styles.grid}>
           {ALL_CATEGORIES.map((cat) => (
-            <Link
-              key={cat.name}
-              to={cat.link}
-              style={styles.card}
-              className="category-grid-card"
-            >
+            <Link key={cat.name} to={cat.link} style={styles.card} className="category-grid-card">
               <div style={styles.imageWrap}>
                 <img src={cat.image} alt={cat.name} style={styles.image} />
                 <div style={styles.overlay}>

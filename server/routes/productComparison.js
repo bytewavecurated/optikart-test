@@ -9,7 +9,7 @@ import {
   deleteComparisonList,
   generateShareToken,
   getSharedComparisonList,
-  compareAcrossCategories
+  compareAcrossCategories,
 } from '../services/productComparison.js';
 
 const router = express.Router();
@@ -29,12 +29,12 @@ router.post('/', verifyToken, async (req, res) => {
       res.status(201).json({
         success: true,
         message: 'Comparison list created',
-        data: result.comparisonList
+        data: result.comparisonList,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -42,7 +42,7 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -60,12 +60,12 @@ router.get('/', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.lists
+        data: result.lists,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -73,7 +73,7 @@ router.get('/', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -92,12 +92,12 @@ router.get('/:id', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.list
+        data: result.list,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -105,7 +105,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -124,12 +124,12 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: result.message
+        message: result.message,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -137,7 +137,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -155,7 +155,7 @@ router.post('/:id/products', verifyToken, async (req, res) => {
     if (!productId) {
       return res.status(400).json({
         success: false,
-        message: 'Product ID is required'
+        message: 'Product ID is required',
       });
     }
 
@@ -165,12 +165,12 @@ router.post('/:id/products', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Product added to comparison',
-        data: result.comparisonList
+        data: result.comparisonList,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -178,7 +178,7 @@ router.post('/:id/products', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -198,12 +198,12 @@ router.delete('/:id/products/:productId', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Product removed from comparison',
-        data: result.comparisonList
+        data: result.comparisonList,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -211,7 +211,7 @@ router.delete('/:id/products/:productId', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -233,13 +233,13 @@ router.post('/:id/share', verifyToken, async (req, res) => {
         message: 'Share token generated',
         data: {
           shareToken: result.shareToken,
-          shareUrl: result.shareUrl
-        }
+          shareUrl: result.shareUrl,
+        },
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -247,7 +247,7 @@ router.post('/:id/share', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -265,12 +265,12 @@ router.get('/shared/:token', async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.list
+        data: result.list,
       });
     } else {
       res.status(404).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -278,7 +278,7 @@ router.get('/shared/:token', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -294,7 +294,7 @@ router.post('/compare-categories', async (req, res) => {
     if (!productIds || !Array.isArray(productIds)) {
       return res.status(400).json({
         success: false,
-        message: 'Product IDs array is required'
+        message: 'Product IDs array is required',
       });
     }
 
@@ -303,12 +303,12 @@ router.post('/compare-categories', async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -316,7 +316,7 @@ router.post('/compare-categories', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

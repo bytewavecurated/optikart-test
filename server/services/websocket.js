@@ -20,14 +20,15 @@ export const emitInventoryAlert = (io, sellerId, product, alertType) => {
     currentStock: product.stock,
     threshold: alertType === 'out_of_stock' ? OUT_OF_STOCK_THRESHOLD : LOW_STOCK_THRESHOLD,
     timestamp: new Date().toISOString(),
-    message: alertType === 'out_of_stock'
-      ? `Product "${product.title}" is now out of stock!`
-      : `Product "${product.title}" is running low on stock (${product.stock} remaining)`
+    message:
+      alertType === 'out_of_stock'
+        ? `Product "${product.title}" is now out of stock!`
+        : `Product "${product.title}" is running low on stock (${product.stock} remaining)`,
   };
 
   // Emit to seller's room
   io.to(`seller_${sellerId}`).emit('inventory_alert', alert);
-  
+
   // Also emit to admin room for monitoring
   io.to('admin_room').emit('inventory_alert', { ...alert, sellerId });
 
@@ -45,7 +46,11 @@ export const checkStockLevels = async (io, product, previousStock) => {
   // Check if stock just went below threshold
   if (product.stock === OUT_OF_STOCK_THRESHOLD && previousStock > OUT_OF_STOCK_THRESHOLD) {
     emitInventoryAlert(io, sellerId, product, 'out_of_stock');
-  } else if (product.stock <= LOW_STOCK_THRESHOLD && product.stock > OUT_OF_STOCK_THRESHOLD && previousStock > LOW_STOCK_THRESHOLD) {
+  } else if (
+    product.stock <= LOW_STOCK_THRESHOLD &&
+    product.stock > OUT_OF_STOCK_THRESHOLD &&
+    previousStock > LOW_STOCK_THRESHOLD
+  ) {
     emitInventoryAlert(io, sellerId, product, 'low_stock');
   }
 };
@@ -62,7 +67,7 @@ export const emitOrderUpdate = (io, userId, order, status) => {
     orderNumber: order.orderNumber,
     status,
     timestamp: new Date().toISOString(),
-    message: `Your order #${order.orderNumber} status has been updated to: ${status}`
+    message: `Your order #${order.orderNumber} status has been updated to: ${status}`,
   };
 
   io.to(`user_${userId}`).emit('order_update', notification);
@@ -79,7 +84,7 @@ export const emitDeliveryAssignment = (io, partnerId, order) => {
     orderId: order._id,
     orderNumber: order.orderNumber,
     timestamp: new Date().toISOString(),
-    message: `New delivery assignment: Order #${order.orderNumber}`
+    message: `New delivery assignment: Order #${order.orderNumber}`,
   };
 
   io.to(`partner_${partnerId}`).emit('delivery_assignment', notification);
@@ -89,5 +94,5 @@ export default {
   emitInventoryAlert,
   checkStockLevels,
   emitOrderUpdate,
-  emitDeliveryAssignment
+  emitDeliveryAssignment,
 };

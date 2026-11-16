@@ -24,8 +24,8 @@ const SupplyClaims = () => (
     </div>
     <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--text-secondary)', maxWidth: 760, lineHeight: 1.6 }}>
       Listings of another company's brand that a shop has declared the origin of, approved by that brand, and now
-      waiting on the platform's own verification. Refusing here keeps the listing invisible; approving is what makes
-      it sellable and lets order routing offer it work.
+      waiting on the platform's own verification. Refusing here keeps the listing invisible; approving is what makes it
+      sellable and lets order routing offer it work.
     </p>
 
     <SupplyClaimQueue

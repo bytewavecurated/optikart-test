@@ -13,11 +13,11 @@ const SEARCH_RADIUS_KM = 10;
  */
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -28,15 +28,15 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 const findNearbySellers = async (productId, customerLocation) => {
   try {
     // Get all sellers with their location
-    const sellers = await Seller.find({ 
+    const sellers = await Seller.find({
       isActive: true,
       isVerified: true,
-      location: { $exists: true }
+      location: { $exists: true },
     });
 
     // Filter sellers within radius
     const nearbySellers = sellers
-      .map(seller => {
+      .map((seller) => {
         const distance = calculateDistance(
           customerLocation.latitude,
           customerLocation.longitude,
@@ -45,7 +45,7 @@ const findNearbySellers = async (productId, customerLocation) => {
         );
         return { seller, distance };
       })
-      .filter(item => item.distance <= SEARCH_RADIUS_KM)
+      .filter((item) => item.distance <= SEARCH_RADIUS_KM)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, MAX_NEARBY_SELLERS);
 
@@ -56,14 +56,14 @@ const findNearbySellers = async (productId, customerLocation) => {
         seller: seller._id,
         _id: productId,
         isActive: true,
-        stock: { $gt: 0 }
+        stock: { $gt: 0 },
       });
 
       if (hasProduct) {
         sellersWithProduct.push({
           seller: seller._id,
           distance: Math.round(distance * 10) / 10,
-          hasProduct: true
+          hasProduct: true,
         });
       }
     }
@@ -81,7 +81,7 @@ const findNearbySellers = async (productId, customerLocation) => {
 export const routeOrder = async (orderId, customerLocation) => {
   try {
     const order = await Order.findById(orderId).populate('items.product');
-    
+
     if (!order) {
       throw new Error('Order not found');
     }
@@ -99,13 +99,13 @@ export const routeOrder = async (orderId, customerLocation) => {
         customerLocation,
         nearbySellers: [],
         status: 'routing',
-        timeoutAt: new Date(Date.now() + SELLER_RESPONSE_TIMEOUT)
+        timeoutAt: new Date(Date.now() + SELLER_RESPONSE_TIMEOUT),
       });
 
       return {
         success: false,
         message: 'No nearby sellers found',
-        routing
+        routing,
       };
     }
 
@@ -113,13 +113,13 @@ export const routeOrder = async (orderId, customerLocation) => {
     const routing = await OrderRouting.create({
       order: orderId,
       customerLocation,
-      nearbySellers: nearbySellers.map(s => ({
+      nearbySellers: nearbySellers.map((s) => ({
         ...s,
-        response: 'pending'
+        response: 'pending',
       })),
       currentSellerIndex: 0,
       status: 'routing',
-      timeoutAt: new Date(Date.now() + SELLER_RESPONSE_TIMEOUT)
+      timeoutAt: new Date(Date.now() + SELLER_RESPONSE_TIMEOUT),
     });
 
     // Contact first seller
@@ -128,13 +128,13 @@ export const routeOrder = async (orderId, customerLocation) => {
     return {
       success: true,
       routing,
-      nearbySellers: nearbySellers.length
+      nearbySellers: nearbySellers.length,
     };
   } catch (error) {
     console.error('Error routing order:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -144,12 +144,10 @@ export const routeOrder = async (orderId, customerLocation) => {
  */
 export const contactNextSeller = async (routingId) => {
   try {
-    const routing = await OrderRouting.findById(routingId)
-      .populate('order')
-      .populate({
-        path: 'nearbySellers.seller',
-        select: 'name email storeName phone'
-      });
+    const routing = await OrderRouting.findById(routingId).populate('order').populate({
+      path: 'nearbySellers.seller',
+      select: 'name email storeName phone',
+    });
 
     if (!routing) {
       throw new Error('Routing not found');
@@ -159,21 +157,21 @@ export const contactNextSeller = async (routingId) => {
       // All sellers contacted, mark for admin assignment
       routing.status = 'timeout';
       await routing.save();
-      
+
       return {
         success: false,
-        message: 'All sellers contacted, no response'
+        message: 'All sellers contacted, no response',
       };
     }
 
     const currentSeller = routing.nearbySellers[routing.currentSellerIndex];
-    
+
     // Mark as contacted
     currentSeller.contactedAt = new Date();
     currentSeller.response = 'pending';
     routing.status = 'seller_contacted';
     routing.timeoutAt = new Date(Date.now() + SELLER_RESPONSE_TIMEOUT);
-    
+
     await routing.save();
 
     // Send notification to seller
@@ -190,13 +188,13 @@ export const contactNextSeller = async (routingId) => {
     return {
       success: true,
       seller: currentSeller.seller,
-      timeoutAt: routing.timeoutAt
+      timeoutAt: routing.timeoutAt,
     };
   } catch (error) {
     console.error('Error contacting next seller:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -207,13 +205,13 @@ export const contactNextSeller = async (routingId) => {
 const handleSellerTimeout = async (routingId) => {
   try {
     const routing = await OrderRouting.findById(routingId);
-    
+
     if (!routing || routing.status !== 'seller_contacted') {
       return;
     }
 
     const currentSeller = routing.nearbySellers[routing.currentSellerIndex];
-    
+
     // Mark as timeout
     currentSeller.response = 'timeout';
     currentSeller.respondedAt = new Date();
@@ -240,45 +238,43 @@ const handleSellerTimeout = async (routingId) => {
 export const sellerAcceptOrder = async (routingId, sellerId) => {
   try {
     const routing = await OrderRouting.findById(routingId);
-    
+
     if (!routing) {
       throw new Error('Routing not found');
     }
 
-    const sellerIndex = routing.nearbySellers.findIndex(
-      s => s.seller.toString() === sellerId.toString()
-    );
+    const sellerIndex = routing.nearbySellers.findIndex((s) => s.seller.toString() === sellerId.toString());
 
     if (sellerIndex === -1) {
       throw new Error('Seller not in routing list');
     }
 
     const currentSeller = routing.nearbySellers[sellerIndex];
-    
+
     // Mark as accepted
     currentSeller.response = 'accepted';
     currentSeller.respondedAt = new Date();
     routing.status = 'seller_accepted';
     routing.assignedSeller = sellerId;
     routing.completedAt = new Date();
-    
+
     await routing.save();
 
     // Update order with assigned seller
     await Order.findByIdAndUpdate(routing.order, {
       seller: sellerId,
-      status: 'confirmed'
+      status: 'confirmed',
     });
 
     return {
       success: true,
-      message: 'Order accepted by seller'
+      message: 'Order accepted by seller',
     };
   } catch (error) {
     console.error('Error accepting order:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -289,21 +285,19 @@ export const sellerAcceptOrder = async (routingId, sellerId) => {
 export const sellerRejectOrder = async (routingId, sellerId, reason) => {
   try {
     const routing = await OrderRouting.findById(routingId);
-    
+
     if (!routing) {
       throw new Error('Routing not found');
     }
 
-    const sellerIndex = routing.nearbySellers.findIndex(
-      s => s.seller.toString() === sellerId.toString()
-    );
+    const sellerIndex = routing.nearbySellers.findIndex((s) => s.seller.toString() === sellerId.toString());
 
     if (sellerIndex === -1) {
       throw new Error('Seller not in routing list');
     }
 
     const currentSeller = routing.nearbySellers[sellerIndex];
-    
+
     // Mark as rejected
     currentSeller.response = 'rejected';
     currentSeller.respondedAt = new Date();
@@ -322,13 +316,13 @@ export const sellerRejectOrder = async (routingId, sellerId, reason) => {
 
     return {
       success: true,
-      message: 'Order rejected by seller'
+      message: 'Order rejected by seller',
     };
   } catch (error) {
     console.error('Error rejecting order:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -339,7 +333,7 @@ export const sellerRejectOrder = async (routingId, sellerId, reason) => {
 export const adminAssignOrder = async (routingId, sellerId, adminNotes) => {
   try {
     const routing = await OrderRouting.findById(routingId);
-    
+
     if (!routing) {
       throw new Error('Routing not found');
     }
@@ -349,24 +343,24 @@ export const adminAssignOrder = async (routingId, sellerId, adminNotes) => {
     routing.assignedBy = 'admin';
     routing.adminNotes = adminNotes;
     routing.completedAt = new Date();
-    
+
     await routing.save();
 
     // Update order with assigned seller
     await Order.findByIdAndUpdate(routing.order, {
       seller: sellerId,
-      status: 'confirmed'
+      status: 'confirmed',
     });
 
     return {
       success: true,
-      message: 'Order assigned by admin'
+      message: 'Order assigned by admin',
     };
   } catch (error) {
     console.error('Error assigning order:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -392,16 +386,18 @@ export const adminAssignOrder = async (routingId, sellerId, adminNotes) => {
  */
 export const aiAutoAssignOrder = async (routingId) => {
   try {
-    const routing = await OrderRouting.findById(routingId)
-      .populate({ path: 'nearbySellers.seller', select: 'name storeName phone email location rating' });
+    const routing = await OrderRouting.findById(routingId).populate({
+      path: 'nearbySellers.seller',
+      select: 'name storeName phone email location rating',
+    });
 
     if (!routing) throw new Error('Routing not found');
 
     const ranked = [...(routing.nearbySellers || [])]
       .filter((entry) => entry.seller)
       .sort((a, b) => {
-        const sa = Number.isFinite(a.score) ? a.score : (Number.isFinite(a.distance) ? 100 - a.distance : -1);
-        const sb = Number.isFinite(b.score) ? b.score : (Number.isFinite(b.distance) ? 100 - b.distance : -1);
+        const sa = Number.isFinite(a.score) ? a.score : Number.isFinite(a.distance) ? 100 - a.distance : -1;
+        const sb = Number.isFinite(b.score) ? b.score : Number.isFinite(b.distance) ? 100 - b.distance : -1;
         return sb - sa;
       });
 
@@ -411,7 +407,7 @@ export const aiAutoAssignOrder = async (routingId) => {
       return {
         success: false,
         status: 'admin_required',
-        message: 'No seller was available to rank. This order needs a manual assignment.'
+        message: 'No seller was available to rank. This order needs a manual assignment.',
       };
     }
 
@@ -432,7 +428,7 @@ export const aiAutoAssignOrder = async (routingId) => {
     await Order.findByIdAndUpdate(routing.order, {
       seller: best.seller._id,
       status: 'confirmed',
-      assignmentStatus: 'assigned'
+      assignmentStatus: 'assigned',
     });
 
     return {
@@ -441,7 +437,7 @@ export const aiAutoAssignOrder = async (routingId) => {
       assignedSeller: best.seller,
       score: best.score ?? null,
       reasons,
-      candidatesConsidered: ranked.length
+      candidatesConsidered: ranked.length,
     };
   } catch (error) {
     console.error('Error auto-assigning order:', error);
@@ -465,13 +461,13 @@ export const getOrderRouting = async (routingId) => {
 
     return {
       success: true,
-      routing
+      routing,
     };
   } catch (error) {
     console.error('Error getting order routing:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -489,13 +485,13 @@ export const getAllOrderRoutings = async (filters = {}) => {
 
     return {
       success: true,
-      routings
+      routings,
     };
   } catch (error) {
     console.error('Error getting all order routings:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -508,5 +504,5 @@ export default {
   adminAssignOrder,
   aiAutoAssignOrder,
   getOrderRouting,
-  getAllOrderRoutings
+  getAllOrderRoutings,
 };

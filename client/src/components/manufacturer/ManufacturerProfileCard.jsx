@@ -26,13 +26,28 @@ import { FiSave, FiInfo, FiAlertTriangle } from 'react-icons/fi';
  * something.
  */
 const fields = [
-  { key: 'companyName', label: 'Company name', required: true, hint: 'Printed on invoices raised against this account.' },
+  {
+    key: 'companyName',
+    label: 'Company name',
+    required: true,
+    hint: 'Printed on invoices raised against this account.',
+  },
   { key: 'name', label: 'Contact person', required: true },
   { key: 'phone', label: 'Contact phone', placeholder: '98765 00000', hint: '10 digits, starting 6-9.' },
-  { key: 'gstNumber', label: 'GSTIN', placeholder: '27ABCDE1234F1Z5', hint: '15 characters, as issued. Uppercased automatically.' },
+  {
+    key: 'gstNumber',
+    label: 'GSTIN',
+    placeholder: '27ABCDE1234F1Z5',
+    hint: '15 characters, as issued. Uppercased automatically.',
+  },
   { key: 'panNumber', label: 'PAN', placeholder: 'ABCDE1234F', hint: '10 characters. Uppercased automatically.' },
   { key: 'website', label: 'Website', placeholder: 'https://www.example.com', hint: 'Include the https:// part.' },
-  { key: 'description', label: 'About this manufacturer', textarea: true, hint: 'Shown where a brand is introduced. Up to 1200 characters.' }
+  {
+    key: 'description',
+    label: 'About this manufacturer',
+    textarea: true,
+    hint: 'Shown where a brand is introduced. Up to 1200 characters.',
+  },
 ];
 
 const ManufacturerProfileCard = () => {
@@ -55,7 +70,7 @@ const ManufacturerProfileCard = () => {
         street: body.profile?.address?.street || '',
         city: body.profile?.address?.city || '',
         state: body.profile?.address?.state || '',
-        pincode: body.profile?.address?.pincode || ''
+        pincode: body.profile?.address?.pincode || '',
       });
       setBrandsText((body.profile?.brands || []).join(', '));
       setCatalogue(body.catalogue || { products: 0, retailers: 0, brandsInUse: [] });
@@ -68,7 +83,9 @@ const ManufacturerProfileCard = () => {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const save = async () => {
     setSaving(true);
@@ -83,7 +100,10 @@ const ManufacturerProfileCard = () => {
         website: profile.website,
         description: profile.description,
         address,
-        brands: brandsText.split(',').map((b) => b.trim()).filter(Boolean)
+        brands: brandsText
+          .split(',')
+          .map((b) => b.trim())
+          .filter(Boolean),
       });
       const changed = res.data?.changed || [];
       // The server's own word for "nothing happened", rather than always claiming a save.
@@ -93,7 +113,9 @@ const ManufacturerProfileCard = () => {
       const list = error?.response?.data?.errors;
       if (Array.isArray(list)) {
         const map = {};
-        list.forEach((e) => { map[e.field] = e.message; });
+        list.forEach((e) => {
+          map[e.field] = e.message;
+        });
         setErrors(map);
         toast.error(list[0]?.message || 'Some fields need attention.');
       } else {
@@ -107,23 +129,46 @@ const ManufacturerProfileCard = () => {
   const label = { display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 };
   const hint = { fontSize: 11.5, color: 'var(--text-light)', marginTop: 3, lineHeight: 1.45 };
 
-  const brandMismatch = (catalogue.brandsInUse || [])
-    .filter((b) => !brandsText.split(',').map((x) => x.trim().toLowerCase()).includes(String(b.brand).toLowerCase()));
+  const brandMismatch = (catalogue.brandsInUse || []).filter(
+    (b) =>
+      !brandsText
+        .split(',')
+        .map((x) => x.trim().toLowerCase())
+        .includes(String(b.brand).toLowerCase())
+  );
 
-  if (loading) return <div className="card" style={{ padding: 18 }}>Loading profile…</div>;
+  if (loading)
+    return (
+      <div className="card" style={{ padding: 18 }}>
+        Loading profile…
+      </div>
+    );
 
   return (
     <div className="card" style={{ padding: 20, marginBottom: 18, background: 'var(--bg-white)' }}>
       <h2 style={{ fontSize: 20, fontWeight: 600, margin: '0 0 4px' }}>Company &amp; brand profile</h2>
       <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 760 }}>
-        These details appear on documents raised against your account. {catalogue.products} products and
-        {' '}{catalogue.retailers} retailer shops are recorded under this manufacturer.
+        These details appear on documents raised against your account. {catalogue.products} products and{' '}
+        {catalogue.retailers} retailer shops are recorded under this manufacturer.
       </p>
 
       {unreadable && (
-        <div style={{ display: 'flex', gap: 8, padding: 12, marginBottom: 14, borderRadius: 'var(--radius-md)', background: 'rgba(220,38,38,.07)', color: 'var(--danger)', fontSize: 13 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            padding: 12,
+            marginBottom: 14,
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(220,38,38,.07)',
+            color: 'var(--danger)',
+            fontSize: 13,
+          }}
+        >
           <FiAlertTriangle style={{ marginTop: 2 }} />
-          <span>This profile could not be read, so nothing here is current. Values are not shown rather than shown stale.</span>
+          <span>
+            This profile could not be read, so nothing here is current. Values are not shown rather than shown stale.
+          </span>
         </div>
       )}
 
@@ -162,7 +207,12 @@ const ManufacturerProfileCard = () => {
 
         <div>
           <label style={label}>Sign-in email</label>
-          <input className="input" value={profile.email || ''} disabled style={{ width: '100%', background: 'var(--bg-soft, #f4f4f5)' }} />
+          <input
+            className="input"
+            value={profile.email || ''}
+            disabled
+            style={{ width: '100%', background: 'var(--bg-soft, #f4f4f5)' }}
+          />
           <div style={hint}>
             <FiInfo size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />
             Cannot be changed here - it is where the login code is sent. Contact OptiKart support to move the account.
@@ -170,10 +220,14 @@ const ManufacturerProfileCard = () => {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginTop: 14 }}>
+      <div
+        style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginTop: 14 }}
+      >
         {[
-          { key: 'street', ph: 'Street' }, { key: 'city', ph: 'City' },
-          { key: 'state', ph: 'State' }, { key: 'pincode', ph: 'PIN code' }
+          { key: 'street', ph: 'Street' },
+          { key: 'city', ph: 'City' },
+          { key: 'state', ph: 'State' },
+          { key: 'pincode', ph: 'PIN code' },
         ].map((a) => (
           <div key={a.key}>
             <label style={label}>{a.ph}</label>
@@ -184,7 +238,9 @@ const ManufacturerProfileCard = () => {
               style={{ width: '100%' }}
               onChange={(e) => setAddress((v) => ({ ...v, [a.key]: e.target.value }))}
             />
-            {errors[`address.${a.key}`] && <div style={{ ...hint, color: 'var(--danger)' }}>{errors[`address.${a.key}`]}</div>}
+            {errors[`address.${a.key}`] && (
+              <div style={{ ...hint, color: 'var(--danger)' }}>{errors[`address.${a.key}`]}</div>
+            )}
           </div>
         ))}
       </div>
@@ -206,17 +262,21 @@ const ManufacturerProfileCard = () => {
         {brandMismatch.length > 0 && (
           <div style={{ ...hint, color: 'var(--warning-dark, #8a6d3b)', marginTop: 6 }}>
             <FiAlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: 5 }} />
-            Products still carry brand names that are not on this list: {brandMismatch.map((b) => `${b.brand} (${b.count})`).join(', ')}.
-            Add them, or reassign those products before removing anything.
+            Products still carry brand names that are not on this list:{' '}
+            {brandMismatch.map((b) => `${b.brand} (${b.count})`).join(', ')}. Add them, or reassign those products
+            before removing anything.
           </div>
         )}
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
         <button className="btn btn-primary" onClick={save} disabled={saving}>
-          <FiSave style={{ marginRight: 6 }} />{saving ? 'Saving…' : 'Save profile'}
+          <FiSave style={{ marginRight: 6 }} />
+          {saving ? 'Saving…' : 'Save profile'}
         </button>
-        <button className="btn btn-outline" onClick={load} disabled={saving}>Reload</button>
+        <button className="btn btn-outline" onClick={load} disabled={saving}>
+          Reload
+        </button>
         <span style={{ alignSelf: 'center', fontSize: 12, color: 'var(--text-secondary)' }}>
           Saving notifies the OptiKart desk when tax or company details change.
         </span>

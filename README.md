@@ -12,15 +12,15 @@ Socket.IO, Razorpay and Shiprocket.
 
 ## Stack
 
-| Layer | Choice |
-| --- | --- |
-| Frontend | React 18, React Router 6, framer-motion, react-icons, Socket.IO client |
-| Backend | Node 18+, Express 4, ESM |
-| Database | MongoDB (Atlas or local) with Mongoose 7 |
-| Auth | JWT per principal (customer, seller, admin, staff, executive, manufacturer, manufacturer seller, delivery partner) |
-| Payments | Razorpay (customer), second account for delivery-partner payouts |
-| Shipping | Shiprocket, with an in-house delivery-partner flow as the alternative |
-| Email | Nodemailer over SMTP |
+| Layer    | Choice                                                                                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------ |
+| Frontend | React 18, React Router 6, framer-motion, react-icons, Socket.IO client                                             |
+| Backend  | Node 18+, Express 4, ESM                                                                                           |
+| Database | MongoDB (Atlas or local) with Mongoose 7                                                                           |
+| Auth     | JWT per principal (customer, seller, admin, staff, executive, manufacturer, manufacturer seller, delivery partner) |
+| Payments | Razorpay (customer), second account for delivery-partner payouts                                                   |
+| Shipping | Shiprocket, with an in-house delivery-partner flow as the alternative                                              |
+| Email    | Nodemailer over SMTP                                                                                               |
 
 ## Layout
 
@@ -75,11 +75,11 @@ images into `server/uploads/products`. It **deletes the collections it owns firs
 is not something to run against data you care about: on boot it now seeds only when the
 database looks empty, and logs why it skipped otherwise.
 
-| `SEED_ON_BOOT` | Behaviour |
-| --- | --- |
+| `SEED_ON_BOOT`   | Behaviour                                                        |
+| ---------------- | ---------------------------------------------------------------- |
 | `auto` (default) | seed when there are no users yet; skip and say so when there are |
-| `true` | seed regardless, deleting the seeded collections first |
-| `false` | never seed, even against an empty database |
+| `true`           | seed regardless, deleting the seeded collections first           |
+| `false`          | never seed, even against an empty database                       |
 
 ```bash
 # terminal 1 - API on :5000
@@ -109,16 +109,16 @@ exercised without creating data first.
 Contact lenses are configured per correction type, because the numbers a prescription
 carries differ by lens:
 
-| Entry | What the customer gives |
-| --- | --- |
-| Distance power | Sphere per eye |
-| Toric / cylindrical | Sphere, cylinder and axis per eye |
-| Multi-focal | Sphere and ADD per eye |
-| Colour, zero power | Nothing; shade, base curve, diameter |
-| Colour, with power | Sphere per eye, plus the shade |
-| Colour combos | None - a shade per weekday, Buy Now |
-| Solution | Bottle volume and pack size, priced per pack |
-| Accessories | Case type, compartments, colour |
+| Entry               | What the customer gives                      |
+| ------------------- | -------------------------------------------- |
+| Distance power      | Sphere per eye                               |
+| Toric / cylindrical | Sphere, cylinder and axis per eye            |
+| Multi-focal         | Sphere and ADD per eye                       |
+| Colour, zero power  | Nothing; shade, base curve, diameter         |
+| Colour, with power  | Sphere per eye, plus the shade               |
+| Colour combos       | None - a shade per weekday, Buy Now          |
+| Solution            | Bottle volume and pack size, priced per pack |
+| Accessories         | Case type, compartments, colour              |
 
 Ranges come from the product (`contactLens.SphereLeftMin/Max`, cylinder and axis
 ranges, ADD range), so a -9.50 sphere in a lens stocked only to -9.00 is refused
@@ -245,15 +245,15 @@ client emits. Low-stock thresholds emit `inventory_alert` to the owning seller's
 
 ## Limits
 
-| Rule | Value | Enforced |
-| --- | --- | --- |
-| Cart line items | 25 | client and server |
-| Per-line quantity | 10 | client and server |
-| Wishlist (signed in) | 30 | client and server |
-| Wishlist (guest) | 3 | client |
-| Return window | from delivery date | server |
-| Order acceptance timeout | 30 min | server |
-| Partner withdrawal | 1 per calendar day | server |
+| Rule                     | Value              | Enforced          |
+| ------------------------ | ------------------ | ----------------- |
+| Cart line items          | 25                 | client and server |
+| Per-line quantity        | 10                 | client and server |
+| Wishlist (signed in)     | 30                 | client and server |
+| Wishlist (guest)         | 3                  | client            |
+| Return window            | from delivery date | server            |
+| Order acceptance timeout | 30 min             | server            |
+| Partner withdrawal       | 1 per calendar day | server            |
 
 ---
 
@@ -275,15 +275,15 @@ footer, admin sidebar, auth cards, and as `client/public/favicon.svg`.
 
 Code paths exist for each of these and fail closed rather than pretending to succeed:
 
-| Service | Needed for | Behaviour without credentials |
-| --- | --- | --- |
-| Razorpay | customer checkout | order creation reports the gateway is unavailable; COD still works |
-| Razorpay (2nd account) | delivery-partner withdrawals | withdrawal recorded as not initiated, balance intact |
-| RazorpayX | automated seller payouts | payout stays `pending` with `awaiting_settlement` and a reason |
-| Shiprocket | automatic pickup/label | routing falls back to the platform's own partners |
-| SMTP | OTP and transactional email | OTP is stored and logged, not delivered |
-| OpenAI | prescription check, chatbot | rule-based fallback responses |
-| AWS Rekognition / Google Vision | face-shape detection | guidance page still works without it |
+| Service                         | Needed for                   | Behaviour without credentials                                      |
+| ------------------------------- | ---------------------------- | ------------------------------------------------------------------ |
+| Razorpay                        | customer checkout            | order creation reports the gateway is unavailable; COD still works |
+| Razorpay (2nd account)          | delivery-partner withdrawals | withdrawal recorded as not initiated, balance intact               |
+| RazorpayX                       | automated seller payouts     | payout stays `pending` with `awaiting_settlement` and a reason     |
+| Shiprocket                      | automatic pickup/label       | routing falls back to the platform's own partners                  |
+| SMTP                            | OTP and transactional email  | OTP is stored and logged, not delivered                            |
+| OpenAI                          | prescription check, chatbot  | rule-based fallback responses                                      |
+| AWS Rekognition / Google Vision | face-shape detection         | guidance page still works without it                               |
 
 | SMTP | login OTP, order confirmations, order status changes, seller and delivery-partner offers, no-seller-accepted escalation, price change and listing audit mails | Skipped with a log line; routing still cascades, so ordering never depends on mail |
 
@@ -293,12 +293,12 @@ Set the corresponding variables in `server/.env` to enable each one.
 
 ## Scripts
 
-| Command | Effect |
-| --- | --- |
-| `cd server && npm run dev` | API with reload |
-| `cd server && npm start` | API |
-| `cd server && node seed.js` | reseed only |
-| `cd client && npm start` | dev server on :3000, `/api` proxied |
+| Command                      | Effect                              |
+| ---------------------------- | ----------------------------------- |
+| `cd server && npm run dev`   | API with reload                     |
+| `cd server && npm start`     | API                                 |
+| `cd server && node seed.js`  | reseed only                         |
+| `cd client && npm start`     | dev server on :3000, `/api` proxied |
 | `cd client && npm run build` | production bundle in `client/build` |
 
 ## Contributing

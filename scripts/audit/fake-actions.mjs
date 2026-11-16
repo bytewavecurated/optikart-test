@@ -44,7 +44,8 @@ walk(SRC);
  * every build costs people's attention, and attention is the resource that
  * actually runs out.
  */
-const EFFECT = /(?:\bawait\b|\basync\b|api\.|[a-zA-Z$][\w$]*Api\.|axios|fetch\(|\.post\(|\.put\(|\.patch\(|\.delete\(|\.get\(|navigate\(|dispatch\(|commit\(|localStorage\.|sessionStorage\.|set[A-Z]\w*\(|\.current\s*=|location\.(?:href|assign|reload)|window\.open|download|form\.submit|\.reset\(|copy\(|clipboard|socket\.emit|emit\()/;
+const EFFECT =
+  /(?:\bawait\b|\basync\b|api\.|[a-zA-Z$][\w$]*Api\.|axios|fetch\(|\.post\(|\.put\(|\.patch\(|\.delete\(|\.get\(|navigate\(|dispatch\(|commit\(|localStorage\.|sessionStorage\.|set[A-Z]\w*\(|\.current\s*=|location\.(?:href|assign|reload)|window\.open|download|form\.submit|\.reset\(|copy\(|clipboard|socket\.emit|emit\()/;
 
 const ANNOWNOTE = /fake-action-audit:\s*ok\b/i;
 
@@ -55,9 +56,10 @@ for (const file of files) {
   for (let i = 0; i < lines.length; i += 1) {
     // Only success announcements; a failure toast is a control admitting it did
     // nothing, which is the opposite of the bug.
-    const m = lines[i].match(/\b(toast|toastSuccess|showToast)\s*[.(]\s*(?:success|info)?\s*['"`]/)
-      || lines[i].match(/\balert\s*\(/)
-      || lines[i].match(/['"](?:coming soon|not implemented|placeholder|under construction)['"]/i);
+    const m =
+      lines[i].match(/\b(toast|toastSuccess|showToast)\s*[.(]\s*(?:success|info)?\s*['"`]/) ||
+      lines[i].match(/\balert\s*\(/) ||
+      lines[i].match(/['"](?:coming soon|not implemented|placeholder|under construction)['"]/i);
     if (!m) continue;
 
     // Search the surrounding handler: 14 lines up (the opening) and 10 down.
@@ -70,7 +72,7 @@ for (const file of files) {
 
     hits.push({
       where: `${path.relative(ROOT, file)}:${i + 1}`,
-      text: lines[i].trim().slice(0, 96)
+      text: lines[i].trim().slice(0, 96),
     });
   }
 }

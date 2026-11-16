@@ -10,7 +10,12 @@ const DESELECT_KEY = 'optikart_cart_deselected';
 
 // Stable identity for a cart line, so selection survives reordering.
 export const lineKey = (item) =>
-  [item?.product?._id || item?.product || '', item?.variant?.color || '', item?.variant?.size || '', item?.variant?.lensType || ''].join('|');
+  [
+    item?.product?._id || item?.product || '',
+    item?.variant?.color || '',
+    item?.variant?.size || '',
+    item?.variant?.lensType || '',
+  ].join('|');
 const COUPON_KEY = 'optikart_coupon';
 // Logged-in shoppers may hold up to 25 line items in the cart.
 const MAX_ITEMS = 25;
@@ -19,7 +24,7 @@ const DELIVERY_CHARGE_PER_ITEM = 16;
 export const CartProvider = ({ children }) => {
   const { updateCartItems } = useUserBehavior();
   const { isAuthenticated } = useAuth();
-  
+
   const [items, setItems] = useState(() => {
     try {
       const stored = localStorage.getItem(CART_KEY);
@@ -62,50 +67,52 @@ export const CartProvider = ({ children }) => {
     }
   }, [coupon]);
 
-  const addToCart = useCallback((product, selectedVariant = null, quantity = 1) => {
-    if (!isAuthenticated) {
-      toast.error('Please login to add items to cart');
-      return false;
-    }
+  const addToCart = useCallback(
+    (product, selectedVariant = null, quantity = 1) => {
+      if (!isAuthenticated) {
+        toast.error('Please login to add items to cart');
+        return false;
+      }
 
-    setItems((prevItems) => {
-      const existingIndex = prevItems.findIndex(
-        (item) =>
-          item.product._id === product._id &&
-          (selectedVariant
-            ? item.variant?.power === selectedVariant.power &&
-              item.variant?.cylinder === selectedVariant.cylinder
-            : !item.variant)
-      );
+      setItems((prevItems) => {
+        const existingIndex = prevItems.findIndex(
+          (item) =>
+            item.product._id === product._id &&
+            (selectedVariant
+              ? item.variant?.power === selectedVariant.power && item.variant?.cylinder === selectedVariant.cylinder
+              : !item.variant)
+        );
 
-      if (existingIndex > -1) {
-        const updatedItems = [...prevItems];
-        const existingItem = updatedItems[existingIndex];
-        const newQty = existingItem.quantity + quantity;
-        updatedItems[existingIndex] = {
-          ...existingItem,
-          quantity: Math.min(newQty, 10),
+        if (existingIndex > -1) {
+          const updatedItems = [...prevItems];
+          const existingItem = updatedItems[existingIndex];
+          const newQty = existingItem.quantity + quantity;
+          updatedItems[existingIndex] = {
+            ...existingItem,
+            quantity: Math.min(newQty, 10),
+          };
+          return updatedItems;
+        }
+
+        if (prevItems.length >= MAX_ITEMS) {
+          toast.error(`Cart is full (max ${MAX_ITEMS} items)`);
+          return prevItems;
+        }
+
+        const newItem = {
+          product,
+          variant: selectedVariant,
+          quantity,
+          addedAt: new Date().toISOString(),
         };
-        return updatedItems;
-      }
 
-      if (prevItems.length >= MAX_ITEMS) {
-        toast.error(`Cart is full (max ${MAX_ITEMS} items)`);
-        return prevItems;
-      }
-
-      const newItem = {
-        product,
-        variant: selectedVariant,
-        quantity,
-        addedAt: new Date().toISOString(),
-      };
-
-      toast.success('Added to cart!');
-      return [...prevItems, newItem];
-    });
-    return true;
-  }, [isAuthenticated]);
+        toast.success('Added to cart!');
+        return [...prevItems, newItem];
+      });
+      return true;
+    },
+    [isAuthenticated]
+  );
 
   const removeFromCart = useCallback((index) => {
     setItems((prevItems) => {
@@ -167,7 +174,7 @@ export const CartProvider = ({ children }) => {
       code: couponData.code,
       type: couponData.type || couponData.discountType,
       value: couponData.value !== undefined ? couponData.value : couponData.discountValue,
-      maxDiscount: couponData.maxDiscount
+      maxDiscount: couponData.maxDiscount,
     };
     setCoupon(normalised);
   }, []);
@@ -187,12 +194,14 @@ export const CartProvider = ({ children }) => {
       const sel = item.variant || {};
       const wanted = Object.entries(sel).filter(([, val]) => val !== undefined && val !== null && String(val) !== '');
       if (wanted.length === 0) return false;
-      return wanted.every(([key, val]) =>
-        String(v[key] ?? '').trim().toLowerCase() === String(val).trim().toLowerCase());
+      return wanted.every(
+        ([key, val]) =>
+          String(v[key] ?? '')
+            .trim()
+            .toLowerCase() === String(val).trim().toLowerCase()
+      );
     });
-    const base = variant
-      ? (variant.discountedPrice || variant.price)
-      : (p.discountedPrice || p.price || 0);
+    const base = variant ? variant.discountedPrice || variant.price : p.discountedPrice || p.price || 0;
     const lens = item.lensConfig?.price || 0;
     return base + lens;
   };
@@ -211,9 +220,7 @@ export const CartProvider = ({ children }) => {
 
     if (coupon.type === 'percentage') {
       const calculated = (subtotal * coupon.value) / 100;
-      return coupon.maxDiscount
-        ? Math.min(calculated, coupon.maxDiscount)
-        : calculated;
+      return coupon.maxDiscount ? Math.min(calculated, coupon.maxDiscount) : calculated;
     }
 
     if (coupon.type === 'flat') {
@@ -223,20 +230,14 @@ export const CartProvider = ({ children }) => {
     return 0;
   }, [coupon, subtotal]);
 
-  const selectedItems = useMemo(
-    () => items.filter((item) => !deselected.has(lineKey(item))),
-    [items, deselected]
-  );
+  const selectedItems = useMemo(() => items.filter((item) => !deselected.has(lineKey(item))), [items, deselected]);
 
   const selectedSubtotal = useMemo(
     () => selectedItems.reduce((sum, item) => sum + linePrice(item) * item.quantity, 0),
     [selectedItems]
   );
 
-  const selectedCount = useMemo(
-    () => selectedItems.reduce((sum, item) => sum + item.quantity, 0),
-    [selectedItems]
-  );
+  const selectedCount = useMemo(() => selectedItems.reduce((sum, item) => sum + item.quantity, 0), [selectedItems]);
 
   // Delivery is charged per selected line only.
   const selectedDelivery = useMemo(

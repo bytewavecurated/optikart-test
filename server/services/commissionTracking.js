@@ -22,19 +22,20 @@ const DEFAULT_COMMISSION_PERCENTAGE = 3; // 3% commission
  *    revenue and lands in the Razorpay account.
  */
 export const buildOrderSettlement = (order) => {
-  const subtotal = Number(order.subtotal)
-    || (order.items || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
+  const subtotal =
+    Number(order.subtotal) ||
+    (order.items || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
   const commissionPercentage = Number(order.commissionPercentage ?? DEFAULT_COMMISSION_PERCENTAGE);
   const customerDeliveryCharge = Number(order.deliveryCharge || 0);
   const platformFee = Number(order.platformFee || 0);
   // What it actually cost to get the parcel delivered.
-  const fulfilmentCost = order.deliveryAssignmentMode === 'self'
-    ? Number(order.deliveryFee || 0)
-    : Number(order.shiprocketDeliveryCharge || 0);
+  const fulfilmentCost =
+    order.deliveryAssignmentMode === 'self'
+      ? Number(order.deliveryFee || 0)
+      : Number(order.shiprocketDeliveryCharge || 0);
 
   const commission = Math.round(((subtotal * commissionPercentage) / 100) * 100) / 100;
-  const netAmountToSeller =
-    Math.round((subtotal - commission - fulfilmentCost) * 100) / 100;
+  const netAmountToSeller = Math.round((subtotal - commission - fulfilmentCost) * 100) / 100;
 
   return {
     merchandiseAmount: subtotal,
@@ -43,7 +44,7 @@ export const buildOrderSettlement = (order) => {
     fulfilmentCost,
     netAmountToSeller,
     // Platform-side revenue, all of which is collected in the Razorpay account.
-    platformRevenue: Math.round((commission + platformFee + customerDeliveryCharge) * 100) / 100
+    platformRevenue: Math.round((commission + platformFee + customerDeliveryCharge) * 100) / 100,
   };
 };
 
@@ -57,7 +58,7 @@ export const calculateCommission = (orderAmount, commissionPercentage = DEFAULT_
     orderAmount,
     commissionPercentage,
     commissionAmount: Math.round(commission * 100) / 100, // Round to 2 decimal places
-    netAmount: Math.round((orderAmount - commission) * 100) / 100
+    netAmount: Math.round((orderAmount - commission) * 100) / 100,
   };
 };
 
@@ -67,7 +68,7 @@ export const calculateCommission = (orderAmount, commissionPercentage = DEFAULT_
 export const recordCommission = async (orderId) => {
   try {
     const order = await Order.findById(orderId).populate('seller');
-    
+
     if (!order) {
       return { success: false, error: 'Order not found' };
     }
@@ -90,33 +91,29 @@ export const recordCommission = async (orderId) => {
 
     // Update the seller's running totals. The reference may not resolve if the
     // account was removed, so the ids are read off the raw document.
-    const sellerRefId = order.seller && order.seller._id
-      ? order.seller._id
-      : order.seller;
+    const sellerRefId = order.seller && order.seller._id ? order.seller._id : order.seller;
 
     await Seller.findByIdAndUpdate(sellerRefId, {
       $inc: {
         totalCommissionEarned: settlement.commissionAmount,
-        totalSales: settlement.merchandiseAmount
-      }
+        totalSales: settlement.merchandiseAmount,
+      },
     });
 
-  
     return {
       success: true,
       message: 'Commission recorded successfully',
       commission: settlement,
-      order: order.orderNumber
+      order: order.orderNumber,
     };
   } catch (error) {
     console.error('Error recording commission:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
-
 
 /**
  * Called whenever an order reaches 'delivered'. Recording the commission here -
@@ -147,13 +144,13 @@ export const getCommissionSummary = async (dateRange = {}) => {
     if (dateRange.startDate && dateRange.endDate) {
       dateFilter.createdAt = {
         $gte: new Date(dateRange.startDate),
-        $lte: new Date(dateRange.endDate)
+        $lte: new Date(dateRange.endDate),
       };
     }
 
     const orders = await Order.find({
       commissionRecorded: true,
-      ...dateFilter
+      ...dateFilter,
     }).populate('seller', 'storeName name email');
 
     const summary = {
@@ -168,18 +165,17 @@ export const getCommissionSummary = async (dateRange = {}) => {
       totalFulfilmentCost: 0,
       platformRevenue: 0,
       averageCommissionPercentage: 0,
-      bySeller: {}
+      bySeller: {},
     };
 
-    orders.forEach(order => {
+    orders.forEach((order) => {
       summary.totalOrderAmount += order.totalAmount || 0;
       summary.totalCommission += order.commissionAmount || 0;
       summary.totalNetToSellers += order.netAmountToSeller || 0;
       summary.totalPlatformFees += order.platformFee || 0;
       summary.totalDeliveryRevenue += order.deliveryCharge || 0;
-      summary.totalFulfilmentCost += order.deliveryAssignmentMode === 'self'
-        ? (order.deliveryFee || 0)
-        : (order.shiprocketDeliveryCharge || 0);
+      summary.totalFulfilmentCost +=
+        order.deliveryAssignmentMode === 'self' ? order.deliveryFee || 0 : order.shiprocketDeliveryCharge || 0;
 
       // Sellers can be deleted or banned, so the reference may not populate.
       const sellerId = String(order.seller?._id || order.seller || 'unknown');
@@ -189,7 +185,7 @@ export const getCommissionSummary = async (dateRange = {}) => {
           totalOrders: 0,
           totalAmount: 0,
           totalCommission: 0,
-          totalNet: 0
+          totalNet: 0,
         };
       }
 
@@ -209,7 +205,7 @@ export const getCommissionSummary = async (dateRange = {}) => {
     summary.totalFulfilmentCost = rupee(summary.totalFulfilmentCost);
 
     if (summary.totalOrders > 0) {
-      summary.averageCommissionPercentage = (summary.totalCommission / summary.totalOrderAmount * 100).toFixed(2);
+      summary.averageCommissionPercentage = ((summary.totalCommission / summary.totalOrderAmount) * 100).toFixed(2);
     }
 
     // Convert bySeller object to array and sort by commission
@@ -217,13 +213,13 @@ export const getCommissionSummary = async (dateRange = {}) => {
 
     return {
       success: true,
-      summary
+      summary,
     };
   } catch (error) {
     console.error('Error getting commission summary:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -237,14 +233,14 @@ export const getSellerCommissionDetails = async (sellerId, dateRange = {}) => {
     if (dateRange.startDate && dateRange.endDate) {
       dateFilter.createdAt = {
         $gte: new Date(dateRange.startDate),
-        $lte: new Date(dateRange.endDate)
+        $lte: new Date(dateRange.endDate),
       };
     }
 
     const orders = await Order.find({
       seller: sellerId,
       commissionRecorded: true,
-      ...dateFilter
+      ...dateFilter,
     }).sort({ createdAt: -1 });
 
     const summary = {
@@ -253,34 +249,34 @@ export const getSellerCommissionDetails = async (sellerId, dateRange = {}) => {
       totalCommission: 0,
       totalNet: 0,
       averageCommissionPercentage: 0,
-      recentOrders: orders.slice(0, 10).map(order => ({
+      recentOrders: orders.slice(0, 10).map((order) => ({
         orderNumber: order.orderNumber,
         orderAmount: order.totalAmount,
         commission: order.commissionAmount,
         netAmount: order.netAmountToSeller,
-        date: order.createdAt
-      }))
+        date: order.createdAt,
+      })),
     };
 
-    orders.forEach(order => {
+    orders.forEach((order) => {
       summary.totalOrderAmount += order.totalAmount || 0;
       summary.totalCommission += order.commissionAmount || 0;
       summary.totalNet += order.netAmountToSeller || 0;
     });
 
     if (summary.totalOrders > 0) {
-      summary.averageCommissionPercentage = (summary.totalCommission / summary.totalOrderAmount * 100).toFixed(2);
+      summary.averageCommissionPercentage = ((summary.totalCommission / summary.totalOrderAmount) * 100).toFixed(2);
     }
 
     return {
       success: true,
-      summary
+      summary,
     };
   } catch (error) {
     console.error('Error getting seller commission details:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -292,28 +288,29 @@ export const getPendingCommissions = async () => {
   try {
     const orders = await Order.find({
       commissionRecorded: { $ne: true },
-      orderStatus: 'delivered'
-    }).populate('seller', 'storeName name email')
+      orderStatus: 'delivered',
+    })
+      .populate('seller', 'storeName name email')
       .populate('user', 'name email')
       .sort({ createdAt: -1 });
 
     return {
       success: true,
       count: orders.length,
-      orders: orders.map(order => ({
+      orders: orders.map((order) => ({
         _id: order._id,
         orderNumber: order.orderNumber,
         seller: order.seller,
         customer: order.user,
         totalAmount: order.totalAmount,
-        createdAt: order.createdAt
-      }))
+        createdAt: order.createdAt,
+      })),
     };
   } catch (error) {
     console.error('Error getting pending commissions:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -323,5 +320,5 @@ export default {
   recordCommission,
   getCommissionSummary,
   getSellerCommissionDetails,
-  getPendingCommissions
+  getPendingCommissions,
 };

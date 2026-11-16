@@ -16,7 +16,7 @@ export const checkWishlistPriceDrops = async () => {
     for (const wishlist of wishlists) {
       for (const item of wishlist.items) {
         const product = await Product.findById(item.product);
-        
+
         if (!product) continue;
 
         // Check if price has dropped since item was added
@@ -47,7 +47,7 @@ export const checkWishlistPriceDrops = async () => {
             // Update wishlist item to mark as notified
             item.priceDropNotified = true;
             item.lastNotifiedAt = new Date();
-            
+
             notificationsSent++;
           }
         }
@@ -58,13 +58,13 @@ export const checkWishlistPriceDrops = async () => {
 
     return {
       success: true,
-      notificationsSent
+      notificationsSent,
     };
   } catch (error) {
     console.error('Error checking wishlist price drops:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -75,7 +75,7 @@ export const checkWishlistPriceDrops = async () => {
 export const addToWishlistWithPrice = async (userId, productId) => {
   try {
     const product = await Product.findById(productId);
-    
+
     if (!product) {
       throw new Error('Product not found');
     }
@@ -85,19 +85,17 @@ export const addToWishlistWithPrice = async (userId, productId) => {
     if (!wishlist) {
       wishlist = new Wishlist({
         user: userId,
-        items: []
+        items: [],
       });
     }
 
     // Check if product already in wishlist
-    const existingItem = wishlist.items.find(
-      item => item.product.toString() === productId
-    );
+    const existingItem = wishlist.items.find((item) => item.product.toString() === productId);
 
     if (existingItem) {
       return {
         success: false,
-        message: 'Product already in wishlist'
+        message: 'Product already in wishlist',
       };
     }
 
@@ -106,20 +104,20 @@ export const addToWishlistWithPrice = async (userId, productId) => {
       product: productId,
       addedAtPrice: product.price,
       addedAt: new Date(),
-      priceDropNotified: false
+      priceDropNotified: false,
     });
 
     await wishlist.save();
 
     return {
       success: true,
-      wishlist
+      wishlist,
     };
   } catch (error) {
     console.error('Error adding to wishlist:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -129,26 +127,23 @@ export const addToWishlistWithPrice = async (userId, productId) => {
  */
 export const getUserWishlistWithPriceInfo = async (userId) => {
   try {
-    const wishlist = await Wishlist.findOne({ user: userId })
-      .populate({
-        path: 'items.product',
-        select: 'title brand price images stock isActive'
-      });
+    const wishlist = await Wishlist.findOne({ user: userId }).populate({
+      path: 'items.product',
+      select: 'title brand price images stock isActive',
+    });
 
     if (!wishlist) {
       return {
         success: true,
-        wishlist: { items: [] }
+        wishlist: { items: [] },
       };
     }
 
     // Add price drop information to each item
-    const itemsWithInfo = wishlist.items.map(item => {
+    const itemsWithInfo = wishlist.items.map((item) => {
       const product = item.product;
       const priceDrop = item.addedAtPrice - product.price;
-      const priceDropPercentage = item.addedAtPrice > 0 
-        ? Math.round((priceDrop / item.addedAtPrice) * 100)
-        : 0;
+      const priceDropPercentage = item.addedAtPrice > 0 ? Math.round((priceDrop / item.addedAtPrice) * 100) : 0;
 
       return {
         ...item.toObject(),
@@ -156,7 +151,7 @@ export const getUserWishlistWithPriceInfo = async (userId) => {
         priceDropPercentage,
         hasPriceDrop: priceDrop > 0,
         currentPrice: product.price,
-        addedAtPrice: item.addedAtPrice
+        addedAtPrice: item.addedAtPrice,
       };
     });
 
@@ -164,14 +159,14 @@ export const getUserWishlistWithPriceInfo = async (userId) => {
       success: true,
       wishlist: {
         _id: wishlist._id,
-        items: itemsWithInfo
-      }
+        items: itemsWithInfo,
+      },
     };
   } catch (error) {
     console.error('Error getting user wishlist:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -179,5 +174,5 @@ export const getUserWishlistWithPriceInfo = async (userId) => {
 export default {
   checkWishlistPriceDrops,
   addToWishlistWithPrice,
-  getUserWishlistWithPriceInfo
+  getUserWishlistWithPriceInfo,
 };

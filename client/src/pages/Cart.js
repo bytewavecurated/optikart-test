@@ -25,7 +25,7 @@ const Cart = () => {
     selectedSubtotal,
     selectedTotal,
     discount,
-    coupon
+    coupon,
   } = useCart();
   const MAX_CART_ITEMS = CTX_MAX || 25;
   const navigate = useNavigate();
@@ -67,7 +67,9 @@ const Cart = () => {
             <FiShoppingBag size={64} style={{ color: 'var(--text-light)', marginBottom: '16px' }} />
             <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '12px' }}>Your cart is empty</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Add items to get started</p>
-            <Link to="/" className="btn btn-primary">Continue Shopping</Link>
+            <Link to="/" className="btn btn-primary">
+              Continue Shopping
+            </Link>
           </div>
         </div>
         <Footer />
@@ -81,14 +83,35 @@ const Cart = () => {
       <div className="container page-wrapper">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <BackButton />
-          <h1 style={{ fontFamily: 'var(--font-heading)' }}>Shopping Cart ({totalItems}/{MAX_CART_ITEMS})</h1>
-          <Link to="/" className="btn btn-outline">Continue Shopping</Link>
+          <h1 style={{ fontFamily: 'var(--font-heading)' }}>
+            Shopping Cart ({totalItems}/{MAX_CART_ITEMS})
+          </h1>
+          <Link to="/" className="btn btn-outline">
+            Continue Shopping
+          </Link>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '24px' }} className="cart-grid">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={items.every((it) => isSelected(it))}
@@ -103,8 +126,15 @@ const Cart = () => {
               </span>
             </div>
             {items.map((item) => (
-              <div key={item._id} className="card" style={{ padding: '20px', display: 'flex', gap: '14px', opacity: isSelected(item) ? 1 : 0.55 }}>
-                <label title="Include this item in the order" style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 4, cursor: 'pointer' }}>
+              <div
+                key={item._id}
+                className="card"
+                style={{ padding: '20px', display: 'flex', gap: '14px', opacity: isSelected(item) ? 1 : 0.55 }}
+              >
+                <label
+                  title="Include this item in the order"
+                  style={{ display: 'flex', alignItems: 'flex-start', paddingTop: 4, cursor: 'pointer' }}
+                >
                   <input
                     type="checkbox"
                     checked={isSelected(item)}
@@ -115,13 +145,23 @@ const Cart = () => {
                 <img
                   src={item.product?.images?.[0] || '/assets/face-1.svg'}
                   alt={item.product?.title}
-                  style={{ width: '120px', height: '120px', objectFit: 'contain', background: 'var(--bg-subtle)', borderRadius: 'var(--radius)' }}
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    objectFit: 'contain',
+                    background: 'var(--bg-subtle)',
+                    borderRadius: 'var(--radius)',
+                  }}
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <Link to={`/product/${item.product?._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{item.product?.title}</h3>
+                    <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
+                      {item.product?.title}
+                    </h3>
                   </Link>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{item.product?.brand}</p>
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    {item.product?.brand}
+                  </p>
                   {item.variant && (item.variant.color || item.variant.size) && (
                     <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                       {[item.variant.color, item.variant.size].filter(Boolean).join(' / ')}
@@ -129,17 +169,28 @@ const Cart = () => {
                   )}
                   {item.lensConfig && (
                     <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Lens: {[item.lensConfig.lensType, item.lensConfig.lensPackage, item.lensConfig.coating].filter(Boolean).join(' / ') || 'custom'}
+                      Lens:{' '}
+                      {[item.lensConfig.lensType, item.lensConfig.lensPackage, item.lensConfig.coating]
+                        .filter(Boolean)
+                        .join(' / ') || 'custom'}
                     </p>
                   )}
                   <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>
                     ₹{linePrice(item).toLocaleString('en-IN')}
                     <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-secondary)' }}>
-                      {' '}x {item.quantity} = ₹{(linePrice(item) * item.quantity).toLocaleString('en-IN')}
+                      {' '}
+                      x {item.quantity} = ₹{(linePrice(item) * item.quantity).toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    justifyContent: 'space-between',
+                  }}
+                >
                   <button
                     onClick={() => removeItem(item._id)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}
@@ -149,14 +200,36 @@ const Cart = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <button
                       onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                      style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'white' }}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: '1px solid var(--border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        background: 'white',
+                      }}
                     >
                       <FiMinus size={14} />
                     </button>
-                    <span style={{ fontSize: '16px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{item.quantity}</span>
+                    <span style={{ fontSize: '16px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>
+                      {item.quantity}
+                    </span>
                     <button
                       onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                      style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'white' }}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: '1px solid var(--border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        background: 'white',
+                      }}
                     >
                       <FiPlus size={14} />
                     </button>
@@ -178,12 +251,30 @@ const Cart = () => {
                 <span>{selectedDelivery === 0 ? 'Free' : `₹${selectedDelivery.toLocaleString('en-IN')}`}</span>
               </div>
               {discount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: 14, color: 'var(--success)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    marginBottom: '12px',
+                    fontSize: 14,
+                    color: 'var(--success)',
+                  }}
+                >
                   <span>Coupon{coupon?.code ? ` (${coupon.code})` : ''}</span>
                   <span>- ₹{Math.round(discount).toLocaleString('en-IN')}</span>
                 </div>
               )}
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', marginTop: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 700 }}>
+              <div
+                style={{
+                  borderTop: '1px solid var(--border)',
+                  paddingTop: '12px',
+                  marginTop: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '18px',
+                  fontWeight: 700,
+                }}
+              >
                 <span>Total</span>
                 <span style={{ color: 'var(--primary)' }}>₹{Math.round(selectedTotal).toLocaleString('en-IN')}</span>
               </div>
@@ -192,12 +283,19 @@ const Cart = () => {
               </p>
               <button
                 onClick={() => {
-                  if (selectedCount === 0) { toast.error('Select at least one item to check out'); return; }
+                  if (selectedCount === 0) {
+                    toast.error('Select at least one item to check out');
+                    return;
+                  }
                   navigate('/checkout', { state: { selectedKeys: items.filter(isSelected).map(lineKey) } });
                 }}
                 disabled={selectedCount === 0}
                 className="btn btn-primary btn-block btn-lg"
-                style={{ marginTop: '20px', opacity: selectedCount === 0 ? 0.6 : 1, cursor: selectedCount === 0 ? 'not-allowed' : 'pointer' }}
+                style={{
+                  marginTop: '20px',
+                  opacity: selectedCount === 0 ? 0.6 : 1,
+                  cursor: selectedCount === 0 ? 'not-allowed' : 'pointer',
+                }}
               >
                 Proceed to Checkout ({selectedCount})
               </button>

@@ -18,9 +18,17 @@ import { FiShield, FiTruck, FiAlertTriangle } from 'react-icons/fi';
  * can check is the same problem wearing a different shirt.
  */
 const KINDS = [
-  { value: 'manufacturer_purchase', label: 'Bought from the brand', hint: 'Invoice or PO number the brand can look up' },
-  { value: 'brand_distribution', label: 'Supplied by the brand as stockist', hint: 'Agreement, distributor code or order number' },
-  { value: 'other', label: 'From somewhere else', hint: 'Where, and how a buyer ends up with your price for it' }
+  {
+    value: 'manufacturer_purchase',
+    label: 'Bought from the brand',
+    hint: 'Invoice or PO number the brand can look up',
+  },
+  {
+    value: 'brand_distribution',
+    label: 'Supplied by the brand as stockist',
+    hint: 'Agreement, distributor code or order number',
+  },
+  { value: 'other', label: 'From somewhere else', hint: 'Where, and how a buyer ends up with your price for it' },
 ];
 
 const SupplyDeclaration = ({
@@ -30,35 +38,45 @@ const SupplyDeclaration = ({
   busy = false,
   onSubmit,
   submitLabel = 'Send to the brand for approval',
-  onCancel
+  onCancel,
 }) => {
   const kind = KINDS.find((k) => k.value === value.kind) || KINDS[0];
   const [touched, setTouched] = useState(false);
 
   const referenceNeeded = value.kind === 'manufacturer_purchase' || value.kind === 'brand_distribution';
-  const incomplete = !value.kind
-    || (referenceNeeded && !String(value.reference || '').trim())
-    || (value.kind === 'other' && String(value.note || '').trim().length < 8);
+  const incomplete =
+    !value.kind ||
+    (referenceNeeded && !String(value.reference || '').trim()) ||
+    (value.kind === 'other' && String(value.note || '').trim().length < 8);
 
   const cell = {
     display: 'block',
     fontSize: 12.5,
     fontWeight: 600,
     color: 'var(--text-secondary)',
-    marginBottom: 4
+    marginBottom: 4,
   };
 
   return (
-    <div className="card" style={{ background: 'var(--bg-white, #fff)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius)', padding: 16, marginTop: 12 }}>
+    <div
+      className="card"
+      style={{
+        background: 'var(--bg-white, #fff)',
+        border: '1px solid var(--border-light)',
+        borderRadius: 'var(--radius)',
+        padding: 16,
+        marginTop: 12,
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <FiShield style={{ color: 'var(--primary)' }} />
         <strong style={{ fontSize: 14.5 }}>Where did this stock come from?</strong>
       </div>
       <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
         {productName ? `You are listing ${productName}, which belongs to another company. ` : ''}
-        Nothing in the catalogue can tell a frame the brand shipped you from one you bought elsewhere, so this
-        is stated, then confirmed by the brand, then verified by OptiKart. Until both have said yes it is not
-        visible to customers.
+        Nothing in the catalogue can tell a frame the brand shipped you from one you bought elsewhere, so this is
+        stated, then confirmed by the brand, then verified by OptiKart. Until both have said yes it is not visible to
+        customers.
       </p>
 
       <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
@@ -70,7 +88,11 @@ const SupplyDeclaration = ({
             onChange={(e) => onChange({ ...value, kind: e.target.value })}
           >
             <option value="">Choose one</option>
-            {KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+            {KINDS.map((k) => (
+              <option key={k.value} value={k.value}>
+                {k.label}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -98,7 +120,18 @@ const SupplyDeclaration = ({
       </div>
 
       {touched && incomplete && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, fontSize: 12.5, color: 'var(--warning-dark, #8a6d3b)', background: 'var(--warning-light, rgba(217,119,6,.10))', padding: '8px 10px', borderRadius: 'var(--radius-md)' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            marginTop: 12,
+            fontSize: 12.5,
+            color: 'var(--warning-dark, #8a6d3b)',
+            background: 'var(--warning-light, rgba(217,119,6,.10))',
+            padding: '8px 10px',
+            borderRadius: 'var(--radius-md)',
+          }}
+        >
           <FiAlertTriangle style={{ marginTop: 2 }} />
           <span>
             {value.kind === 'other'
@@ -109,11 +142,21 @@ const SupplyDeclaration = ({
       )}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 14 }}>
-        <button className="btn btn-primary" disabled={busy || incomplete} onClick={() => { setTouched(true); if (!incomplete) onSubmit(); }}>
-          <FiTruck style={{ marginRight: 6 }} />{busy ? 'Sending...' : submitLabel}
+        <button
+          className="btn btn-primary"
+          disabled={busy || incomplete}
+          onClick={() => {
+            setTouched(true);
+            if (!incomplete) onSubmit();
+          }}
+        >
+          <FiTruck style={{ marginRight: 6 }} />
+          {busy ? 'Sending...' : submitLabel}
         </button>
         {onCancel && (
-          <button className="btn btn-quiet" onClick={onCancel} disabled={busy}>Cancel</button>
+          <button className="btn btn-quiet" onClick={onCancel} disabled={busy}>
+            Cancel
+          </button>
         )}
         <span style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
           The brand is notified; the platform verifies the listing afterwards.

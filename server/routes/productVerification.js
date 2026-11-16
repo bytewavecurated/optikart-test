@@ -4,7 +4,7 @@ import {
   getPendingProducts,
   verifyProduct,
   rejectProduct,
-  getVerificationStats
+  getVerificationStats,
 } from '../services/productVerification.js';
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.get('/pending', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { manufacturer, brand, category } = req.query;
     const result = await getPendingProducts({ manufacturer, brand, category });
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -37,9 +37,9 @@ router.post('/:productId/verify', verifyToken, verifyAdmin, async (req, res) => 
     const { productId } = req.params;
     const { notes } = req.body;
     const adminId = req.user.id;
-    
+
     const result = await verifyProduct(productId, adminId, notes);
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -59,13 +59,13 @@ router.post('/:productId/reject', verifyToken, verifyAdmin, async (req, res) => 
     const { productId } = req.params;
     const { reason } = req.body;
     const adminId = req.user.id;
-    
+
     if (!reason) {
       return res.status(400).json({ success: false, error: 'Rejection reason is required' });
     }
-    
+
     const result = await rejectProduct(productId, adminId, reason);
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -83,7 +83,7 @@ router.post('/:productId/reject', verifyToken, verifyAdmin, async (req, res) => 
 router.get('/stats', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const result = await getVerificationStats();
-    
+
     if (result.success) {
       res.json(result);
     } else {

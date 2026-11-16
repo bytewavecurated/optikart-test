@@ -61,7 +61,11 @@ for (const m of serverSource.matchAll(/app\.use\(\s*'(\/api\/[a-z0-9\/-]+)'\s*,\
 const toMatcher = (routePath) => {
   const parts = routePath.split('?')[0].replace(/^\/+/, '').split('/').filter(Boolean);
   return (rest) => {
-    const call = String(rest || '').split('?')[0].replace(/^\/+/, '').split('/').filter(Boolean);
+    const call = String(rest || '')
+      .split('?')[0]
+      .replace(/^\/+/, '')
+      .split('/')
+      .filter(Boolean);
     if (parts.length && parts[parts.length - 1] === '*') {
       const head = parts.slice(0, -1);
       return call.length >= head.length && head.every((seg, i) => seg.startsWith(':') || seg === call[i]);
@@ -83,7 +87,7 @@ for (const file of listFiles(path.join(SERVER, 'routes'))) {
         base: mount.base,
         path: m[3],
         match: toMatcher(m[3]),
-        where: relative
+        where: relative,
       });
     }
   }
@@ -96,15 +100,15 @@ for (const file of listFiles(CLIENT)) {
   const rel = path.relative(path.resolve(SERVER, '..'), file);
   for (const m of text.matchAll(/\.(get|post|put|delete|patch)\(\s*(['"`])((?:[^'"`\\]|\\.)*)\2/g)) {
     let raw = m[3];
-    if (!raw.startsWith('/')) continue;                     // relative to an axios baseURL
+    if (!raw.startsWith('/')) continue; // relative to an axios baseURL
     if (/\.(js|css|svg|png|json|html)/.test(raw) || raw.startsWith('/uploads')) continue;
     raw = raw.replace(/^\/api\//, '').replace(/^\/+/, '');
-    raw = raw.replace(/\$\{[^}]*\}/g, ':x');                // template interpolation = a parameter
+    raw = raw.replace(/\$\{[^}]*\}/g, ':x'); // template interpolation = a parameter
     calls.push({
       method: VERBS[m[1]],
       target: raw,
       file: rel,
-      line: text.slice(0, m.index).split('\n').length
+      line: text.slice(0, m.index).split('\n').length,
     });
   }
 }
@@ -112,9 +116,12 @@ for (const file of listFiles(CLIENT)) {
 /* ------------------------------------------------------------------ resolve */
 const problems = [];
 for (const call of calls) {
-  const atSamePath = registry.filter((r) => call.target === r.base
-    || (call.target.startsWith(`${r.base}/`) && r.match(call.target.slice(r.base.length)))
-    || (call.target === r.base && r.match('')));
+  const atSamePath = registry.filter(
+    (r) =>
+      call.target === r.base ||
+      (call.target.startsWith(`${r.base}/`) && r.match(call.target.slice(r.base.length))) ||
+      (call.target === r.base && r.match(''))
+  );
   if (!atSamePath.length) {
     problems.push({ ...call, kind: 'no route at this path' });
   } else if (!atSamePath.some((r) => r.method === call.method)) {

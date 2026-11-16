@@ -38,13 +38,7 @@
 
 const LIVE_STATES = ['live'];
 
-export const LISTING_STATES = [
-  'awaiting_manufacturer',
-  'awaiting_admin',
-  'live',
-  'rejected',
-  'paused'
-];
+export const LISTING_STATES = ['awaiting_manufacturer', 'awaiting_admin', 'live', 'rejected', 'paused'];
 
 export const SOURCE_KINDS = ['manufacturer_purchase', 'brand_distribution', 'other'];
 
@@ -63,7 +57,7 @@ export const listingApprovalSchema = {
     reference: { type: String, default: '' },
     note: { type: String, default: '' },
     declaredAt: { type: Date, default: null },
-    declaredBy: { type: String, default: '' }
+    declaredBy: { type: String, default: '' },
   },
 
   manufacturerReview: {
@@ -71,14 +65,14 @@ export const listingApprovalSchema = {
     by: { type: String, default: '' },
     brand: { type: String, default: '' },
     at: { type: Date, default: null },
-    reason: { type: String, default: '' }
+    reason: { type: String, default: '' },
   },
 
   adminReview: {
     status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
     by: { type: String, default: '' },
     at: { type: Date, default: null },
-    reason: { type: String, default: '' }
+    reason: { type: String, default: '' },
   },
 
   // The seller chose to stop selling; price, variants and stock are preserved.
@@ -90,12 +84,14 @@ export const listingApprovalSchema = {
   declarationCount: { type: Number, default: 0 },
 
   grandfathered: { type: Boolean, default: false },
-  history: [{
-    at: { type: Date, default: Date.now },
-    by: { type: String, default: '' },
-    action: { type: String, required: true },
-    detail: { type: String, default: '' }
-  }]
+  history: [
+    {
+      at: { type: Date, default: Date.now },
+      by: { type: String, default: '' },
+      action: { type: String, required: true },
+      detail: { type: String, default: '' },
+    },
+  ],
 };
 
 export const isSellable = (doc) => {

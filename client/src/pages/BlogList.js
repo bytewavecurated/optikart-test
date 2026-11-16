@@ -33,15 +33,16 @@ const BlogList = () => {
   const filteredPosts = useMemo(() => {
     let posts = allPosts;
     if (activeCategory !== 'All') {
-      posts = posts.filter(p => p.category?.toLowerCase() === activeCategory.toLowerCase());
+      posts = posts.filter((p) => p.category?.toLowerCase() === activeCategory.toLowerCase());
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      posts = posts.filter(p =>
-        p.title?.toLowerCase().includes(q) ||
-        p.excerpt?.toLowerCase().includes(q) ||
-        p.content?.toLowerCase().includes(q) ||
-        p.tags?.some(t => t.toLowerCase().includes(q))
+      posts = posts.filter(
+        (p) =>
+          p.title?.toLowerCase().includes(q) ||
+          p.excerpt?.toLowerCase().includes(q) ||
+          p.content?.toLowerCase().includes(q) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q))
       );
     }
     return posts;
@@ -61,11 +62,21 @@ const BlogList = () => {
         <div className="container page-wrapper">
           <div style={{ marginBottom: '24px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>OptiKart Blog</h1>
-            <p style={{ fontSize: '14px', color: 'var(--text-light)' }}>Eye care tips, style guides, and the latest in eyewear technology</p>
+            <p style={{ fontSize: '14px', color: 'var(--text-light)' }}>
+              Eye care tips, style guides, and the latest in eyewear technology
+            </p>
           </div>
 
           <div style={{ position: 'relative', maxWidth: '500px', marginBottom: '20px' }}>
-            <FiSearch style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+            <FiSearch
+              style={{
+                position: 'absolute',
+                left: '14px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-light)',
+              }}
+            />
             <input
               className="input"
               type="text"
@@ -75,7 +86,19 @@ const BlogList = () => {
               style={{ paddingLeft: '40px', paddingRight: searchQuery ? '36px' : '16px' }}
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)' }}>
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-light)',
+                }}
+              >
                 <FiX size={16} />
               </button>
             )}
@@ -123,26 +146,105 @@ const BlogList = () => {
               <h3>No articles found</h3>
               <p>{searchQuery ? 'Try a different search term' : 'No articles in this category yet'}</p>
               {(searchQuery || activeCategory !== 'All') && (
-                <button onClick={() => { setSearchQuery(''); setActiveCategory('All'); }} className="btn btn-outline" style={{ marginTop: '16px' }}>
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveCategory('All');
+                  }}
+                  className="btn btn-outline"
+                  style={{ marginTop: '16px' }}
+                >
                   Clear Filters
                 </button>
               )}
             </div>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}
+              >
                 {visiblePosts.map((post) => (
-                  <Link key={post._id} to={`/blog/${post.slug}`} className="card" style={{ overflow: 'hidden', transition: 'box-shadow 0.2s', textDecoration: 'none' }}>
-                    <div style={{ width: '100%', height: '180px', background: `var(--brand)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ color: 'var(--text-white)', fontSize: '32px', fontWeight: 700, opacity: 0.3 }}>{(post.category || 'BLOG').charAt(0)}</span>
+                  <Link
+                    key={post._id}
+                    to={`/blog/${post.slug}`}
+                    className="card"
+                    style={{ overflow: 'hidden', transition: 'box-shadow 0.2s', textDecoration: 'none' }}
+                  >
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '180px',
+                        background: `var(--brand)`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <span style={{ color: 'var(--text-white)', fontSize: '32px', fontWeight: 700, opacity: 0.3 }}>
+                        {(post.category || 'BLOG').charAt(0)}
+                      </span>
                     </div>
                     <div style={{ padding: '16px' }}>
-                      <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: 'var(--radius)', background: 'var(--primary-light, #e3f0ff)', color: 'var(--primary)', marginBottom: '8px', textTransform: 'uppercase' }}>{post.category}</span>
-                      <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px', lineHeight: 1.4, color: 'var(--text-primary)' }}>{post.title}</h3>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.excerpt}</p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-light)' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiClock size={12} /> {new Date(post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiHeart size={12} /> {post.likes || 0}</span>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '3px 10px',
+                          borderRadius: 'var(--radius)',
+                          background: 'var(--primary-light, #e3f0ff)',
+                          color: 'var(--primary)',
+                          marginBottom: '8px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {post.category}
+                      </span>
+                      <h3
+                        style={{
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          marginBottom: '8px',
+                          lineHeight: 1.4,
+                          color: 'var(--text-primary)',
+                        }}
+                      >
+                        {post.title}
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: '13px',
+                          color: 'var(--text-secondary)',
+                          marginBottom: '12px',
+                          lineHeight: 1.5,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {post.excerpt}
+                      </p>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          fontSize: '12px',
+                          color: 'var(--text-light)',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <FiClock size={12} />{' '}
+                          {new Date(post.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <FiHeart size={12} /> {post.likes || 0}
+                        </span>
                       </div>
                     </div>
                   </Link>
@@ -151,7 +253,11 @@ const BlogList = () => {
 
               {hasMore && (
                 <div style={{ textAlign: 'center', marginTop: '32px' }}>
-                  <button onClick={() => setVisibleCount(prev => prev + POSTS_PER_PAGE)} className="btn btn-outline" style={{ padding: '10px 32px' }}>
+                  <button
+                    onClick={() => setVisibleCount((prev) => prev + POSTS_PER_PAGE)}
+                    className="btn btn-outline"
+                    style={{ padding: '10px 32px' }}
+                  >
                     See More Articles ({filteredPosts.length - visibleCount} remaining)
                   </button>
                 </div>

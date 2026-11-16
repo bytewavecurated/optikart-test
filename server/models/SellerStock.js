@@ -11,64 +11,78 @@ import { listingApprovalSchema } from './listingApproval.js';
  * `variants` records which colour/size the seller actually holds, so a buyer's
  * chosen configuration can be matched to a seller who can fulfil it.
  */
-const sellerStockVariantSchema = new mongoose.Schema({
-  color: { type: String, default: '' },
-  size: { type: String, default: '' },
-  stock: { type: Number, default: 0, min: 0 },
-  price: { type: Number, min: 0 }
-}, { _id: false });
-
-const sellerStockSchema = new mongoose.Schema({
-  seller: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true, index: true },
-  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
-  brand: { type: String, required: true, index: true },
-  modelNumber: { type: String, default: '' },
-  category: { type: String, default: '' },
-  sellingPrice: { type: Number, required: true, min: 0 },
-  mrp: { type: Number, min: 0 },
-  discountPercent: { type: Number, default: 0, min: 0, max: 100 },
-  totalStock: { type: Number, default: 0, min: 0 },
-  variants: {
-    type: [sellerStockVariantSchema],
-    default: []
+const sellerStockVariantSchema = new mongoose.Schema(
+  {
+    color: { type: String, default: '' },
+    size: { type: String, default: '' },
+    stock: { type: Number, default: 0, min: 0 },
+    price: { type: Number, min: 0 },
   },
-  isReturnable: { type: Boolean, default: true },
-  isExchangeable: { type: Boolean, default: true },
-  isListed: { type: Boolean, default: true },
-  /*
-   * Proximity routing reads SellerStock to decide who can fulfil an order, so a
-   * claimed brand listing here sends real customers to a shop the brand never
-   * supplied. Same contract as a storefront copy, same enforcement.
-   */
-  listing: { ...listingApprovalSchema, type: mongoose.Schema.Types.Mixed, default: () => ({ brandLinked: false, state: 'live' }) },
-  /*
-   * The seller's own decision about prescription sales. A frame the
-   * manufacturer declares as powered still does not have to be sold that way by
-   * every seller, and proximity routing only offers powered orders to sellers
-   * who opted in.
-   */
-  sellsWithPower: { type: Boolean, default: false },
-  powerLensTypes: [{ type: String, enum: ['single-vision', 'bifocal', 'progressive', 'reading'] }],
-  /*
-   * Price edits are emailed and only take effect once the seller accepts them,
-   * so the proposed figure is held here rather than applied to `sellingPrice`.
-   * The token on the record is what the emailed accept link carries.
-   */
-  pendingChange: {
-    sellingPrice: { type: Number, default: null },
-    discountPercent: { type: Number, default: null },
-    requestedBy: { type: String, default: '' },
-    requestedAt: { type: Date, default: null },
-    // Working-day deadline; the proposal lapses once it passes.
-    expiresAt: { type: Date, default: null },
-    acceptToken: { type: String, default: '' },
-    status: { type: String, enum: ['none', 'awaiting_acceptance', 'accepted', 'declined', 'expired'], default: 'none' },
-    acceptedAt: { type: Date, default: null },
-    declinedAt: { type: Date, default: null },
-    // The price that was in force when the proposal was raised, for display.
-    proposedFromPrice: { type: Number, default: null }
-  }
-}, { timestamps: true });
+  { _id: false }
+);
+
+const sellerStockSchema = new mongoose.Schema(
+  {
+    seller: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true, index: true },
+    product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+    brand: { type: String, required: true, index: true },
+    modelNumber: { type: String, default: '' },
+    category: { type: String, default: '' },
+    sellingPrice: { type: Number, required: true, min: 0 },
+    mrp: { type: Number, min: 0 },
+    discountPercent: { type: Number, default: 0, min: 0, max: 100 },
+    totalStock: { type: Number, default: 0, min: 0 },
+    variants: {
+      type: [sellerStockVariantSchema],
+      default: [],
+    },
+    isReturnable: { type: Boolean, default: true },
+    isExchangeable: { type: Boolean, default: true },
+    isListed: { type: Boolean, default: true },
+    /*
+     * Proximity routing reads SellerStock to decide who can fulfil an order, so a
+     * claimed brand listing here sends real customers to a shop the brand never
+     * supplied. Same contract as a storefront copy, same enforcement.
+     */
+    listing: {
+      ...listingApprovalSchema,
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({ brandLinked: false, state: 'live' }),
+    },
+    /*
+     * The seller's own decision about prescription sales. A frame the
+     * manufacturer declares as powered still does not have to be sold that way by
+     * every seller, and proximity routing only offers powered orders to sellers
+     * who opted in.
+     */
+    sellsWithPower: { type: Boolean, default: false },
+    powerLensTypes: [{ type: String, enum: ['single-vision', 'bifocal', 'progressive', 'reading'] }],
+    /*
+     * Price edits are emailed and only take effect once the seller accepts them,
+     * so the proposed figure is held here rather than applied to `sellingPrice`.
+     * The token on the record is what the emailed accept link carries.
+     */
+    pendingChange: {
+      sellingPrice: { type: Number, default: null },
+      discountPercent: { type: Number, default: null },
+      requestedBy: { type: String, default: '' },
+      requestedAt: { type: Date, default: null },
+      // Working-day deadline; the proposal lapses once it passes.
+      expiresAt: { type: Date, default: null },
+      acceptToken: { type: String, default: '' },
+      status: {
+        type: String,
+        enum: ['none', 'awaiting_acceptance', 'accepted', 'declined', 'expired'],
+        default: 'none',
+      },
+      acceptedAt: { type: Date, default: null },
+      declinedAt: { type: Date, default: null },
+      // The price that was in force when the proposal was raised, for display.
+      proposedFromPrice: { type: Number, default: null },
+    },
+  },
+  { timestamps: true }
+);
 
 // One row per seller per product.
 /*
@@ -96,13 +110,14 @@ sellerStockSchema.pre('save', function (next) {
     : this.totalStock;
 
   if (this.mrp && this.sellingPrice) {
-    this.discountPercent = Math.max(
-      0,
-      Math.round(((this.mrp - this.sellingPrice) / this.mrp) * 100)
-    );
+    this.discountPercent = Math.max(0, Math.round(((this.mrp - this.sellingPrice) / this.mrp) * 100));
   }
 
-  if (this.pendingChange?.requestedAt && this.pendingChange.expiresAt && this.pendingChange.status === 'awaiting_acceptance') {
+  if (
+    this.pendingChange?.requestedAt &&
+    this.pendingChange.expiresAt &&
+    this.pendingChange.status === 'awaiting_acceptance'
+  ) {
     if (new Date(this.pendingChange.expiresAt) <= new Date()) {
       this.pendingChange.status = 'expired';
     }

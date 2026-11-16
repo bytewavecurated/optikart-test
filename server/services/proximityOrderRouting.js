@@ -15,11 +15,11 @@ const ORDER_ACCEPTANCE_TIMEOUT_MINUTES = 30;
  */
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -35,18 +35,18 @@ export const findNearbySellers = async (customerLat, customerLon, radiusKm = DEF
         $near: {
           $geometry: {
             type: 'Point',
-            coordinates: [customerLon, customerLat]
+            coordinates: [customerLon, customerLat],
           },
-          $maxDistance: radiusKm * 1000 // Convert km to meters
-        }
+          $maxDistance: radiusKm * 1000, // Convert km to meters
+        },
       },
       isActive: true,
       isBanned: false,
-      isOnline: true
+      isOnline: true,
     }).limit(5); // Get top 5 nearest sellers
 
     // Calculate actual distances
-    const sellersWithDistance = sellers.map(seller => {
+    const sellersWithDistance = sellers.map((seller) => {
       const distance = calculateDistance(
         customerLat,
         customerLon,
@@ -55,20 +55,20 @@ export const findNearbySellers = async (customerLat, customerLon, radiusKm = DEF
       );
       return {
         ...seller.toObject(),
-        distance: Math.round(distance * 100) / 100
+        distance: Math.round(distance * 100) / 100,
       };
     });
 
     return {
       success: true,
       sellers: sellersWithDistance,
-      count: sellersWithDistance.length
+      count: sellersWithDistance.length,
     };
   } catch (error) {
     console.error('Error finding nearby sellers:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -85,17 +85,17 @@ export const assignOrderToNearestSeller = async (orderId, customerLat, customerL
 
     // Find nearby sellers
     const nearbyResult = await findNearbySellers(customerLat, customerLon);
-    
+
     if (!nearbyResult.success || nearbyResult.count === 0) {
       // No sellers found - mark as admin assignment required
       order.assignmentStatus = 'admin_required';
       order.assignmentNotes = 'No sellers found within 10km radius';
       await order.save();
-      
+
       return {
         success: false,
         message: 'No sellers found nearby. Admin assignment required.',
-        requiresAdminAssignment: true
+        requiresAdminAssignment: true,
       };
     }
 
@@ -108,29 +108,35 @@ export const assignOrderToNearestSeller = async (orderId, customerLat, customerL
     order.assignmentDeadline = acceptanceDeadline;
     order.assignedAt = new Date();
     order.assignmentDistance = selectedSeller.distance;
-    
+
     await order.save();
 
     // Send notification to seller
-    await notify(selectedSeller.email, 'New Order Assignment', 
-      `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`);
+    await notify(
+      selectedSeller.email,
+      'New Order Assignment',
+      `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`
+    );
 
     // Set timeout to move to next seller if not accepted
-    setTimeout(async () => {
-      await checkOrderAcceptance(orderId);
-    }, ORDER_ACCEPTANCE_TIMEOUT_MINUTES * 60 * 1000);
+    setTimeout(
+      async () => {
+        await checkOrderAcceptance(orderId);
+      },
+      ORDER_ACCEPTANCE_TIMEOUT_MINUTES * 60 * 1000
+    );
 
     return {
       success: true,
       message: 'Order assigned to nearest seller',
       seller: selectedSeller,
-      deadline: acceptanceDeadline
+      deadline: acceptanceDeadline,
     };
   } catch (error) {
     console.error('Error assigning order:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -141,7 +147,7 @@ export const assignOrderToNearestSeller = async (orderId, customerLat, customerL
 const checkOrderAcceptance = async (orderId) => {
   try {
     const order = await Order.findById(orderId);
-    
+
     if (!order || order.assignmentStatus !== 'pending_acceptance') {
       return;
     }
@@ -157,7 +163,7 @@ const checkOrderAcceptance = async (orderId) => {
     }
 
     const nearbyResult = await findNearbySellers(customerLat, customerLon);
-    
+
     if (!nearbyResult.success || nearbyResult.count === 0) {
       order.assignmentStatus = 'admin_required';
       order.assignmentNotes = 'No sellers available after timeout';
@@ -167,7 +173,7 @@ const checkOrderAcceptance = async (orderId) => {
 
     // Find next seller (exclude current one)
     const currentSellerId = order.seller.toString();
-    const nextSeller = nearbyResult.sellers.find(s => s._id.toString() !== currentSellerId);
+    const nextSeller = nearbyResult.sellers.find((s) => s._id.toString() !== currentSellerId);
 
     if (!nextSeller) {
       order.assignmentStatus = 'admin_required';
@@ -182,18 +188,23 @@ const checkOrderAcceptance = async (orderId) => {
     order.assignmentDeadline = acceptanceDeadline;
     order.assignedAt = new Date();
     order.assignmentDistance = nextSeller.distance;
-    
+
     await order.save();
 
     // Notify next seller
-    await notify(nextSeller.email, 'New Order Assignment', 
-      `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`);
+    await notify(
+      nextSeller.email,
+      'New Order Assignment',
+      `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`
+    );
 
     // Set timeout again
-    setTimeout(async () => {
-      await checkOrderAcceptance(orderId);
-    }, ORDER_ACCEPTANCE_TIMEOUT_MINUTES * 60 * 1000);
-
+    setTimeout(
+      async () => {
+        await checkOrderAcceptance(orderId);
+      },
+      ORDER_ACCEPTANCE_TIMEOUT_MINUTES * 60 * 1000
+    );
   } catch (error) {
     console.error('Error checking order acceptance:', error);
   }
@@ -205,7 +216,7 @@ const checkOrderAcceptance = async (orderId) => {
 export const acceptOrder = async (orderId, sellerId) => {
   try {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       return { success: false, error: 'Order not found' };
     }
@@ -221,19 +232,19 @@ export const acceptOrder = async (orderId, sellerId) => {
     order.assignmentStatus = 'accepted';
     order.acceptedAt = new Date();
     order.orderStatus = 'confirmed';
-    
+
     await order.save();
 
     return {
       success: true,
       message: 'Order accepted successfully',
-      order
+      order,
     };
   } catch (error) {
     console.error('Error accepting order:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -244,7 +255,7 @@ export const acceptOrder = async (orderId, sellerId) => {
 export const rejectOrder = async (orderId, sellerId, reason) => {
   try {
     const order = await Order.findById(orderId);
-    
+
     if (!order) {
       return { success: false, error: 'Order not found' };
     }
@@ -264,7 +275,7 @@ export const rejectOrder = async (orderId, sellerId, reason) => {
     }
 
     const nearbyResult = await findNearbySellers(customerLat, customerLon);
-    
+
     if (!nearbyResult.success || nearbyResult.count === 0) {
       order.assignmentStatus = 'admin_required';
       order.assignmentNotes = 'No sellers available after rejection';
@@ -274,7 +285,7 @@ export const rejectOrder = async (orderId, sellerId, reason) => {
 
     // Find next seller
     const currentSellerId = order.seller.toString();
-    const nextSeller = nearbyResult.sellers.find(s => s._id.toString() !== currentSellerId);
+    const nextSeller = nearbyResult.sellers.find((s) => s._id.toString() !== currentSellerId);
 
     if (!nextSeller) {
       order.assignmentStatus = 'admin_required';
@@ -290,23 +301,26 @@ export const rejectOrder = async (orderId, sellerId, reason) => {
     order.assignmentDeadline = acceptanceDeadline;
     order.assignedAt = new Date();
     order.assignmentDistance = nextSeller.distance;
-    
+
     await order.save();
 
     // Notify next seller
-    await notify(nextSeller.email, 'New Order Assignment', 
-      `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`);
+    await notify(
+      nextSeller.email,
+      'New Order Assignment',
+      `You have a new order assignment. Please accept within 30 minutes. Order: ${order.orderNumber}`
+    );
 
     return {
       success: true,
       message: 'Order rejected and moved to next seller',
-      nextSeller
+      nextSeller,
     };
   } catch (error) {
     console.error('Error rejecting order:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -315,5 +329,5 @@ export default {
   findNearbySellers,
   assignOrderToNearestSeller,
   acceptOrder,
-  rejectOrder
+  rejectOrder,
 };

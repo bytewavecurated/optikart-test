@@ -14,23 +14,21 @@ const Revenue = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      try { 
-        const params = useCustomDate 
-          ? { from: customDateRange.from, to: customDateRange.to }
-          : { period };
-        const res = await adminApi.getRevenue(params); 
-        setRevenue(oneOf(res.data)); 
-      } catch (err) { 
-        console.error(err); 
-      } finally { 
-        setLoading(false); 
+      try {
+        const params = useCustomDate ? { from: customDateRange.from, to: customDateRange.to } : { period };
+        const res = await adminApi.getRevenue(params);
+        setRevenue(oneOf(res.data));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetch();
   }, [period, customDateRange, useCustomDate]);
 
   const handleCustomDateChange = (field, value) => {
-    setCustomDateRange(prev => ({ ...prev, [field]: value }));
+    setCustomDateRange((prev) => ({ ...prev, [field]: value }));
     setUseCustomDate(true);
   };
 
@@ -39,17 +37,42 @@ const Revenue = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '24px',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Revenue</h1>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
               {/* Custom Date Range Picker */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '6px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', background: useCustomDate ? 'var(--primary-light)' : 'var(--bg-white)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  alignItems: 'center',
+                  padding: '6px 12px',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-xl)',
+                  background: useCustomDate ? 'var(--primary-light)' : 'var(--bg-white)',
+                }}
+              >
                 <FiCalendar size={14} style={{ color: useCustomDate ? 'var(--primary)' : 'var(--text-light)' }} />
                 <input
                   type="date"
                   value={customDateRange.from}
                   onChange={(e) => handleCustomDateChange('from', e.target.value)}
-                  style={{ border: 'none', fontSize: '13px', padding: '2px 4px', outline: 'none', background: 'transparent' }}
+                  style={{
+                    border: 'none',
+                    fontSize: '13px',
+                    padding: '2px 4px',
+                    outline: 'none',
+                    background: 'transparent',
+                  }}
                   placeholder="From"
                 />
                 <span style={{ color: 'var(--text-light)', fontSize: '12px' }}>to</span>
@@ -57,29 +80,111 @@ const Revenue = () => {
                   type="date"
                   value={customDateRange.to}
                   onChange={(e) => handleCustomDateChange('to', e.target.value)}
-                  style={{ border: 'none', fontSize: '13px', padding: '2px 4px', outline: 'none', background: 'transparent' }}
+                  style={{
+                    border: 'none',
+                    fontSize: '13px',
+                    padding: '2px 4px',
+                    outline: 'none',
+                    background: 'transparent',
+                  }}
                   placeholder="To"
                 />
               </div>
               {/* Period Buttons */}
-              {[{ label: '7 Days', value: '7d' }, { label: '30 Days', value: '30d' }, { label: '90 Days', value: '90d' }, { label: '1 Year', value: '1y' }].map((p) => (
-                <button key={p.value} onClick={() => { setPeriod(p.value); setUseCustomDate(false); }} style={{ padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', border: `1px solid ${!useCustomDate && period === p.value ? 'var(--primary)' : 'var(--border)'}`, background: !useCustomDate && period === p.value ? 'var(--primary)' : 'var(--bg-white)', color: !useCustomDate && period === p.value ? 'var(--text-white)' : 'var(--text-secondary)', cursor: 'pointer' }}>{p.label}</button>
+              {[
+                { label: '7 Days', value: '7d' },
+                { label: '30 Days', value: '30d' },
+                { label: '90 Days', value: '90d' },
+                { label: '1 Year', value: '1y' },
+              ].map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => {
+                    setPeriod(p.value);
+                    setUseCustomDate(false);
+                  }}
+                  style={{
+                    padding: '6px 16px',
+                    borderRadius: 'var(--radius-xl)',
+                    fontSize: '13px',
+                    border: `1px solid ${!useCustomDate && period === p.value ? 'var(--primary)' : 'var(--border)'}`,
+                    background: !useCustomDate && period === p.value ? 'var(--primary)' : 'var(--bg-white)',
+                    color: !useCustomDate && period === p.value ? 'var(--text-white)' : 'var(--text-secondary)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {p.label}
+                </button>
               ))}
             </div>
           </div>
-          {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : (
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
+          ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '24px',
+                }}
+              >
                 {[
-                  { label: 'Total Revenue', value: `₹${(revenue?.total || 0).toLocaleString()}`, icon: <FiDollarSign />, color: 'var(--success)', bg: 'var(--success-light)' },
-                  { label: 'Platform Fees', value: `₹${(revenue?.platformFees || 0).toLocaleString()}`, icon: <FiTrendingUp />, color: 'var(--brand)', bg: 'var(--brand-tint)' },
-                  { label: 'Seller Payouts', value: `₹${(revenue?.sellerPayouts || 0).toLocaleString()}`, icon: <FiShoppingBag />, color: 'var(--warning)', bg: 'var(--warning-light)' },
-                  { label: 'Orders', value: revenue?.orderCount || 0, icon: <FiShoppingBag />, color: 'var(--danger)', bg: 'var(--brand-tint)' },
+                  {
+                    label: 'Total Revenue',
+                    value: `₹${(revenue?.total || 0).toLocaleString()}`,
+                    icon: <FiDollarSign />,
+                    color: 'var(--success)',
+                    bg: 'var(--success-light)',
+                  },
+                  {
+                    label: 'Platform Fees',
+                    value: `₹${(revenue?.platformFees || 0).toLocaleString()}`,
+                    icon: <FiTrendingUp />,
+                    color: 'var(--brand)',
+                    bg: 'var(--brand-tint)',
+                  },
+                  {
+                    label: 'Seller Payouts',
+                    value: `₹${(revenue?.sellerPayouts || 0).toLocaleString()}`,
+                    icon: <FiShoppingBag />,
+                    color: 'var(--warning)',
+                    bg: 'var(--warning-light)',
+                  },
+                  {
+                    label: 'Orders',
+                    value: revenue?.orderCount || 0,
+                    icon: <FiShoppingBag />,
+                    color: 'var(--danger)',
+                    bg: 'var(--brand-tint)',
+                  },
                 ].map((card) => (
                   <div key={card.label} className="card" style={{ padding: '20px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div><p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>{card.label}</p><h3 style={{ fontSize: '24px', fontWeight: 700 }}>{card.value}</h3></div>
-                      <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
+                      <div>
+                        <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>
+                          {card.label}
+                        </p>
+                        <h3 style={{ fontSize: '24px', fontWeight: 700 }}>{card.value}</h3>
+                      </div>
+                      <div
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: 'var(--radius-md)',
+                          background: card.bg,
+                          color: card.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                        }}
+                      >
+                        {card.icon}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -88,12 +193,31 @@ const Revenue = () => {
                 <div className="card" style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Monthly Breakdown</h3>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>{['Month', 'Revenue', 'Orders', 'Avg Value'].map((h) => <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                        {['Month', 'Revenue', 'Orders', 'Avg Value'].map((h) => (
+                          <th
+                            key={h}
+                            style={{
+                              padding: '10px 16px',
+                              textAlign: 'left',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
                     <tbody>
                       {revenue.monthlyBreakdown.map((m, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
                           <td style={{ padding: '10px 16px', fontSize: '14px' }}>{m.month}</td>
-                          <td style={{ padding: '10px 16px', fontSize: '14px', fontWeight: 600 }}>₹{m.revenue?.toLocaleString()}</td>
+                          <td style={{ padding: '10px 16px', fontSize: '14px', fontWeight: 600 }}>
+                            ₹{m.revenue?.toLocaleString()}
+                          </td>
                           <td style={{ padding: '10px 16px', fontSize: '14px' }}>{m.orders}</td>
                           <td style={{ padding: '10px 16px', fontSize: '14px' }}>₹{m.avgValue?.toLocaleString()}</td>
                         </tr>

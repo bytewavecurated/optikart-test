@@ -11,16 +11,28 @@
  * may skip it come from one list rather than from a list per role.
  */
 
-const truthy = (value) => ['1', 'true', 'yes', 'on'].includes(String(value ?? '').trim().toLowerCase());
+const truthy = (value) =>
+  ['1', 'true', 'yes', 'on'].includes(
+    String(value ?? '')
+      .trim()
+      .toLowerCase()
+  );
 
-export const isProduction = () => String(process.env.NODE_ENV || '').trim().toLowerCase() === 'production';
+export const isProduction = () =>
+  String(process.env.NODE_ENV || '')
+    .trim()
+    .toLowerCase() === 'production';
 
 /** Out of production, bypass is on unless explicitly switched off. In production it never happens. */
 export const otpBypassAllowed = (allowedEmails = [], email = '') => {
   if (isProduction()) return false;
-  const flag = String(process.env.AUTH_OTP_BYPASS ?? '').trim().toLowerCase();
+  const flag = String(process.env.AUTH_OTP_BYPASS ?? '')
+    .trim()
+    .toLowerCase();
   if (['false', '0', 'no', 'off'].includes(flag)) return false;
-  const normalized = String(email || '').trim().toLowerCase();
+  const normalized = String(email || '')
+    .trim()
+    .toLowerCase();
   return (allowedEmails || []).map((e) => String(e).trim().toLowerCase()).includes(normalized);
 };
 
@@ -29,8 +41,7 @@ export const otpBypassAllowed = (allowedEmails = [], email = '') => {
  * production without SMTP is a lockout waiting to happen rather than a working
  * deployment. Checked at boot where it can be said out loud.
  */
-export const smtpConfigured = () =>
-  Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+export const smtpConfigured = () => Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
 /*
  * The seed gate, in one decision.
@@ -67,7 +78,7 @@ export const seedDecision = ({ flag = 'auto', existing = 0, production = false, 
     return {
       seed: true,
       reason: production ? 'production-staging-acknowledged' : 'forced-flag',
-      destructive: true
+      destructive: true,
     };
   }
 
@@ -82,14 +93,18 @@ export const productionBootErrors = ({ seedForced, seedAcknowledged = false }) =
   if (!isProduction()) return [];
   const errors = [];
   if (seedForced && !seedAcknowledged) {
-    errors.push('SEED_ON_BOOT=true is refused in production: the seed deletes the collections it owns before writing demo fixtures. On a staging database, set BOTH SEED_ON_BOOT=true and ALLOW_DEMO_SEED=true to say so deliberately.');
+    errors.push(
+      'SEED_ON_BOOT=true is refused in production: the seed deletes the collections it owns before writing demo fixtures. On a staging database, set BOTH SEED_ON_BOOT=true and ALLOW_DEMO_SEED=true to say so deliberately.'
+    );
   }
   const secret = String(process.env.JWT_SECRET || '');
   if (!secret || secret.length < 32 || /^(change-me|your[-_]|\s*$)/i.test(secret)) {
     errors.push('JWT_SECRET must be a unique value of at least 32 characters before serving real sessions.');
   }
   if (!smtpConfigured()) {
-    errors.push('SMTP_HOST/SMTP_USER/SMTP_PASS are required in production: every role sign-in demands an emailed OTP, and without mail no account can be reached again.');
+    errors.push(
+      'SMTP_HOST/SMTP_USER/SMTP_PASS are required in production: every role sign-in demands an emailed OTP, and without mail no account can be reached again.'
+    );
   }
   return errors;
 };

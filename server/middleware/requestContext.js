@@ -25,7 +25,7 @@ export const metrics = {
   byStatusClass: { '2xx': 0, '3xx': 0, '4xx': 0, '5xx': 0 },
   byRoute: new Map(),
   slowest: [],
-  lastError: null
+  lastError: null,
 };
 
 const SLOW_MS = 1500;
@@ -40,11 +40,15 @@ const routeLabel = (req) => {
   // with the id-like segments collapsed so 404 probing cannot invent a bucket
   // per guessed url.
   if (matched === '*') {
-    const collapse = String(req.path).replace(/\/[0-9a-f]{16,}/gi, '/:id').replace(/\/\d+/g, '/:n');
+    const collapse = String(req.path)
+      .replace(/\/[0-9a-f]{16,}/gi, '/:id')
+      .replace(/\/\d+/g, '/:n');
     return `${req.method} ${collapse.slice(0, 60)}`;
   }
   const path = matched !== undefined ? `${mounted}${matched === '/' ? '' : matched}` : req.path;
-  return `${req.method} ${String(path).replace(/\/[0-9a-f]{16,}/g, '/:id').replace(/\/\d+/g, '/:n')}`;
+  return `${req.method} ${String(path)
+    .replace(/\/[0-9a-f]{16,}/g, '/:id')
+    .replace(/\/\d+/g, '/:n')}`;
 };
 
 export const requestContext = (req, res, next) => {
@@ -73,7 +77,16 @@ export const requestContext = (req, res, next) => {
         if (metrics.slowest.length > 25) metrics.slowest.shift();
       }
       if (res.statusCode >= 500) {
-        console.error(JSON.stringify({ event: 'request', id: req.id, method: req.method, path: req.path, status: res.statusCode, ms: Math.round(ms) }));
+        console.error(
+          JSON.stringify({
+            event: 'request',
+            id: req.id,
+            method: req.method,
+            path: req.path,
+            status: res.statusCode,
+            ms: Math.round(ms),
+          })
+        );
       }
     }
   });
@@ -90,12 +103,10 @@ export const snapshot = () => {
     uptimeSeconds: Math.round((Date.now() - STARTED_AT) / 1000),
     requests: metrics.requests,
     byStatusClass: { ...metrics.byStatusClass },
-    errorRate: metrics.requests
-      ? Number(((metrics.byStatusClass['5xx'] / metrics.requests) * 100).toFixed(2))
-      : 0,
+    errorRate: metrics.requests ? Number(((metrics.byStatusClass['5xx'] / metrics.requests) * 100).toFixed(2)) : 0,
     routes,
     slowRequests: metrics.slowest.slice(-10),
-    lastError: metrics.lastError
+    lastError: metrics.lastError,
   };
 };
 
@@ -107,7 +118,11 @@ export const recordError = (req, err) => {
     method: req?.method,
     path: req?.originalUrl || req?.path,
     message: String(err?.message || err).slice(0, 300),
-    stack: String(err?.stack || '').split('\n').slice(0, 4).join(' | ').slice(0, 500)
+    stack: String(err?.stack || '')
+      .split('\n')
+      .slice(0, 4)
+      .join(' | ')
+      .slice(0, 500),
   };
   return metrics.lastError;
 };

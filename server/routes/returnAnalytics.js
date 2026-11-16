@@ -1,9 +1,6 @@
 import express from 'express';
 import { verifyToken, verifySeller, verifyAdmin } from '../middleware/auth.js';
-import {
-  getSellerReturnAnalytics,
-  getAdminReturnAnalytics
-} from '../services/returnAnalytics.js';
+import { getSellerReturnAnalytics, getAdminReturnAnalytics } from '../services/returnAnalytics.js';
 
 const router = express.Router();
 

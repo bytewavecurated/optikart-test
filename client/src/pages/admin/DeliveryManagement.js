@@ -5,7 +5,13 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { listOf } from '../../services/apiResponse.js';
 
-const STATUS_COLORS = { pending: 'var(--warning)', picked: 'var(--brand)', in_transit: 'var(--brand)', delivered: 'var(--success)', failed: 'var(--danger)' };
+const STATUS_COLORS = {
+  pending: 'var(--warning)',
+  picked: 'var(--brand)',
+  in_transit: 'var(--brand)',
+  delivered: 'var(--success)',
+  failed: 'var(--danger)',
+};
 
 const DeliveryManagement = () => {
   const [deliveries, setDeliveries] = useState([]);
@@ -20,8 +26,11 @@ const DeliveryManagement = () => {
         const [delRes, pickRes] = await Promise.allSettled([adminApi.getDelivery(), adminApi.getPickups()]);
         if (delRes.status === 'fulfilled') setDeliveries(listOf(delRes.value.data));
         if (pickRes.status === 'fulfilled') setPickups(listOf(pickRes.value.data));
-      } catch (err) { console.error(err); }
-      finally { setLoading(false); }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
     fetch();
   }, []);
@@ -30,15 +39,15 @@ const DeliveryManagement = () => {
   const filterBySearch = (items, searchFields) => {
     if (!searchQuery.trim()) return items;
     const query = searchQuery.toLowerCase();
-    return items.filter(item => 
-      searchFields.some(field => {
+    return items.filter((item) =>
+      searchFields.some((field) => {
         const value = item[field];
         if (!value) return false;
         if (typeof value === 'string') return value.toLowerCase().includes(query);
         if (typeof value === 'object') {
           // Handle nested objects like address, customer, seller
-          return Object.values(value).some(val => 
-            val && typeof val === 'string' && val.toLowerCase().includes(query)
+          return Object.values(value).some(
+            (val) => val && typeof val === 'string' && val.toLowerCase().includes(query)
           );
         }
         return false;
@@ -55,11 +64,19 @@ const DeliveryManagement = () => {
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Delivery Management</h1>
-          
+
           {/* Search Bar */}
           <div style={{ position: 'relative', maxWidth: '500px', marginBottom: '20px' }}>
-            <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
-            <input 
+            <FiSearch
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-light)',
+              }}
+            />
+            <input
               type="text"
               placeholder="Search by order ID, customer name, seller name, or status..."
               value={searchQuery}
@@ -70,46 +87,156 @@ const DeliveryManagement = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-            <button onClick={() => setTab('deliveries')} style={{ padding: '8px 20px', borderRadius: 'var(--radius-xs)', fontSize: '14px', fontWeight: 500, background: tab === 'deliveries' ? 'var(--primary)' : 'var(--bg-white)', color: tab === 'deliveries' ? 'var(--text-white)' : 'var(--text-secondary)', border: `1px solid ${tab === 'deliveries' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiTruck size={14} /> Deliveries ({filteredDeliveries.length})</button>
-            <button onClick={() => setTab('pickups')} style={{ padding: '8px 20px', borderRadius: 'var(--radius-xs)', fontSize: '14px', fontWeight: 500, background: tab === 'pickups' ? 'var(--primary)' : 'var(--bg-white)', color: tab === 'pickups' ? 'var(--text-white)' : 'var(--text-secondary)', border: `1px solid ${tab === 'pickups' ? 'var(--primary)' : 'var(--border)'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><FiPackage size={14} /> Pickups ({filteredPickups.length})</button>
+            <button
+              onClick={() => setTab('deliveries')}
+              style={{
+                padding: '8px 20px',
+                borderRadius: 'var(--radius-xs)',
+                fontSize: '14px',
+                fontWeight: 500,
+                background: tab === 'deliveries' ? 'var(--primary)' : 'var(--bg-white)',
+                color: tab === 'deliveries' ? 'var(--text-white)' : 'var(--text-secondary)',
+                border: `1px solid ${tab === 'deliveries' ? 'var(--primary)' : 'var(--border)'}`,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <FiTruck size={14} /> Deliveries ({filteredDeliveries.length})
+            </button>
+            <button
+              onClick={() => setTab('pickups')}
+              style={{
+                padding: '8px 20px',
+                borderRadius: 'var(--radius-xs)',
+                fontSize: '14px',
+                fontWeight: 500,
+                background: tab === 'pickups' ? 'var(--primary)' : 'var(--bg-white)',
+                color: tab === 'pickups' ? 'var(--text-white)' : 'var(--text-secondary)',
+                border: `1px solid ${tab === 'pickups' ? 'var(--primary)' : 'var(--border)'}`,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <FiPackage size={14} /> Pickups ({filteredPickups.length})
+            </button>
           </div>
 
-          {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : (
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
+          ) : (
             <div className="card">
               {tab === 'deliveries' ? (
-                filteredDeliveries.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>{searchQuery ? 'No deliveries match your search' : 'No deliveries'}</div> : (
+                filteredDeliveries.length === 0 ? (
+                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>
+                    {searchQuery ? 'No deliveries match your search' : 'No deliveries'}
+                  </div>
+                ) : (
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Order', 'Customer', 'Address', 'Status', 'Updated'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
+                        {['Order', 'Customer', 'Address', 'Status', 'Updated'].map((h) => (
+                          <th
+                            key={h}
+                            style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
                     <tbody>
                       {filteredDeliveries.map((d, idx) => (
                         <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                          <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>#{d.orderId?.slice(-8).toUpperCase() || '-'}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>
+                            #{d.orderId?.slice(-8).toUpperCase() || '-'}
+                          </td>
                           <td style={{ padding: '12px 16px', fontSize: '13px' }}>{d.customerName || '-'}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>{d.address ? `${d.address.city}, ${d.address.state}` : '-'}</td>
-                          <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[d.status] || 'var(--text-light)', color: 'var(--text-white)', textTransform: 'capitalize' }}>{d.status}</span></td>
-                          <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{d.updatedAt ? new Date(d.updatedAt).toLocaleString() : '-'}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>
+                            {d.address ? `${d.address.city}, ${d.address.state}` : '-'}
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <span
+                              className="badge"
+                              style={{
+                                background: STATUS_COLORS[d.status] || 'var(--text-light)',
+                                color: 'var(--text-white)',
+                                textTransform: 'capitalize',
+                              }}
+                            >
+                              {d.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>
+                            {d.updatedAt ? new Date(d.updatedAt).toLocaleString() : '-'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 )
+              ) : filteredPickups.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>
+                  {searchQuery ? 'No pickups match your search' : 'No pickups scheduled'}
+                </div>
               ) : (
-                filteredPickups.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>{searchQuery ? 'No pickups match your search' : 'No pickups scheduled'}</div> : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Order', 'Seller', 'Pickup Date', 'Status', 'Address'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {filteredPickups.map((p, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                          <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>#{p.orderId?.slice(-8).toUpperCase() || '-'}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.seller?.businessName || '-'}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.pickupDate ? new Date(p.pickupDate).toLocaleDateString() : '-'}</td>
-                          <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[p.status] || 'var(--text-light)', color: 'var(--text-white)', textTransform: 'capitalize' }}>{p.status}</span></td>
-                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.address?.city || '-'}</td>
-                        </tr>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
+                      {['Order', 'Seller', 'Pickup Date', 'Status', 'Address'].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: '12px 16px',
+                            textAlign: 'left',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {h}
+                        </th>
                       ))}
-                    </tbody>
-                  </table>
-                )
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPickups.map((p, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>
+                          #{p.orderId?.slice(-8).toUpperCase() || '-'}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.seller?.businessName || '-'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>
+                          {p.pickupDate ? new Date(p.pickupDate).toLocaleDateString() : '-'}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span
+                            className="badge"
+                            style={{
+                              background: STATUS_COLORS[p.status] || 'var(--text-light)',
+                              color: 'var(--text-white)',
+                              textTransform: 'capitalize',
+                            }}
+                          >
+                            {p.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>{p.address?.city || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           )}

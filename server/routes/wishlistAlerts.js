@@ -3,7 +3,7 @@ import { verifyToken } from '../middleware/auth.js';
 import {
   addToWishlistWithPrice,
   getUserWishlistWithPriceInfo,
-  checkWishlistPriceDrops
+  checkWishlistPriceDrops,
 } from '../services/wishlistAlerts.js';
 
 const router = express.Router();
@@ -20,7 +20,7 @@ router.post('/add', verifyToken, async (req, res) => {
     if (!productId) {
       return res.status(400).json({
         success: false,
-        message: 'Product ID is required'
+        message: 'Product ID is required',
       });
     }
 
@@ -30,12 +30,12 @@ router.post('/add', verifyToken, async (req, res) => {
       res.status(201).json({
         success: true,
         message: 'Product added to wishlist',
-        data: result.wishlist
+        data: result.wishlist,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.message || result.error
+        message: result.message || result.error,
       });
     }
   } catch (error) {
@@ -43,7 +43,7 @@ router.post('/add', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -61,12 +61,12 @@ router.get('/', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.wishlist
+        data: result.wishlist,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -74,7 +74,7 @@ router.get('/', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -89,7 +89,7 @@ router.post('/check-price-drops', verifyToken, async (req, res) => {
     if (req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Admin access required'
+        message: 'Admin access required',
       });
     }
 
@@ -99,12 +99,12 @@ router.post('/check-price-drops', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: `Sent ${result.notificationsSent} price drop notifications`,
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -112,7 +112,7 @@ router.post('/check-price-drops', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

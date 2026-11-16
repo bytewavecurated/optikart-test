@@ -50,51 +50,188 @@ const Register = () => {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
-      <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', padding: '20px' }}>
+      <main
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--bg-primary)',
+          padding: '20px',
+        }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}
+          style={{
+            background: 'var(--bg-white)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-lg)',
+            width: '100%',
+            maxWidth: '420px',
+            overflow: 'hidden',
+          }}
         >
           <div style={{ background: 'var(--bg-dark)', padding: '24px 32px' }}>
             <h1 style={{ color: 'var(--text-white)', fontSize: '22px', fontWeight: 700 }}>Create Account</h1>
-            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', marginTop: '4px' }}>Sign up and start shopping for eyewear</p>
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', marginTop: '4px' }}>
+              Sign up and start shopping for eyewear
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} style={{ padding: '32px' }}>
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>Full Name</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '6px',
+                }}
+              >
+                Full Name
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiUser style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '16px' }} />
-                <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter your full name" className={`input ${errors.name ? 'input-error' : ''}`} style={{ paddingLeft: '38px' }} />
+                <FiUser
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light)',
+                    fontSize: '16px',
+                  }}
+                />
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Enter your full name"
+                  className={`input ${errors.name ? 'input-error' : ''}`}
+                  style={{ paddingLeft: '38px' }}
+                />
               </div>
               {errors.name && <span className="error-text">{errors.name}</span>}
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>Email Address</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '6px',
+                }}
+              >
+                Email Address
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiMail style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '16px' }} />
-                <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Enter your email" className={`input ${errors.email ? 'input-error' : ''}`} style={{ paddingLeft: '38px' }} />
+                <FiMail
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light)',
+                    fontSize: '16px',
+                  }}
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your email"
+                  className={`input ${errors.email ? 'input-error' : ''}`}
+                  style={{ paddingLeft: '38px' }}
+                />
               </div>
               {errors.email && <span className="error-text">{errors.email}</span>}
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>Phone Number</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '6px',
+                }}
+              >
+                Phone Number
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiPhone style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '16px' }} />
-                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="10-digit mobile number" className={`input ${errors.phone ? 'input-error' : ''}`} style={{ paddingLeft: '38px' }} />
+                <FiPhone
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light)',
+                    fontSize: '16px',
+                  }}
+                />
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="10-digit mobile number"
+                  className={`input ${errors.phone ? 'input-error' : ''}`}
+                  style={{ paddingLeft: '38px' }}
+                />
               </div>
               {errors.phone && <span className="error-text">{errors.phone}</span>}
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>Password</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '6px',
+                }}
+              >
+                Password
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiLock style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '16px' }} />
-                <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange} placeholder="Create a password" className={`input ${errors.password ? 'input-error' : ''}`} style={{ paddingLeft: '38px', paddingRight: '38px' }} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', cursor: 'pointer' }}>
+                <FiLock
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light)',
+                    fontSize: '16px',
+                  }}
+                />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Create a password"
+                  className={`input ${errors.password ? 'input-error' : ''}`}
+                  style={{ paddingLeft: '38px', paddingRight: '38px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light)',
+                    cursor: 'pointer',
+                  }}
+                >
                   {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                 </button>
               </div>
@@ -102,21 +239,59 @@ const Register = () => {
             </div>
 
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>Confirm Password</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary)',
+                  marginBottom: '6px',
+                }}
+              >
+                Confirm Password
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiLock style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '16px' }} />
-                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Confirm your password" className={`input ${errors.confirmPassword ? 'input-error' : ''}`} style={{ paddingLeft: '38px' }} />
+                <FiLock
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light)',
+                    fontSize: '16px',
+                  }}
+                />
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your password"
+                  className={`input ${errors.confirmPassword ? 'input-error' : ''}`}
+                  style={{ paddingLeft: '38px' }}
+                />
               </div>
               {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
             </div>
 
-            <button type="submit" disabled={loading} className="btn btn-primary btn-block btn-lg" style={{ marginBottom: '16px' }}>
-              {loading ? <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} /> : 'Create Account'}
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary btn-block btn-lg"
+              style={{ marginBottom: '16px' }}
+            >
+              {loading ? (
+                <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
+              ) : (
+                'Create Account'
+              )}
             </button>
 
             <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)' }}>
               Already have an account?{' '}
-              <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Login</Link>
+              <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                Login
+              </Link>
             </p>
           </form>
         </motion.div>

@@ -16,12 +16,7 @@
  */
 import express from 'express';
 import { verifyToken, verifyAnyPrincipal } from '../middleware/auth.js';
-import {
-  getUserNotifications,
-  markAsRead,
-  markAllAsRead,
-  deleteNotification
-} from '../services/pushNotifications.js';
+import { getUserNotifications, markAsRead, markAllAsRead, deleteNotification } from '../services/pushNotifications.js';
 
 const router = express.Router();
 
@@ -54,12 +49,12 @@ router.delete('/:id', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: result.message
+        message: result.message,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -67,7 +62,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -84,26 +79,26 @@ router.post('/subscribe', verifyToken, async (req, res) => {
     if (!subscription) {
       return res.status(400).json({
         success: false,
-        message: 'Subscription data is required'
+        message: 'Subscription data is required',
       });
     }
 
     // Save subscription to user model
     const User = (await import('../models/User.js')).default;
     await User.findByIdAndUpdate(userId, {
-      pushSubscription: subscription
+      pushSubscription: subscription,
     });
 
     res.json({
       success: true,
-      message: 'Subscription saved successfully'
+      message: 'Subscription saved successfully',
     });
   } catch (error) {
     console.error('Error in subscribe route:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

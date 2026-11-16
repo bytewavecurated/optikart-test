@@ -4,7 +4,7 @@ import {
   DELIVERY_PER_ITEM,
   COD_HANDLING_FEE,
   PLATFORM_FEE_PERCENT,
-  refundableAmount
+  refundableAmount,
 } from '../config/fees.js';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
@@ -35,7 +35,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
     const rxGate = await assertPrescriptionVerified({
       userId,
       prescriptionId: prescriptionId || prescription?.prescription,
-      lines: items || []
+      lines: items || [],
     });
     if (!rxGate.ok) {
       console.warn(`Order refused for user ${userId}: ${rxGate.code}`);
@@ -58,18 +58,19 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
       // Price and availability come from the exact colour/size the buyer chose,
       // not just the product-level defaults.
       const chosenVariant = matchVariant(product, item.variant || {});
-      const available = chosenVariant
-        ? (chosenVariant.stock || 0)
-        : (product.stock || 0);
+      const available = chosenVariant ? chosenVariant.stock || 0 : product.stock || 0;
 
       if (available < item.quantity) {
         const which = chosenVariant
           ? ` (${[chosenVariant.color, chosenVariant.size].filter(Boolean).join(' / ')})`
           : '';
-        return res.status(400).json({ success: false, message: `Insufficient stock for "${product.title}"${which}. Only ${available} available.` });
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for "${product.title}"${which}. Only ${available} available.`,
+        });
       }
 
-      const variantPrice = chosenVariant ? (chosenVariant.discountedPrice || chosenVariant.price) : null;
+      const variantPrice = chosenVariant ? chosenVariant.discountedPrice || chosenVariant.price : null;
       const price = variantPrice || product.discountedPrice || product.price;
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
@@ -82,9 +83,8 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         product: product._id,
         variant: item.variant || {},
         quantity: item.quantity,
-        price
+        price,
       });
-
     }
 
     let couponDiscount = 0;
@@ -93,7 +93,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         code: couponCode.toUpperCase(),
         isActive: true,
         validFrom: { $lte: new Date() },
-        validUntil: { $gte: new Date() }
+        validUntil: { $gte: new Date() },
       });
 
       if (!coupon) {
@@ -101,14 +101,16 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
       }
 
       if (coupon.minOrderAmount > 0 && subtotal < coupon.minOrderAmount) {
-        return res.status(400).json({ success: false, message: `Minimum order amount of ₹${coupon.minOrderAmount} required.` });
+        return res
+          .status(400)
+          .json({ success: false, message: `Minimum order amount of ₹${coupon.minOrderAmount} required.` });
       }
 
       if (coupon.usageLimit > 0 && coupon.usageCount >= coupon.usageLimit) {
         return res.status(400).json({ success: false, message: 'Coupon usage limit reached.' });
       }
 
-      const alreadyUsed = coupon.usedBy.some(u => u.user.toString() === userId.toString());
+      const alreadyUsed = coupon.usedBy.some((u) => u.user.toString() === userId.toString());
       if (alreadyUsed) {
         return res.status(400).json({ success: false, message: 'Coupon already used by you.' });
       }
@@ -144,7 +146,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
       list.map((i) => ({
         price: Number(i.price) || 0,
         quantity: Math.max(1, Number(i.quantity) || 1),
-        seller: sellerId
+        seller: sellerId,
       }))
     );
 
@@ -164,7 +166,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
     const quote = quoteCharges({
       lines: resolvedLines,
       paymentMethod: storedPaymentMethod,
-      couponDiscount
+      couponDiscount,
     });
     const totalItems = quote.itemCount;
     const deliveryCharge = quote.deliveryCharges;
@@ -179,7 +181,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
     let codFeeClaimed = false;
 
     for (const [sellerId, sellerItemsList] of Object.entries(sellerItems)) {
-      const sellerSubtotal = sellerItemsList.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const sellerSubtotal = sellerItemsList.reduce((sum, item) => sum + item.price * item.quantity, 0);
       const sellerItemCount = sellerItemsList.reduce((sum, item) => sum + item.quantity, 0);
       /*
        * Delivery, platform fee, discount share and the cash-handling charge come
@@ -197,11 +199,12 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
        * fallbacks - silently dropping the cash-handling charge from the total
        * while checkout had already shown it.
        */
-      const group = quote.groups.find((g) => String(g.seller) === String(sellerId) && !usedGroups.has(g))
-        || quote.groups.find((g) => !usedGroups.has(g))
-        || {};
+      const group =
+        quote.groups.find((g) => String(g.seller) === String(sellerId) && !usedGroups.has(g)) ||
+        quote.groups.find((g) => !usedGroups.has(g)) ||
+        {};
       usedGroups.add(group);
-      const sellerDeliveryCharge = group.deliveryCharges ?? (sellerItemCount * DELIVERY_PER_ITEM);
+      const sellerDeliveryCharge = group.deliveryCharges ?? sellerItemCount * DELIVERY_PER_ITEM;
       const sellerPlatformFee = group.platformFee ?? Math.round(sellerSubtotal * (PLATFORM_FEE_PERCENT / 100));
       // Charged to the customer up front for every order. If the platform ends up
       // delivering it (instead of Shiprocket) a further flat Rs. 59 per product
@@ -223,7 +226,11 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
        */
       const sellerCodFee = quote.isCod && !codFeeClaimed ? COD_HANDLING_FEE : 0;
       if (sellerCodFee) codFeeClaimed = true;
-      const sellerTotal = Math.max(0, sellerSubtotal + sellerDeliveryCharge + sellerPlatformFee + sellerSelfDeliveryCharge - sellerCouponDiscount) + sellerCodFee;
+      const sellerTotal =
+        Math.max(
+          0,
+          sellerSubtotal + sellerDeliveryCharge + sellerPlatformFee + sellerSelfDeliveryCharge - sellerCouponDiscount
+        ) + sellerCodFee;
 
       // Calculate commission (3% of subtotal after discounts)
       const commissionPercentage = 3;
@@ -255,14 +262,14 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
           ? {
               ...(prescription || {}),
               prescription: prescriptionId || prescription?.prescription,
-              verificationStatus: rxGate.status
+              verificationStatus: rxGate.status,
             }
           : prescription,
         // Commission tracking
         commissionPercentage,
         commissionAmount,
         sellerPayoutAmount,
-        commissionPaid: false
+        commissionPaid: false,
       });
 
       await order.save();
@@ -272,11 +279,20 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
       const report = await deductStockForOrder(order, req.app.get('io'));
       if (report.shortages.length) {
         // Roll the whole checkout back rather than overselling.
-        await Promise.all(orders.map((o) => Order.updateOne({ _id: o._id }, { orderStatus: 'cancelled', cancellationReason: 'Stock unavailable at checkout' })));
-        await Promise.all(orders.map((o) => restoreStockForOrder(o, req.app.get('io'), { reason: 'checkout-rollback' })));
+        await Promise.all(
+          orders.map((o) =>
+            Order.updateOne(
+              { _id: o._id },
+              { orderStatus: 'cancelled', cancellationReason: 'Stock unavailable at checkout' }
+            )
+          )
+        );
+        await Promise.all(
+          orders.map((o) => restoreStockForOrder(o, req.app.get('io'), { reason: 'checkout-rollback' }))
+        );
         return res.status(409).json({
           success: false,
-          message: 'Some items sold out while you were checking out. Please review your cart.'
+          message: 'Some items sold out while you were checking out. Please review your cart.',
         });
       }
     }
@@ -287,17 +303,14 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         coupon.usedBy.push({
           user: userId,
           orderId: orders[0]._id,
-          usedAt: new Date()
+          usedAt: new Date(),
         });
         coupon.usageCount += 1;
         await coupon.save();
       }
     }
 
-    await Cart.findOneAndUpdate(
-      { user: userId },
-      { items: [], totalItems: 0 }
-    );
+    await Cart.findOneAndUpdate({ user: userId }, { items: [], totalItems: 0 });
 
     await sendOrderConfirmation(req.user.email, orders[0]);
 
@@ -316,7 +329,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Order(s) created successfully.',
-      orders
+      orders,
     });
   } catch (error) {
     console.error('Create order error:', error);
@@ -348,8 +361,8 @@ router.get('/', verifyToken, async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error('Get orders error:', error);
@@ -399,9 +412,7 @@ router.post('/quote', async (req, res) => {
 
       const selection = entry.variant || {};
       const chosenVariant = matchVariant(product, selection);
-      const variantPrice = chosenVariant
-        ? (chosenVariant.discountedPrice || chosenVariant.price)
-        : null;
+      const variantPrice = chosenVariant ? chosenVariant.discountedPrice || chosenVariant.price : null;
       const effective = variantPrice || (Number(product.discountedPrice) > 0 ? product.discountedPrice : product.price);
 
       /*
@@ -415,9 +426,7 @@ router.post('/quote', async (req, res) => {
        * it in the right column, before any of that effort.
        */
       const wanted = Math.max(1, Number(entry.quantity) || 1);
-      const available = chosenVariant
-        ? Number(chosenVariant.stock) || 0
-        : Number(product.stock) || 0;
+      const available = chosenVariant ? Number(chosenVariant.stock) || 0 : Number(product.stock) || 0;
 
       lines.push({
         price: Number(effective) || 0,
@@ -425,7 +434,7 @@ router.post('/quote', async (req, res) => {
         // The label the price panel can show next to a line, and the grouping
         // key so the quote splits the basket the way the order will.
         title: product.title,
-        seller: String(product.seller || product.manufacturerSellerId || 'single')
+        seller: String(product.seller || product.manufacturerSellerId || 'single'),
       });
 
       if (available < wanted) {
@@ -434,7 +443,7 @@ router.post('/quote', async (req, res) => {
           color: chosenVariant?.color || selection.color || '',
           size: chosenVariant?.size || selection.size || '',
           available,
-          wanted
+          wanted,
         });
       }
     }
@@ -448,10 +457,12 @@ router.post('/quote', async (req, res) => {
     if (couponCode) {
       const found = await Coupon.findOne({ code: String(couponCode).toUpperCase(), isActive: true }).lean();
       const subtotal = lines.reduce((n, l) => n + l.price * l.quantity, 0);
-      if (found
-        && (!found.expiresAt || new Date(found.expiresAt) >= new Date())
-        && (!(found.minOrderAmount > 0) || subtotal >= found.minOrderAmount)
-        && (!(found.usageLimit > 0) || (found.usageCount || 0) < found.usageLimit)) {
+      if (
+        found &&
+        (!found.expiresAt || new Date(found.expiresAt) >= new Date()) &&
+        (!(found.minOrderAmount > 0) || subtotal >= found.minOrderAmount) &&
+        (!(found.usageLimit > 0) || (found.usageCount || 0) < found.usageLimit)
+      ) {
         coupon = found;
         if (found.discountType === 'percentage') {
           couponDiscount = (subtotal * found.discountValue) / 100;
@@ -474,8 +485,8 @@ router.post('/quote', async (req, res) => {
         ...charges,
         couponApplied: coupon ? coupon.code : null,
         couponNotApplied: !!couponCode && !coupon,
-        codFeeLabel: `Cash-on-delivery handling (flat ₹${COD_HANDLING_FEE} per order, non-refundable)`
-      }
+        codFeeLabel: `Cash-on-delivery handling (flat ₹${COD_HANDLING_FEE} per order, non-refundable)`,
+      },
     });
   } catch (error) {
     console.error('Quote error:', error);
@@ -487,7 +498,7 @@ router.get('/:id', verifyToken, async (req, res) => {
   try {
     const order = await Order.findOne({
       _id: req.params.id,
-      user: req.user._id
+      user: req.user._id,
     })
       .populate('items.product', 'title images price brand')
       .populate('seller', 'storeName storeLogo')
@@ -517,8 +528,9 @@ router.get('/:id', verifyToken, async (req, res) => {
  */
 router.get('/:id/charge-summary', verifyToken, async (req, res) => {
   try {
-    const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
-      .select('orderNumber subtotal deliveryCharge platformFee codFee couponDiscount totalAmount paymentMethod paymentStatus orderStatus');
+    const order = await Order.findOne({ _id: req.params.id, user: req.user._id }).select(
+      'orderNumber subtotal deliveryCharge platformFee codFee couponDiscount totalAmount paymentMethod paymentStatus orderStatus'
+    );
     if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
 
     const refundable = refundableAmount(order);
@@ -530,14 +542,15 @@ router.get('/:id/charge-summary', verifyToken, async (req, res) => {
         platformFee: order.platformFee,
         codFee: order.codFee || 0,
         couponDiscount: order.couponDiscount || 0,
-        totalAmount: order.totalAmount
+        totalAmount: order.totalAmount,
       },
       paymentMethod: order.paymentMethod,
       refundableAmount: refundable,
       nonRefundableCodFee: Math.max(0, (order.totalAmount || 0) - refundable),
-      note: order.paymentMethod === 'cod' && (order.codFee || 0) > 0
-        ? `This order includes a flat ₹${order.codFee} cash-handling charge. It is not refunded on a return; the items are.`
-        : undefined
+      note:
+        order.paymentMethod === 'cod' && (order.codFee || 0) > 0
+          ? `This order includes a flat ₹${order.codFee} cash-handling charge. It is not refunded on a return; the items are.`
+          : undefined,
     });
   } catch (error) {
     console.error('Charge summary error:', error);
@@ -551,7 +564,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
 
     const order = await Order.findOne({
       _id: req.params.id,
-      user: req.user._id
+      user: req.user._id,
     });
 
     if (!order) {
@@ -575,7 +588,6 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
     // Return the goods to the exact colour/size they came from.
     await restoreStockForOrder(order, req.app.get('io'), { reason: 'cancellation' });
 
-
     try {
       const withBuyer = await Order.findById(order._id).populate('user', 'email name');
       if (withBuyer?.user?.email) {
@@ -587,7 +599,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Order cancelled successfully.',
-      order
+      order,
     });
   } catch (error) {
     console.error('Cancel order error:', error);
@@ -601,7 +613,7 @@ router.post('/:id/return', verifyToken, async (req, res) => {
 
     const order = await Order.findOne({
       _id: req.params.id,
-      user: req.user._id
+      user: req.user._id,
     });
 
     if (!order) {
@@ -625,7 +637,6 @@ router.post('/:id/return', verifyToken, async (req, res) => {
     order.returnReason = reason || 'Return requested by user';
     await order.save();
 
-
     try {
       const withBuyer = await Order.findById(order._id).populate('user', 'email name');
       if (withBuyer?.user?.email) {
@@ -637,7 +648,7 @@ router.post('/:id/return', verifyToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Return request submitted successfully.',
-      order
+      order,
     });
   } catch (error) {
     console.error('Return order error:', error);
@@ -648,7 +659,7 @@ router.post('/:id/return', verifyToken, async (req, res) => {
 router.post('/:id/review', verifyToken, async (req, res) => {
   try {
     const { rating, review, productId } = req.body;
-    
+
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5.' });
     }
@@ -668,7 +679,7 @@ router.post('/:id/review', verifyToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    const existingReview = product.ratings.find(r => r.user.toString() === req.user._id.toString());
+    const existingReview = product.ratings.find((r) => r.user.toString() === req.user._id.toString());
     if (existingReview) {
       existingReview.rating = rating;
       existingReview.review = review || '';
@@ -678,7 +689,7 @@ router.post('/:id/review', verifyToken, async (req, res) => {
         user: req.user._id,
         rating,
         review: review || '',
-        createdAt: new Date()
+        createdAt: new Date(),
       });
       product.totalReviews = (product.totalReviews || 0) + 1;
     }
@@ -719,12 +730,18 @@ router.post('/:id/review', verifyToken, async (req, res) => {
       }
     } catch (rateErr) {
       // A stale display average must not refuse the customer's review.
-      console.error(JSON.stringify({ event: 'seller_rating_recompute_failed', message: String(rateErr.message).slice(0, 160) }));
+      console.error(
+        JSON.stringify({ event: 'seller_rating_recompute_failed', message: String(rateErr.message).slice(0, 160) })
+      );
     }
-    
+
     await product.save();
 
-    res.json({ success: true, message: existingReview ? 'Review updated.' : 'Review submitted.', product: { totalRatings: product.totalRatings, totalReviews: product.totalReviews } });
+    res.json({
+      success: true,
+      message: existingReview ? 'Review updated.' : 'Review submitted.',
+      product: { totalRatings: product.totalRatings, totalReviews: product.totalReviews },
+    });
   } catch (error) {
     console.error('Review error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });

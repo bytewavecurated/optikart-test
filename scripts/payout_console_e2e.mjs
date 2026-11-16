@@ -35,10 +35,15 @@ const call = async (p, { t, b, m } = {}) => {
   const res = await fetch(API + p, {
     method: m || (b ? 'POST' : 'GET'),
     headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) },
-    body: b ? JSON.stringify(b) : undefined
+    body: b ? JSON.stringify(b) : undefined,
   });
   const text = await res.text();
-  let json = null; try { json = JSON.parse(text); } catch { /* html */ }
+  let json = null;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    /* html */
+  }
   return { status: res.status, json, text };
 };
 const login = async (p, email, password) => (await call(p, { b: { email, password } })).json?.token;
@@ -91,12 +96,13 @@ async function main() {
   const customer = await login('/auth/login', 'demo@optikart.com', 'Demo123@');
   const my = (await call('/delivery-partner/me', { t: partner })).json?.data || {};
   const partnerId = my.partner?._id;
-  if (!check('this suite can reach its partner and the desk roles', !!partnerId && !!seller && !!customer)) return finish();
+  if (!check('this suite can reach its partner and the desk roles', !!partnerId && !!seller && !!customer))
+    return finish();
 
   await call('/delivery-partner/location', { t: partner, b: { latitude: 19.076, longitude: 72.877 } });
   await call('/delivery-partner/availability', { t: partner, b: { isAvailable: true }, m: 'PUT' });
 
-  const products = ((await call('/products?category=sunglasses&limit=6')).json?.products) || [];
+  const products = (await call('/products?category=sunglasses&limit=6')).json?.products || [];
   let available = Number(my.availableBalance ?? 0);
   for (let attempt = 0; attempt < 12 && available < 100; attempt += 1) {
     const product = products[attempt % Math.max(1, products.length)];
@@ -106,11 +112,15 @@ async function main() {
       b: {
         items: [{ product: product._id, quantity: 1 }],
         shippingAddress: {
-          name: 'Console Fund', phone: `98${String(Date.now()).slice(-8)}`,
-          street: '4 Linking Road', city: 'Mumbai', state: 'Maharashtra', pincode: '400050'
+          name: 'Console Fund',
+          phone: `98${String(Date.now()).slice(-8)}`,
+          street: '4 Linking Road',
+          city: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400050',
         },
-        paymentMethod: 'cod'
-      }
+        paymentMethod: 'cod',
+      },
     });
     const order = ((await call('/orders?limit=1', { t: customer })).json?.orders || [])[0];
     if (!order) break;
@@ -128,7 +138,9 @@ async function main() {
   // Withdraw ₹50 when the daily rule allows it; otherwise settle the row
   // `partner_flow_e2e.mjs` queued, so the settlement half runs either way.
   let queuedAmount = 0;
-  const withdrawnBefore = Number(((await call('/delivery-partner/me', { t: partner })).json?.data || {}).totalWithdrawn ?? 0);
+  const withdrawnBefore = Number(
+    ((await call('/delivery-partner/me', { t: partner })).json?.data || {}).totalWithdrawn ?? 0
+  );
   if (available >= 50) {
     const wd = await call('/delivery-partner/withdraw', { t: partner, b: { amount: 50 } });
     if (wd.json?.data?.status === 'awaiting_settlement') {
@@ -140,10 +152,14 @@ async function main() {
   }
 
   const queue = await call('/delivery-partner/payouts/pending', { t: admin });
-  check('the queue endpoint answers the desk',
-    queue.status === 200 && Array.isArray(queue.json?.withdrawals)
-      && typeof queue.json?.count === 'number' && typeof queue.json?.totalValue === 'number',
-    JSON.stringify({ status: queue.status, count: queue.json?.count }).slice(0, 90));
+  check(
+    'the queue endpoint answers the desk',
+    queue.status === 200 &&
+      Array.isArray(queue.json?.withdrawals) &&
+      typeof queue.json?.count === 'number' &&
+      typeof queue.json?.totalValue === 'number',
+    JSON.stringify({ status: queue.status, count: queue.json?.count }).slice(0, 90)
+  );
 
   const stranger = await call('/delivery-partner/payouts/pending', { t: partner });
   check('a partner cannot read the desk queue', stranger.status === 403, `status ${stranger.status}`);
@@ -152,8 +168,9 @@ async function main() {
   const anon = await call('/delivery-partner/payouts/pending', {});
   check('and nothing is readable without a session', anon.status === 401, `status ${anon.status}`);
 
-  const row = (queue.json?.withdrawals || []).find((w) => queuedAmount && Number(w.amount) === queuedAmount)
-    || (queue.json?.withdrawals || [])[0];
+  const row =
+    (queue.json?.withdrawals || []).find((w) => queuedAmount && Number(w.amount) === queuedAmount) ||
+    (queue.json?.withdrawals || [])[0];
   if (!row) {
     // Not "nothing to do". With two suites withdrawing against the same database,
     // an empty queue here means neither managed to queue anything, which is the
@@ -163,52 +180,79 @@ async function main() {
     return finish();
   }
 
-  check('a queued row carries what a payer needs to act',
+  check(
+    'a queued row carries what a payer needs to act',
     !!row.withdrawalId && !!row.partner?.id && Number(row.amount) >= 0 && !!row.requestedAt,
-    JSON.stringify({ id: row.withdrawalId, amount: row.amount }).slice(0, 100));
-  check('bank details are present or the row is marked unpayable-by-bank',
-    row.bank !== undefined, JSON.stringify(row.bank || {}).slice(0, 110));
-  check('totalValue matches what the rows add up to',
-    Math.round((queue.json.withdrawals || []).reduce((n, w) => n + Number(w.amount || 0), 0) * 100) / 100
-      === Math.round(Number(queue.json.totalValue) * 100) / 100,
-    `${queue.json.totalValue} vs sum of ${queue.json.withdrawals?.length} rows`);
+    JSON.stringify({ id: row.withdrawalId, amount: row.amount }).slice(0, 100)
+  );
+  check(
+    'bank details are present or the row is marked unpayable-by-bank',
+    row.bank !== undefined,
+    JSON.stringify(row.bank || {}).slice(0, 110)
+  );
+  check(
+    'totalValue matches what the rows add up to',
+    Math.round((queue.json.withdrawals || []).reduce((n, w) => n + Number(w.amount || 0), 0) * 100) / 100 ===
+      Math.round(Number(queue.json.totalValue) * 100) / 100,
+    `${queue.json.totalValue} vs sum of ${queue.json.withdrawals?.length} rows`
+  );
 
   /* a settlement attempt on a row we do not own must fail, and must fail safe */
   const forged = await call('/delivery-partner/payouts/507f1f77bcf86cd799439011/settle', {
-    t: admin, b: { partnerId: row.partner.id, reference: 'UTR000000000000' }
+    t: admin,
+    b: { partnerId: row.partner.id, reference: 'UTR000000000000' },
   });
-  check('settling an id that is not a real row fails instead of writing anyway',
-    forged.status === 400 || forged.status === 404, `status ${forged.status}`);
+  check(
+    'settling an id that is not a real row fails instead of writing anyway',
+    forged.status === 400 || forged.status === 404,
+    `status ${forged.status}`
+  );
 
   const noRef = await call(`/delivery-partner/payouts/${row.withdrawalId}/settle`, {
-    t: admin, b: { partnerId: row.partner.id }
+    t: admin,
+    b: { partnerId: row.partner.id },
   });
-  check('settling without a bank reference is refused',
-    noRef.status === 400 && noRef.json?.needsReference === true, String(noRef.text).slice(0, 120));
+  check(
+    'settling without a bank reference is refused',
+    noRef.status === 400 && noRef.json?.needsReference === true,
+    String(noRef.text).slice(0, 120)
+  );
 
   const still = await call('/delivery-partner/payouts/pending', { t: admin });
-  check('a refused settle leaves the row queued and unchanged',
+  check(
+    'a refused settle leaves the row queued and unchanged',
     (still.json?.withdrawals || []).some((w) => w.withdrawalId === row.withdrawalId),
-    `count after refusal: ${still.json?.count}`);
+    `count after refusal: ${still.json?.count}`
+  );
 
   const REF = 'UTR9182736455061';
   const ok = await call(`/delivery-partner/payouts/${row.withdrawalId}/settle`, {
-    t: admin, b: { partnerId: row.partner.id, reference: REF, note: 'NEFT at 18:20' }
+    t: admin,
+    b: { partnerId: row.partner.id, reference: REF, note: 'NEFT at 18:20' },
   });
-  check('settling with a typed reference succeeds',
-    ok.status === 200 && ok.json?.success === true, String(ok.text).slice(0, 120));
+  check(
+    'settling with a typed reference succeeds',
+    ok.status === 200 && ok.json?.success === true,
+    String(ok.text).slice(0, 120)
+  );
 
   const me = (await call('/delivery-partner/me', { t: partner })).json?.data || {};
-  const stored = ((me.partner?.withdrawals) || []).slice(-1)[0] || {};
-  check('the ledger holds the reference a person typed - never a generated id',
+  const stored = (me.partner?.withdrawals || []).slice(-1)[0] || {};
+  check(
+    'the ledger holds the reference a person typed - never a generated id',
     !/^payout_\d+$/.test(String(stored.payoutId || '')),
-    `payoutId=${stored.payoutId}`);
+    `payoutId=${stored.payoutId}`
+  );
 
   const twice = await call(`/delivery-partner/payouts/${row.withdrawalId}/settle`, {
-    t: admin, b: { partnerId: row.partner.id, reference: 'UTR1111111111111' }
+    t: admin,
+    b: { partnerId: row.partner.id, reference: 'UTR1111111111111' },
   });
-  check('settling twice is refused rather than paid twice',
-    twice.json?.alreadySettled === true || twice.status === 400, JSON.stringify(twice.json || {}).slice(0, 110));
+  check(
+    'settling twice is refused rather than paid twice',
+    twice.json?.alreadySettled === true || twice.status === 400,
+    JSON.stringify(twice.json || {}).slice(0, 110)
+  );
 
   return finish();
 }
@@ -223,4 +267,7 @@ function finish() {
   }
 }
 
-main().catch((e) => { console.error('SCRIPT ERROR', e); process.exitCode = 2; });
+main().catch((e) => {
+  console.error('SCRIPT ERROR', e);
+  process.exitCode = 2;
+});

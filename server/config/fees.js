@@ -92,9 +92,7 @@ export const quoteCharges = ({ lines = [], paymentMethod = 'online', couponDisco
     // A discount is shared in proportion to what each shop's part of the basket
     // is worth, the same way the order route splits it, so the last group cannot
     // be handed a rounding remainder nobody agreed to.
-    g.discount = subtotal > 0 && couponDiscount > 0
-      ? Math.round(Number(couponDiscount) * (g.subtotal / subtotal))
-      : 0;
+    g.discount = subtotal > 0 && couponDiscount > 0 ? Math.round(Number(couponDiscount) * (g.subtotal / subtotal)) : 0;
     g.discount = Math.min(g.discount, g.subtotal + g.delivery + g.platformFee);
     g.total = Math.max(0, g.subtotal + g.delivery + g.platformFee - g.discount);
     // The cash-handling charge rides on one document of the purchase, never one
@@ -113,8 +111,13 @@ export const quoteCharges = ({ lines = [], paymentMethod = 'online', couponDisco
 
   return {
     groups: groupList.map((g) => ({
-      seller: g.seller, subtotal: g.subtotal, deliveryCharges: g.delivery,
-      platformFee: g.platformFee, codFee: g.codFee, discount: g.discount, total: g.total + g.codFee
+      seller: g.seller,
+      subtotal: g.subtotal,
+      deliveryCharges: g.delivery,
+      platformFee: g.platformFee,
+      codFee: g.codFee,
+      discount: g.discount,
+      total: g.total + g.codFee,
     })),
     subtotal,
     deliveryCharges: deliveryTotal,
@@ -131,8 +134,8 @@ export const quoteCharges = ({ lines = [], paymentMethod = 'online', couponDisco
       { key: 'delivery', label: `Delivery charges (${itemCount} x ₹${DELIVERY_PER_ITEM})`, amount: deliveryTotal },
       { key: 'platformFee', label: `Platform fee (${PLATFORM_FEE_PERCENT}%)`, amount: platformTotal },
       ...(codHandlingFee ? [{ key: 'codFee', label: 'Cash-on-delivery handling', amount: codHandlingFee }] : []),
-      ...(discountAllocated ? [{ key: 'discount', label: 'Coupon discount', amount: -discountAllocated }] : [])
-    ]
+      ...(discountAllocated ? [{ key: 'discount', label: 'Coupon discount', amount: -discountAllocated }] : []),
+    ],
   };
 };
 

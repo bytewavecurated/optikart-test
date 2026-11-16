@@ -25,7 +25,7 @@ const ProductVerification = () => {
       setLoading(true);
       const [productsRes, statsRes] = await Promise.all([
         adminApi.getPendingProducts(filters),
-        adminApi.getVerificationStats()
+        adminApi.getVerificationStats(),
       ]);
 
       if (productsRes.data.success) {
@@ -36,7 +36,7 @@ const ProductVerification = () => {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      toastError(error, "Failed to load data");
+      toastError(error, 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ const ProductVerification = () => {
         toast.error(res.data.error || 'Failed to verify product');
       }
     } catch (error) {
-      toastError(error, "Failed to verify product");
+      toastError(error, 'Failed to verify product');
     }
   };
 
@@ -77,7 +77,7 @@ const ProductVerification = () => {
         toast.error(res.data.error || 'Failed to reject product');
       }
     } catch (error) {
-      toastError(error, "Failed to reject product");
+      toastError(error, 'Failed to reject product');
     }
   };
 
@@ -106,7 +106,14 @@ const ProductVerification = () => {
 
         {/* Stats */}
         {stats && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px',
+              marginBottom: '24px',
+            }}
+          >
             <div className="card" style={{ padding: '20px' }}>
               <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Pending</div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--warning)' }}>{stats.pending}</div>
@@ -116,11 +123,15 @@ const ProductVerification = () => {
               <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--success)' }}>{stats.verified}</div>
             </div>
             <div className="card" style={{ padding: '20px' }}>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Needs Correction</div>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                Needs Correction
+              </div>
               <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--danger)' }}>{stats.data_incorrect}</div>
             </div>
             <div className="card" style={{ padding: '20px' }}>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Total Products</div>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                Total Products
+              </div>
               <div style={{ fontSize: '32px', fontWeight: 700 }}>{stats.total}</div>
             </div>
           </div>
@@ -188,14 +199,20 @@ const ProductVerification = () => {
                   </p>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
-                      onClick={() => { setSelectedProduct(product); setAction('verify'); }}
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setAction('verify');
+                      }}
                       className="btn btn-primary btn-sm"
                       style={{ flex: 1 }}
                     >
                       <FiCheck size={14} /> Verify
                     </button>
                     <button
-                      onClick={() => { setSelectedProduct(product); setAction('reject'); }}
+                      onClick={() => {
+                        setSelectedProduct(product);
+                        setAction('reject');
+                      }}
                       className="btn btn-danger btn-sm"
                       style={{ flex: 1 }}
                     >
@@ -210,7 +227,20 @@ const ProductVerification = () => {
 
         {/* Verification Modal */}
         {action === 'verify' && selectedProduct && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+            }}
+          >
             <div className="card" style={{ padding: '24px', maxWidth: '500px', width: '90%' }}>
               <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Verify Product</h3>
               <p style={{ marginBottom: '16px' }}>Are you sure you want to verify "{selectedProduct.title}"?</p>
@@ -228,7 +258,13 @@ const ProductVerification = () => {
                 <button onClick={handleVerify} className="btn btn-primary" style={{ flex: 1 }}>
                   Verify Product
                 </button>
-                <button onClick={() => { setAction(null); setSelectedProduct(null); }} className="btn btn-outline">
+                <button
+                  onClick={() => {
+                    setAction(null);
+                    setSelectedProduct(null);
+                  }}
+                  className="btn btn-outline"
+                >
                   Cancel
                 </button>
               </div>
@@ -238,7 +274,20 @@ const ProductVerification = () => {
 
         {/* Rejection Modal */}
         {action === 'reject' && selectedProduct && (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+            }}
+          >
             <div className="card" style={{ padding: '24px', maxWidth: '500px', width: '90%' }}>
               <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Reject Product</h3>
               <p style={{ marginBottom: '16px' }}>Please provide a reason for rejecting "{selectedProduct.title}":</p>
@@ -257,7 +306,13 @@ const ProductVerification = () => {
                 <button onClick={handleReject} className="btn btn-danger" style={{ flex: 1 }}>
                   Reject Product
                 </button>
-                <button onClick={() => { setAction(null); setSelectedProduct(null); }} className="btn btn-outline">
+                <button
+                  onClick={() => {
+                    setAction(null);
+                    setSelectedProduct(null);
+                  }}
+                  className="btn btn-outline"
+                >
                   Cancel
                 </button>
               </div>

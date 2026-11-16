@@ -35,7 +35,9 @@ export default class ErrorBoundary extends React.Component {
             <button className="btn btn-primary" onClick={() => this.setState({ hasError: false, message: '' })}>
               Try again
             </button>
-            <a className="btn btn-outline" href="/">Back to Home</a>
+            <a className="btn btn-outline" href="/">
+              Back to Home
+            </a>
           </div>
         </div>
       </div>

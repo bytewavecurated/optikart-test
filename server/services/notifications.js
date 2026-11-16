@@ -24,9 +24,10 @@ const emit = (io, room, payload) => {
   }
 };
 
-const admins = async () => User.find({ role: { $in: ADMIN_ROLES }, isActive: { $ne: false } })
-  .select('_id name email')
-  .lean();
+const admins = async () =>
+  User.find({ role: { $in: ADMIN_ROLES }, isActive: { $ne: false } })
+    .select('_id name email')
+    .lean();
 
 /**
  * Tell the operations desk something needs them, or has happened.
@@ -41,9 +42,15 @@ export const notifyAdmins = async ({ title, message, type = 'system', data = {},
     return { success: false, delivered: 0, reason: 'no_active_admin' };
   }
 
-  const created = await Notification.insertMany(targets.map((u) => ({
-    user: u._id, type, title, message, data
-  })));
+  const created = await Notification.insertMany(
+    targets.map((u) => ({
+      user: u._id,
+      type,
+      title,
+      message,
+      data,
+    }))
+  );
 
   for (const doc of created) emit(io, `user_${doc.user}`, { ...doc.toObject(), _id: doc._id });
   return { success: true, delivered: created.length };
@@ -58,7 +65,7 @@ export const notifyAdmins = async ({ title, message, type = 'system', data = {},
  * writes a row no read path can ever return - which is silent, because the
  * writer succeeds.
  */
-export const recipientFieldFor = (kind) => ({ user: 'user', seller: 'seller', partner: 'partner' }[kind]);
+export const recipientFieldFor = (kind) => ({ user: 'user', seller: 'seller', partner: 'partner' })[kind];
 
 /** The read-side scope for whoever is asking. */
 export const recipientScopeFor = (principal) => {

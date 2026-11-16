@@ -23,7 +23,7 @@ const SellerInventoryAnalytics = () => {
       setLoading(true);
       const [analyticsRes, healthRes] = await Promise.all([
         sellerApi.getInventoryAnalytics(dateRange),
-        sellerApi.getInventoryHealth()
+        sellerApi.getInventoryHealth(),
       ]);
 
       if (analyticsRes.data.success) {
@@ -34,7 +34,7 @@ const SellerInventoryAnalytics = () => {
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      toastError(error, "Failed to load analytics");
+      toastError(error, 'Failed to load analytics');
     } finally {
       setLoading(false);
     }
@@ -77,14 +77,18 @@ const SellerInventoryAnalytics = () => {
       <div className="container page-wrapper">
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>Inventory Analytics</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Monitor stock trends, fast/slow-moving items, and inventory health</p>
+          <p style={{ color: 'var(--text-secondary)' }}>
+            Monitor stock trends, fast/slow-moving items, and inventory health
+          </p>
         </div>
 
         {/* Date Range Filter */}
         <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'end', flexWrap: 'wrap' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Start Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                Start Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -93,7 +97,9 @@ const SellerInventoryAnalytics = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>End Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                End Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -101,12 +107,21 @@ const SellerInventoryAnalytics = () => {
                 onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
               />
             </div>
-            <button onClick={fetchAnalytics} className="btn btn-primary">Apply Filter</button>
+            <button onClick={fetchAnalytics} className="btn btn-primary">
+              Apply Filter
+            </button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            marginBottom: '24px',
+          }}
+        >
           <div className="card" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
               <FiPackage size={24} color="var(--primary)" />
@@ -134,16 +149,34 @@ const SellerInventoryAnalytics = () => {
           {healthScore && (
             <div className="card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                <FiCheckCircle size={24} color={healthScore.score >= 70 ? 'var(--success)' : healthScore.score >= 50 ? 'var(--warning)' : 'var(--danger)'} />
+                <FiCheckCircle
+                  size={24}
+                  color={
+                    healthScore.score >= 70
+                      ? 'var(--success)'
+                      : healthScore.score >= 50
+                        ? 'var(--warning)'
+                        : 'var(--danger)'
+                  }
+                />
                 <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Health Score</span>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 700 }}>{healthScore.score}% ({healthScore.grade})</div>
+              <div style={{ fontSize: '32px', fontWeight: 700 }}>
+                {healthScore.score}% ({healthScore.grade})
+              </div>
             </div>
           )}
         </div>
 
         {/* Stock Distribution */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '24px',
+            marginBottom: '24px',
+          }}
+        >
           <div className="card" style={{ padding: '20px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Stock Distribution</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -171,29 +204,46 @@ const SellerInventoryAnalytics = () => {
           <div className="card" style={{ padding: '20px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Category Distribution</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {Object.entries(categoryDistribution).slice(0, 5).map(([category, data]) => (
-                <div key={category} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ textTransform: 'capitalize' }}>{category}</span>
-                  <span style={{ fontWeight: 600 }}>{data.count} products</span>
-                </div>
-              ))}
+              {Object.entries(categoryDistribution)
+                .slice(0, 5)
+                .map(([category, data]) => (
+                  <div
+                    key={category}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <span style={{ textTransform: 'capitalize' }}>{category}</span>
+                    <span style={{ fontWeight: 600 }}>{data.count} products</span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
 
         {/* Fast/Slow Moving Items */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '24px',
+            marginBottom: '24px',
+          }}
+        >
           <div className="card" style={{ padding: '20px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', color: 'var(--success)' }}>
               <FiTrendingUp style={{ marginRight: '8px' }} />
               Fast Moving Items
             </h3>
             {fastMoving.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>No fast-moving items</p>
+              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+                No fast-moving items
+              </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {fastMoving.slice(0, 5).map((item, index) => (
-                  <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                  <div
+                    key={index}
+                    style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}
+                  >
                     <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                       {item.avgDailySales.toFixed(1)} units/day · {item.quantitySold} sold
@@ -210,11 +260,16 @@ const SellerInventoryAnalytics = () => {
               Slow Moving Items
             </h3>
             {slowMoving.length === 0 ? (
-              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>No slow-moving items</p>
+              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+                No slow-moving items
+              </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {slowMoving.slice(0, 5).map((item, index) => (
-                  <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                  <div
+                    key={index}
+                    style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}
+                  >
                     <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                       {item.avgDailySales.toFixed(2)} units/day · Last sold {item.daysSinceLastSale}d ago
@@ -235,7 +290,10 @@ const SellerInventoryAnalytics = () => {
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '12px' }}>
               {deadStock.slice(0, 6).map((item, index) => (
-                <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                <div
+                  key={index}
+                  style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}
+                >
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.product.title}</div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                     No sales in {item.daysSinceLastSale} days

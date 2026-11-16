@@ -17,7 +17,7 @@ const revokedSessionSchema = new mongoose.Schema(
     key: { type: String, required: true, unique: true },
     role: { type: String, default: 'user' },
     revokedAt: { type: Date, default: Date.now },
-    expiresAt: { type: Date, required: true }
+    expiresAt: { type: Date, required: true },
   },
   { versionKey: false }
 );

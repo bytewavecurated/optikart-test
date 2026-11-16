@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
   secure: false,
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
+    pass: process.env.SMTP_PASS,
+  },
 });
 
 export const sendOTP = async (email, otp, type = 'login') => {
@@ -18,7 +18,7 @@ export const sendOTP = async (email, otp, type = 'login') => {
     login: 'Your Login OTP',
     register: 'Your Registration OTP',
     reset: 'Password Reset OTP',
-    phone: 'Phone Verification OTP'
+    phone: 'Phone Verification OTP',
   };
 
   const mailOptions = {
@@ -39,7 +39,7 @@ export const sendOTP = async (email, otp, type = 'login') => {
           <p style="color: #999; font-size: 14px;">If you didn't request this, please ignore this email.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -73,7 +73,7 @@ const chargeLines = (order) => {
     ['Delivery charges', order.deliveryCharge, false],
     ['Platform fee', order.platformFee, false],
     ['Cash-on-delivery handling', order.codFee, false],
-    ['Coupon discount', order.couponDiscount, true]
+    ['Coupon discount', order.couponDiscount, true],
   ].filter(([label, value]) => Number(value) > 0);
 
   const body = rows
@@ -126,7 +126,7 @@ export const sendOrderConfirmation = async (email, order) => {
           <p style="color: #666;">We'll notify you when your order is shipped.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -158,7 +158,7 @@ export const sendPickupAlert = async (email, pickupDetails) => {
           <p style="color: #666;">Please ensure the package is ready for pickup.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -189,7 +189,7 @@ export const sendPasswordReset = async (email, otp) => {
           <p style="color: #999; font-size: 14px;">If you didn't request a password reset, please ignore this email.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -224,7 +224,7 @@ export const sendShippingUpdate = async (email, order) => {
           <p style="color: #666;">You'll receive another email when your order is delivered.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -260,7 +260,7 @@ export const sendDeliveryConfirmation = async (email, order) => {
           <p style="color: #666;">Thank you for shopping with us!</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -297,7 +297,7 @@ export const sendSellerOrderNotification = async (email, order, seller) => {
           <p style="color: #666;">Login to your seller dashboard to view full details.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -332,7 +332,7 @@ export const sendLowStockAlert = async (email, product, seller) => {
           <p style="color: #666;">Login to your seller dashboard to update inventory.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -346,7 +346,7 @@ export const sendLowStockAlert = async (email, product, seller) => {
 
 export const sendWishlistPriceDropAlert = async (email, product, user, oldPrice, newPrice) => {
   const discount = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
-  
+
   const mailOptions = {
     from: `"Eyewear Platform" <${process.env.SMTP_USER}>`,
     to: email,
@@ -369,7 +369,7 @@ export const sendWishlistPriceDropAlert = async (email, product, user, oldPrice,
           <p style="color: #666;">Don't miss out! Visit your wishlist to purchase now.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -413,7 +413,7 @@ export const sendReturnConfirmation = async (email, returnRequest) => {
           <p style="color: #666;">Questions? Contact our support team.</p>
         </div>
       </div>
-    `
+    `,
   };
 
   try {
@@ -438,7 +438,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
       to,
       subject,
       text: text || '',
-      html: html || `<p>${text || subject}</p>`
+      html: html || `<p>${text || subject}</p>`,
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -448,7 +448,6 @@ export const sendEmail = async ({ to, subject, text, html }) => {
     return { success: false, error: error.message };
   }
 };
-
 
 /**
  * Simple recipient/subject/body sender.
@@ -464,10 +463,10 @@ export const notify = async (to, subject, body) => {
     to,
     subject,
     text,
-    html: '<div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6">' + text.replace(/\n/g, '<br/>') + '</div>'
+    html:
+      '<div style="font-family:Arial,Helvetica,sans-serif;line-height:1.6">' + text.replace(/\n/g, '<br/>') + '</div>',
   });
 };
-
 
 // ---------------------------------------------------------------------------
 // Shared, restrained email shell.
@@ -506,7 +505,12 @@ const row = (label, value) =>
 export const sendProductUpdateNotification = async (email, product, changes, actorLabel = 'OptiKart team') => {
   const subject = `Listing updated - ${product.title}`;
   const rows = Object.entries(changes || {})
-    .map(([field, value]) => row(field.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()), value))
+    .map(([field, value]) =>
+      row(
+        field.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()),
+        value
+      )
+    )
     .join('');
   const html = emailShell(
     'Your listing was updated',
@@ -514,7 +518,14 @@ export const sendProductUpdateNotification = async (email, product, changes, act
     `<table role="presentation" style="width: 100%; border-collapse: collapse; background: #f7f8fa; border-radius: 8px; padding: 4px 12px;">${rows}</table>`,
     'Listing reference: ' + (product.sku || product.modelNumber || product._id)
   );
-  return sendEmail({ to: email, subject, html, text: `${subject}\n${Object.entries(changes || {}).map(([k, v]) => k + ': ' + v).join('\n')}` });
+  return sendEmail({
+    to: email,
+    subject,
+    html,
+    text: `${subject}\n${Object.entries(changes || {})
+      .map(([k, v]) => k + ': ' + v)
+      .join('\n')}`,
+  });
 };
 
 /**
@@ -548,15 +559,13 @@ const ORDER_STATUS_COPY = {
   delivered: ['Delivered', 'Your order has been delivered. We hope you love it.'],
   cancelled: ['Order cancelled', 'Your order has been cancelled. Any payment made is refunded to the original method.'],
   return_requested: ['Return requested', 'We have received your return request and it is being reviewed.'],
-  returned: ['Returned', 'Your return has been completed and the refund is on its way.']
+  returned: ['Returned', 'Your return has been completed and the refund is on its way.'],
 };
 
 export const sendOrderStatusNotification = async (email, order, status) => {
   const [title, blurb] = ORDER_STATUS_COPY[status] || ['Order update', `Your order is now marked as ${status}.`];
   const subject = `${title} - ${order.orderNumber || order.orderId || ''}`.trim();
-  const items = (order.items || [])
-    .map((i) => row(i.name || 'Item', `${i.quantity} x ${rupees(i.price)}`))
-    .join('');
+  const items = (order.items || []).map((i) => row(i.name || 'Item', `${i.quantity} x ${rupees(i.price)}`)).join('');
   const html = emailShell(
     title,
     blurb,

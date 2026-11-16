@@ -13,18 +13,11 @@ export const ORDER_STATUSES = [
   'delivered',
   'cancelled',
   'return_requested',
-  'returned'
+  'returned',
 ];
 
 // Statuses used for filter chips, in the order a shopper reads them.
-export const FILTER_STATUSES = [
-  'pending',
-  'confirmed',
-  'packed',
-  'in_transit',
-  'delivered',
-  'cancelled'
-];
+export const FILTER_STATUSES = ['pending', 'confirmed', 'packed', 'in_transit', 'delivered', 'cancelled'];
 
 // Lifecycle shown on tracking UIs.
 export const TRACK_FLOW = ['pending', 'confirmed', 'packed', 'picked_up', 'in_transit', 'delivered'];
@@ -38,7 +31,7 @@ export const STATUS_LABELS = {
   delivered: 'Delivered',
   cancelled: 'Cancelled',
   return_requested: 'Return requested',
-  returned: 'Returned'
+  returned: 'Returned',
 };
 
 export const statusLabel = (s) => STATUS_LABELS[s] || String(s || '').replace(/_/g, ' ');

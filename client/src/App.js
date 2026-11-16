@@ -117,8 +117,17 @@ const LoadingFallback = () => (
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const {
-    isAuthenticated, activeRole, user, seller, admin, staff, executive,
-    manufacturer, manufacturerSeller, deliveryPartner, loading
+    isAuthenticated,
+    activeRole,
+    user,
+    seller,
+    admin,
+    staff,
+    executive,
+    manufacturer,
+    manufacturerSeller,
+    deliveryPartner,
+    loading,
   } = useAuth();
 
   // Wait for auth initialization to complete
@@ -133,7 +142,16 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
    * from the identity the server returned at sign-in, and a session with no
    * identity behind it is treated as signed out.
    */
-  const sessionExists = !!(user || seller || admin || staff || executive || manufacturer || manufacturerSeller || deliveryPartner);
+  const sessionExists = !!(
+    user ||
+    seller ||
+    admin ||
+    staff ||
+    executive ||
+    manufacturer ||
+    manufacturerSeller ||
+    deliveryPartner
+  );
   const isAuth = isAuthenticated && sessionExists;
 
   if (!isAuth) {
@@ -176,7 +194,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     });
 
     if (hasRole) return children;
-    
+
     // Redirect based on role
     const currentPath = window.location.pathname;
     if (currentPath.startsWith('/seller')) {
@@ -198,25 +216,17 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-const SellerRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['seller']}>{children}</ProtectedRoute>
-);
+const SellerRoute = ({ children }) => <ProtectedRoute allowedRoles={['seller']}>{children}</ProtectedRoute>;
 
-const AdminRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
-);
+const AdminRoute = ({ children }) => <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>;
 
 /*
  * The account pages had no guard at all: signed out, /profile still painted the
  * profile shell - empty, but present - instead of asking for a sign-in.
  */
-const UserRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['user']}>{children}</ProtectedRoute>
-);
+const UserRoute = ({ children }) => <ProtectedRoute allowedRoles={['user']}>{children}</ProtectedRoute>;
 
-const StaffRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['staff']}>{children}</ProtectedRoute>
-);
+const StaffRoute = ({ children }) => <ProtectedRoute allowedRoles={['staff']}>{children}</ProtectedRoute>;
 
 function App() {
   return (
@@ -234,21 +244,119 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/seller/login" element={<SellerLogin />} />
         <Route path="/seller/register" element={<SellerRegister />} />
-        <Route path="/seller/dashboard" element={<SellerRoute><SellerDashboard /></SellerRoute>} />
-        <Route path="/seller/products" element={<SellerRoute><SellerProducts /></SellerRoute>} />
-        <Route path="/seller/orders" element={<SellerRoute><SellerOrders /></SellerRoute>} />
-        <Route path="/seller/analytics" element={<SellerRoute><SellerAnalytics /></SellerRoute>} />
-        <Route path="/seller/profile" element={<SellerRoute><SellerProfile /></SellerRoute>} />
-        <Route path="/seller/payouts" element={<SellerRoute><SellerPayouts /></SellerRoute>} />
-        <Route path="/seller/inventory" element={<SellerRoute><SellerInventory /></SellerRoute>} />
-        <Route path="/seller/stock" element={<SellerRoute><SellerStock /></SellerRoute>} />
-        <Route path="/seller/brand-stock" element={<SellerRoute><SellerBrandStock /></SellerRoute>} />
-        <Route path="/seller/returns" element={<SellerRoute><SellerReturns /></SellerRoute>} />
-        <Route path="/seller/inventory-analytics" element={<SellerRoute><SellerInventoryAnalytics /></SellerRoute>} />
-        <Route path="/seller/return-analytics" element={<SellerRoute><SellerReturnAnalytics /></SellerRoute>} />
-        <Route path="/seller/commission" element={<SellerRoute><SellerCommission /></SellerRoute>} />
+        <Route
+          path="/seller/dashboard"
+          element={
+            <SellerRoute>
+              <SellerDashboard />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/products"
+          element={
+            <SellerRoute>
+              <SellerProducts />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/orders"
+          element={
+            <SellerRoute>
+              <SellerOrders />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/analytics"
+          element={
+            <SellerRoute>
+              <SellerAnalytics />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/profile"
+          element={
+            <SellerRoute>
+              <SellerProfile />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/payouts"
+          element={
+            <SellerRoute>
+              <SellerPayouts />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/inventory"
+          element={
+            <SellerRoute>
+              <SellerInventory />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/stock"
+          element={
+            <SellerRoute>
+              <SellerStock />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/brand-stock"
+          element={
+            <SellerRoute>
+              <SellerBrandStock />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/returns"
+          element={
+            <SellerRoute>
+              <SellerReturns />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/inventory-analytics"
+          element={
+            <SellerRoute>
+              <SellerInventoryAnalytics />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/return-analytics"
+          element={
+            <SellerRoute>
+              <SellerReturnAnalytics />
+            </SellerRoute>
+          }
+        />
+        <Route
+          path="/seller/commission"
+          element={
+            <SellerRoute>
+              <SellerCommission />
+            </SellerRoute>
+          }
+        />
         <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<ManageUsers />} />
           <Route path="users/:id" element={<UserDetailView />} />
@@ -283,7 +391,14 @@ function App() {
         </Route>
         <Route path="/product/:productId/lenses" element={<LensSelection />} />
         <Route path="/staff/login" element={<StaffLogin />} />
-        <Route path="/staff" element={<StaffRoute><StaffLayout /></StaffRoute>}>
+        <Route
+          path="/staff"
+          element={
+            <StaffRoute>
+              <StaffLayout />
+            </StaffRoute>
+          }
+        >
           <Route index element={<StaffWorkspace view="overview" />} />
           <Route path="dashboard" element={<StaffWorkspace view="overview" />} />
           <Route path="blogs" element={<StaffWorkspace view="overview" />} />
@@ -299,10 +414,38 @@ function App() {
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
-        <Route path="/orders" element={<UserRoute><UserOrders /></UserRoute>} />
-        <Route path="/orders/:id" element={<UserRoute><OrderDetail /></UserRoute>} />
-        <Route path="/wishlist" element={<UserRoute><Wishlist /></UserRoute>} />
-        <Route path="/profile" element={<UserRoute><UserProfile /></UserRoute>} />
+        <Route
+          path="/orders"
+          element={
+            <UserRoute>
+              <UserOrders />
+            </UserRoute>
+          }
+        />
+        <Route
+          path="/orders/:id"
+          element={
+            <UserRoute>
+              <OrderDetail />
+            </UserRoute>
+          }
+        />
+        <Route
+          path="/wishlist"
+          element={
+            <UserRoute>
+              <Wishlist />
+            </UserRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <UserRoute>
+              <UserProfile />
+            </UserRoute>
+          }
+        />
         <Route path="/search" element={<SearchResults />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/products" element={<ProductsBrowse />} />
@@ -327,9 +470,30 @@ function App() {
         <Route path="/face-shape-guide" element={<FaceShapeGuide />} />
         <Route path="/lens-configuration/:productId" element={<LensConfiguration />} />
         <Route path="/delivery-partner/login" element={<DeliveryPartnerLogin />} />
-        <Route path="/delivery-partner/dashboard" element={<ProtectedRoute allowedRoles={['deliveryPartner']}><DeliveryPartnerDashboard /></ProtectedRoute>} />
-        <Route path="/delivery-partner/route-optimization" element={<ProtectedRoute allowedRoles={['deliveryPartner']}><DeliveryRouteOptimization /></ProtectedRoute>} />
-        <Route path="/orders/:orderId/return" element={<ProtectedRoute><CustomerReturnPortal /></ProtectedRoute>} />
+        <Route
+          path="/delivery-partner/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['deliveryPartner']}>
+              <DeliveryPartnerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/delivery-partner/route-optimization"
+          element={
+            <ProtectedRoute allowedRoles={['deliveryPartner']}>
+              <DeliveryRouteOptimization />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders/:orderId/return"
+          element={
+            <ProtectedRoute>
+              <CustomerReturnPortal />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/compare" element={<ProductCompare />} />
         <Route path="/coupons" element={<AvailableCoupons />} />
         <Route path="/brands/:brand" element={<BrandPage />} />
@@ -343,16 +507,72 @@ function App() {
         <Route path="/policy/privacy" element={<PrivacyPolicy />} />
         <Route path="/policy/epr" element={<EPRCompliance />} />
         <Route path="/executive/login" element={<ExecutiveLogin />} />
-        <Route path="/executive/dashboard" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveDashboard /></ProtectedRoute>} />
-        <Route path="/executive/deliveries" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="deliveries" /></ProtectedRoute>} />
-        <Route path="/executive/customers" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="customers" /></ProtectedRoute>} />
-        <Route path="/executive/reports" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="reports" /></ProtectedRoute>} />
-        <Route path="/executive/team" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="team" /></ProtectedRoute>} />
-        <Route path="/executive/delivery/:id" element={<ProtectedRoute allowedRoles={['executive']}><ExecutiveSection section="detail" /></ProtectedRoute>} />
+        <Route
+          path="/executive/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['executive']}>
+              <ExecutiveDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/executive/deliveries"
+          element={
+            <ProtectedRoute allowedRoles={['executive']}>
+              <ExecutiveSection section="deliveries" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/executive/customers"
+          element={
+            <ProtectedRoute allowedRoles={['executive']}>
+              <ExecutiveSection section="customers" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/executive/reports"
+          element={
+            <ProtectedRoute allowedRoles={['executive']}>
+              <ExecutiveSection section="reports" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/executive/team"
+          element={
+            <ProtectedRoute allowedRoles={['executive']}>
+              <ExecutiveSection section="team" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/executive/delivery/:id"
+          element={
+            <ProtectedRoute allowedRoles={['executive']}>
+              <ExecutiveSection section="detail" />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/manufacturer/login" element={<ManufacturerLogin />} />
-        <Route path="/manufacturer/dashboard" element={<ProtectedRoute allowedRoles={['manufacturer']}><ManufacturerDashboard /></ProtectedRoute>} />
+        <Route
+          path="/manufacturer/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['manufacturer']}>
+              <ManufacturerDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/manufacturer-seller/login" element={<ManufacturerSellerLogin />} />
-        <Route path="/manufacturer-seller/dashboard" element={<ProtectedRoute allowedRoles={['manufacturerSeller']}><ManufacturerSellerDashboard /></ProtectedRoute>} />
+        <Route
+          path="/manufacturer-seller/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['manufacturerSeller']}>
+              <ManufacturerSellerDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/sitemap" element={<Sitemap />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

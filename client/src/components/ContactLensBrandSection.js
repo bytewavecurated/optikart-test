@@ -116,12 +116,7 @@ export default function ContactLensBrandSection() {
       </div>
       <div style={styles.brandGrid}>
         {CONTACT_LENS_BRANDS.map((brand) => (
-          <Link
-            key={brand.name}
-            to={brand.link}
-            style={styles.brandCard}
-            className="brand-card"
-          >
+          <Link key={brand.name} to={brand.link} style={styles.brandCard} className="brand-card">
             <div style={styles.logoContainer}>
               {brand.logo ? (
                 <img
@@ -134,8 +129,20 @@ export default function ContactLensBrandSection() {
                   }}
                 />
               ) : null}
-              <span style={{ display: brand.logo ? 'none' : 'block', fontSize: '16px', fontWeight: 700, color: 'var(--primary)' }}>
-                {brand.name.split(/\s+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase()}
+              <span
+                style={{
+                  display: brand.logo ? 'none' : 'block',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  color: 'var(--primary)',
+                }}
+              >
+                {brand.name
+                  .split(/\s+/)
+                  .map((w) => w[0])
+                  .join('')
+                  .slice(0, 3)
+                  .toUpperCase()}
               </span>
             </div>
             <p style={styles.brandName}>{brand.name}</p>

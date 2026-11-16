@@ -30,8 +30,8 @@ router.get('/', async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error('Get help articles error:', error);
@@ -69,7 +69,7 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
       forRole: forRole || 'both',
       faq: faq || false,
       question: question || '',
-      answer: answer || ''
+      answer: answer || '',
     });
 
     await article.save();
@@ -77,7 +77,7 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Help article created successfully.',
-      article
+      article,
     });
   } catch (error) {
     console.error('Create help article error:', error);
@@ -108,7 +108,7 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
     res.json({
       success: true,
       message: 'Help article updated successfully.',
-      article
+      article,
     });
   } catch (error) {
     console.error('Update help article error:', error);
@@ -132,7 +132,7 @@ router.post('/contact', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Your message has been sent. We will get back to you soon.'
+      message: 'Your message has been sent. We will get back to you soon.',
     });
   } catch (error) {
     console.error('Contact form error:', error);

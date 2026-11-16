@@ -1,9 +1,6 @@
 import express from 'express';
 import { verifyToken, verifyDeliveryPartner } from '../middleware/auth.js';
-import {
-  optimizeRoute,
-  getRouteUpdates
-} from '../services/deliveryRouteOptimization.js';
+import { optimizeRoute, getRouteUpdates } from '../services/deliveryRouteOptimization.js';
 
 const router = express.Router();
 
@@ -40,7 +37,7 @@ router.get('/updates', verifyDeliveryPartner, async (req, res) => {
     if (!lat || !lon) {
       return res.status(400).json({
         success: false,
-        message: 'Latitude and longitude are required'
+        message: 'Latitude and longitude are required',
       });
     }
 

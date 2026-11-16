@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { FiPackage, FiTruck, FiMapPin, FiClock, FiCheckCircle, FiAlertCircle, FiUsers } from 'react-icons/fi';
-import { listOf, oneOf } from '../../services/apiResponse.js';;
+import { listOf, oneOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 
 const ExecutiveDashboard = () => {
@@ -22,14 +22,14 @@ const ExecutiveDashboard = () => {
     try {
       const [statsRes, deliveriesRes] = await Promise.all([
         executiveApi.getDashboardStats(),
-        executiveApi.getAssignedDeliveries()
+        executiveApi.getAssignedDeliveries(),
       ]);
-      
+
       setStats(oneOf(statsRes.data));
       setDeliveries(listOf(deliveriesRes.data));
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      toastError(error, "Failed to load dashboard data");
+      toastError(error, 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -54,16 +54,19 @@ const ExecutiveDashboard = () => {
       <Header />
       <div className="container page-wrapper">
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
-            Welcome, {executive?.name}
-          </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Executive Dashboard - {executive?.department}
-          </p>
+          <h1 style={{ fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>Welcome, {executive?.name}</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>Executive Dashboard - {executive?.department}</p>
         </div>
 
         {/* Stats Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '20px',
+            marginBottom: '32px',
+          }}
+        >
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <div style={{ padding: '12px', background: 'var(--primary-light)', borderRadius: 'var(--radius-md)' }}>
@@ -78,7 +81,13 @@ const ExecutiveDashboard = () => {
 
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '12px', background: 'var(--success-light, #e8f5e9)', borderRadius: 'var(--radius-md)' }}>
+              <div
+                style={{
+                  padding: '12px',
+                  background: 'var(--success-light, #e8f5e9)',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
                 <FiCheckCircle size={24} color="var(--success)" />
               </div>
               <div>
@@ -90,7 +99,13 @@ const ExecutiveDashboard = () => {
 
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '12px', background: 'var(--warning-light, #fff3e0)', borderRadius: 'var(--radius-md)' }}>
+              <div
+                style={{
+                  padding: '12px',
+                  background: 'var(--warning-light, #fff3e0)',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
                 <FiClock size={24} color="var(--warning)" />
               </div>
               <div>
@@ -102,7 +117,13 @@ const ExecutiveDashboard = () => {
 
           <div className="card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ padding: '12px', background: 'var(--danger-light, #ffebee)', borderRadius: 'var(--radius-md)' }}>
+              <div
+                style={{
+                  padding: '12px',
+                  background: 'var(--danger-light, #ffebee)',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
                 <FiAlertCircle size={24} color="var(--danger)" />
               </div>
               <div>
@@ -123,7 +144,9 @@ const ExecutiveDashboard = () => {
             <Link to="/executive/customers" className="btn btn-outline">
               <FiUsers /> Manage Customers
             </Link>
-            <Link to="/executive/team" className="btn btn-outline" style={{ marginLeft: 8 }}><FiUsers /> Desk team</Link>
+            <Link to="/executive/team" className="btn btn-outline" style={{ marginLeft: 8 }}>
+              <FiUsers /> Desk team
+            </Link>
             <Link to="/executive/reports" className="btn btn-outline">
               <FiPackage /> Generate Reports
             </Link>
@@ -153,7 +176,10 @@ const ExecutiveDashboard = () => {
                   {deliveries.map((delivery) => (
                     <tr key={delivery._id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '12px' }}>
-                        <Link to={`/executive/delivery/${delivery._id}`} style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                        <Link
+                          to={`/executive/delivery/${delivery._id}`}
+                          style={{ color: 'var(--primary)', fontWeight: 600 }}
+                        >
                           {delivery.orderNumber}
                         </Link>
                       </td>
@@ -165,7 +191,9 @@ const ExecutiveDashboard = () => {
                         </div>
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <span className={`badge badge-${delivery.status === 'delivered' ? 'success' : delivery.status === 'in-transit' ? 'warning' : 'default'}`}>
+                        <span
+                          className={`badge badge-${delivery.status === 'delivered' ? 'success' : delivery.status === 'in-transit' ? 'warning' : 'default'}`}
+                        >
                           {delivery.status}
                         </span>
                       </td>

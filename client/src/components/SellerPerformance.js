@@ -3,7 +3,7 @@ import { FiStar, FiTrendingUp, FiClock, FiRefreshCw, FiMessageSquare, FiAward, F
 
 const styles = {
   container: {
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
     background: 'var(--bg-white)',
     borderRadius: 'var(--radius-xs)',
     boxShadow: 'var(--shadow)',
@@ -250,8 +250,8 @@ export default function SellerPerformance({
         key={i}
         size={18}
         style={{
-          color: i <= Math.floor(rating) ? 'var(--warning)' : (i - 0.5 <= rating ? 'var(--warning)' : 'var(--border)'),
-          fill: i <= Math.floor(rating) ? 'var(--warning)' : (i - 0.5 <= rating ? 'var(--warning)' : 'none'),
+          color: i <= Math.floor(rating) ? 'var(--warning)' : i - 0.5 <= rating ? 'var(--warning)' : 'var(--border)',
+          fill: i <= Math.floor(rating) ? 'var(--warning)' : i - 0.5 <= rating ? 'var(--warning)' : 'none',
         }}
       />
     ));
@@ -261,9 +261,7 @@ export default function SellerPerformance({
     <div style={styles.container}>
       <div style={styles.header}>
         <div style={styles.sellerInfo}>
-          <div style={styles.avatar}>
-            {sellerName.charAt(0).toUpperCase()}
-          </div>
+          <div style={styles.avatar}>{sellerName.charAt(0).toUpperCase()}</div>
           <div>
             <div style={styles.sellerName}>{sellerName}</div>
             <div style={styles.sellerSince}>{since}</div>
@@ -278,12 +276,8 @@ export default function SellerPerformance({
       <div style={styles.ratingSection}>
         <div style={styles.ratingBig}>{rating.toFixed(1)}</div>
         <div style={styles.ratingMeta}>
-          <div style={styles.starsRow}>
-            {renderStars(rating)}
-          </div>
-          <div style={styles.totalRatings}>
-            {totalRatings.toLocaleString()} ratings
-          </div>
+          <div style={styles.starsRow}>{renderStars(rating)}</div>
+          <div style={styles.totalRatings}>{totalRatings.toLocaleString()} ratings</div>
         </div>
       </div>
 
@@ -296,10 +290,12 @@ export default function SellerPerformance({
             <div style={styles.metricContent}>
               <div style={styles.metricLabel}>{metric.label}</div>
               <div style={styles.metricValue}>{metric.value}</div>
-              <div style={{
-                ...styles.metricTrend,
-                ...(metric.trendUp ? styles.trendUp : styles.trendDown),
-              }}>
+              <div
+                style={{
+                  ...styles.metricTrend,
+                  ...(metric.trendUp ? styles.trendUp : styles.trendDown),
+                }}
+              >
                 <FiTrendingUp size={12} />
                 {metric.trend} vs last month
               </div>

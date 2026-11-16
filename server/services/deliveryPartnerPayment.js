@@ -42,7 +42,7 @@ export const availableBalance = (partner) => {
   const reserved = (partner.withdrawals || [])
     .filter((w) => PARTNER_PENDING_STATES.includes(w.status))
     .reduce((sum, w) => sum + Number(w.amount || 0), 0);
-  return Math.max(0, Math.round(((Number(partner.totalEarnings || 0) - withdrawn - reserved) * 100)) / 100);
+  return Math.max(0, Math.round((Number(partner.totalEarnings || 0) - withdrawn - reserved) * 100) / 100);
 };
 
 /**
@@ -58,7 +58,7 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
     if (partner.lastWithdrawalAt && new Date(partner.lastWithdrawalAt) >= todayStart) {
       return {
         success: false,
-        error: 'Only one withdrawal is allowed per day. Please try again tomorrow.'
+        error: 'Only one withdrawal is allowed per day. Please try again tomorrow.',
       };
     }
 
@@ -67,7 +67,7 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
       return {
         success: false,
         error: `₹50 minimum, and only ₹${available.toFixed(2)} is available to withdraw right now.`,
-        availableBalance: available
+        availableBalance: available,
       };
     }
 
@@ -86,7 +86,7 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
     if (process.env.RAZORPAY2_KEY_ID && process.env.RAZORPAY2_KEY_SECRET) {
       const rz2 = new Razorpay({
         key_id: process.env.RAZORPAY2_KEY_ID,
-        key_secret: process.env.RAZORPAY2_KEY_SECRET
+        key_secret: process.env.RAZORPAY2_KEY_SECRET,
       });
       const payout = await rz2.payouts.create({
         account_number: partner.bankDetails?.accountNumber,
@@ -95,7 +95,7 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
         currency: 'INR',
         mode: 'IMPS',
         purpose: 'payout',
-        notes: { partner: String(partnerId), delivery_id: deliveryId || '', platform_fee: String(platformFee) }
+        notes: { partner: String(partnerId), delivery_id: deliveryId || '', platform_fee: String(platformFee) },
       });
       payoutId = payout.id;
     }
@@ -116,7 +116,7 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
       settledAt: settled ? new Date() : null,
       settlementNote: settled
         ? 'Paid out by RazorpayX.'
-        : 'No RazorpayX credentials configured (or the transfer was rejected). Held as reserved until an admin settles it against a real bank transfer.'
+        : 'No RazorpayX credentials configured (or the transfer was rejected). Held as reserved until an admin settles it against a real bank transfer.',
     });
     await partner.save();
 
@@ -130,7 +130,7 @@ export const createDeliveryPayout = async (partner, amount, deliveryId) => {
       availableBalance: availableBalance(partner),
       message: settled
         ? 'Payout processed successfully'
-        : 'Withdrawal queued for settlement. The balance is reserved, but no money has left the platform yet.'
+        : 'Withdrawal queued for settlement. The balance is reserved, but no money has left the platform yet.',
     };
   } catch (error) {
     console.error('Error creating delivery payout:', error);
@@ -153,8 +153,10 @@ export const getDeliveryPartnerEarnings = async (partnerId, period = 'month') =>
     const delivered = await Order.find({
       assignedDeliveryPartner: partnerId,
       orderStatus: 'delivered',
-      deliveredAt: { $gte: startDate }
-    }).select('deliveredAt totalAmount deliveryFee deliveryDistanceKm orderId orderNumber').lean();
+      deliveredAt: { $gte: startDate },
+    })
+      .select('deliveredAt totalAmount deliveryFee deliveryDistanceKm orderId orderNumber')
+      .lean();
 
     const gross = delivered.reduce((sum, o) => sum + (o.deliveryFee || 0), 0);
     const distance = delivered.reduce((sum, o) => sum + (o.deliveryDistanceKm || 0), 0);
@@ -166,9 +168,7 @@ export const getDeliveryPartnerEarnings = async (partnerId, period = 'month') =>
         totalEarnings: gross,
         totalDeliveries: delivered.length,
         totalDistanceKm: Math.round(distance * 100) / 100,
-        averageEarningPerDelivery: delivered.length
-          ? Math.round((gross / delivered.length) * 100) / 100
-          : 0,
+        averageEarningPerDelivery: delivered.length ? Math.round((gross / delivered.length) * 100) / 100 : 0,
         platformFees,
         netEarnings: Math.round((gross - platformFees) * 100) / 100,
         // The order number, not just the id: a partner reconciling a week of runs
@@ -178,12 +178,12 @@ export const getDeliveryPartnerEarnings = async (partnerId, period = 'month') =>
           orderNumber: o.orderNumber,
           deliveredAt: o.deliveredAt,
           fee: o.deliveryFee || 0,
-          distanceKm: o.deliveryDistanceKm || 0
+          distanceKm: o.deliveryDistanceKm || 0,
         })),
         period,
         startDate: startDate.toISOString(),
-        endDate: new Date().toISOString()
-      }
+        endDate: new Date().toISOString(),
+      },
     };
   } catch (error) {
     console.error('Error getting delivery partner earnings:', error);
@@ -240,8 +240,8 @@ export const processWithdrawal = async (partnerOrId, amount) => {
         availableBalance: payout.availableBalance,
         message: settled
           ? 'Withdrawal processed. The amount has been paid out to your account.'
-          : `Withdrawal of ₹${value} is queued for settlement and your balance is reserved. An admin records the bank transfer reference when it is paid; you will see it move to Paid on the day that happens.`
-      }
+          : `Withdrawal of ₹${value} is queued for settlement and your balance is reserved. An admin records the bank transfer reference when it is paid; you will see it move to Paid on the day that happens.`,
+      },
     };
   } catch (error) {
     console.error('Error processing withdrawal:', error);
@@ -254,7 +254,7 @@ export default {
   calculatePlatformFee,
   createDeliveryPayout,
   getDeliveryPartnerEarnings,
-  processWithdrawal
+  processWithdrawal,
 };
 
 /**
@@ -274,7 +274,11 @@ export const settlePartnerWithdrawal = async ({ partnerId, withdrawalId, referen
   const row = (partner.withdrawals || []).id(withdrawalId);
   if (!row) return { success: false, error: 'Withdrawal not found for this partner.' };
   if (row.status === 'processed') {
-    return { success: false, alreadySettled: true, message: `Already settled${row.settledAt ? ` on ${row.settledAt.toISOString()}` : ''}.` };
+    return {
+      success: false,
+      alreadySettled: true,
+      message: `Already settled${row.settledAt ? ` on ${row.settledAt.toISOString()}` : ''}.`,
+    };
   }
 
   const cleanReference = String(reference || '').trim();
@@ -282,7 +286,8 @@ export const settlePartnerWithdrawal = async ({ partnerId, withdrawalId, referen
     return {
       success: false,
       needsReference: true,
-      error: 'A bank transfer reference (UTR) is required. Settling without one would put an untraceable payment in the partner history.'
+      error:
+        'A bank transfer reference (UTR) is required. Settling without one would put an untraceable payment in the partner history.',
     };
   }
 
@@ -308,7 +313,7 @@ export const settlePartnerWithdrawal = async ({ partnerId, withdrawalId, referen
       title: 'Withdrawal paid',
       message: `₹${row.netPaid} for your withdrawal of ₹${row.amount} was settled by the desk${cleanReference ? ` (reference ${cleanReference})` : ''}.`,
       type: 'payment',
-      data: { withdrawalId: String(row._id), amount: row.amount, netPaid: row.netPaid, reference: cleanReference }
+      data: { withdrawalId: String(row._id), amount: row.amount, netPaid: row.netPaid, reference: cleanReference },
     });
   } catch (payNoteErr) {
     console.error(JSON.stringify({ event: 'settle_notify_failed', message: String(payNoteErr.message).slice(0, 140) }));
@@ -317,7 +322,13 @@ export const settlePartnerWithdrawal = async ({ partnerId, withdrawalId, referen
   return {
     success: true,
     message: 'Withdrawal marked as settled.',
-    withdrawal: { id: String(row._id), amount: row.amount, payoutId: row.payoutId, status: row.status, settledAt: row.settledAt }
+    withdrawal: {
+      id: String(row._id),
+      amount: row.amount,
+      payoutId: row.payoutId,
+      status: row.status,
+      settledAt: row.settledAt,
+    },
   };
 };
 
@@ -335,11 +346,15 @@ export const pendingPartnerWithdrawals = async () => {
       rows.push({
         withdrawalId: String(w._id),
         partner: { id: String(partner._id), name: partner.name, phone: partner.phone, uniqueId: partner.uniqueId },
-        bank: { accountNumber: partner.bankDetails?.accountNumber || '', ifsc: partner.bankDetails?.ifscCode || '', holder: partner.bankDetails?.accountHolderName || '' },
+        bank: {
+          accountNumber: partner.bankDetails?.accountNumber || '',
+          ifsc: partner.bankDetails?.ifscCode || '',
+          holder: partner.bankDetails?.accountHolderName || '',
+        },
         amount: w.amount,
         platformFee: w.platformFee,
         netPaid: w.netPaid,
-        requestedAt: w.at
+        requestedAt: w.at,
       });
     }
   }
@@ -348,6 +363,6 @@ export const pendingPartnerWithdrawals = async () => {
     success: true,
     count: rows.length,
     totalValue: Math.round(rows.reduce((sum, r) => sum + Number(r.amount || 0), 0) * 100) / 100,
-    withdrawals: rows
+    withdrawals: rows,
   };
 };

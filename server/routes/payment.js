@@ -22,7 +22,9 @@ router.post('/create-order', verifyToken, paymentLimiter, async (req, res) => {
     const razorpayOrder = await createOrder(amount, 'INR', receipt);
 
     if (!razorpayOrder.success) {
-      return res.status(500).json({ success: false, message: 'Failed to create payment order.', error: razorpayOrder.error });
+      return res
+        .status(500)
+        .json({ success: false, message: 'Failed to create payment order.', error: razorpayOrder.error });
     }
 
     res.json({
@@ -30,7 +32,7 @@ router.post('/create-order', verifyToken, paymentLimiter, async (req, res) => {
       orderId: razorpayOrder.orderId,
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
-      key: process.env.RAZORPAY_KEY_ID
+      key: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
     console.error('Create payment order error:', error);
@@ -60,14 +62,12 @@ router.post('/verify', verifyToken, async (req, res) => {
     // one order per seller, so the caller can pass a list. Marking *every*
     // pending order the user happens to have would let one payment silently
     // pay off unrelated unpaid orders, so an explicit reference is required.
-    const targetIds = []
-      .concat(orderId || [])
-      .concat(Array.isArray(orderIds) ? orderIds : []);
+    const targetIds = [].concat(orderId || []).concat(Array.isArray(orderIds) ? orderIds : []);
 
     if (targetIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'No order reference supplied with this payment.'
+        message: 'No order reference supplied with this payment.',
       });
     }
 
@@ -89,7 +89,7 @@ router.post('/verify', verifyToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Payment verified successfully.'
+      message: 'Payment verified successfully.',
     });
   } catch (error) {
     console.error('Verify payment error:', error);
@@ -107,10 +107,7 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     const signature = req.headers['x-razorpay-signature'];
 
     const crypto = await import('crypto');
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
+    const expectedSignature = crypto.createHmac('sha256', secret).update(JSON.stringify(req.body)).digest('hex');
 
     if (signature !== expectedSignature) {
       return res.status(400).json({ success: false, message: 'Invalid webhook signature.' });

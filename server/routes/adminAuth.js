@@ -41,11 +41,11 @@ router.post('/login', async (req, res) => {
     // Check if account is locked (5 minutes for admin)
     if (admin.lockUntil && admin.lockUntil > new Date()) {
       const remainingTime = Math.ceil((admin.lockUntil - new Date()) / 1000 / 60);
-      return res.status(423).json({ 
-        success: false, 
+      return res.status(423).json({
+        success: false,
         message: `Account is locked. Please try again in ${remainingTime} minutes.`,
         locked: true,
-        lockUntil: admin.lockUntil
+        lockUntil: admin.lockUntil,
       });
     }
 
@@ -53,26 +53,26 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       // Increment failed login attempts
       admin.failedLoginAttempts = (admin.failedLoginAttempts || 0) + 1;
-      
+
       // Lock account after 2 failed attempts for 5 minutes (admin specific)
       if (admin.failedLoginAttempts >= 2) {
         admin.lockUntil = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
         admin.failedLoginAttempts = 0; // Reset after locking
         await admin.save();
-        
-        return res.status(423).json({ 
-          success: false, 
+
+        return res.status(423).json({
+          success: false,
           message: 'Too many failed attempts. Account locked for 5 minutes.',
           locked: true,
-          lockUntil: admin.lockUntil
+          lockUntil: admin.lockUntil,
         });
       }
-      
+
       await admin.save();
       const remainingAttempts = 2 - admin.failedLoginAttempts;
-      return res.status(401).json({ 
-        success: false, 
-        message: `Invalid email or password. ${remainingAttempts} attempt(s) remaining.`
+      return res.status(401).json({
+        success: false,
+        message: `Invalid email or password. ${remainingAttempts} attempt(s) remaining.`,
       });
     }
 
@@ -97,15 +97,15 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        admin: admin.toJSON()
+        admin: admin.toJSON(),
       });
     } else {
       // Generate OTP for login verification (production flow)
-      const otp = otpGenerator.generate(6, { 
-        upperCaseAlphabets: false, 
-        specialChars: false, 
+      const otp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
         lowerCaseAlphabets: false,
-        length: 6
+        length: 6,
       });
 
       admin.loginOtp = otp;
@@ -119,7 +119,7 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'OTP sent to your email. Please verify to complete login.',
         requiresOTP: true,
-        email: admin.email
+        email: admin.email,
       });
     }
   } catch (error) {
@@ -163,7 +163,7 @@ router.post('/verify-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      admin: admin.toJSON()
+      admin: admin.toJSON(),
     });
   } catch (error) {
     console.error('Admin verify OTP error:', error);

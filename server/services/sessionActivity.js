@@ -33,7 +33,14 @@ import mongoose from 'mongoose';
 const sha256 = (v) => crypto.createHash('sha256').update(String(v)).digest('hex');
 
 /** Consoles whose sessions must not idle open. */
-export const CONTROLLED_ROLES = ['admin', 'staff', 'executive', 'manufacturer', 'manufacturerSeller', 'deliveryPartner'];
+export const CONTROLLED_ROLES = [
+  'admin',
+  'staff',
+  'executive',
+  'manufacturer',
+  'manufacturerSeller',
+  'deliveryPartner',
+];
 
 export const isControlledRole = (role) => CONTROLLED_ROLES.includes(role);
 
@@ -57,12 +64,17 @@ export const DEFAULT_IDLE_MINUTES = 60;
  */
 export const logSessionIdlePolicy = () => {
   const minutes = idleWindowMinutes();
-  const note = process.env.SESSION_IDLE_MINUTES === undefined
-    ? '(default)'
-    : minutes === 0 ? '(disabled by SESSION_IDLE_MINUTES=0)'
-    : minutes < 1 ? '(sub-minute window: testing configuration, not a production setting)'
-    : '(from SESSION_IDLE_MINUTES)';
-  console.log(`Idle sign-out: ${minutes === 0 ? 'disabled' : `${minutes} minute(s) of inactivity`} for console roles ${note}. Customer sessions are unaffected.`);
+  const note =
+    process.env.SESSION_IDLE_MINUTES === undefined
+      ? '(default)'
+      : minutes === 0
+        ? '(disabled by SESSION_IDLE_MINUTES=0)'
+        : minutes < 1
+          ? '(sub-minute window: testing configuration, not a production setting)'
+          : '(from SESSION_IDLE_MINUTES)';
+  console.log(
+    `Idle sign-out: ${minutes === 0 ? 'disabled' : `${minutes} minute(s) of inactivity`} for console roles ${note}. Customer sessions are unaffected.`
+  );
   return minutes;
 };
 
@@ -78,7 +90,7 @@ const sessionActivitySchema = new mongoose.Schema(
     key: { type: String, required: true, unique: true },
     role: { type: String, required: true },
     lastSeenAt: { type: Date, default: Date.now },
-    expiresAt: { type: Date, required: true }
+    expiresAt: { type: Date, required: true },
   },
   { versionKey: false }
 );
@@ -99,7 +111,13 @@ const keyFor = ({ decoded, token }) => (decoded?.jti ? sha256(`jti:${decoded.jti
  * its dashboard every few seconds would otherwise write on every request, turning
  * an idle-timeout feature into the busiest table in the database.
  */
-export const evaluateSessionActivity = ({ decoded, row, now = Date.now(), windowMinutes = idleWindowMinutes(), refreshSeconds = 60 }) => {
+export const evaluateSessionActivity = ({
+  decoded,
+  row,
+  now = Date.now(),
+  windowMinutes = idleWindowMinutes(),
+  refreshSeconds = 60,
+}) => {
   /*
    * A disabled window short-circuits before anything else: no role is
    * controlled, no row is read, no row is written. Answering that here rather
@@ -140,7 +158,7 @@ export const evaluateSessionActivity = ({ decoded, row, now = Date.now(), window
     controlled: true,
     idle: false,
     idleSeconds,
-    refresh: idleSeconds >= refreshSeconds
+    refresh: idleSeconds >= refreshSeconds,
   };
 };
 
@@ -181,7 +199,7 @@ export const touchSession = async (authorization) => {
         // because a test or a typo set it, and "Signed out after 0.15 minutes"
         // is the sort of sentence a real user reads as a broken product.
         message: `Signed out after ${Math.max(1, Math.round(decision.windowMinutes))} minute(s) without activity. Please sign in again.`,
-        idleSeconds: decision.idleSeconds
+        idleSeconds: decision.idleSeconds,
       };
     }
     if (decision.refresh) {
@@ -214,13 +232,15 @@ export const sessionState = async (authorization) => {
     return { controlled: false, role: decoded.role || 'user', windowMinutes };
   }
   const row = await SessionActivity.findOne({ key: keyFor({ decoded, token }) }).lean();
-  const idleSeconds = row?.lastSeenAt ? Math.max(0, Math.round((Date.now() - new Date(row.lastSeenAt).getTime()) / 1000)) : 0;
+  const idleSeconds = row?.lastSeenAt
+    ? Math.max(0, Math.round((Date.now() - new Date(row.lastSeenAt).getTime()) / 1000))
+    : 0;
   return {
     controlled: true,
     role: decoded.role,
     windowMinutes,
     idleSeconds,
-    secondsRemaining: Math.max(0, windowMinutes * 60 - idleSeconds)
+    secondsRemaining: Math.max(0, windowMinutes * 60 - idleSeconds),
   };
 };
 

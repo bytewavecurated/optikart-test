@@ -1,10 +1,6 @@
 import express from 'express';
 import { verifyToken, verifySeller, verifyAdmin } from '../middleware/auth.js';
-import {
-  calculateSellerMetrics,
-  getSellerBadge,
-  getAllSellersWithMetrics
-} from '../services/sellerPerformance.js';
+import { calculateSellerMetrics, getSellerBadge, getAllSellersWithMetrics } from '../services/sellerPerformance.js';
 
 const router = express.Router();
 
@@ -27,18 +23,18 @@ router.get('/metrics', verifySeller, async (req, res) => {
 
     if (result.success) {
       const badge = getSellerBadge(result.metrics);
-      
+
       res.json({
         success: true,
         data: {
           metrics: result.metrics,
-          badge
-        }
+          badge,
+        },
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -46,7 +42,7 @@ router.get('/metrics', verifySeller, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -70,18 +66,18 @@ router.get('/:sellerId/metrics', verifyToken, verifyAdmin, async (req, res) => {
 
     if (result.success) {
       const badge = getSellerBadge(result.metrics);
-      
+
       res.json({
         success: true,
         data: {
           metrics: result.metrics,
-          badge
-        }
+          badge,
+        },
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -89,7 +85,7 @@ router.get('/:sellerId/metrics', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -113,12 +109,12 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.sellers
+        data: result.sellers,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -126,7 +122,7 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

@@ -7,21 +7,33 @@ const DEFAULT_BANNERS = [
   {
     _id: 'default-1',
     title: 'Summer Sale',
-    images: { desktop: { url: '/assets/banner-1.svg' }, tablet: { url: '/assets/banner-1.svg' }, mobile: { url: '/assets/banner-1.svg' } },
-    linkUrl: '/products?hasOffer=1'
+    images: {
+      desktop: { url: '/assets/banner-1.svg' },
+      tablet: { url: '/assets/banner-1.svg' },
+      mobile: { url: '/assets/banner-1.svg' },
+    },
+    linkUrl: '/products?hasOffer=1',
   },
   {
     _id: 'default-2',
     title: 'New Arrivals',
-    images: { desktop: { url: '/assets/banner-2.svg' }, tablet: { url: '/assets/banner-2.svg' }, mobile: { url: '/assets/banner-2.svg' } },
-    linkUrl: '/brands'
+    images: {
+      desktop: { url: '/assets/banner-2.svg' },
+      tablet: { url: '/assets/banner-2.svg' },
+      mobile: { url: '/assets/banner-2.svg' },
+    },
+    linkUrl: '/brands',
   },
   {
     _id: 'default-3',
     title: 'Blue Cut Lenses',
-    images: { desktop: { url: '/assets/banner-3.svg' }, tablet: { url: '/assets/banner-3.svg' }, mobile: { url: '/assets/banner-3.svg' } },
-    linkUrl: '/category/eyeglasses'
-  }
+    images: {
+      desktop: { url: '/assets/banner-3.svg' },
+      tablet: { url: '/assets/banner-3.svg' },
+      mobile: { url: '/assets/banner-3.svg' },
+    },
+    linkUrl: '/category/eyeglasses',
+  },
 ];
 
 const styles = {
@@ -169,7 +181,15 @@ export default function HeroCarousel() {
 
   if (loading || bannerList.length === 0) {
     return (
-      <div style={{ ...styles.container, height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div
+        style={{
+          ...styles.container,
+          height: '400px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <div className="spinner" />
       </div>
     );
@@ -180,11 +200,7 @@ export default function HeroCarousel() {
 
   return (
     <>
-      <div
-        style={styles.container}
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
-      >
+      <div style={styles.container} onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
         <div
           style={{
             ...styles.track,
@@ -192,17 +208,8 @@ export default function HeroCarousel() {
           }}
         >
           {bannerList.map((banner) => (
-            <Link
-              to={banner.linkUrl}
-              key={banner._id}
-              style={{ ...styles.slide, width: `${slideWidth}%` }}
-            >
-              <img
-                src={getImageUrl(banner)}
-                alt={banner.title}
-                style={styles.image}
-                className="hero-slide-image"
-              />
+            <Link to={banner.linkUrl} key={banner._id} style={{ ...styles.slide, width: `${slideWidth}%` }}>
+              <img src={getImageUrl(banner)} alt={banner.title} style={styles.image} className="hero-slide-image" />
             </Link>
           ))}
         </div>
@@ -211,7 +218,10 @@ export default function HeroCarousel() {
           <>
             <button
               style={{ ...styles.arrow, left: '16px' }}
-              onClick={(e) => { e.preventDefault(); prev(); }}
+              onClick={(e) => {
+                e.preventDefault();
+                prev();
+              }}
               aria-label="Previous"
               className="carousel-arrow"
             >
@@ -219,7 +229,10 @@ export default function HeroCarousel() {
             </button>
             <button
               style={{ ...styles.arrow, right: '16px' }}
-              onClick={(e) => { e.preventDefault(); next(); }}
+              onClick={(e) => {
+                e.preventDefault();
+                next();
+              }}
               aria-label="Next"
               className="carousel-arrow"
             >
@@ -235,7 +248,7 @@ export default function HeroCarousel() {
           {Array.from({ length: maxIndex + 1 }).map((_, i) => {
             const isActive = i === currentIndex;
             const progress = isActive ? 100 : 0;
-            
+
             return (
               <button
                 key={i}
@@ -248,7 +261,7 @@ export default function HeroCarousel() {
                 }}
               >
                 {isActive && (
-                  <div 
+                  <div
                     style={{
                       ...styles.lineProgress,
                       width: `${progress}%`,

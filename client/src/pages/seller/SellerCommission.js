@@ -23,7 +23,7 @@ const SellerCommission = () => {
       }
     } catch (error) {
       console.error('Error fetching commission data:', error);
-      toastError(error, "Failed to load commission data");
+      toastError(error, 'Failed to load commission data');
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,9 @@ const SellerCommission = () => {
         <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'end', flexWrap: 'wrap' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Start Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                Start Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -66,7 +68,9 @@ const SellerCommission = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>End Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                End Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -74,14 +78,23 @@ const SellerCommission = () => {
                 onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
               />
             </div>
-            <button onClick={fetchData} className="btn btn-primary">Apply Filter</button>
+            <button onClick={fetchData} className="btn btn-primary">
+              Apply Filter
+            </button>
           </div>
         </div>
 
         {/* Summary Cards */}
         {summary && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginBottom: '24px',
+              }}
+            >
               <div className="card" style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                   <FiCheckCircle size={24} color="var(--primary)" />
@@ -111,7 +124,9 @@ const SellerCommission = () => {
                   <FiDollarSign size={24} color="var(--success)" />
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Net Earnings</span>
                 </div>
-                <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--success)' }}>₹{summary.totalNet?.toLocaleString()}</div>
+                <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--success)' }}>
+                  ₹{summary.totalNet?.toLocaleString()}
+                </div>
               </div>
             </div>
 
@@ -134,9 +149,15 @@ const SellerCommission = () => {
                       {summary.recentOrders.map((order, index) => (
                         <tr key={index} style={{ borderBottom: '1px solid var(--border)' }}>
                           <td style={{ padding: '12px', fontWeight: 600 }}>{order.orderNumber}</td>
-                          <td style={{ padding: '12px', textAlign: 'right' }}>₹{order.orderAmount?.toLocaleString()}</td>
-                          <td style={{ padding: '12px', textAlign: 'right', color: 'var(--warning)' }}>₹{order.commission?.toLocaleString()}</td>
-                          <td style={{ padding: '12px', textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>₹{order.netAmount?.toLocaleString()}</td>
+                          <td style={{ padding: '12px', textAlign: 'right' }}>
+                            ₹{order.orderAmount?.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'right', color: 'var(--warning)' }}>
+                            ₹{order.commission?.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>
+                            ₹{order.netAmount?.toLocaleString()}
+                          </td>
                           <td style={{ padding: '12px' }}>{new Date(order.date).toLocaleDateString()}</td>
                         </tr>
                       ))}

@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
   try {
     const events = await SaleEvent.find().sort({ createdAt: -1 });
     const now = new Date();
-    const activeEvents = events.filter(e => e.isActive && e.startDate <= now && e.endDate >= now);
+    const activeEvents = events.filter((e) => e.isActive && e.startDate <= now && e.endDate >= now);
     res.json({ success: true, events, activeEvents });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -31,7 +31,9 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
     const { name, description, bannerImage, categories, discountPercentage, startDate, endDate } = req.body;
 
     if (!name || !discountPercentage || !startDate || !endDate) {
-      return res.status(400).json({ success: false, message: 'Name, discount percentage, start and end dates are required.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Name, discount percentage, start and end dates are required.' });
     }
 
     const event = new SaleEvent({
@@ -42,7 +44,7 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
       discountPercentage,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      createdBy: req.user._id
+      createdBy: req.user._id,
     });
 
     await event.save();
@@ -56,7 +58,7 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
       success: true,
       message: `Sale event created. ${applyResult.modifiedCount} products updated.`,
       event,
-      affectedProducts: applyResult.modifiedCount
+      affectedProducts: applyResult.modifiedCount,
     });
   } catch (error) {
     console.error('Create sale event error:', error);
@@ -122,7 +124,11 @@ router.post('/:id/toggle', verifyToken, verifyAdmin, async (req, res) => {
       const applyResult = await applySaleEventToProducts(event);
       event.affectedProducts = applyResult.modifiedCount;
       await event.save();
-      res.json({ success: true, message: `Sale event activated. ${applyResult.modifiedCount} products updated.`, event });
+      res.json({
+        success: true,
+        message: `Sale event activated. ${applyResult.modifiedCount} products updated.`,
+        event,
+      });
     } else {
       await deactivateSaleEvent(event._id);
       res.json({ success: true, message: 'Sale event deactivated. Product prices restored.', event });
@@ -169,7 +175,12 @@ async function deactivateSaleEvent(eventId) {
       product.discountedPrice = product.originalDiscountedPrice;
       product.effectivePrice = product.originalDiscountedPrice;
     } else {
-      if (product.sellerOffer && product.sellerOffer.isActive && product.sellerOffer.type === 'percentage' && product.sellerOffer.value > 0) {
+      if (
+        product.sellerOffer &&
+        product.sellerOffer.isActive &&
+        product.sellerOffer.type === 'percentage' &&
+        product.sellerOffer.value > 0
+      ) {
         product.discountedPrice = Math.round(product.price * (1 - product.sellerOffer.value / 100));
         product.effectivePrice = product.discountedPrice;
       } else {

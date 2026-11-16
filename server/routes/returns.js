@@ -9,7 +9,7 @@ import {
   processReturnRefund,
   getUserReturns,
   getSellerReturns,
-  getAllReturns
+  getAllReturns,
 } from '../services/returns.js';
 
 const router = express.Router();
@@ -26,7 +26,7 @@ router.post('/', verifyToken, async (req, res) => {
     if (!orderId || !items || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Order ID and items are required'
+        message: 'Order ID and items are required',
       });
     }
 
@@ -36,12 +36,12 @@ router.post('/', verifyToken, async (req, res) => {
       res.status(201).json({
         success: true,
         message: 'Return request created successfully',
-        data: result.returnRequest
+        data: result.returnRequest,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -49,7 +49,7 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -67,12 +67,12 @@ router.get('/user', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.returns
+        data: result.returns,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -80,7 +80,7 @@ router.get('/user', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -98,12 +98,12 @@ router.get('/seller', verifySeller, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.returns
+        data: result.returns,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -111,7 +111,7 @@ router.get('/seller', verifySeller, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -134,12 +134,12 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.returns
+        data: result.returns,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -147,7 +147,7 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -168,12 +168,12 @@ router.post('/:id/approve', verifyToken, async (req, res) => {
         success: true,
         message: 'Return request approved successfully',
         data: result.returnRequest,
-        shippingLabel: result.shippingLabel
+        shippingLabel: result.shippingLabel,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -181,7 +181,7 @@ router.post('/:id/approve', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -198,7 +198,7 @@ router.post('/:id/reject', verifyToken, async (req, res) => {
     if (!reason) {
       return res.status(400).json({
         success: false,
-        message: 'Rejection reason is required'
+        message: 'Rejection reason is required',
       });
     }
 
@@ -208,12 +208,12 @@ router.post('/:id/reject', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Return request rejected',
-        data: result.returnRequest
+        data: result.returnRequest,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -221,7 +221,7 @@ router.post('/:id/reject', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -240,12 +240,12 @@ router.post('/:id/picked-up', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Return marked as picked up',
-        data: result.returnRequest
+        data: result.returnRequest,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -253,7 +253,7 @@ router.post('/:id/picked-up', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -272,12 +272,12 @@ router.post('/:id/received', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Return marked as received',
-        data: result.returnRequest
+        data: result.returnRequest,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -285,7 +285,7 @@ router.post('/:id/received', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -305,12 +305,12 @@ router.post('/:id/refund', verifyToken, verifyAdmin, async (req, res) => {
         success: true,
         message: 'Refund processed successfully',
         data: result.returnRequest,
-        refundId: result.refundId
+        refundId: result.refundId,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -318,7 +318,7 @@ router.post('/:id/refund', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

@@ -21,7 +21,7 @@ import {
   validateBulkUpload,
   getManufacturerPendingProducts,
   updatePendingProduct,
-  deletePendingProduct
+  deletePendingProduct,
 } from '../services/manufacturerEnhancements.js';
 const router = express.Router();
 
@@ -53,7 +53,7 @@ router.post('/listing-requests/decide', verifyManufacturer, async (req, res) => 
       decision,
       reason,
       actorLabel: req.manufacturer.name || 'brand',
-      brandId: req.manufacturer._id
+      brandId: req.manufacturer._id,
     });
     res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
@@ -85,9 +85,16 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
   for (const raw of urls) {
     const url = String(raw || '').trim();
     if (!url) continue;
-    if (url.startsWith('/uploads/')) { out.push(url); continue; }
+    if (url.startsWith('/uploads/')) {
+      out.push(url);
+      continue;
+    }
     let parsed;
-    try { parsed = new URL(url); } catch { throw new Error(`"${url}" is not a valid image URL`); }
+    try {
+      parsed = new URL(url);
+    } catch {
+      throw new Error(`"${url}" is not a valid image URL`);
+    }
     if (!/^https?:$/.test(parsed.protocol)) throw new Error(`"${url}" is not an http(s) URL`);
     /*
      * The extension check used to reject any URL whose path ended without
@@ -111,15 +118,22 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
     }
     if (!res.ok) throw new Error(`could not download ${url} (HTTP ${res.status})`);
 
-    const type = String(res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const type = String(res.headers.get('content-type') || '')
+      .split(';')[0]
+      .trim()
+      .toLowerCase();
     const TYPE_EXT = {
-      'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png',
-      'image/webp': '.webp', 'image/avif': '.avif', 'image/gif': '.gif'
+      'image/jpeg': '.jpg',
+      'image/jpg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/avif': '.avif',
+      'image/gif': '.gif',
     };
     if (!TYPE_EXT[type]) {
       throw new Error(
-        `"${url}" did not return an image (content-type "${type || 'unknown'}"). `
-        + 'Use a direct link to the image file, not a page that shows it.'
+        `"${url}" did not return an image (content-type "${type || 'unknown'}"). ` +
+          'Use a direct link to the image file, not a page that shows it.'
       );
     }
     const ext = extMatch ? extMatch[0] : TYPE_EXT[type];
@@ -138,15 +152,17 @@ const storeRemoteImages = async (urls = [], ownerHint = 'manufacturer', subdir =
   return out;
 };
 
-
-
 /*
  * Sheet cells and form fields carry the size printed on the temple
  * (52-17-140), while the schema keeps a coarse bucket. Derive the bucket from the
  * lens width and keep the measurement in dimensions, rather than rejecting a
  * manufacturer's own numbers with an enum error.
  */
-const FRAME_SIZE_BUCKETS = [['extra-large', 59], ['large', 55], ['medium', 51]];
+const FRAME_SIZE_BUCKETS = [
+  ['extra-large', 59],
+  ['large', 55],
+  ['medium', 51],
+];
 /*
  * The schema lists frameShape/frameType/... as enumerations, and a manufacturer's
  * spreadsheet spells them however the shop spells them ("Square", "Full Rim",
@@ -159,10 +175,10 @@ const ENUM_ALIASES = {
   frameShape: 'frameShape',
   frameType: 'frameType',
   frameMaterial: 'frameMaterial',
-  gender: 'gender'
+  gender: 'gender',
 };
 
-const enumsOf = (Model, path) => (Model.schema.path(path)?.options?.enum) || [];
+const enumsOf = (Model, path) => Model.schema.path(path)?.options?.enum || [];
 
 const matchEnum = (Model, path, value) => {
   const allowed = enumsOf(Model, path);
@@ -170,7 +186,12 @@ const matchEnum = (Model, path, value) => {
   if (!raw) return { value: raw, unknown: false };
   if (allowed.includes(raw)) return { value: raw, unknown: false };
   const loose = raw.toLowerCase().replace(/[\s_-]/g, '');
-  const hit = allowed.find((a) => String(a).toLowerCase().replace(/[\s_-]/g, '') === loose);
+  const hit = allowed.find(
+    (a) =>
+      String(a)
+        .toLowerCase()
+        .replace(/[\s_-]/g, '') === loose
+  );
   return hit !== undefined ? { value: hit, unknown: false } : { value: raw, unknown: true };
 };
 
@@ -181,7 +202,9 @@ const frameSizeBucket = (raw) => {
   return 'small';
 };
 const measureFromSize = (raw) => {
-  const [lens, bridge, temple] = String(raw ?? '').split(/[-\u00D7x\s,]+/).map(Number);
+  const [lens, bridge, temple] = String(raw ?? '')
+    .split(/[-\u00D7x\s,]+/)
+    .map(Number);
   return { lens, bridge, temple };
 };
 
@@ -193,7 +216,7 @@ const measureFromSize = (raw) => {
  */
 const imageUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 8 * 1024 * 1024, files: 10 }
+  limits: { fileSize: 8 * 1024 * 1024, files: 10 },
 });
 
 const looksLikeImage = (buf) => {
@@ -208,8 +231,12 @@ const looksLikeImage = (buf) => {
 };
 
 const EXT_BY_MIME = {
-  'image/jpeg': '.jpg', 'image/jpg': '.jpg', 'image/png': '.png',
-  'image/gif': '.gif', 'image/webp': '.webp', 'image/avif': '.avif'
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'image/avif': '.avif',
 };
 
 router.post('/products/upload-images', verifyManufacturer, imageUpload.array('images', 10), async (req, res) => {
@@ -238,7 +265,9 @@ router.post('/products/upload-images', verifyManufacturer, imageUpload.array('im
     }
 
     if (!saved.length) {
-      return res.status(400).json({ success: false, message: rejected.join('; ') || 'None of the files you picked were pictures.' });
+      return res
+        .status(400)
+        .json({ success: false, message: rejected.join('; ') || 'None of the files you picked were pictures.' });
     }
     res.status(201).json({ success: true, urls: saved, rejected });
   } catch (error) {
@@ -276,36 +305,36 @@ router.post('/login', async (req, res) => {
 
     if (manufacturer.lockUntil && manufacturer.lockUntil > new Date()) {
       const remainingTime = Math.ceil((manufacturer.lockUntil - new Date()) / 1000 / 60);
-      return res.status(423).json({ 
-        success: false, 
+      return res.status(423).json({
+        success: false,
         message: `Account is locked. Please try again in ${remainingTime} minutes.`,
         locked: true,
-        lockUntil: manufacturer.lockUntil
+        lockUntil: manufacturer.lockUntil,
       });
     }
 
     const isMatch = await manufacturer.comparePassword(password);
     if (!isMatch) {
       manufacturer.failedLoginAttempts = (manufacturer.failedLoginAttempts || 0) + 1;
-      
+
       if (manufacturer.failedLoginAttempts >= 3) {
         manufacturer.lockUntil = new Date(Date.now() + 3 * 60 * 1000);
         manufacturer.failedLoginAttempts = 0;
         await manufacturer.save();
-        
-        return res.status(423).json({ 
-          success: false, 
+
+        return res.status(423).json({
+          success: false,
           message: 'Too many failed attempts. Account locked for 3 minutes.',
           locked: true,
-          lockUntil: manufacturer.lockUntil
+          lockUntil: manufacturer.lockUntil,
         });
       }
-      
+
       await manufacturer.save();
       const remainingAttempts = 3 - manufacturer.failedLoginAttempts;
-      return res.status(401).json({ 
-        success: false, 
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`
+      return res.status(401).json({
+        success: false,
+        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
       });
     }
 
@@ -329,13 +358,13 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        manufacturer: manufacturer.toJSON()
+        manufacturer: manufacturer.toJSON(),
       });
     } else {
-      const loginOtp = otpGenerator.generate(6, { 
-        upperCaseAlphabets: false, 
-        specialChars: false, 
-        lowerCaseAlphabets: false 
+      const loginOtp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
       });
 
       manufacturer.loginOtp = loginOtp;
@@ -348,7 +377,7 @@ router.post('/login', async (req, res) => {
         success: true,
         requiresOTP: true,
         message: 'Login OTP sent to your email.',
-        manufacturerId: manufacturer._id
+        manufacturerId: manufacturer._id,
       });
     }
   } catch (error) {
@@ -390,7 +419,7 @@ router.post('/verify-login-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      manufacturer: manufacturer.toJSON()
+      manufacturer: manufacturer.toJSON(),
     });
   } catch (error) {
     console.error('Verify manufacturer login OTP error:', error);
@@ -411,14 +440,14 @@ router.get('/me', verifyManufacturer, async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const manufacturer = await Manufacturer.findById(req.manufacturer._id);
-    
+
     if (!manufacturer) {
       return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
     }
 
     res.json({
       success: true,
-      manufacturer: manufacturer.toJSON()
+      manufacturer: manufacturer.toJSON(),
     });
   } catch (error) {
     console.error('Get manufacturer profile error:', error);
@@ -429,7 +458,6 @@ router.get('/me', verifyManufacturer, async (req, res) => {
 // Add Product (Manufacturer)
 router.post('/products', verifyManufacturer, async (req, res) => {
   try {
-    
     // The measured size ("54-16-135") is normalised into the schema's bucket, and
     // the numbers themselves are kept where the product page reads them.
     const incoming = { ...req.body };
@@ -442,14 +470,14 @@ router.post('/products', verifyManufacturer, async (req, res) => {
         width: Number.isFinite(dims.width) ? dims.width : lens,
         height: Number.isFinite(dims.height) ? dims.height : undefined,
         bridge: Number.isFinite(dims.bridge) ? dims.bridge : bridge,
-        temple: Number.isFinite(dims.temple) ? dims.temple : temple
+        temple: Number.isFinite(dims.temple) ? dims.temple : temple,
       };
     }
 
     const productData = {
       ...incoming,
       manufacturer: req.manufacturer._id,
-      isManufacturerProduct: true
+      isManufacturerProduct: true,
     };
 
     const product = new Product(productData);
@@ -458,7 +486,7 @@ router.post('/products', verifyManufacturer, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Product added successfully.',
-      product
+      product,
     });
   } catch (error) {
     console.error('Add product error:', error);
@@ -469,15 +497,14 @@ router.post('/products', verifyManufacturer, async (req, res) => {
 // Get Manufacturer Products
 router.get('/products', verifyManufacturer, async (req, res) => {
   try {
-    
-    const products = await Product.find({ 
+    const products = await Product.find({
       manufacturer: req.manufacturer._id,
-      isDiscontinued: false
+      isDiscontinued: false,
     }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      products
+      products,
     });
   } catch (error) {
     console.error('Get products error:', error);
@@ -488,10 +515,9 @@ router.get('/products', verifyManufacturer, async (req, res) => {
 // Update Product
 router.put('/products/:id', verifyManufacturer, async (req, res) => {
   try {
-    
-    const product = await Product.findOne({ 
+    const product = await Product.findOne({
       _id: req.params.id,
-      manufacturer: req.manufacturer._id
+      manufacturer: req.manufacturer._id,
     });
 
     if (!product) {
@@ -504,7 +530,7 @@ router.put('/products/:id', verifyManufacturer, async (req, res) => {
     res.json({
       success: true,
       message: 'Product updated successfully.',
-      product
+      product,
     });
   } catch (error) {
     console.error('Update product error:', error);
@@ -515,10 +541,9 @@ router.put('/products/:id', verifyManufacturer, async (req, res) => {
 // Discontinue Product
 router.post('/products/:id/discontinue', verifyManufacturer, async (req, res) => {
   try {
-    
-    const product = await Product.findOne({ 
+    const product = await Product.findOne({
       _id: req.params.id,
-      manufacturer: req.manufacturer._id
+      manufacturer: req.manufacturer._id,
     });
 
     if (!product) {
@@ -531,14 +556,11 @@ router.post('/products/:id/discontinue', verifyManufacturer, async (req, res) =>
     await product.save();
 
     // Remove from all seller dashboards
-    await Product.updateMany(
-      { manufacturerProduct: product._id },
-      { isActive: false }
-    );
+    await Product.updateMany({ manufacturerProduct: product._id }, { isActive: false });
 
     res.json({
       success: true,
-      message: 'Product discontinued successfully.'
+      message: 'Product discontinued successfully.',
     });
   } catch (error) {
     console.error('Discontinue product error:', error);
@@ -549,10 +571,9 @@ router.post('/products/:id/discontinue', verifyManufacturer, async (req, res) =>
 // Re-continue Product
 router.post('/products/:id/recontinue', verifyManufacturer, async (req, res) => {
   try {
-    
-    const product = await Product.findOne({ 
+    const product = await Product.findOne({
       _id: req.params.id,
-      manufacturer: req.manufacturer._id
+      manufacturer: req.manufacturer._id,
     });
 
     if (!product) {
@@ -566,7 +587,7 @@ router.post('/products/:id/recontinue', verifyManufacturer, async (req, res) => 
 
     res.json({
       success: true,
-      message: 'Product re-continued successfully.'
+      message: 'Product re-continued successfully.',
     });
   } catch (error) {
     console.error('Recontinue product error:', error);
@@ -577,7 +598,6 @@ router.post('/products/:id/recontinue', verifyManufacturer, async (req, res) => 
 // Bulk Upload Products via Spreadsheet
 router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), async (req, res) => {
   try {
-    
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
@@ -617,14 +637,14 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
      *    a non-existent upload box would be the worst kind of advice - correct in
      *    spirit, impossible to follow.
      */
-    const allowedBrands = new Set(((req.manufacturer?.brands) || [])
-      .map((b) => String(b).trim().toLowerCase())
-      .filter(Boolean));
-    const brandFirstRow = new Map();   // case-folded brand -> sheet row numbers
+    const allowedBrands = new Set(
+      (req.manufacturer?.brands || []).map((b) => String(b).trim().toLowerCase()).filter(Boolean)
+    );
+    const brandFirstRow = new Map(); // case-folded brand -> sheet row numbers
     // One query for the sheet, not one per row: the owners of every *other*
     // manufacturer's brand names, case-folded, so row checks stay Map.get().
     const foreignBrands = await brandOwnersByFoldedName(req.manufacturer?._id);
-    const brandLabels = new Map();     // case-folded brand -> display value
+    const brandLabels = new Map(); // case-folded brand -> display value
     /*
      * A `|`-separated cell becomes a list of real values.
      *
@@ -635,10 +655,13 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
      * The same class of defect the scalar fields were fixed for; lists are where
      * it actually reached the customer, because they render as options.
      */
-    const list = (v, map) => String(v ?? '')
-      .split('|')
-      .map((x) => (map ? map(x) : String(x).trim()))
-      .filter((x) => x && String(x).trim().toLowerCase() !== 'undefined' && String(x).trim().toLowerCase() !== 'null');
+    const list = (v, map) =>
+      String(v ?? '')
+        .split('|')
+        .map((x) => (map ? map(x) : String(x).trim()))
+        .filter(
+          (x) => x && String(x).trim().toLowerCase() !== 'undefined' && String(x).trim().toLowerCase() !== 'null'
+        );
 
     // sheet_to_json() already uses the first spreadsheet line as the column
     // names, so data[0] is a real product row. Starting at 1 silently dropped the
@@ -652,7 +675,9 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       // spaces or capital letters still loads.
       const get = (...keys) => {
         for (const k of Object.keys(row)) {
-          const norm = String(k).toLowerCase().replace(/[\s_-]/g, '');
+          const norm = String(k)
+            .toLowerCase()
+            .replace(/[\s_-]/g, '');
           if (keys.some((key) => norm === key)) return row[k];
         }
         return undefined;
@@ -676,10 +701,8 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         if (value === undefined || value === null) return '';
         const out = String(value).trim();
         return out === 'undefined' || out === 'null' ? '' : out;
-    };
+      };
       const optText = (...keys) => text(...keys) || undefined;
-
-
 
       const title = String(get('title', 'name', 'productname') ?? '').trim();
       const price = Number(get('price', 'sellingprice'));
@@ -691,7 +714,10 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       // row, including rows that later fail a different check.
       if (brand) {
         const folded = brand.toLowerCase();
-        if (!brandFirstRow.has(folded)) { brandFirstRow.set(folded, []); brandLabels.set(folded, brand); }
+        if (!brandFirstRow.has(folded)) {
+          brandFirstRow.set(folded, []);
+          brandLabels.set(folded, brand);
+        }
         brandFirstRow.get(folded).push(line);
       }
 
@@ -706,18 +732,24 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         // it to their profile would be a direct invitation to make the mistake
         // this rule prevents.
         const taken = foreignBrands.get(foldBrand(brand));
-        errors.push(`Row ${line}: brand "${brand}" belongs to ${taken.owner} (declared there as "${taken.ownerBrand}"). One brand name can only have one manufacturer. Upload it under the brand you own, or ask OptiKart to reassign the brand.`);
+        errors.push(
+          `Row ${line}: brand "${brand}" belongs to ${taken.owner} (declared there as "${taken.ownerBrand}"). One brand name can only have one manufacturer. Upload it under the brand you own, or ask OptiKart to reassign the brand.`
+        );
         continue;
       } else if (allowedBrands.size && !allowedBrands.has(brand.toLowerCase())) {
         // Per-row and named: a generic reject would make the manufacturer hunt
         // for which row invented which brand, on a sheet of 60 rows.
-        errors.push(`Row ${line}: brand "${brand}" is not on this manufacturer's profile. Add it under "Brands manufactured" first (currently: ${[...allowedBrands].join(', ') || 'none declared'}); a brand nobody declared cannot own catalogue rows.`);
+        errors.push(
+          `Row ${line}: brand "${brand}" is not on this manufacturer's profile. Add it under "Brands manufactured" first (currently: ${[...allowedBrands].join(', ') || 'none declared'}); a brand nobody declared cannot own catalogue rows.`
+        );
         continue;
       } else if (!allowedBrands.size) {
         // An empty brand list is not "anything goes": it is a profile nobody has
         // set up, and importing on top of it leaves the store grouping by a brand
         // with no logo, no approval queue and no retailer access.
-        errors.push(`Row ${line}: brand "${brand}" cannot be imported - this manufacturer has no brands declared yet. Add the brand to the profile first.`);
+        errors.push(
+          `Row ${line}: brand "${brand}" cannot be imported - this manufacturer has no brands declared yet. Add the brand to the profile first.`
+        );
         continue;
       }
       if (!String(get('description') ?? '').trim()) missing.push('description');
@@ -727,7 +759,9 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       // Category-specific required columns, checked here so the message names
       // the spreadsheet row and the column, rather than surfacing later as a
       // model error about an object the uploader never sees.
-      const catPre = String(categoryRaw).toLowerCase().replace(/[\s_-]/g, '');
+      const catPre = String(categoryRaw)
+        .toLowerCase()
+        .replace(/[\s_-]/g, '');
       if (catPre === 'solution') {
         if (!Number(get('volumeml', 'volume'))) missing.push('volumeMl');
         if (!String(get('packpricing', 'packs') ?? '').trim()) missing.push('packPricing (for example 2:1499|3:2099)');
@@ -745,10 +779,14 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         }
       }
 
-      const category = String(categoryRaw).toLowerCase().replace(/[\s_-]/g, '');
+      const category = String(categoryRaw)
+        .toLowerCase()
+        .replace(/[\s_-]/g, '');
       const EYEWEAR = ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'];
       if (category && !EYEWEAR.includes(category) && !['contactlenses', 'solution', 'accessories'].includes(category)) {
-        errors.push(`Row ${line}: unknown category "${categoryRaw}". Use sunglasses, eyeglasses, readingglasses, sportseyewear, kids, contactlenses, solution or accessories.`);
+        errors.push(
+          `Row ${line}: unknown category "${categoryRaw}". Use sunglasses, eyeglasses, readingglasses, sportseyewear, kids, contactlenses, solution or accessories.`
+        );
         continue;
       }
       if (EYEWEAR.includes(category)) {
@@ -761,11 +799,16 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         if (!String(get('framewidth') ?? '').trim()) missing.push('frameWidth');
         if (!String(get('frameweight') ?? '').trim()) missing.push('frameWeight');
         const sizeParts = measureFromSize(get('framesize', 'size'));
-        const dimGiven = String(get('framedimensions', 'dimensions') ?? '').trim()
-          || (sizeParts.lens && sizeParts.temple)
-          || ['width', 'height', 'bridge', 'temple'].every((k) => Number(String(get('dim' + k) ?? '')) > 0);
-        if (!dimGiven) missing.push('dimensions (one string like 54 x 52 x 16 x 145, or the four dimWidth/dimHeight/dimBridge/dimTemple columns)');
-        if (!String(get('framecolor', 'framecolour', 'color', 'colour', 'colours') ?? '').trim()) missing.push('frameColor');
+        const dimGiven =
+          String(get('framedimensions', 'dimensions') ?? '').trim() ||
+          (sizeParts.lens && sizeParts.temple) ||
+          ['width', 'height', 'bridge', 'temple'].every((k) => Number(String(get('dim' + k) ?? '')) > 0);
+        if (!dimGiven)
+          missing.push(
+            'dimensions (one string like 54 x 52 x 16 x 145, or the four dimWidth/dimHeight/dimBridge/dimTemple columns)'
+          );
+        if (!String(get('framecolor', 'framecolour', 'color', 'colour', 'colours') ?? '').trim())
+          missing.push('frameColor');
         if (/^kids$/.test(category) || String(genderRaw).toLowerCase() === 'kids') {
           if (!String(get('subgender', 'boygirl') ?? '').trim()) missing.push('subGender (boys or girls)');
           if (!String(get('agegroup', 'age') ?? '').trim()) missing.push('ageGroup');
@@ -799,7 +842,10 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         return n;
       };
       const first = (...vals) => {
-        for (const v of vals) { const n = num(v); if (n !== undefined) return n; }
+        for (const v of vals) {
+          const n = num(v);
+          if (n !== undefined) return n;
+        }
         return undefined;
       };
 
@@ -820,7 +866,8 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         // subGender/ageGroup below keep `|| undefined`.
         gender: String(genderRaw ?? '').toLowerCase() || undefined,
         subGender: ['boys', 'girls'].includes(String(get('subgender') ?? '').toLowerCase())
-          ? String(get('subgender')).toLowerCase() : undefined,
+          ? String(get('subgender')).toLowerCase()
+          : undefined,
         ageGroup: optText('agegroup'),
         frameShape: optText('frameshape', 'faceshape'),
         frameType: optText('frametype'),
@@ -848,44 +895,55 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
             width: first(get('dimwidth'), four ? parts[0] : undefined, fromSize.lens),
             height: first(get('dimheight'), four ? parts[1] : undefined),
             bridge: first(get('dimbridge'), four ? parts[2] : parts[1], fromSize.bridge),
-            temple: first(get('dimtemple'), four ? parts[3] : parts[2], fromSize.temple)
+            temple: first(get('dimtemple'), four ? parts[3] : parts[2], fromSize.temple),
           };
         })(),
-        images: imageField.split('|').map((u) => u.trim()).filter(Boolean),
+        images: imageField
+          .split('|')
+          .map((u) => u.trim())
+          .filter(Boolean),
         // Powered declaration from the sheet, validated on save.
-        poweredOptionsAvailable: ['true', 'yes', 'y', '1'].includes(String(get('powered', 'withpower', 'poweredoptionsavailable') ?? '').toLowerCase()),
+        poweredOptionsAvailable: ['true', 'yes', 'y', '1'].includes(
+          String(get('powered', 'withpower', 'poweredoptionsavailable') ?? '').toLowerCase()
+        ),
         prescriptionLensTypes: list(get('prescriptionlenstypes', 'lenstypes')),
         warranty: String(get('warranty') ?? ''),
         tags: list(get('tags')),
         returnWindowDays: get('returnwindowdays') !== undefined ? Number(get('returnwindowdays')) : undefined,
         // Contact-lens specifics when the row is a lens product.
-        ...(category === 'contactlenses' ? {
-          contactLens: {
-            powerType: ['distance', 'toric', 'multifocal', 'none'].includes(String(get('powertype')).toLowerCase()) ? String(get('powertype')).toLowerCase() : 'distance',
-            lensesPerBox: Number(get('lensesperbox')) || 6,
-            replacementPeriod: String(get('replacementperiod')).toLowerCase(),
-            diameter: Number(get('diameter')),
-            baseCurve: Number(get('basecurve')),
-            waterContent: Number(get('watercontent')),
-            allowsZeroPower: ['true', 'yes'].includes(String(get('allowszeropower') ?? '').toLowerCase()),
-            isCosmetic: ['true', 'yes'].includes(String(get('iscosmetic', 'coloured', 'color') ?? '').toLowerCase()),
-            colorTone: String(get('colortone') ?? ''),
-            /*
-             * Toric and multifocal ranges. The model refuses a toric lens without
-             * a negative cylinder range and an axis range, and a multifocal without
-             * an ADD range where max > min - but the parser never read the columns,
-             * so those lenses failed against fields no template mentioned and could
-             * only be created one at a time.
-             */
-            cylinderMin: get('cylindermin') !== undefined ? Number(get('cylindermin')) : undefined,
-            cylinderMax: get('cylindermax') !== undefined ? Number(get('cylindermax')) : undefined,
-            axisMin: get('axismin') !== undefined ? Number(get('axismin')) : undefined,
-            axisMax: get('axismax') !== undefined ? Number(get('axismax')) : undefined,
-            additionMin: get('additionmin') !== undefined ? Number(get('additionmin')) : undefined,
-            additionMax: get('additionmax') !== undefined ? Number(get('additionmax')) : undefined,
-            step: get('step') !== undefined ? Number(get('step')) : undefined
-          }
-        } : {}),
+        ...(category === 'contactlenses'
+          ? {
+              contactLens: {
+                powerType: ['distance', 'toric', 'multifocal', 'none'].includes(String(get('powertype')).toLowerCase())
+                  ? String(get('powertype')).toLowerCase()
+                  : 'distance',
+                lensesPerBox: Number(get('lensesperbox')) || 6,
+                replacementPeriod: String(get('replacementperiod')).toLowerCase(),
+                diameter: Number(get('diameter')),
+                baseCurve: Number(get('basecurve')),
+                waterContent: Number(get('watercontent')),
+                allowsZeroPower: ['true', 'yes'].includes(String(get('allowszeropower') ?? '').toLowerCase()),
+                isCosmetic: ['true', 'yes'].includes(
+                  String(get('iscosmetic', 'coloured', 'color') ?? '').toLowerCase()
+                ),
+                colorTone: String(get('colortone') ?? ''),
+                /*
+                 * Toric and multifocal ranges. The model refuses a toric lens without
+                 * a negative cylinder range and an axis range, and a multifocal without
+                 * an ADD range where max > min - but the parser never read the columns,
+                 * so those lenses failed against fields no template mentioned and could
+                 * only be created one at a time.
+                 */
+                cylinderMin: get('cylindermin') !== undefined ? Number(get('cylindermin')) : undefined,
+                cylinderMax: get('cylindermax') !== undefined ? Number(get('cylindermax')) : undefined,
+                axisMin: get('axismin') !== undefined ? Number(get('axismin')) : undefined,
+                axisMax: get('axismax') !== undefined ? Number(get('axismax')) : undefined,
+                additionMin: get('additionmin') !== undefined ? Number(get('additionmin')) : undefined,
+                additionMax: get('additionmax') !== undefined ? Number(get('additionmax')) : undefined,
+                step: get('step') !== undefined ? Number(get('step')) : undefined,
+              },
+            }
+          : {}),
         /*
          * Solution needs a bottle volume and at least one pack price; accessories
          * need a type. The model checks all three and the parser supplied none of
@@ -899,39 +957,61 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
          * row fails loudly about the column instead of quietly filing a case as a
          * cleaning kit.
          */
-        ...(category === 'solution' ? {
-          solution: {
-            volumeMl: Number(get('volumeml', 'volume')) || undefined,
-            packPricing: String(get('packpricing', 'packs') ?? '')
-              .split('|')
-              .map((chunk) => {
-                const [packSize, price] = chunk.split(':').map((x) => Number(String(x).trim()));
-                return Number.isFinite(packSize) && Number.isFinite(price) && packSize >= 1
-                  ? { packSize, price }
-                  : null;
-              })
-              .filter(Boolean),
-            suitableFor: String(get('suitablefor') ?? '')
-              .split('|')
-              .map((x) => x.trim().toLowerCase().replace(/\s+/g, '-'))
-              .filter((x) => ['soft', 'silicone-hydrogel', 'rigid-gas-permeable', 'coloured', 'extended-wear'].includes(x)),
-            volumePerBottle: String(get('volumeperbottle') ?? ''),
-            disinfects: get('disinfects') === undefined ? true : ['true', 'yes', '1'].includes(String(get('disinfects')).toLowerCase()),
-            peroxideBased: ['true', 'yes', '1'].includes(String(get('peroxidebased') ?? '').toLowerCase()),
-            preservativeFree: ['true', 'yes', '1'].includes(String(get('preservativefree') ?? '').toLowerCase())
-          }
-        } : {}),
-        ...(category === 'accessories' ? {
-          accessory: {
-            accessoryType: ['case', 'twezers', 'applicator', 'suction-cup', 'travel-pouch', 'cleaning-kit']
-              .includes(String(get('accessorytype') ?? '').trim().toLowerCase())
-              ? String(get('accessorytype')).trim().toLowerCase()
-              : String(get('accessorytype') ?? '').trim() || undefined,
-            materialName: String(get('materialname') ?? ''),
-            compartmentCount: get('compartmentcount') !== undefined ? Number(get('compartmentcount')) : undefined,
-            colours: String(get('colours') ?? '').split('|').map((x) => x.trim()).filter(Boolean)
-          }
-        } : {})
+        ...(category === 'solution'
+          ? {
+              solution: {
+                volumeMl: Number(get('volumeml', 'volume')) || undefined,
+                packPricing: String(get('packpricing', 'packs') ?? '')
+                  .split('|')
+                  .map((chunk) => {
+                    const [packSize, price] = chunk.split(':').map((x) => Number(String(x).trim()));
+                    return Number.isFinite(packSize) && Number.isFinite(price) && packSize >= 1
+                      ? { packSize, price }
+                      : null;
+                  })
+                  .filter(Boolean),
+                suitableFor: String(get('suitablefor') ?? '')
+                  .split('|')
+                  .map((x) => x.trim().toLowerCase().replace(/\s+/g, '-'))
+                  .filter((x) =>
+                    ['soft', 'silicone-hydrogel', 'rigid-gas-permeable', 'coloured', 'extended-wear'].includes(x)
+                  ),
+                volumePerBottle: String(get('volumeperbottle') ?? ''),
+                disinfects:
+                  get('disinfects') === undefined
+                    ? true
+                    : ['true', 'yes', '1'].includes(String(get('disinfects')).toLowerCase()),
+                peroxideBased: ['true', 'yes', '1'].includes(String(get('peroxidebased') ?? '').toLowerCase()),
+                preservativeFree: ['true', 'yes', '1'].includes(String(get('preservativefree') ?? '').toLowerCase()),
+              },
+            }
+          : {}),
+        ...(category === 'accessories'
+          ? {
+              accessory: {
+                accessoryType: [
+                  'case',
+                  'twezers',
+                  'applicator',
+                  'suction-cup',
+                  'travel-pouch',
+                  'cleaning-kit',
+                ].includes(
+                  String(get('accessorytype') ?? '')
+                    .trim()
+                    .toLowerCase()
+                )
+                  ? String(get('accessorytype')).trim().toLowerCase()
+                  : String(get('accessorytype') ?? '').trim() || undefined,
+                materialName: String(get('materialname') ?? ''),
+                compartmentCount: get('compartmentcount') !== undefined ? Number(get('compartmentcount')) : undefined,
+                colours: String(get('colours') ?? '')
+                  .split('|')
+                  .map((x) => x.trim())
+                  .filter(Boolean),
+              },
+            }
+          : {}),
       });
     }
 
@@ -946,18 +1026,22 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       const labels = [...brandFirstRow.keys()].map((f) => brandLabels.get(f));
       for (const [f, rows] of brandFirstRow.entries()) {
         for (const row of rows) {
-          errors.push(`Row ${row}: sheet mixes ${brandFirstRow.size} brands (${labels.map((l) => `"${l}"`).join(', ')}), and one file must carry one brand. Split this file by brand and upload it again.`);
+          errors.push(
+            `Row ${row}: sheet mixes ${brandFirstRow.size} brands (${labels.map((l) => `"${l}"`).join(', ')}), and one file must carry one brand. Split this file by brand and upload it again.`
+          );
         }
       }
     }
 
     // Mixed-category sheets are refused rather than silently half-imported.
     const sunCount = categoriesSeen.has('sunglasses');
-    const eyeCount = [...categoriesSeen].some((c) => ['eyeglasses', 'readingglasses', 'kids', 'sportseyewear'].includes(c));
+    const eyeCount = [...categoriesSeen].some((c) =>
+      ['eyeglasses', 'readingglasses', 'kids', 'sportseyewear'].includes(c)
+    );
     if (sunCount && eyeCount) {
       return res.status(400).json({
         success: false,
-        message: 'Sunglasses and eyeglasses must be uploaded in separate files. This sheet mixes both categories.'
+        message: 'Sunglasses and eyeglasses must be uploaded in separate files. This sheet mixes both categories.',
       });
     }
 
@@ -969,22 +1053,24 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         success: false,
         mixedBrands: [...brandFirstRow.keys()].map((f) => ({
           brand: brandLabels.get(f),
-          rows: brandFirstRow.get(f)
+          rows: brandFirstRow.get(f),
         })),
         message: `One brand per file. This sheet mixes ${brandFirstRow.size} brands (${labelList}) - split it by brand and upload each separately.`,
-        errors: errors.slice(0, 50)
+        errors: errors.slice(0, 50),
       });
     }
 
     if (!products.length && errors.length) {
-      return res.status(400).json({ success: false, message: 'No rows could be imported.', errors: errors.slice(0, 50) });
+      return res
+        .status(400)
+        .json({ success: false, message: 'No rows could be imported.', errors: errors.slice(0, 50) });
     }
 
     if (errors.length) {
       return res.status(400).json({
         success: false,
         message: `${errors.length} row(s) need attention before the file can be imported. Nothing was saved.`,
-        errors: errors.slice(0, 50)
+        errors: errors.slice(0, 50),
       });
     }
 
@@ -1002,7 +1088,11 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       stored.push(p);
     }
     if (errors.length) {
-      return res.status(400).json({ success: false, message: 'Some image links could not be fetched. Nothing was saved.', errors: errors.slice(0, 20) });
+      return res.status(400).json({
+        success: false,
+        message: 'Some image links could not be fetched. Nothing was saved.',
+        errors: errors.slice(0, 20),
+      });
     }
 
     /*
@@ -1019,7 +1109,9 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         if (p[field] === undefined) continue;
         const matched = matchEnum(Product, path, p[field]);
         if (matched.unknown) {
-          rowProblems.push(`${p.title || `row ${index + 1}`}: ${field} "${p[field]}" is not one of ${enumsOf(Product, path).join(', ')}`);
+          rowProblems.push(
+            `${p.title || `row ${index + 1}`}: ${field} "${p[field]}" is not one of ${enumsOf(Product, path).join(', ')}`
+          );
         }
         p[field] = matched.value;
       }
@@ -1027,16 +1119,18 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
 
       const invalid = new Product(p).validateSync();
       if (invalid) {
-        rowProblems.push(`${p.title || `row ${index + 1}`}: ${Object.entries(invalid.errors)
-          .map(([k, v]) => `${k} - ${v.message.replace(/^Path \`.*?\` is invalid: /, '')}`)
-          .join('; ')}`);
+        rowProblems.push(
+          `${p.title || `row ${index + 1}`}: ${Object.entries(invalid.errors)
+            .map(([k, v]) => `${k} - ${v.message.replace(/^Path \`.*?\` is invalid: /, '')}`)
+            .join('; ')}`
+        );
       }
     }
     if (rowProblems.length) {
       return res.status(400).json({
         success: false,
         message: `${rowProblems.length} row(s) need attention before the file can be imported. Nothing was saved.`,
-        errors: rowProblems.slice(0, 20)
+        errors: rowProblems.slice(0, 20),
       });
     }
 
@@ -1045,7 +1139,7 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
     res.json({
       success: true,
       message: `${createdProducts.length} products uploaded successfully.`,
-      count: createdProducts.length
+      count: createdProducts.length,
     });
   } catch (error) {
     console.error('Bulk upload error:', error);
@@ -1056,11 +1150,10 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
 // Add Manufacturer Seller
 router.post('/sellers', verifyManufacturer, async (req, res) => {
   try {
-    
     const sellerData = {
       ...req.body,
       manufacturer: req.manufacturer._id,
-      createdBy: req.manufacturer._id
+      createdBy: req.manufacturer._id,
     };
 
     const seller = new ManufacturerSeller(sellerData);
@@ -1072,7 +1165,7 @@ router.post('/sellers', verifyManufacturer, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Manufacturer seller added successfully.',
-      seller
+      seller,
     });
   } catch (error) {
     console.error('Add manufacturer seller error:', error);
@@ -1083,14 +1176,13 @@ router.post('/sellers', verifyManufacturer, async (req, res) => {
 // Get Manufacturer Sellers
 router.get('/sellers', verifyManufacturer, async (req, res) => {
   try {
-    
-    const sellers = await ManufacturerSeller.find({ 
-      manufacturer: req.manufacturer._id
+    const sellers = await ManufacturerSeller.find({
+      manufacturer: req.manufacturer._id,
     }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      sellers
+      sellers,
     });
   } catch (error) {
     console.error('Get sellers error:', error);
@@ -1101,7 +1193,6 @@ router.get('/sellers', verifyManufacturer, async (req, res) => {
 // Bulk Upload Manufacturer Sellers
 router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), async (req, res) => {
   try {
-    
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'No file uploaded.' });
     }
@@ -1116,11 +1207,21 @@ router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), a
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      
+
       // Validate required fields
-      if (!row.name || !row.email || !row.phone || !row.storeName || !row.manufacturerCode || 
-          !row.gstNumber || !row.panNumber || !row.accountNumber || !row.ifscCode || 
-          !row.bankName || !row.branchName) {
+      if (
+        !row.name ||
+        !row.email ||
+        !row.phone ||
+        !row.storeName ||
+        !row.manufacturerCode ||
+        !row.gstNumber ||
+        !row.panNumber ||
+        !row.accountNumber ||
+        !row.ifscCode ||
+        !row.bankName ||
+        !row.branchName
+      ) {
         errors.push(`Row ${i + 2}: Missing required fields`);
         continue;
       }
@@ -1138,7 +1239,7 @@ router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), a
           street: row.street || '',
           city: row.city || '',
           state: row.state || '',
-          pincode: row.pincode || ''
+          pincode: row.pincode || '',
         },
         manufacturerCode: row.manufacturerCode,
         manufacturer: req.manufacturer._id,
@@ -1148,19 +1249,19 @@ router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), a
           accountNumber: row.accountNumber,
           ifscCode: row.ifscCode,
           bankName: row.bankName,
-          branchName: row.branchName
+          branchName: row.branchName,
         },
-        createdBy: req.manufacturer._id
+        createdBy: req.manufacturer._id,
       };
 
       sellers.push(sellerData);
     }
 
     if (errors.length > 0) {
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: 'Validation errors found.',
-        errors
+        errors,
       });
     }
 
@@ -1168,13 +1269,13 @@ router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), a
 
     // Send credentials to all sellers
     for (const seller of createdSellers) {
-      await sendOTP(seller.email, sellers.find(s => s.email === seller.email).password, 'credentials');
+      await sendOTP(seller.email, sellers.find((s) => s.email === seller.email).password, 'credentials');
     }
 
     res.json({
       success: true,
       message: `${createdSellers.length} sellers added successfully.`,
-      count: createdSellers.length
+      count: createdSellers.length,
     });
   } catch (error) {
     console.error('Bulk upload sellers error:', error);
@@ -1185,10 +1286,9 @@ router.post('/sellers/bulk-upload', verifyManufacturer, upload.single('file'), a
 // Ban Manufacturer Seller
 router.post('/sellers/:id/ban', verifyManufacturer, async (req, res) => {
   try {
-    
-    const seller = await ManufacturerSeller.findOne({ 
+    const seller = await ManufacturerSeller.findOne({
       _id: req.params.id,
-      manufacturer: req.manufacturer._id
+      manufacturer: req.manufacturer._id,
     });
 
     if (!seller) {
@@ -1203,7 +1303,7 @@ router.post('/sellers/:id/ban', verifyManufacturer, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Seller banned successfully.'
+      message: 'Seller banned successfully.',
     });
   } catch (error) {
     console.error('Ban seller error:', error);
@@ -1214,11 +1314,10 @@ router.post('/sellers/:id/ban', verifyManufacturer, async (req, res) => {
 // Add Manufacturer Staff
 router.post('/staff', verifyManufacturer, async (req, res) => {
   try {
-    
     const staffData = {
       ...req.body,
       manufacturer: req.manufacturer._id,
-      createdBy: req.manufacturer._id
+      createdBy: req.manufacturer._id,
     };
 
     const staff = new ManufacturerStaff(staffData);
@@ -1227,7 +1326,7 @@ router.post('/staff', verifyManufacturer, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Staff added successfully.',
-      staff
+      staff,
     });
   } catch (error) {
     console.error('Add staff error:', error);
@@ -1238,21 +1337,19 @@ router.post('/staff', verifyManufacturer, async (req, res) => {
 // Get Manufacturer Staff
 router.get('/staff', verifyManufacturer, async (req, res) => {
   try {
-    
-    const staff = await ManufacturerStaff.find({ 
-      manufacturer: req.manufacturer._id
+    const staff = await ManufacturerStaff.find({
+      manufacturer: req.manufacturer._id,
     }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      staff
+      staff,
     });
   } catch (error) {
     console.error('Get staff error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
-
 
 router.delete('/sellers/:sellerId', verifyManufacturer, async (req, res) => {
   try {
@@ -1304,7 +1401,9 @@ router.put('/profile', verifyManufacturer, async (req, res) => {
   try {
     const allowed = ['name', 'phone', 'companyName', 'gstNumber', 'panNumber', 'brands', 'address'];
     const updates = {};
-    allowed.forEach((k) => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
+    allowed.forEach((k) => {
+      if (req.body[k] !== undefined) updates[k] = req.body[k];
+    });
 
     if (updates.brands !== undefined) {
       const list = Array.isArray(updates.brands) ? updates.brands : String(updates.brands).split(',');
@@ -1319,8 +1418,10 @@ router.put('/profile', verifyManufacturer, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Nothing to update.' });
     }
 
-    const me = await Manufacturer.findByIdAndUpdate(req.manufacturer._id, updates, { new: true, runValidators: true })
-      .select('-password -loginOtp -loginOtpExpiry');
+    const me = await Manufacturer.findByIdAndUpdate(req.manufacturer._id, updates, {
+      new: true,
+      runValidators: true,
+    }).select('-password -loginOtp -loginOtpExpiry');
     res.json({ success: true, message: 'Profile updated.', data: me });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -1357,7 +1458,9 @@ router.put('/sellers/:sellerId', verifyManufacturer, async (req, res) => {
     }
 
     const allowed = ['name', 'phone', 'storeName', 'storeDescription', 'storeAddress', 'gstNumber', 'panNumber'];
-    allowed.forEach((k) => { if (req.body[k] !== undefined) seller[k] = req.body[k]; });
+    allowed.forEach((k) => {
+      if (req.body[k] !== undefined) seller[k] = req.body[k];
+    });
     if (req.body.storeAddress) {
       seller.storeAddress = { ...seller.storeAddress, ...req.body.storeAddress };
     }

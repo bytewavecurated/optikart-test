@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiAlertTriangle, FiArrowLeft, FiCalendar, FiDollarSign, FiEye, FiEyeOff, FiMail, FiMapPin, FiPackage, FiPhone, FiShield, FiShoppingBag, FiTrash2, FiUser } from 'react-icons/fi';
+import {
+  FiAlertTriangle,
+  FiArrowLeft,
+  FiCalendar,
+  FiDollarSign,
+  FiEye,
+  FiEyeOff,
+  FiMail,
+  FiMapPin,
+  FiPackage,
+  FiPhone,
+  FiShield,
+  FiShoppingBag,
+  FiTrash2,
+  FiUser,
+} from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -21,15 +36,12 @@ const UserDetailView = () => {
 
   const fetchUserDetails = async () => {
     try {
-      const [userRes, ordersRes] = await Promise.all([
-        adminApi.getUserById(id),
-        adminApi.getUserOrders(id)
-      ]);
-      setUser(oneOf(userRes.data, "user"));
+      const [userRes, ordersRes] = await Promise.all([adminApi.getUserById(id), adminApi.getUserOrders(id)]);
+      setUser(oneOf(userRes.data, 'user'));
       setOrders(listOf(ordersRes.data));
     } catch (error) {
       console.error(error);
-      toastError(error, "Failed to load user details");
+      toastError(error, 'Failed to load user details');
     } finally {
       setLoading(false);
     }
@@ -38,17 +50,17 @@ const UserDetailView = () => {
   const handleBan = async (banType) => {
     const action = banType === 'ban' ? 'ban' : banType === 'shadow' ? 'shadow ban' : 'unban';
     if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
-    
+
     try {
-      await adminApi.banUser(id, { 
+      await adminApi.banUser(id, {
         isBanned: banType === 'ban',
         isShadowBanned: banType === 'shadow',
-        banReason: banType !== 'unban' ? 'Banned by admin' : ''
+        banReason: banType !== 'unban' ? 'Banned by admin' : '',
       });
       toast.success(`User ${action}ned successfully`);
       fetchUserDetails();
     } catch (error) {
-      toastError(error, "Failed to update user status");
+      toastError(error, 'Failed to update user status');
     }
   };
 
@@ -59,7 +71,7 @@ const UserDetailView = () => {
       toast.success('User deleted successfully');
       navigate('/admin/users');
     } catch (error) {
-      toastError(error, "Failed to delete user");
+      toastError(error, 'Failed to delete user');
     }
   };
 
@@ -93,23 +105,58 @@ const UserDetailView = () => {
   }
 
   const totalSpent = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-  const completedOrders = orders.filter(o => o.orderStatus === 'delivered').length;
-  const cancelledOrders = orders.filter(o => o.orderStatus === 'cancelled').length;
+  const completedOrders = orders.filter((o) => o.orderStatus === 'delivered').length;
+  const cancelledOrders = orders.filter((o) => o.orderStatus === 'cancelled').length;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <button onClick={() => navigate('/admin/users')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--primary)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '20px', padding: 0 }}>
+          <button
+            onClick={() => navigate('/admin/users')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'none',
+              border: 'none',
+              color: 'var(--primary)',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              marginBottom: '20px',
+              padding: 0,
+            }}
+          >
             <FiArrowLeft /> Back to Users
           </button>
 
           {/* User Info Card */}
           <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: '20px',
+              }}
+            >
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'var(--primary)',
+                    color: 'var(--text-white)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '24px',
+                    fontWeight: 700,
+                  }}
+                >
                   {(user.name || 'U')[0].toUpperCase()}
                 </div>
                 <div>
@@ -120,16 +167,28 @@ const UserDetailView = () => {
               <div style={{ display: 'flex', gap: '8px' }}>
                 {!user.isBanned && !user.isShadowBanned && (
                   <>
-                    <button onClick={() => handleBan('shadow')} className="btn btn-outline btn-sm" style={{ fontSize: '12px' }}>
+                    <button
+                      onClick={() => handleBan('shadow')}
+                      className="btn btn-outline btn-sm"
+                      style={{ fontSize: '12px' }}
+                    >
                       <FiEyeOff size={14} /> Shadow Ban
                     </button>
-                    <button onClick={() => handleBan('ban')} className="btn btn-danger btn-sm" style={{ fontSize: '12px' }}>
+                    <button
+                      onClick={() => handleBan('ban')}
+                      className="btn btn-danger btn-sm"
+                      style={{ fontSize: '12px' }}
+                    >
                       <FiShield size={14} /> Ban User
                     </button>
                   </>
                 )}
                 {(user.isBanned || user.isShadowBanned) && (
-                  <button onClick={() => handleBan('unban')} className="btn btn-primary btn-sm" style={{ fontSize: '12px' }}>
+                  <button
+                    onClick={() => handleBan('unban')}
+                    className="btn btn-primary btn-sm"
+                    style={{ fontSize: '12px' }}
+                  >
                     <FiEye size={14} /> Unban User
                   </button>
                 )}
@@ -140,17 +199,44 @@ const UserDetailView = () => {
             </div>
 
             {user.isBanned && (
-              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Banned</p>
-                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Reason: {user.banReason || 'No reason provided'}</p>
-                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Banned on: {new Date(user.bannedAt).toLocaleDateString()}</p>
+              <div
+                style={{
+                  background: 'var(--danger-light)',
+                  border: '1px solid #ef5350',
+                  borderRadius: 'var(--radius-xs)',
+                  padding: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                  <FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Banned
+                </p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>
+                  Reason: {user.banReason || 'No reason provided'}
+                </p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>
+                  Banned on: {new Date(user.bannedAt).toLocaleDateString()}
+                </p>
               </div>
             )}
 
             {user.isShadowBanned && !user.isBanned && (
-              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Shadow Banned</p>
-                <p style={{ color: 'var(--warning)', fontSize: '12px' }}>User can still access the platform but with limited visibility</p>
+              <div
+                style={{
+                  background: 'var(--warning-light)',
+                  border: '1px solid var(--warning)',
+                  borderRadius: 'var(--radius-xs)',
+                  padding: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                  <FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> User is Shadow
+                  Banned
+                </p>
+                <p style={{ color: 'var(--warning)', fontSize: '12px' }}>
+                  User can still access the platform but with limited visibility
+                </p>
               </div>
             )}
 
@@ -185,7 +271,14 @@ const UserDetailView = () => {
           </div>
 
           {/* Stats Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px',
+              marginBottom: '24px',
+            }}
+          >
             <div className="card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -234,39 +327,71 @@ const UserDetailView = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-                      {['Order ID', 'Date', 'Items', 'Amount', 'Status', 'Payment'].map(h => (
-                        <th key={h} style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>
+                      {['Order ID', 'Date', 'Items', 'Amount', 'Status', 'Payment'].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: '12px',
+                            textAlign: 'left',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map(order => (
+                    {orders.map((order) => (
                       <tr key={order._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>#{order.orderNumber || order._id.slice(-6)}</td>
-                        <td style={{ padding: '12px', fontSize: '13px' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>
+                          #{order.orderNumber || order._id.slice(-6)}
+                        </td>
+                        <td style={{ padding: '12px', fontSize: '13px' }}>
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </td>
                         <td style={{ padding: '12px', fontSize: '13px' }}>{order.items?.length || 0} items</td>
-                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>₹{order.totalAmount?.toLocaleString()}</td>
+                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>
+                          ₹{order.totalAmount?.toLocaleString()}
+                        </td>
                         <td style={{ padding: '12px' }}>
-                          <span style={{ 
-                            padding: '4px 8px', 
-                            borderRadius: 'var(--radius-xs)', 
-                            fontSize: '11px', 
-                            fontWeight: 600,
-                            background: order.orderStatus === 'delivered' ? 'var(--success-light)' : order.orderStatus === 'cancelled' ? 'var(--danger-light)' : 'var(--warning-light)',
-                            color: order.orderStatus === 'delivered' ? 'var(--success)' : order.orderStatus === 'cancelled' ? 'var(--danger)' : 'var(--warning)'
-                          }}>
+                          <span
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 'var(--radius-xs)',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              background:
+                                order.orderStatus === 'delivered'
+                                  ? 'var(--success-light)'
+                                  : order.orderStatus === 'cancelled'
+                                    ? 'var(--danger-light)'
+                                    : 'var(--warning-light)',
+                              color:
+                                order.orderStatus === 'delivered'
+                                  ? 'var(--success)'
+                                  : order.orderStatus === 'cancelled'
+                                    ? 'var(--danger)'
+                                    : 'var(--warning)',
+                            }}
+                          >
                             {order.orderStatus}
                           </span>
                         </td>
                         <td style={{ padding: '12px' }}>
-                          <span style={{ 
-                            padding: '4px 8px', 
-                            borderRadius: 'var(--radius-xs)', 
-                            fontSize: '11px', 
-                            fontWeight: 600,
-                            background: order.paymentStatus === 'completed' ? 'var(--success-light)' : 'var(--danger-light)',
-                            color: order.paymentStatus === 'completed' ? 'var(--success)' : 'var(--danger)'
-                          }}>
+                          <span
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 'var(--radius-xs)',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              background:
+                                order.paymentStatus === 'completed' ? 'var(--success-light)' : 'var(--danger-light)',
+                              color: order.paymentStatus === 'completed' ? 'var(--success)' : 'var(--danger)',
+                            }}
+                          >
                             {order.paymentStatus}
                           </span>
                         </td>

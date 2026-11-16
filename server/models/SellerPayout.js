@@ -4,71 +4,71 @@ const sellerPayoutSchema = new mongoose.Schema({
   seller: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Seller',
-    required: true
+    required: true,
   },
   payoutNumber: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   period: {
     startDate: { type: Date, required: true },
-    endDate: { type: Date, required: true }
+    endDate: { type: Date, required: true },
   },
   totalSales: {
     type: Number,
-    required: true
+    required: true,
   },
   platformCommission: {
     type: Number,
-    required: true
+    required: true,
   },
   // Delivery cost borne by the seller (Shiprocket bill or the platform's own
   // per-order fee). Shown on the statement so the net figure reconciles.
   deliveryCharges: {
     type: Number,
-    default: 0
+    default: 0,
   },
   netAmount: {
     type: Number,
-    required: true
+    required: true,
   },
   status: {
     type: String,
     enum: ['pending', 'processing', 'completed', 'failed'],
-    default: 'pending'
+    default: 'pending',
   },
   bankDetails: {
     accountNumber: { type: String, required: true },
     ifscCode: { type: String, required: true },
     accountHolderName: { type: String, required: true },
-    bankName: { type: String, required: true }
+    bankName: { type: String, required: true },
   },
   razorpayTransferId: {
-    type: String
+    type: String,
   },
   transactionId: {
-    type: String
+    type: String,
   },
   processedAt: {
-    type: Date
+    type: Date,
   },
   completedAt: {
-    type: Date
+    type: Date,
   },
   failedAt: {
-    type: Date
+    type: Date,
   },
   failureReason: {
-    type: String
+    type: String,
   },
   notes: {
-    type: String
+    type: String,
   },
   createdAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 sellerPayoutSchema.index({ seller: 1, status: 1 });

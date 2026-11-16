@@ -48,15 +48,15 @@ export const UserBehaviorProvider = ({ children }) => {
 
   const addSearchQuery = (query) => {
     if (!query.trim()) return;
-    setSearchHistory(prev => {
-      const filtered = prev.filter(item => item !== query);
+    setSearchHistory((prev) => {
+      const filtered = prev.filter((item) => item !== query);
       return [query, ...filtered].slice(0, 20); // Keep last 20 searches
     });
   };
 
   const addBrowsingHistory = (product) => {
-    setBrowsingHistory(prev => {
-      const filtered = prev.filter(item => item._id !== product._id);
+    setBrowsingHistory((prev) => {
+      const filtered = prev.filter((item) => item._id !== product._id);
       return [product, ...filtered].slice(0, 50); // Keep last 50 products
     });
   };
@@ -85,12 +85,8 @@ export const UserBehaviorProvider = ({ children }) => {
     addBrowsingHistory,
     updateWishlist,
     updateCartItems,
-    clearHistory
+    clearHistory,
   };
 
-  return (
-    <UserBehaviorContext.Provider value={value}>
-      {children}
-    </UserBehaviorContext.Provider>
-  );
+  return <UserBehaviorContext.Provider value={value}>{children}</UserBehaviorContext.Provider>;
 };

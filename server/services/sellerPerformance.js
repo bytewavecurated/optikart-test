@@ -10,88 +10,79 @@ export const calculateSellerMetrics = async (sellerId, dateRange = {}) => {
   try {
     const { startDate, endDate } = dateRange;
     const dateFilter = {};
-    
+
     if (startDate && endDate) {
       dateFilter.createdAt = {
         $gte: new Date(startDate),
-        $lte: new Date(endDate)
+        $lte: new Date(endDate),
       };
     }
 
     // Get all orders for this seller
     const orders = await Order.find({
       seller: sellerId,
-      ...dateFilter
+      ...dateFilter,
     });
 
     // Calculate delivery metrics
-    const deliveredOrders = orders.filter(o => o.status === 'delivered');
+    const deliveredOrders = orders.filter((o) => o.status === 'delivered');
     const totalDelivered = deliveredOrders.length;
-    
+
     let avgDeliveryTime = 0;
     if (totalDelivered > 0) {
       const deliveryTimes = deliveredOrders
-        .filter(o => o.deliveredAt && o.orderDate)
-        .map(o => {
+        .filter((o) => o.deliveredAt && o.orderDate)
+        .map((o) => {
           const orderDate = new Date(o.orderDate);
           const deliveredDate = new Date(o.deliveredAt);
           return (deliveredDate - orderDate) / (1000 * 60 * 60 * 24); // days
         });
-      
-      avgDeliveryTime = deliveryTimes.length > 0
-        ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length
-        : 0;
+
+      avgDeliveryTime =
+        deliveryTimes.length > 0 ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length : 0;
     }
 
     // Calculate return rate
     const returns = await ReturnRequest.find({
       seller: sellerId,
-      ...dateFilter
+      ...dateFilter,
     });
-    
-    const returnRate = orders.length > 0
-      ? (returns.length / orders.length) * 100
-      : 0;
+
+    const returnRate = orders.length > 0 ? (returns.length / orders.length) * 100 : 0;
 
     // Calculate customer satisfaction
     const reviews = await Review.find({
       seller: sellerId,
-      ...dateFilter
+      ...dateFilter,
     });
-    
-    const avgRating = reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-      : 0;
+
+    const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
     // Calculate total revenue
     const totalRevenue = orders
-      .filter(o => o.paymentStatus === 'completed')
+      .filter((o) => o.paymentStatus === 'completed')
       .reduce((sum, o) => sum + o.totalAmount, 0);
 
     // Calculate total orders
     const totalOrders = orders.length;
 
     // Calculate completion rate
-    const completionRate = totalOrders > 0
-      ? (deliveredOrders.length / totalOrders) * 100
-      : 0;
+    const completionRate = totalOrders > 0 ? (deliveredOrders.length / totalOrders) * 100 : 0;
 
     // Calculate cancellation rate
-    const cancelledOrders = orders.filter(o => o.status === 'cancelled');
-    const cancellationRate = totalOrders > 0
-      ? (cancelledOrders.length / totalOrders) * 100
-      : 0;
+    const cancelledOrders = orders.filter((o) => o.status === 'cancelled');
+    const cancellationRate = totalOrders > 0 ? (cancelledOrders.length / totalOrders) * 100 : 0;
 
     // Get top selling products
     const productSales = {};
-    orders.forEach(order => {
-      order.items.forEach(item => {
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
         const productId = item.product.toString();
         if (!productSales[productId]) {
           productSales[productId] = {
             productId,
             quantity: 0,
-            revenue: 0
+            revenue: 0,
           };
         }
         productSales[productId].quantity += item.quantity;
@@ -109,11 +100,13 @@ export const calculateSellerMetrics = async (sellerId, dateRange = {}) => {
         const product = await Product.findById(p.productId);
         return {
           ...p,
-          product: product ? {
-            title: product.title,
-            image: product.images?.[0] || null,
-            brand: product.brand
-          } : null
+          product: product
+            ? {
+                title: product.title,
+                image: product.images?.[0] || null,
+                brand: product.brand,
+              }
+            : null,
         };
       })
     );
@@ -131,14 +124,14 @@ export const calculateSellerMetrics = async (sellerId, dateRange = {}) => {
         cancellationRate: Math.round(cancellationRate * 10) / 10,
         totalReviews: reviews.length,
         totalReturns: returns.length,
-        topProducts: topProductsWithDetails
-      }
+        topProducts: topProductsWithDetails,
+      },
     };
   } catch (error) {
     console.error('Error calculating seller metrics:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -157,7 +150,7 @@ export const getSellerBadge = (metrics) => {
       type: 'top_performer',
       label: 'Top Performer',
       color: '#FFD700',
-      icon: 'trophy'
+      icon: 'trophy',
     };
   }
 
@@ -167,7 +160,7 @@ export const getSellerBadge = (metrics) => {
       type: 'high_rated',
       label: 'Highly Rated',
       color: '#4CAF50',
-      icon: 'star'
+      icon: 'star',
     };
   }
 
@@ -177,7 +170,7 @@ export const getSellerBadge = (metrics) => {
       type: 'fast_shipper',
       label: 'Fast Shipper',
       color: '#2196F3',
-      icon: 'truck'
+      icon: 'truck',
     };
   }
 
@@ -187,7 +180,7 @@ export const getSellerBadge = (metrics) => {
       type: 'reliable',
       label: 'Reliable Seller',
       color: '#9C27B0',
-      icon: 'shield'
+      icon: 'shield',
     };
   }
 
@@ -205,36 +198,36 @@ export const getAllSellersWithMetrics = async (dateRange = {}) => {
     const sellersWithMetrics = await Promise.all(
       sellers.map(async (seller) => {
         const metricsResult = await calculateSellerMetrics(seller._id, dateRange);
-        
+
         if (metricsResult.success) {
           const badge = getSellerBadge(metricsResult.metrics);
-          
+
           return {
             seller: {
               _id: seller._id,
               name: seller.name,
               storeName: seller.storeName,
               email: seller.email,
-              avatar: seller.avatar
+              avatar: seller.avatar,
             },
             metrics: metricsResult.metrics,
-            badge
+            badge,
           };
         }
-        
+
         return null;
       })
     );
 
     return {
       success: true,
-      sellers: sellersWithMetrics.filter(s => s !== null)
+      sellers: sellersWithMetrics.filter((s) => s !== null),
     };
   } catch (error) {
     console.error('Error getting all sellers with metrics:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -242,5 +235,5 @@ export const getAllSellersWithMetrics = async (dateRange = {}) => {
 export default {
   calculateSellerMetrics,
   getSellerBadge,
-  getAllSellersWithMetrics
+  getAllSellersWithMetrics,
 };

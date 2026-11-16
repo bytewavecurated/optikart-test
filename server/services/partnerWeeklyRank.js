@@ -55,7 +55,10 @@ const idOf = (v) => (v && v._id ? String(v._id) : v === null || v === undefined 
 const toMs = (v) => {
   if (v instanceof Date) return v.getTime();
   if (typeof v === 'number') return Number.isFinite(v) ? v : null;
-  if (typeof v === 'string') { const n = Date.parse(v); return Number.isFinite(n) ? n : null; }
+  if (typeof v === 'string') {
+    const n = Date.parse(v);
+    return Number.isFinite(n) ? n : null;
+  }
   return null;
 };
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -92,11 +95,13 @@ export function isoWeekWindow(at, { tzOffsetMinutes = DEFAULT_TZ_OFFSET_MINUTES 
   }
   return {
     label: `${isoYear}-W${pad2(week)}`,
-    week, isoYear, tzOffsetMinutes,
+    week,
+    isoYear,
+    tzOffsetMinutes,
     start: monday - offset,
     end: monday + WEEK - offset,
     // Echo of the instant the window was asked for, so callers can prove nothing silently drifted to `Date.now()`.
-    computedFrom: new Date(instMs).toISOString()
+    computedFrom: new Date(instMs).toISOString(),
   };
 }
 
@@ -114,7 +119,11 @@ const echoWeekCount = (year) => {
 
 /** The real window behind a `YYYY-Www` label. Rejects labels that no calendar has. */
 export function windowFromLabel(label, { tzOffsetMinutes = DEFAULT_TZ_OFFSET_MINUTES } = {}) {
-  const parts = /^(\d{4})-W(\d{2})$/.exec(String(label ?? '').trim().toUpperCase());
+  const parts = /^(\d{4})-W(\d{2})$/.exec(
+    String(label ?? '')
+      .trim()
+      .toUpperCase()
+  );
   if (!parts) throw new RangeError('week must look like 2026-W53');
   const isoYear = Number(parts[1]);
   const week = Number(parts[2]);
@@ -130,17 +139,27 @@ export function windowFromLabel(label, { tzOffsetMinutes = DEFAULT_TZ_OFFSET_MIN
     throw new RangeError(`"${label}" is not a real ISO week (${parts[1]} ends at week ${echoWeekCount(parts[1])})`);
   }
   const offset = tzOffsetMinutes * 60000;
-  return { label: `${parts[1]}-W${pad2(week)}`, week, isoYear, tzOffsetMinutes, start: monday - offset, end: monday + WEEK - offset };
+  return {
+    label: `${parts[1]}-W${pad2(week)}`,
+    week,
+    isoYear,
+    tzOffsetMinutes,
+    start: monday - offset,
+    end: monday + WEEK - offset,
+  };
 }
-
 
 export function addWeeksToLabel(label, weeks, opts = {}) {
   const w = windowFromLabel(label, { tzOffsetMinutes: 0, ...opts });
   return isoWeekWindow(w.start + weeks * WEEK + HOUR, opts).label;
 }
 
-export function previousWeekLabel(label, opts = {}) { return addWeeksToLabel(label, -1, opts); }
-export function nextWeekLabel(label, opts = {}) { return addWeeksToLabel(label, 1, opts); }
+export function previousWeekLabel(label, opts = {}) {
+  return addWeeksToLabel(label, -1, opts);
+}
+export function nextWeekLabel(label, opts = {}) {
+  return addWeeksToLabel(label, 1, opts);
+}
 
 /**
  * Everything one partner did, measured only within `window`, and only events
@@ -151,16 +170,27 @@ export function collectPartnerEvents(rows, partnerId, window) {
   const pid = idOf(partnerId);
   const inWindow = (ms) => ms !== null && ms >= window.start && ms < window.end;
   const e = {
-    partnerId: pid, completed: 0, codDeliveries: 0, codChecked: 0, codDiscrepancies: 0,
-    codUnrecorded: 0, rejections: 0, expiries: 0, unanswered: 0, cancellationsWhileAssigned: 0,
-    completedOrderIds: [], discrepancyOrderIds: [], unrecordedOrderIds: []
+    partnerId: pid,
+    completed: 0,
+    codDeliveries: 0,
+    codChecked: 0,
+    codDiscrepancies: 0,
+    codUnrecorded: 0,
+    rejections: 0,
+    expiries: 0,
+    unanswered: 0,
+    cancellationsWhileAssigned: 0,
+    completedOrderIds: [],
+    discrepancyOrderIds: [],
+    unrecordedOrderIds: [],
   };
   for (const o of rows || []) {
     const assigned = idOf(o.assignedDeliveryPartner);
     const status = String(o.orderStatus || '').toLowerCase();
     const oid = idOf(o._id);
     if (assigned === pid && status === 'delivered' && inWindow(toMs(o.deliveredAt))) {
-      e.completed++; if (oid) e.completedOrderIds.push(oid);
+      e.completed++;
+      if (oid) e.completedOrderIds.push(oid);
       if (String(o.paymentMethod) === 'cod') {
         e.codDeliveries++;
         const collected = Number(o.cashCollected);
@@ -168,16 +198,17 @@ export function collectPartnerEvents(rows, partnerId, window) {
         if (!Number.isFinite(collected) || collected <= 0) {
           // Nothing recorded is not "no discrepancy": it is unmeasurable, so it
           // is kept out of the integrity denominator and named instead of hidden.
-          e.codUnrecorded++; if (oid) e.unrecordedOrderIds.push(oid);
+          e.codUnrecorded++;
+          if (oid) e.unrecordedOrderIds.push(oid);
         } else {
           e.codChecked++;
           if (Number.isFinite(total) && Math.abs(collected - total) > COD_TOLERANCE_RUPEE) {
-            e.codDiscrepancies++; if (oid) e.discrepancyOrderIds.push(oid);
+            e.codDiscrepancies++;
+            if (oid) e.discrepancyOrderIds.push(oid);
           }
         }
       }
-    } else if (assigned === pid && status === 'cancelled'
-      && inWindow(toMs(o.partnerCancelledAt ?? o.updatedAt))) {
+    } else if (assigned === pid && status === 'cancelled' && inWindow(toMs(o.partnerCancelledAt ?? o.updatedAt))) {
       e.cancellationsWhileAssigned++;
     }
     for (const q of o.partnerQueue || []) {
@@ -201,8 +232,10 @@ export function collectPartnerEvents(rows, partnerId, window) {
  */
 export function scoreFromEvents(e, peerMaxCompleted) {
   const denominators = {
-    reliability: e.completed + e.rejections + e.expiries + e.cancellationsWhileAssigned + e.unanswered * UNANSWERED_PENALTY,
-    throughput: null, cashIntegrity: e.codChecked
+    reliability:
+      e.completed + e.rejections + e.expiries + e.cancellationsWhileAssigned + e.unanswered * UNANSWERED_PENALTY,
+    throughput: null,
+    cashIntegrity: e.codChecked,
   };
   const components = {
     reliability: clampRatio(e.completed, denominators.reliability),
@@ -213,29 +246,38 @@ export function scoreFromEvents(e, peerMaxCompleted) {
      * the week is labelled `no-activity` instead of scoring 0 and occupying a
      * rank as though it had been assessed.
      */
-    throughput: e.completed > 0
-      ? (peerMaxCompleted > 0 ? clampRatio(e.completed, peerMaxCompleted) : 1)
-      : null,
-    cashIntegrity: clampRatio(e.codChecked - e.codDiscrepancies, denominators.cashIntegrity)
+    throughput: e.completed > 0 ? (peerMaxCompleted > 0 ? clampRatio(e.completed, peerMaxCompleted) : 1) : null,
+    cashIntegrity: clampRatio(e.codChecked - e.codDiscrepancies, denominators.cashIntegrity),
   };
   const present = Object.entries(components).filter(([, v]) => v !== null);
   const missing = Object.keys(components).filter((k) => components[k] === null);
   const weightSum = present.reduce((n, [k]) => n + RANK_WEIGHTS[k], 0);
-  const score = present.length && weightSum > 0
-    ? Math.round((present.reduce((n, [k, v]) => n + RANK_WEIGHTS[k] * v, 0) / weightSum) * 10000) / 100
-    : null;
+  const score =
+    present.length && weightSum > 0
+      ? Math.round((present.reduce((n, [k, v]) => n + RANK_WEIGHTS[k] * v, 0) / weightSum) * 10000) / 100
+      : null;
   const dataQuality = !present.length ? 'no-activity' : missing.length ? 'partial' : 'measured';
   const notes = [];
   if (missing.includes('cashIntegrity')) {
-    notes.push(e.codUnrecorded
-      ? `${e.codUnrecorded} cash collection(s) delivered with no recorded amount, so cash integrity could not be measured`
-      : 'no cash collections in this window, so cash integrity is not part of the score');
+    notes.push(
+      e.codUnrecorded
+        ? `${e.codUnrecorded} cash collection(s) delivered with no recorded amount, so cash integrity could not be measured`
+        : 'no cash collections in this window, so cash integrity is not part of the score'
+    );
   }
-  if (e.codDiscrepancies) notes.push(`${e.codDiscrepancies} cash order(s) differed from the amount due by more than ₹${COD_TOLERANCE_RUPEE}`);
+  if (e.codDiscrepancies)
+    notes.push(`${e.codDiscrepancies} cash order(s) differed from the amount due by more than ₹${COD_TOLERANCE_RUPEE}`);
   if (e.unanswered) notes.push(`${e.unanswered} offer(s) left unanswered in this window`);
   if (!present.length) notes.push('no measured delivery actions this week');
   else if (missing.includes('throughput')) notes.push('no completed runs this week, so volume is not measured');
-  return { score, components, weightsApplied: Object.fromEntries(present.map(([k]) => [k, RANK_WEIGHTS[k]])), missingComponents: missing, dataQuality, notes };
+  return {
+    score,
+    components,
+    weightsApplied: Object.fromEntries(present.map(([k]) => [k, RANK_WEIGHTS[k]])),
+    missingComponents: missing,
+    dataQuality,
+    notes,
+  };
 }
 
 /**
@@ -252,16 +294,25 @@ export function rankWeek({ roster, eventsById, window }) {
     return { partnerId: pid, partner: r.name || r.uniqueId || pid, events, ...s };
   });
   const active = scored.filter((s) => s.score !== null);
-  active.sort((a, b) =>
-    (b.score - a.score)
-    || (b.events.completed - a.events.completed)
-    || ((a.events.codDiscrepancies + a.events.codUnrecorded) - (b.events.codDiscrepancies + b.events.codUnrecorded))
-    || String(a.partnerId).localeCompare(String(b.partnerId)));
-  const resting = scored.filter((s) => s.score === null)
+  active.sort(
+    (a, b) =>
+      b.score - a.score ||
+      b.events.completed - a.events.completed ||
+      a.events.codDiscrepancies + a.events.codUnrecorded - (b.events.codDiscrepancies + b.events.codUnrecorded) ||
+      String(a.partnerId).localeCompare(String(b.partnerId))
+  );
+  const resting = scored
+    .filter((s) => s.score === null)
     .sort((a, b) => String(a.partnerId).localeCompare(String(b.partnerId)));
   const total = active.length + resting.length;
   const rows = [
-    ...active.map((s, i) => ({ ...s, rank: i + 1, position: i + 1, of: total, percentile: Math.round(((total - (i + 1)) / Math.max(1, total - 1)) * 100) })),
+    ...active.map((s, i) => ({
+      ...s,
+      rank: i + 1,
+      position: i + 1,
+      of: total,
+      percentile: Math.round(((total - (i + 1)) / Math.max(1, total - 1)) * 100),
+    })),
     /*
      * A partner with nothing measured is given no rank at all. Numbering them
      * 2nd, 3rd, ... implies they were beaten on the merits, and on a week where
@@ -270,9 +321,14 @@ export function rankWeek({ roster, eventsById, window }) {
      * still find them on the list, and an explicit label.
      */
     ...resting.map((s, i) => ({
-      ...s, rank: null, position: active.length + i + 1, of: total, percentile: null,
-      excludedFromLeaderboard: true, rankLabel: 'not ranked - no measured activity'
-    }))
+      ...s,
+      rank: null,
+      position: active.length + i + 1,
+      of: total,
+      percentile: null,
+      excludedFromLeaderboard: true,
+      rankLabel: 'not ranked - no measured activity',
+    })),
   ];
   return rows;
 }
@@ -284,7 +340,8 @@ export function attachDeltas(rows, previousRows) {
     const before = prev.get(r.partnerId);
     const hasCurrentRank = typeof r.rank === 'number' && r.score !== null;
     const hadRank = before && typeof before.rank === 'number' && before.score !== null;
-    if (!hasCurrentRank) return { ...r, previousRank: hadRank ? before.rank : null, rankDelta: null, isNewEntrant: false };
+    if (!hasCurrentRank)
+      return { ...r, previousRank: hadRank ? before.rank : null, rankDelta: null, isNewEntrant: false };
     if (!hadRank) return { ...r, previousRank: null, rankDelta: null, isNewEntrant: true };
     return { ...r, previousRank: before.rank, rankDelta: before.rank - r.rank, isNewEntrant: false };
   });
@@ -292,11 +349,18 @@ export function attachDeltas(rows, previousRows) {
 
 const queryForWindow = (window) => ({
   $or: [
-    { assignedDeliveryPartner: { $ne: null }, deliveredAt: { $gte: new Date(window.start), $lt: new Date(window.end) } },
-    { assignedDeliveryPartner: { $ne: null }, orderStatus: 'cancelled', updatedAt: { $gte: new Date(window.start), $lt: new Date(window.end) } },
+    {
+      assignedDeliveryPartner: { $ne: null },
+      deliveredAt: { $gte: new Date(window.start), $lt: new Date(window.end) },
+    },
+    {
+      assignedDeliveryPartner: { $ne: null },
+      orderStatus: 'cancelled',
+      updatedAt: { $gte: new Date(window.start), $lt: new Date(window.end) },
+    },
     { 'partnerQueue.offeredAt': { $gte: new Date(window.start), $lt: new Date(window.end) } },
-    { 'partnerQueue.respondedAt': { $gte: new Date(window.start), $lt: new Date(window.end) } }
-  ]
+    { 'partnerQueue.respondedAt': { $gte: new Date(window.start), $lt: new Date(window.end) } },
+  ],
 });
 
 /**
@@ -305,9 +369,11 @@ const queryForWindow = (window) => ({
  * week or a fixed instant and get a repeatable result.
  */
 export async function loadWeeklyRanking({
-  at, weekLabel,
+  at,
+  weekLabel,
   tzOffsetMinutes = Number.isFinite(Number(process.env.PARTNER_RANK_TZ_OFFSET_MINUTES))
-    ? Number(process.env.PARTNER_RANK_TZ_OFFSET_MINUTES) : DEFAULT_TZ_OFFSET_MINUTES
+    ? Number(process.env.PARTNER_RANK_TZ_OFFSET_MINUTES)
+    : DEFAULT_TZ_OFFSET_MINUTES,
 } = {}) {
   const opts = { tzOffsetMinutes };
   const window = weekLabel ? windowFromLabel(weekLabel, opts) : isoWeekWindow(at ?? Date.now(), opts);
@@ -316,10 +382,18 @@ export async function loadWeeklyRanking({
   const prevWindow = windowFromLabel(previousWeekLabel(window.label, opts), opts);
   const [orders, roster, prevOrders] = await Promise.all([
     Order.find(queryForWindow(window))
-      .select('orderStatus deliveredAt updatedAt paymentMethod totalAmount cashCollected assignedDeliveryPartner partnerQueue').lean(),
-    DeliveryPartner.find({ isBanned: { $ne: true } }).select('_id name uniqueId').lean(),
+      .select(
+        'orderStatus deliveredAt updatedAt paymentMethod totalAmount cashCollected assignedDeliveryPartner partnerQueue'
+      )
+      .lean(),
+    DeliveryPartner.find({ isBanned: { $ne: true } })
+      .select('_id name uniqueId')
+      .lean(),
     Order.find(queryForWindow(prevWindow))
-      .select('orderStatus deliveredAt updatedAt paymentMethod totalAmount cashCollected assignedDeliveryPartner partnerQueue').lean()
+      .select(
+        'orderStatus deliveredAt updatedAt paymentMethod totalAmount cashCollected assignedDeliveryPartner partnerQueue'
+      )
+      .lean(),
   ]);
 
   const eventsById = {};
@@ -331,11 +405,15 @@ export async function loadWeeklyRanking({
   const previousRows = rankWeek({ roster, eventsById: prevEventsById, window: prevWindow });
 
   return {
-    window, previousWindow: prevWindow, rows: attachDeltas(rows, previousRows),
-    partnerCount: rows.length, rankedCount: rows.filter((r) => r.score !== null).length,
-    weights: RANK_WEIGHTS, toleranceRupe: COD_TOLERANCE_RUPEE,
+    window,
+    previousWindow: prevWindow,
+    rows: attachDeltas(rows, previousRows),
+    partnerCount: rows.length,
+    rankedCount: rows.filter((r) => r.score !== null).length,
+    weights: RANK_WEIGHTS,
+    toleranceRupe: COD_TOLERANCE_RUPEE,
     unansweredPenalty: UNANSWERED_PENALTY,
-    excludesUnreadFields: true
+    excludesUnreadFields: true,
   };
 }
 
@@ -349,19 +427,31 @@ export function summariseForPartner(rows, partnerId) {
      * name instead fails silently when the name is missing - which is how a
      * consistency check turns into a check that compares nothing.
      */
-    found: true, partnerId: mine.partnerId, partner: mine.partner,
-    rank: mine.rank, position: mine.position, of: mine.of, score: mine.score,
+    found: true,
+    partnerId: mine.partnerId,
+    partner: mine.partner,
+    rank: mine.rank,
+    position: mine.position,
+    of: mine.of,
+    score: mine.score,
     excludedFromLeaderboard: mine.excludedFromLeaderboard === true,
     rankLabel: mine.rankLabel || null,
-    percentile: mine.percentile, dataQuality: mine.dataQuality,
-    components: mine.components, notes: mine.notes,
-    previousRank: mine.previousRank, rankDelta: mine.rankDelta, isNewEntrant: mine.isNewEntrant,
+    percentile: mine.percentile,
+    dataQuality: mine.dataQuality,
+    components: mine.components,
+    notes: mine.notes,
+    previousRank: mine.previousRank,
+    rankDelta: mine.rankDelta,
+    isNewEntrant: mine.isNewEntrant,
     measured: {
-      completedRuns: mine.events.completed, rejections: mine.events.rejections,
-      expiredOffers: mine.events.expiries, unanswered: mine.events.unanswered,
+      completedRuns: mine.events.completed,
+      rejections: mine.events.rejections,
+      expiredOffers: mine.events.expiries,
+      unanswered: mine.events.unanswered,
       cancellationsWhileAssigned: mine.events.cancellationsWhileAssigned,
-      cashDeliveries: mine.events.codDeliveries, cashDiscrepancies: mine.events.codDiscrepancies,
-      cashUnrecorded: mine.events.codUnrecorded
-    }
+      cashDeliveries: mine.events.codDeliveries,
+      cashDiscrepancies: mine.events.codDiscrepancies,
+      cashUnrecorded: mine.events.codUnrecorded,
+    },
   };
 }

@@ -21,7 +21,7 @@ export const integrateOrderRouting = async (order) => {
       return {
         success: false,
         message: 'Customer location not available',
-        requiresAdminAssignment: true
+        requiresAdminAssignment: true,
       };
     }
 
@@ -40,7 +40,7 @@ export const integrateOrderRouting = async (order) => {
       return {
         success: false,
         message: 'No sellers found nearby',
-        requiresAdminAssignment: true
+        requiresAdminAssignment: true,
       };
     }
 
@@ -60,21 +60,24 @@ export const integrateOrderRouting = async (order) => {
     await notifySellerNewOrder(order, selectedSeller);
 
     // Set timeout to check acceptance
-    setTimeout(async () => {
-      await checkOrderAcceptanceTimeout(order._id);
-    }, 30 * 60 * 1000);
+    setTimeout(
+      async () => {
+        await checkOrderAcceptanceTimeout(order._id);
+      },
+      30 * 60 * 1000
+    );
 
     return {
       success: true,
       message: 'Order assigned to nearest seller',
       seller: selectedSeller,
-      deadline: acceptanceDeadline
+      deadline: acceptanceDeadline,
     };
   } catch (error) {
     console.error('Error integrating order routing:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -95,7 +98,7 @@ const notifySellerNewOrder = async (order, seller) => {
         <p><strong>Deadline:</strong> ${new Date(order.assignmentDeadline).toLocaleString()}</p>
         <p><strong>Items:</strong></p>
         <ul>
-          ${order.items.map(item => `<li>${item.product?.title} x ${item.quantity}</li>`).join('')}
+          ${order.items.map((item) => `<li>${item.product?.title} x ${item.quantity}</li>`).join('')}
         </ul>
         <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
       </div>
@@ -114,7 +117,7 @@ const notifySellerNewOrder = async (order, seller) => {
 const notifyAdminNoSellers = async (order) => {
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@optikart.com';
-    
+
     const emailContent = `
       <h2>Order Requires Manual Assignment</h2>
       <p>No sellers were found within 10km of the customer's location. Manual assignment is required.</p>
@@ -124,7 +127,7 @@ const notifyAdminNoSellers = async (order) => {
         <p><strong>Delivery Address:</strong> ${order.shippingAddress?.city}, ${order.shippingAddress?.state}</p>
         <p><strong>Items:</strong></p>
         <ul>
-          ${order.items.map(item => `<li>${item.product?.title} x ${item.quantity}</li>`).join('')}
+          ${order.items.map((item) => `<li>${item.product?.title} x ${item.quantity}</li>`).join('')}
         </ul>
         <p><strong>Total Amount:</strong> ₹${order.totalAmount}</p>
       </div>
@@ -171,7 +174,7 @@ const checkOrderAcceptanceTimeout = async (orderId) => {
 
     // Find next seller (exclude current one)
     const currentSellerId = order.seller.toString();
-    const nextSeller = nearbyResult.sellers.find(s => s._id.toString() !== currentSellerId);
+    const nextSeller = nearbyResult.sellers.find((s) => s._id.toString() !== currentSellerId);
 
     if (!nextSeller) {
       order.assignmentStatus = 'admin_required';
@@ -195,9 +198,12 @@ const checkOrderAcceptanceTimeout = async (orderId) => {
     await notifySellerNewOrder(order, nextSeller);
 
     // Set timeout again
-    setTimeout(async () => {
-      await checkOrderAcceptanceTimeout(orderId);
-    }, 30 * 60 * 1000);
+    setTimeout(
+      async () => {
+        await checkOrderAcceptanceTimeout(orderId);
+      },
+      30 * 60 * 1000
+    );
   } catch (error) {
     console.error('Error checking order acceptance timeout:', error);
   }
@@ -212,7 +218,7 @@ export const aiFallbackAssignment = async (order) => {
     // 1. Higher rating
     // 2. More completed orders
     // 3. Lower current workload
-    
+
     const customerLat = order.shippingAddress?.coordinates?.[1];
     const customerLon = order.shippingAddress?.coordinates?.[0];
 
@@ -233,26 +239,26 @@ export const aiFallbackAssignment = async (order) => {
       {
         $match: {
           seller: { $in: candidateIds.map((id) => new mongoose.Types.ObjectId(id)) },
-          orderStatus: { $nin: ['delivered', 'cancelled', 'returned'] }
-        }
+          orderStatus: { $nin: ['delivered', 'cancelled', 'returned'] },
+        },
       },
-      { $group: { _id: '$seller', count: { $sum: 1 } } }
+      { $group: { _id: '$seller', count: { $sum: 1 } } },
     ]);
     const workloadBySeller = new Map(workloadRows.map((r) => [String(r._id), r.count]));
 
     // Score each seller
-    const scoredSellers = nearbyResult.sellers.map(seller => {
+    const scoredSellers = nearbyResult.sellers.map((seller) => {
       let score = 100; // Base score
-      
+
       // Distance penalty (closer is better)
       score -= seller.distance * 2;
-      
+
       // Rating bonus
       score += (seller.rating || 0) * 10;
-      
+
       // Experience bonus (more orders = more experienced)
       score += Math.min((seller.totalSales || 0) / 100, 20);
-      
+
       // Workload penalty: fewer open orders is better.
       const openOrders = workloadBySeller.get(String(seller._id)) || 0;
       score -= openOrders * 5;
@@ -280,26 +286,29 @@ export const aiFallbackAssignment = async (order) => {
     await notifySellerNewOrder(order, bestSeller);
 
     // Set timeout
-    setTimeout(async () => {
-      await checkOrderAcceptanceTimeout(order._id);
-    }, 30 * 60 * 1000);
+    setTimeout(
+      async () => {
+        await checkOrderAcceptanceTimeout(order._id);
+      },
+      30 * 60 * 1000
+    );
 
     return {
       success: true,
       message: 'Order assigned by AI fallback',
       seller: bestSeller,
-      score: bestSeller.score
+      score: bestSeller.score,
     };
   } catch (error) {
     console.error('Error in AI fallback assignment:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
 
 export default {
   integrateOrderRouting,
-  aiFallbackAssignment
+  aiFallbackAssignment,
 };

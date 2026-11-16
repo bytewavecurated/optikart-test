@@ -13,11 +13,11 @@ const WITHDRAWAL_FEE = 3; // ₹3 per ₹50
  */
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
 };
@@ -32,11 +32,11 @@ export const findNearbyDeliveryPartners = async (pickupLocation, maxDistance = 1
       isAvailable: true,
       isBanned: false,
       currentOrder: null,
-      currentLocation: { $exists: true }
+      currentLocation: { $exists: true },
     });
 
     const nearbyPartners = partners
-      .map(partner => {
+      .map((partner) => {
         const distance = calculateDistance(
           pickupLocation.latitude,
           pickupLocation.longitude,
@@ -45,7 +45,7 @@ export const findNearbyDeliveryPartners = async (pickupLocation, maxDistance = 1
         );
         return { partner, distance };
       })
-      .filter(item => item.distance <= maxDistance)
+      .filter((item) => item.distance <= maxDistance)
       .sort((a, b) => a.distance - b.distance)
       .slice(0, 3); // Return top 3
 
@@ -88,12 +88,14 @@ export const assignDeliveryPartner = async (orderId, partnerId, assignedBy = 'au
       name: order.seller?.storeName || '',
       address: order.pickupLocation?.address || '',
       lat: order.pickupLocation?.lat,
-      lng: order.pickupLocation?.lng
+      lng: order.pickupLocation?.lng,
     };
     order.deliveryLocation = {
-      address: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode].filter(Boolean).join(', '),
+      address: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode]
+        .filter(Boolean)
+        .join(', '),
       lat: order.shippingAddress?.coordinates?.[1],
-      lng: order.shippingAddress?.coordinates?.[0]
+      lng: order.shippingAddress?.coordinates?.[0],
     };
 
     // Platform-run delivery adds a flat Rs. 59 per line and pays the partner
@@ -101,8 +103,16 @@ export const assignDeliveryPartner = async (orderId, partnerId, assignedBy = 'au
     // ledger use the same figures.
     const lines = (order.items || []).length || 1;
     order.selfDeliveryCharge = SELF_DELIVERY_FEE_PER_ORDER_LINE * lines;
-    order.totalAmount = Math.round(((order.subtotal || 0) + (order.deliveryCharge || 0) + (order.platformFee || 0) + order.selfDeliveryCharge - (order.couponDiscount || 0)) * 100) / 100;
-    order.deliveryFee = Math.round(((order.deliveryDistanceKm || 0) * DELIVERY_RATE_PER_KM) * 100) / 100;
+    order.totalAmount =
+      Math.round(
+        ((order.subtotal || 0) +
+          (order.deliveryCharge || 0) +
+          (order.platformFee || 0) +
+          order.selfDeliveryCharge -
+          (order.couponDiscount || 0)) *
+          100
+      ) / 100;
+    order.deliveryFee = Math.round((order.deliveryDistanceKm || 0) * DELIVERY_RATE_PER_KM * 100) / 100;
     order.deliveryJourney = order.deliveryJourney || [];
     order.deliveryJourney.push({ status: order.orderStatus, note: `Assigned to ${partner.name}`, at: new Date() });
     await order.save();
@@ -111,19 +121,19 @@ export const assignDeliveryPartner = async (orderId, partnerId, assignedBy = 'au
     await sendEmail({
       to: partner.email,
       subject: 'New Delivery Assignment',
-      text: `You have been assigned a new delivery. Order: ${order.orderNumber}`
+      text: `You have been assigned a new delivery. Order: ${order.orderNumber}`,
     });
 
     return {
       success: true,
       order,
-      partner
+      partner,
     };
   } catch (error) {
     console.error('Error assigning delivery partner:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -134,7 +144,7 @@ export const assignDeliveryPartner = async (orderId, partnerId, assignedBy = 'au
 export const calculateDeliveryEarnings = async (orderId) => {
   try {
     const order = await Order.findById(orderId);
-    
+
     if (!order || !order.assignedDeliveryPartner) {
       throw new Error('Order or delivery partner not found');
     }
@@ -153,13 +163,13 @@ export const calculateDeliveryEarnings = async (orderId) => {
     return {
       success: true,
       earnings,
-      distance
+      distance,
     };
   } catch (error) {
     console.error('Error calculating delivery earnings:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -190,7 +200,7 @@ export const processWithdrawal = async (partnerId, amount) => {
     // Check if already withdrawn today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const lastWithdrawal = partner.lastWithdrawalAt ? new Date(partner.lastWithdrawalAt) : null;
     if (lastWithdrawal && lastWithdrawal >= today) {
       throw new Error('You can only withdraw once per day');
@@ -214,13 +224,13 @@ export const processWithdrawal = async (partnerId, amount) => {
       success: true,
       amount: netAmount,
       fee,
-      transactionId: `WD${Date.now()}`
+      transactionId: `WD${Date.now()}`,
     };
   } catch (error) {
     console.error('Error processing withdrawal:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -239,19 +249,19 @@ export const updatePartnerLocation = async (partnerId, latitude, longitude) => {
     partner.currentLocation = {
       latitude,
       longitude,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
     await partner.save();
 
     return {
       success: true,
-      partner
+      partner,
     };
   } catch (error) {
     console.error('Error updating partner location:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -262,7 +272,7 @@ export const updatePartnerLocation = async (partnerId, latitude, longitude) => {
 export const completeDelivery = async (orderId) => {
   try {
     const order = await Order.findById(orderId);
-    
+
     if (!order || !order.assignedDeliveryPartner) {
       throw new Error('Order or delivery partner not found');
     }
@@ -315,13 +325,13 @@ export const completeDelivery = async (orderId) => {
     return {
       success: true,
       order,
-      earnings: paid
+      earnings: paid,
     };
   } catch (error) {
     console.error('Error completing delivery:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -331,8 +341,7 @@ export const completeDelivery = async (orderId) => {
  */
 export const getPartnerDashboard = async (partnerId) => {
   try {
-    const partner = await DeliveryPartner.findById(partnerId)
-      .select('-password -loginOtp -loginOtpExpiry');
+    const partner = await DeliveryPartner.findById(partnerId).select('-password -loginOtp -loginOtpExpiry');
 
     if (!partner) {
       throw new Error('Partner not found');
@@ -345,7 +354,7 @@ export const getPartnerDashboard = async (partnerId) => {
 
     const activeFilter = {
       assignedDeliveryPartner: partnerId,
-      orderStatus: { $in: ['confirmed', 'packed', 'picked_up', 'in_transit'] }
+      orderStatus: { $in: ['confirmed', 'packed', 'picked_up', 'in_transit'] },
     };
 
     const [activeOrders, deliveredAll, deliveredToday, weekAgg, monthAgg] = await Promise.all([
@@ -359,16 +368,28 @@ export const getPartnerDashboard = async (partnerId) => {
       Order.countDocuments({
         assignedDeliveryPartner: partnerId,
         orderStatus: 'delivered',
-        deliveredAt: { $gte: startOfDay }
+        deliveredAt: { $gte: startOfDay },
       }),
       Order.aggregate([
-        { $match: { assignedDeliveryPartner: new mongoose.Types.ObjectId(String(partnerId)), orderStatus: 'delivered', deliveredAt: { $gte: startOfWeek } } },
-        { $group: { _id: null, total: { $sum: '$deliveryFee' }, count: { $sum: 1 } } }
+        {
+          $match: {
+            assignedDeliveryPartner: new mongoose.Types.ObjectId(String(partnerId)),
+            orderStatus: 'delivered',
+            deliveredAt: { $gte: startOfWeek },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$deliveryFee' }, count: { $sum: 1 } } },
       ]),
       Order.aggregate([
-        { $match: { assignedDeliveryPartner: new mongoose.Types.ObjectId(String(partnerId)), orderStatus: 'delivered', deliveredAt: { $gte: startOfMonth } } },
-        { $group: { _id: null, total: { $sum: '$deliveryFee' }, count: { $sum: 1 } } }
-      ])
+        {
+          $match: {
+            assignedDeliveryPartner: new mongoose.Types.ObjectId(String(partnerId)),
+            orderStatus: 'delivered',
+            deliveredAt: { $gte: startOfMonth },
+          },
+        },
+        { $group: { _id: null, total: { $sum: '$deliveryFee' }, count: { $sum: 1 } } },
+      ]),
     ]);
 
     const mapRow = (o) => ({
@@ -377,20 +398,28 @@ export const getPartnerDashboard = async (partnerId) => {
       orderStatus: o.orderStatus,
       customerName: o.user?.name || 'Customer',
       customerPhone: o.user?.phone || '',
-      address: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+      address: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode]
+        .filter(Boolean)
+        .join(', '),
       distance: Number.isFinite(o.deliveryDistanceKm) ? `${o.deliveryDistanceKm} km` : null,
       earnings: o.deliveryFee || 0,
       pickup: {
         name: o.pickupLocation?.name || o.seller?.storeName || '',
-        address: o.pickupLocation?.address || [o.seller?.address?.street, o.seller?.address?.city, o.seller?.address?.pincode].filter(Boolean).join(', ') || o.seller?.city || '',
+        address:
+          o.pickupLocation?.address ||
+          [o.seller?.address?.street, o.seller?.address?.city, o.seller?.address?.pincode].filter(Boolean).join(', ') ||
+          o.seller?.city ||
+          '',
         lat: o.pickupLocation?.lat,
-        lng: o.pickupLocation?.lng
+        lng: o.pickupLocation?.lng,
       },
       drop: {
-        address: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+        address: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode]
+          .filter(Boolean)
+          .join(', '),
         lat: o.deliveryLocation?.lat ?? o.shippingAddress?.coordinates?.[1],
-        lng: o.deliveryLocation?.lng ?? o.shippingAddress?.coordinates?.[0]
-      }
+        lng: o.deliveryLocation?.lng ?? o.shippingAddress?.coordinates?.[0],
+      },
     });
 
     // Same reservation-aware figure the withdrawal guard uses, so the balance
@@ -423,7 +452,7 @@ export const getPartnerDashboard = async (partnerId) => {
       canWithdrawToday: !partner.lastWithdrawalAt || new Date(partner.lastWithdrawalAt) < startOfDay,
       isOnline: partner.status === 'online',
       locationSharing: !!partner.locationSharing,
-      rating: partner.rating || 0
+      rating: partner.rating || 0,
     };
   } catch (error) {
     console.error('Error getting partner dashboard:', error);
@@ -442,13 +471,13 @@ export const getAllDeliveryPartners = async (filters = {}) => {
 
     return {
       success: true,
-      partners
+      partners,
     };
   } catch (error) {
     console.error('Error getting all delivery partners:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -461,5 +490,5 @@ export default {
   updatePartnerLocation,
   completeDelivery,
   getPartnerDashboard,
-  getAllDeliveryPartners
+  getAllDeliveryPartners,
 };

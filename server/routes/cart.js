@@ -8,15 +8,17 @@ const router = express.Router();
 
 router.get('/', verifyToken, async (req, res) => {
   try {
-    let cart = await Cart.findOne({ user: req.user._id })
-      .populate('items.product', 'title images price discountedPrice stock isActive brand');
+    let cart = await Cart.findOne({ user: req.user._id }).populate(
+      'items.product',
+      'title images price discountedPrice stock isActive brand'
+    );
 
     if (!cart) {
       cart = new Cart({ user: req.user._id, items: [] });
       await cart.save();
     }
 
-    const validItems = cart.items.filter(item => item.product && item.product.isActive);
+    const validItems = cart.items.filter((item) => item.product && item.product.isActive);
 
     if (validItems.length !== cart.items.length) {
       cart.items = validItems;
@@ -53,9 +55,8 @@ router.post('/add', verifyToken, async (req, res) => {
       cart = new Cart({ user: req.user._id, items: [] });
     }
 
-    const existingItem = cart.items.find(item =>
-      item.product.toString() === productId &&
-      JSON.stringify(item.variant) === JSON.stringify(variant || {})
+    const existingItem = cart.items.find(
+      (item) => item.product.toString() === productId && JSON.stringify(item.variant) === JSON.stringify(variant || {})
     );
 
     if (existingItem) {
@@ -74,20 +75,19 @@ router.post('/add', verifyToken, async (req, res) => {
         product: productId,
         variant: variant || {},
         quantity,
-        price
+        price,
       });
     }
 
     cart.totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
     await cart.save();
 
-    cart = await Cart.findById(cart._id)
-      .populate('items.product', 'title images price discountedPrice stock');
+    cart = await Cart.findById(cart._id).populate('items.product', 'title images price discountedPrice stock');
 
     res.json({
       success: true,
       message: 'Item added to cart.',
-      cart
+      cart,
     });
   } catch (error) {
     console.error('Add to cart error:', error);
@@ -137,11 +137,16 @@ router.post('/add-lens', verifyToken, async (req, res) => {
         axisRight: String(rx.rightEye?.axis ?? ''),
         axisLeft: String(rx.leftEye?.axis ?? ''),
         addRight: String(rx.rightEye?.add ?? ''),
-        addLeft: String(rx.leftEye?.add ?? '')
+        addLeft: String(rx.leftEye?.add ?? ''),
       },
-      prescriptionMethod: lensConfiguration.prescriptionFile ? 'upload' : (lensConfiguration.prescription ? 'manual' : 'none'),
-      prescriptionFileUrl: typeof lensConfiguration.prescriptionFile === 'string' ? lensConfiguration.prescriptionFile : '',
-      prescriptionPrice: Number(lensConfiguration.price || 0)
+      prescriptionMethod: lensConfiguration.prescriptionFile
+        ? 'upload'
+        : lensConfiguration.prescription
+          ? 'manual'
+          : 'none',
+      prescriptionFileUrl:
+        typeof lensConfiguration.prescriptionFile === 'string' ? lensConfiguration.prescriptionFile : '',
+      prescriptionPrice: Number(lensConfiguration.price || 0),
     };
 
     const basePrice = product.discountedPrice || product.price;
@@ -151,14 +156,13 @@ router.post('/add-lens', verifyToken, async (req, res) => {
       variant: { lensType: lensConfig.lensType },
       lensConfig,
       quantity,
-      price: basePrice + lensConfig.prescriptionPrice
+      price: basePrice + lensConfig.prescriptionPrice,
     });
 
     cart.totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
     await cart.save();
 
-    cart = await Cart.findById(cart._id)
-      .populate('items.product', 'title images price discountedPrice stock');
+    cart = await Cart.findById(cart._id).populate('items.product', 'title images price discountedPrice stock');
 
     res.json({ success: true, message: 'Item added to cart with lens configuration.', cart });
   } catch (error) {
@@ -185,14 +189,17 @@ router.post('/add-contact-lens', verifyToken, async (req, res) => {
       lensesPerBox,
       replacement,
       colour,
-      prescriptionImage
+      prescriptionImage,
     } = req.body;
 
     const product = await Product.findById(productId);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
     if (!product.isActive) return res.status(400).json({ success: false, message: 'Product is not available.' });
     if (product.category !== 'contactlenses') {
-      return res.status(400).json({ success: false, message: 'This endpoint is for contact lenses. Use the lens configurator for spectacles.' });
+      return res.status(400).json({
+        success: false,
+        message: 'This endpoint is for contact lenses. Use the lens configurator for spectacles.',
+      });
     }
 
     const bounds = powerBoundsFor(product);
@@ -201,7 +208,7 @@ router.post('/add-contact-lens', verifyToken, async (req, res) => {
     if (!wantsPower && !bounds.allowsZeroPower && bounds.powerType !== 'none') {
       return res.status(400).json({
         success: false,
-        message: 'These are prescription lenses; a zero-power pair is not stocked for this product.'
+        message: 'These are prescription lenses; a zero-power pair is not stocked for this product.',
       });
     }
 
@@ -212,8 +219,18 @@ router.post('/add-contact-lens', verifyToken, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Check your prescription', errors: check.errors });
       }
       validatedPower = {
-        right: { sphere: Number(power.right?.sphere), cylinder: power.right?.cylinder === '' ? null : (power.right?.cylinder ?? null), axis: power.right?.axis ?? null, addition: power.right?.addition ?? null },
-        left: { sphere: Number(power.left?.sphere), cylinder: power.left?.cylinder === '' ? null : (power.left?.cylinder ?? null), axis: power.left?.axis ?? null, addition: power.left?.addition ?? null }
+        right: {
+          sphere: Number(power.right?.sphere),
+          cylinder: power.right?.cylinder === '' ? null : (power.right?.cylinder ?? null),
+          axis: power.right?.axis ?? null,
+          addition: power.right?.addition ?? null,
+        },
+        left: {
+          sphere: Number(power.left?.sphere),
+          cylinder: power.left?.cylinder === '' ? null : (power.left?.cylinder ?? null),
+          axis: power.left?.axis ?? null,
+          addition: power.left?.addition ?? null,
+        },
       };
     }
 
@@ -224,22 +241,37 @@ router.post('/add-contact-lens', verifyToken, async (req, res) => {
     if ((product.stock || 0) < units) {
       return res.status(400).json({
         success: false,
-        message: `Only ${product.stock || 0} lens${(product.stock || 0) === 1 ? '' : 'es'} in stock. ${boxes} box${boxes === 1 ? '' : 'es'} of ${box} needs ${units}.`
+        message: `Only ${product.stock || 0} lens${(product.stock || 0) === 1 ? '' : 'es'} in stock. ${boxes} box${boxes === 1 ? '' : 'es'} of ${box} needs ${units}.`,
       });
     }
 
     let cart = await Cart.findOne({ user: req.user._id });
     if (!cart) cart = new Cart({ user: req.user._id, items: [] });
 
-    const fingerprint = (p) => [p?.right?.sphere, p?.right?.cylinder, p?.right?.axis, p?.right?.addition, p?.left?.sphere, p?.left?.cylinder, p?.left?.axis, p?.left?.addition].map((v) => (v ?? '')).join(':');
+    const fingerprint = (p) =>
+      [
+        p?.right?.sphere,
+        p?.right?.cylinder,
+        p?.right?.axis,
+        p?.right?.addition,
+        p?.left?.sphere,
+        p?.left?.cylinder,
+        p?.left?.axis,
+        p?.left?.addition,
+      ]
+        .map((v) => v ?? '')
+        .join(':');
 
-    const existing = cart.items.find((it) =>
-      String(it.product) === String(productId)
-      && it.lensConfig?.kind === 'contact-lens'
-      && fingerprint(it.lensConfig?.power) === fingerprint(validatedPower));
+    const existing = cart.items.find(
+      (it) =>
+        String(it.product) === String(productId) &&
+        it.lensConfig?.kind === 'contact-lens' &&
+        fingerprint(it.lensConfig?.power) === fingerprint(validatedPower)
+    );
 
     if (existing) {
-      const nextUnits = (existing.quantity || 1) * (existing.lensConfig?.boxesPerLine ? existing.lensConfig.lensesPerBox : 1);
+      const nextUnits =
+        (existing.quantity || 1) * (existing.lensConfig?.boxesPerLine ? existing.lensConfig.lensesPerBox : 1);
       if ((product.stock || 0) < nextUnits + units) {
         return res.status(400).json({ success: false, message: 'Not enough stock to increase this box quantity.' });
       }
@@ -261,12 +293,12 @@ router.post('/add-contact-lens', verifyToken, async (req, res) => {
           colour: colour || product.contactLens?.colorTone || '',
           power: validatedPower,
           prescriptionFileUrl: typeof prescriptionImage === 'string' ? prescriptionImage : '',
-          prescriptionMethod: prescriptionImage ? 'upload' : (wantsPower ? 'manual' : 'none'),
+          prescriptionMethod: prescriptionImage ? 'upload' : wantsPower ? 'manual' : 'none',
           // Contact lenses carry no extra lens cost; the box price is the product.
-          prescriptionPrice: 0
+          prescriptionPrice: 0,
         },
         quantity: boxes,
-        price: product.discountedPrice || product.price
+        price: product.discountedPrice || product.price,
       });
     }
 
@@ -294,9 +326,8 @@ router.put('/update', verifyToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Cart not found.' });
     }
 
-    const item = cart.items.find(item =>
-      item.product.toString() === productId &&
-      JSON.stringify(item.variant) === JSON.stringify(variant || {})
+    const item = cart.items.find(
+      (item) => item.product.toString() === productId && JSON.stringify(item.variant) === JSON.stringify(variant || {})
     );
 
     if (!item) {
@@ -312,13 +343,15 @@ router.put('/update', verifyToken, async (req, res) => {
     cart.totalItems = cart.items.reduce((sum, i) => sum + i.quantity, 0);
     await cart.save();
 
-    const updatedCart = await Cart.findById(cart._id)
-      .populate('items.product', 'title images price discountedPrice stock');
+    const updatedCart = await Cart.findById(cart._id).populate(
+      'items.product',
+      'title images price discountedPrice stock'
+    );
 
     res.json({
       success: true,
       message: 'Cart updated.',
-      cart: updatedCart
+      cart: updatedCart,
     });
   } catch (error) {
     console.error('Update cart error:', error);
@@ -336,7 +369,7 @@ router.delete('/remove/:productId', verifyToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Cart not found.' });
     }
 
-    cart.items = cart.items.filter(item => {
+    cart.items = cart.items.filter((item) => {
       if (variant) {
         return !(item.product.toString() === productId && JSON.stringify(item.variant) === variant);
       }
@@ -346,13 +379,15 @@ router.delete('/remove/:productId', verifyToken, async (req, res) => {
     cart.totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
     await cart.save();
 
-    const updatedCart = await Cart.findById(cart._id)
-      .populate('items.product', 'title images price discountedPrice stock');
+    const updatedCart = await Cart.findById(cart._id).populate(
+      'items.product',
+      'title images price discountedPrice stock'
+    );
 
     res.json({
       success: true,
       message: 'Item removed from cart.',
-      cart: updatedCart
+      cart: updatedCart,
     });
   } catch (error) {
     console.error('Remove from cart error:', error);
@@ -362,14 +397,11 @@ router.delete('/remove/:productId', verifyToken, async (req, res) => {
 
 router.delete('/clear', verifyToken, async (req, res) => {
   try {
-    await Cart.findOneAndUpdate(
-      { user: req.user._id },
-      { items: [], totalItems: 0 }
-    );
+    await Cart.findOneAndUpdate({ user: req.user._id }, { items: [], totalItems: 0 });
 
     res.json({
       success: true,
-      message: 'Cart cleared.'
+      message: 'Cart cleared.',
     });
   } catch (error) {
     console.error('Clear cart error:', error);

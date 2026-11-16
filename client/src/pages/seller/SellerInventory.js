@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiPackage, FiPlus, FiEdit2, FiTrash2, FiSearch, FiFilter, FiX, FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import {
+  FiPackage,
+  FiPlus,
+  FiEdit2,
+  FiTrash2,
+  FiSearch,
+  FiFilter,
+  FiX,
+  FiChevronDown,
+  FiChevronUp,
+} from 'react-icons/fi';
 import { seller as sellerApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -18,21 +28,31 @@ const SellerInventory = () => {
   const [showVariantModal, setShowVariantModal] = useState(false);
   const [editingVariant, setEditingVariant] = useState(null);
   const [activeProductId, setActiveProductId] = useState(null);
-  const [variantForm, setVariantForm] = useState({ color: '', size: '', gender: 'unisex', price: '', originalPrice: '', stock: '', sku: '' });
+  const [variantForm, setVariantForm] = useState({
+    color: '',
+    size: '',
+    gender: 'unisex',
+    price: '',
+    originalPrice: '',
+    stock: '',
+    sku: '',
+  });
   const [selectedVariants, setSelectedVariants] = useState({});
   const [bulkStockValue, setBulkStockValue] = useState('');
   const [showBulkUpdate, setShowBulkUpdate] = useState(false);
   const [inlineEditVariant, setInlineEditVariant] = useState(null);
   const [inlineStockValue, setInlineStockValue] = useState('');
 
-  useEffect(() => { fetchInventory(); }, []);
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   const fetchInventory = async () => {
     try {
       const res = await sellerApi.getInventory();
       setProducts(listOf(res.data));
     } catch (error) {
-      toastError(error, "Failed to load inventory");
+      toastError(error, 'Failed to load inventory');
       console.error(error);
     } finally {
       setLoading(false);
@@ -66,10 +86,11 @@ const SellerInventory = () => {
     let result = [...products];
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter((p) =>
-        p.name?.toLowerCase().includes(q) ||
-        p.brand?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q)
+      result = result.filter(
+        (p) =>
+          p.name?.toLowerCase().includes(q) ||
+          p.brand?.toLowerCase().includes(q) ||
+          p.category?.toLowerCase().includes(q)
       );
     }
     if (categoryFilter) {
@@ -151,7 +172,7 @@ const SellerInventory = () => {
       toast.success('Variant deleted');
       fetchInventory();
     } catch (error) {
-      toastError(error, "Failed to delete variant");
+      toastError(error, 'Failed to delete variant');
     }
   };
 
@@ -167,7 +188,7 @@ const SellerInventory = () => {
       setInlineEditVariant(null);
       fetchInventory();
     } catch (error) {
-      toastError(error, "Failed to update stock");
+      toastError(error, 'Failed to update stock');
     }
   };
 
@@ -241,9 +262,21 @@ const SellerInventory = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
             <BackButton />
-            <h1 style={{ fontSize: '22px', fontWeight: 700 }}><FiPackage style={{ marginRight: '8px', verticalAlign: 'middle' }} />Inventory Management</h1>
+            <h1 style={{ fontSize: '22px', fontWeight: 700 }}>
+              <FiPackage style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+              Inventory Management
+            </h1>
             {selectedCount > 0 && (
               <button onClick={() => setShowBulkUpdate(true)} className="btn btn-primary">
                 Bulk Update ({selectedCount})
@@ -251,7 +284,10 @@ const SellerInventory = () => {
             )}
           </div>
 
-          <div className="inv-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
+          <div
+            className="inv-summary-grid"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}
+          >
             <div className="card" style={{ padding: '20px', textAlign: 'center' }}>
               <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--primary)' }}>{stats.totalProducts}</div>
               <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>Total Products</div>
@@ -275,21 +311,67 @@ const SellerInventory = () => {
               <FiFilter size={16} style={{ color: 'var(--primary)' }} />
               <span style={{ fontSize: '14px', fontWeight: 600 }}>Filters</span>
               {hasActiveFilters && (
-                <button onClick={clearFilters} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--primary)', fontSize: '13px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  onClick={clearFilters}
+                  style={{
+                    marginLeft: 'auto',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
                   <FiX size={14} /> Clear All
                 </button>
               )}
             </div>
-            <div className="inv-filter-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
+            <div
+              className="inv-filter-grid"
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}
+            >
               <div style={{ position: 'relative' }}>
-                <FiSearch style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} size={14} />
-                <input className="input" placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ paddingLeft: '34px', fontSize: '13px' }} />
+                <FiSearch
+                  style={{
+                    position: 'absolute',
+                    left: '10px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light)',
+                  }}
+                  size={14}
+                />
+                <input
+                  className="input"
+                  placeholder="Search products..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{ paddingLeft: '34px', fontSize: '13px' }}
+                />
               </div>
-              <select className="input" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={{ fontSize: '13px' }}>
+              <select
+                className="input"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                style={{ fontSize: '13px' }}
+              >
                 <option value="">All Categories</option>
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
               </select>
-              <select className="input" value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} style={{ fontSize: '13px' }}>
+              <select
+                className="input"
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value)}
+                style={{ fontSize: '13px' }}
+              >
                 <option value="">All Stock</option>
                 <option value="in">In Stock (&gt;10)</option>
                 <option value="low">Low Stock (1-10)</option>
@@ -299,12 +381,18 @@ const SellerInventory = () => {
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
           ) : filtered.length === 0 ? (
             <div className="empty-state">
               <h3>No products found</h3>
               <p>{hasActiveFilters ? 'Try adjusting your filters' : 'No inventory items yet'}</p>
-              {hasActiveFilters && <button onClick={clearFilters} className="btn btn-outline" style={{ marginTop: '12px' }}>Clear Filters</button>}
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="btn btn-outline" style={{ marginTop: '12px' }}>
+                  Clear Filters
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -330,11 +418,30 @@ const SellerInventory = () => {
                         <img
                           src={product.image || product.images?.[0] || '/placeholder.svg'}
                           alt=""
-                          style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: 'var(--radius-xs)', flexShrink: 0 }}
+                          style={{
+                            width: '48px',
+                            height: '48px',
+                            objectFit: 'contain',
+                            borderRadius: 'var(--radius-xs)',
+                            flexShrink: 0,
+                          }}
                         />
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: '15px', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{product.brand} &middot; <span style={{ textTransform: 'capitalize' }}>{product.category}</span></div>
+                          <div
+                            style={{
+                              fontSize: '15px',
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {product.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>
+                            {product.brand} &middot;{' '}
+                            <span style={{ textTransform: 'capitalize' }}>{product.category}</span>
+                          </div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
@@ -346,29 +453,70 @@ const SellerInventory = () => {
                           <div style={{ fontSize: '14px', fontWeight: 600 }}>{variants.length}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-light)' }}>Variants</div>
                         </div>
-                        {isExpanded ? <FiChevronUp size={18} style={{ color: 'var(--text-light)' }} /> : <FiChevronDown size={18} style={{ color: 'var(--text-light)' }} />}
+                        {isExpanded ? (
+                          <FiChevronUp size={18} style={{ color: 'var(--text-light)' }} />
+                        ) : (
+                          <FiChevronDown size={18} style={{ color: 'var(--text-light)' }} />
+                        )}
                       </div>
                     </div>
 
                     {isExpanded && (
                       <div style={{ borderTop: '1px solid var(--border)', padding: '16px 20px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '12px',
+                            flexWrap: 'wrap',
+                            gap: '8px',
+                          }}
+                        >
                           <h4 style={{ fontSize: '14px', fontWeight: 600 }}>Variants ({variants.length})</h4>
-                          <button onClick={(e) => { e.stopPropagation(); openAddVariant(product._id); }} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openAddVariant(product._id);
+                            }}
+                            className="btn btn-primary btn-sm"
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                          >
                             <FiPlus size={12} /> Add Variant
                           </button>
                         </div>
 
                         {variants.length === 0 ? (
-                          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-light)', fontSize: '13px' }}>
+                          <div
+                            style={{
+                              textAlign: 'center',
+                              padding: '24px',
+                              color: 'var(--text-light)',
+                              fontSize: '13px',
+                            }}
+                          >
                             No variants yet. Add your first variant.
                           </div>
                         ) : (
                           <div style={{ overflowX: 'auto' }}>
-                            <table className="inv-variant-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: '750px' }}>
+                            <table
+                              className="inv-variant-table"
+                              style={{ width: '100%', borderCollapse: 'collapse', minWidth: '750px' }}
+                            >
                               <thead>
-                                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-                                  <th style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', width: '32px' }}>
+                                <tr
+                                  style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}
+                                >
+                                  <th
+                                    style={{
+                                      padding: '10px 12px',
+                                      textAlign: 'left',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      color: 'var(--text-secondary)',
+                                      width: '32px',
+                                    }}
+                                  >
                                     <input
                                       type="checkbox"
                                       checked={variants.length > 0 && variants.every((v) => selectedVariants[v._id])}
@@ -377,9 +525,22 @@ const SellerInventory = () => {
                                       style={{ cursor: 'pointer' }}
                                     />
                                   </th>
-                                  {['Color', 'Size', 'Gender', 'Price', 'Stock', 'SKU', 'Status', 'Actions'].map((h) => (
-                                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>
-                                  ))}
+                                  {['Color', 'Size', 'Gender', 'Price', 'Stock', 'SKU', 'Status', 'Actions'].map(
+                                    (h) => (
+                                      <th
+                                        key={h}
+                                        style={{
+                                          padding: '10px 12px',
+                                          textAlign: 'left',
+                                          fontSize: '12px',
+                                          fontWeight: 600,
+                                          color: 'var(--text-secondary)',
+                                        }}
+                                      >
+                                        {h}
+                                      </th>
+                                    )
+                                  )}
                                 </tr>
                               </thead>
                               <tbody>
@@ -394,13 +555,22 @@ const SellerInventory = () => {
                                         style={{ cursor: 'pointer' }}
                                       />
                                     </td>
-                                    <td style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 500 }}>{variant.color || '—'}</td>
+                                    <td style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 500 }}>
+                                      {variant.color || '—'}
+                                    </td>
                                     <td style={{ padding: '10px 12px', fontSize: '13px' }}>{variant.size || '—'}</td>
-                                    <td style={{ padding: '10px 12px', fontSize: '13px', textTransform: 'capitalize' }}>{variant.gender || '—'}</td>
-                                    <td style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 600 }}>₹{variant.price ?? '—'}</td>
+                                    <td style={{ padding: '10px 12px', fontSize: '13px', textTransform: 'capitalize' }}>
+                                      {variant.gender || '—'}
+                                    </td>
+                                    <td style={{ padding: '10px 12px', fontSize: '13px', fontWeight: 600 }}>
+                                      ₹{variant.price ?? '—'}
+                                    </td>
                                     <td style={{ padding: '10px 12px', fontSize: '13px' }}>
                                       {inlineEditVariant === variant._id ? (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
+                                        <div
+                                          style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
                                           <input
                                             className="input"
                                             type="number"
@@ -415,21 +585,42 @@ const SellerInventory = () => {
                                           />
                                           <button
                                             onClick={() => saveInlineStock(product._id, variant._id)}
-                                            style={{ background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', padding: '4px 6px', cursor: 'pointer', fontSize: '11px' }}
+                                            style={{
+                                              background: 'var(--primary)',
+                                              color: 'var(--text-white)',
+                                              border: 'none',
+                                              borderRadius: 'var(--radius-xs)',
+                                              padding: '4px 6px',
+                                              cursor: 'pointer',
+                                              fontSize: '11px',
+                                            }}
                                           >
                                             Save
                                           </button>
                                           <button
                                             onClick={() => setInlineEditVariant(null)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)', fontSize: '11px' }}
+                                            style={{
+                                              background: 'none',
+                                              border: 'none',
+                                              cursor: 'pointer',
+                                              color: 'var(--text-light)',
+                                              fontSize: '11px',
+                                            }}
                                           >
                                             <FiX size={12} />
                                           </button>
                                         </div>
                                       ) : (
                                         <span
-                                          onClick={(e) => { e.stopPropagation(); startInlineEdit(variant); }}
-                                          style={{ cursor: 'pointer', borderBottom: '1px dashed var(--text-light)', paddingBottom: '1px' }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            startInlineEdit(variant);
+                                          }}
+                                          style={{
+                                            cursor: 'pointer',
+                                            borderBottom: '1px dashed var(--text-light)',
+                                            paddingBottom: '1px',
+                                          }}
                                           title="Click to edit stock"
                                         >
                                           {variant.stock ?? 0}
@@ -440,8 +631,20 @@ const SellerInventory = () => {
                                     <td style={{ padding: '10px 12px' }}>{getStockBadge(variant.stock)}</td>
                                     <td style={{ padding: '10px 12px' }}>
                                       <div style={{ display: 'flex', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
-                                        <button onClick={() => openEditVariant(product._id, variant)} className="btn btn-outline btn-sm" title="Edit"><FiEdit2 size={12} /></button>
-                                        <button onClick={() => handleDeleteVariant(product._id, variant._id)} className="btn btn-danger btn-sm" title="Delete"><FiTrash2 size={12} /></button>
+                                        <button
+                                          onClick={() => openEditVariant(product._id, variant)}
+                                          className="btn btn-outline btn-sm"
+                                          title="Edit"
+                                        >
+                                          <FiEdit2 size={12} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteVariant(product._id, variant._id)}
+                                          className="btn btn-danger btn-sm"
+                                          title="Delete"
+                                        >
+                                          <FiTrash2 size={12} />
+                                        </button>
                                       </div>
                                     </td>
                                   </tr>
@@ -461,24 +664,68 @@ const SellerInventory = () => {
       </main>
 
       {showVariantModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '16px' }}>
-          <div className="card inv-modal-content" style={{ padding: '24px', maxWidth: '520px', width: '100%', position: 'relative' }}>
-            <button onClick={() => setShowVariantModal(false)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)' }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 200,
+            padding: '16px',
+          }}
+        >
+          <div
+            className="card inv-modal-content"
+            style={{ padding: '24px', maxWidth: '520px', width: '100%', position: 'relative' }}
+          >
+            <button
+              onClick={() => setShowVariantModal(false)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-light)',
+              }}
+            >
               <FiX size={20} />
             </button>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>{editingVariant ? 'Edit Variant' : 'Add Variant'}</h3>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>
+              {editingVariant ? 'Edit Variant' : 'Add Variant'}
+            </h3>
             <div className="inv-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div className="input-group">
                 <label>Color *</label>
-                <input className="input" value={variantForm.color} onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })} placeholder="e.g. Black" />
+                <input
+                  className="input"
+                  value={variantForm.color}
+                  onChange={(e) => setVariantForm({ ...variantForm, color: e.target.value })}
+                  placeholder="e.g. Black"
+                />
               </div>
               <div className="input-group">
                 <label>Size *</label>
-                <input className="input" value={variantForm.size} onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })} placeholder="e.g. 54mm" />
+                <input
+                  className="input"
+                  value={variantForm.size}
+                  onChange={(e) => setVariantForm({ ...variantForm, size: e.target.value })}
+                  placeholder="e.g. 54mm"
+                />
               </div>
               <div className="input-group">
                 <label>Gender</label>
-                <select className="input" value={variantForm.gender} onChange={(e) => setVariantForm({ ...variantForm, gender: e.target.value })}>
+                <select
+                  className="input"
+                  value={variantForm.gender}
+                  onChange={(e) => setVariantForm({ ...variantForm, gender: e.target.value })}
+                >
                   <option value="men">Men</option>
                   <option value="women">Women</option>
                   <option value="unisex">Unisex</option>
@@ -487,44 +734,115 @@ const SellerInventory = () => {
               </div>
               <div className="input-group">
                 <label>Price *</label>
-                <input className="input" type="number" value={variantForm.price} onChange={(e) => setVariantForm({ ...variantForm, price: e.target.value })} placeholder="0.00" />
+                <input
+                  className="input"
+                  type="number"
+                  value={variantForm.price}
+                  onChange={(e) => setVariantForm({ ...variantForm, price: e.target.value })}
+                  placeholder="0.00"
+                />
               </div>
               <div className="input-group">
                 <label>Original Price</label>
-                <input className="input" type="number" value={variantForm.originalPrice} onChange={(e) => setVariantForm({ ...variantForm, originalPrice: e.target.value })} placeholder="0.00" />
+                <input
+                  className="input"
+                  type="number"
+                  value={variantForm.originalPrice}
+                  onChange={(e) => setVariantForm({ ...variantForm, originalPrice: e.target.value })}
+                  placeholder="0.00"
+                />
               </div>
               <div className="input-group">
                 <label>Stock</label>
-                <input className="input" type="number" value={variantForm.stock} onChange={(e) => setVariantForm({ ...variantForm, stock: e.target.value })} placeholder="0" />
+                <input
+                  className="input"
+                  type="number"
+                  value={variantForm.stock}
+                  onChange={(e) => setVariantForm({ ...variantForm, stock: e.target.value })}
+                  placeholder="0"
+                />
               </div>
               <div className="input-group" style={{ gridColumn: 'span 2' }}>
                 <label>SKU</label>
-                <input className="input" value={variantForm.sku} onChange={(e) => setVariantForm({ ...variantForm, sku: e.target.value })} placeholder="e.g. SKU-BLK-54" />
+                <input
+                  className="input"
+                  value={variantForm.sku}
+                  onChange={(e) => setVariantForm({ ...variantForm, sku: e.target.value })}
+                  placeholder="e.g. SKU-BLK-54"
+                />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button onClick={handleSaveVariant} className="btn btn-primary">{editingVariant ? 'Update' : 'Add'} Variant</button>
-              <button onClick={() => setShowVariantModal(false)} className="btn btn-outline">Cancel</button>
+              <button onClick={handleSaveVariant} className="btn btn-primary">
+                {editingVariant ? 'Update' : 'Add'} Variant
+              </button>
+              <button onClick={() => setShowVariantModal(false)} className="btn btn-outline">
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {showBulkUpdate && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: '16px' }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 200,
+            padding: '16px',
+          }}
+        >
           <div className="card" style={{ padding: '24px', maxWidth: '400px', width: '100%', position: 'relative' }}>
-            <button onClick={() => setShowBulkUpdate(false)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)' }}>
+            <button
+              onClick={() => setShowBulkUpdate(false)}
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-light)',
+              }}
+            >
               <FiX size={20} />
             </button>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '4px' }}>Bulk Stock Update</h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>{selectedCount} variant(s) selected</p>
+            <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>
+              {selectedCount} variant(s) selected
+            </p>
             <div className="input-group" style={{ marginBottom: '16px' }}>
               <label>New Stock Value</label>
-              <input className="input" type="number" value={bulkStockValue} onChange={(e) => setBulkStockValue(e.target.value)} placeholder="Enter stock quantity" min="0" />
+              <input
+                className="input"
+                type="number"
+                value={bulkStockValue}
+                onChange={(e) => setBulkStockValue(e.target.value)}
+                placeholder="Enter stock quantity"
+                min="0"
+              />
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={handleBulkStockUpdate} className="btn btn-primary" disabled={!bulkStockValue}>Update Stock</button>
-              <button onClick={() => { setShowBulkUpdate(false); setBulkStockValue(''); }} className="btn btn-outline">Cancel</button>
+              <button onClick={handleBulkStockUpdate} className="btn btn-primary" disabled={!bulkStockValue}>
+                Update Stock
+              </button>
+              <button
+                onClick={() => {
+                  setShowBulkUpdate(false);
+                  setBulkStockValue('');
+                }}
+                className="btn btn-outline"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

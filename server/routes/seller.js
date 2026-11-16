@@ -23,12 +23,22 @@ const generateSellerToken = (sellerId) => {
 router.post('/register', authLimiter, sellerRegisterValidation, async (req, res) => {
   try {
     const {
-      name, email, phone, password, gstNumber, aadharNumber, panNumber,
-      bankAccount, storeName, storeDescription, storeAddress, businessAddress
+      name,
+      email,
+      phone,
+      password,
+      gstNumber,
+      aadharNumber,
+      panNumber,
+      bankAccount,
+      storeName,
+      storeDescription,
+      storeAddress,
+      businessAddress,
     } = req.body;
 
     const existingSeller = await Seller.findOne({
-      $or: [{ email }, { phone }]
+      $or: [{ email }, { phone }],
     });
 
     if (existingSeller) {
@@ -40,7 +50,11 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
       }
     }
 
-    const phoneOtp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+    const phoneOtp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      specialChars: false,
+      lowerCaseAlphabets: false,
+    });
 
     // Store position is what proximity routing measures against, so it is
     // derived here from the PIN code (or explicit browser coordinates) rather
@@ -49,24 +63,32 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
     const location = buildLocation({
       lat: addr.lat ?? addr.latitude,
       lng: addr.lng ?? addr.longitude,
-      pincode: addr.pincode
+      pincode: addr.pincode,
     });
     const resolved = resolvePincode(addr.pincode);
 
     const seller = new Seller({
-      name, email, phone, password, gstNumber, aadharNumber, panNumber,
-      bankAccount, storeName, storeDescription,
+      name,
+      email,
+      phone,
+      password,
+      gstNumber,
+      aadharNumber,
+      panNumber,
+      bankAccount,
+      storeName,
+      storeDescription,
       address: {
         street: addr.street || '',
         city: addr.city || resolved?.city || '',
         state: addr.state || '',
         pincode: addr.pincode || '',
-        country: addr.country || 'India'
+        country: addr.country || 'India',
       },
       pincode: addr.pincode || '',
       location,
       phoneOtp,
-      phoneOtpExpiry: new Date(Date.now() + 10 * 60 * 1000)
+      phoneOtpExpiry: new Date(Date.now() + 10 * 60 * 1000),
     });
 
     await seller.save();
@@ -76,7 +98,7 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
     res.status(201).json({
       success: true,
       message: 'Registration successful. Please verify your phone with the OTP sent.',
-      sellerId: seller._id
+      sellerId: seller._id,
     });
   } catch (error) {
     console.error('Seller register error:', error);
@@ -111,7 +133,7 @@ router.post('/verify-phone', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Phone verified successfully. You can now login.'
+      message: 'Phone verified successfully. You can now login.',
     });
   } catch (error) {
     console.error('Verify phone error:', error);
@@ -135,11 +157,11 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     // Check if account is locked
     if (seller.lockUntil && seller.lockUntil > new Date()) {
       const remainingTime = Math.ceil((seller.lockUntil - new Date()) / 1000 / 60);
-      return res.status(423).json({ 
-        success: false, 
+      return res.status(423).json({
+        success: false,
         message: `Account is locked. Please try again in ${remainingTime} minutes.`,
         locked: true,
-        lockUntil: seller.lockUntil
+        lockUntil: seller.lockUntil,
       });
     }
 
@@ -147,26 +169,26 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     if (!isMatch) {
       // Increment failed login attempts
       seller.failedLoginAttempts = (seller.failedLoginAttempts || 0) + 1;
-      
+
       // Lock account after 3 failed attempts for 3 minutes
       if (seller.failedLoginAttempts >= 3) {
         seller.lockUntil = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
         seller.failedLoginAttempts = 0; // Reset after locking
         await seller.save();
-        
-        return res.status(423).json({ 
-          success: false, 
+
+        return res.status(423).json({
+          success: false,
           message: 'Too many failed attempts. Account locked for 3 minutes.',
           locked: true,
-          lockUntil: seller.lockUntil
+          lockUntil: seller.lockUntil,
         });
       }
-      
+
       await seller.save();
       const remainingAttempts = 3 - seller.failedLoginAttempts;
-      return res.status(401).json({ 
-        success: false, 
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`
+      return res.status(401).json({
+        success: false,
+        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
       });
     }
 
@@ -175,7 +197,12 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     seller.lockUntil = null;
 
     // Check if this is a test credential - bypass OTP for testing
-    const testSellerEmails = ['opticalworld@gmail.com', 'visioncare@gmail.com', 'lensstudio@gmail.com', 'eyefashion@gmail.com'];
+    const testSellerEmails = [
+      'opticalworld@gmail.com',
+      'visioncare@gmail.com',
+      'lensstudio@gmail.com',
+      'eyefashion@gmail.com',
+    ];
     const isTestCredential = testSellerEmails.includes(email);
 
     if (isTestCredential) {
@@ -190,11 +217,15 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        seller: seller.toJSON()
+        seller: seller.toJSON(),
       });
     } else {
       // Generate OTP for login verification (production flow)
-      const loginOtp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+      const loginOtp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
+      });
 
       seller.loginOtp = loginOtp;
       seller.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
@@ -206,7 +237,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
         success: true,
         message: 'Login OTP sent to your email.',
         requiresOTP: true,
-        sellerId: seller._id
+        sellerId: seller._id,
       });
     }
   } catch (error) {
@@ -248,7 +279,7 @@ router.post('/verify-login-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      seller: seller.toJSON()
+      seller: seller.toJSON(),
     });
   } catch (error) {
     console.error('Verify login OTP error:', error);
@@ -275,7 +306,7 @@ router.get('/me', verifySeller, async (req, res) => {
   try {
     res.json({
       success: true,
-      seller: req.seller.toJSON()
+      seller: req.seller.toJSON(),
     });
   } catch (error) {
     console.error('Get seller profile error:', error);
@@ -285,9 +316,7 @@ router.get('/me', verifySeller, async (req, res) => {
 
 router.put('/update-profile', verifySeller, async (req, res) => {
   try {
-    const {
-      storeName, storeDescription, storeLogo, storeBanner
-    } = req.body;
+    const { storeName, storeDescription, storeLogo, storeBanner } = req.body;
 
     const updateData = {};
     if (storeName) updateData.storeName = storeName;
@@ -300,14 +329,13 @@ router.put('/update-profile', verifySeller, async (req, res) => {
     res.json({
       success: true,
       message: 'Profile updated successfully.',
-      seller: seller.toJSON()
+      seller: seller.toJSON(),
     });
   } catch (error) {
     console.error('Update seller profile error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
-
 
 router.get('/orders', verifySeller, async (req, res) => {
   try {
@@ -322,13 +350,15 @@ router.get('/orders', verifySeller, async (req, res) => {
      * pattern is escaped because it comes from a query string.
      */
     if (q && String(q).trim()) {
-      const needle = String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const needle = String(q)
+        .trim()
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const rx = new RegExp(needle, 'i');
       query.$or = [
         { orderNumber: rx },
         { 'shippingAddress.phone': rx },
         { 'shippingAddress.name': rx },
-        { 'shippingAddress.pincode': rx }
+        { 'shippingAddress.pincode': rx },
       ];
     }
 
@@ -336,7 +366,9 @@ router.get('/orders', verifySeller, async (req, res) => {
       .populate('items.product', 'title images price')
       // Lines carry their own sold price; the seller list must show what was
       // charged, not what the item costs today.
-      .select('orderNumber orderStatus createdAt deliveredAt totalAmount subtotal paymentMethod paymentStatus shippingAddress items user deliveryAssignmentMode assignedDeliveryPartner')
+      .select(
+        'orderNumber orderStatus createdAt deliveredAt totalAmount subtotal paymentMethod paymentStatus shippingAddress items user deliveryAssignmentMode assignedDeliveryPartner'
+      )
       .populate('user', 'name email phone')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
@@ -351,8 +383,8 @@ router.get('/orders', verifySeller, async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / limit)
-      }
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('Get seller orders error:', error);
@@ -371,7 +403,7 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
       confirmed: ['packed', 'cancelled'],
       packed: ['picked_up'],
       picked_up: ['in_transit'],
-      in_transit: ['delivered']
+      in_transit: ['delivered'],
     };
 
     const order = await Order.findOne({ _id: id, seller: sellerId });
@@ -380,7 +412,9 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
     }
 
     if (!validTransitions[order.orderStatus] || !validTransitions[order.orderStatus].includes(status)) {
-      return res.status(400).json({ success: false, message: `Cannot transition from ${order.orderStatus} to ${status}.` });
+      return res
+        .status(400)
+        .json({ success: false, message: `Cannot transition from ${order.orderStatus} to ${status}.` });
     }
 
     order.orderStatus = status;
@@ -388,7 +422,7 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
     order.deliveryJourney.push({
       status,
       note: `${status.replace(/_/g, ' ')} by seller`,
-      at: new Date()
+      at: new Date(),
     });
     if (status === 'delivered') {
       order.deliveryDate = new Date();
@@ -406,7 +440,7 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
         order.cashCollectedBy = `seller:${String(order.seller?._id || order.seller || '')}`;
       }
     }
-    await order.save()
+    await order.save();
 
     /*
      * Telling the buyer what just happened to their order.
@@ -425,7 +459,10 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
         shipped: ['Order shipped', 'Your order is on its way.'],
         out_for_delivery: ['Out for delivery', 'A delivery partner is bringing your order today.'],
         delivered: ['Delivered', 'Your order has been delivered.'],
-        cancelled: ['Order cancelled', 'The shop cancelled this order. Any payment is refunded to the original method.']
+        cancelled: [
+          'Order cancelled',
+          'The shop cancelled this order. Any payment is refunded to the original method.',
+        ],
       };
       const line = statusLines[status] || [`Order ${status}`, `Your order status is now ${status}.`];
       await notifyAccount({
@@ -434,7 +471,7 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
         message: `${order.orderNumber}: ${line[1]}`,
         type: 'order',
         data: { orderId: String(order._id), orderNumber: order.orderNumber, status: status },
-        io: req.app.get('io')
+        io: req.app.get('io'),
       });
       if (['packed', 'picked_up', 'in_transit'].includes(status) && order.assignedDeliveryPartner) {
         await notifyPartner({
@@ -443,13 +480,19 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
           message: `${order.orderNumber} is ${status.replace(/_/g, ' ')}${order.pickupLocation?.address ? ` - pickup at ${order.pickupLocation.address}` : ''}.`,
           type: 'delivery',
           data: { orderId: String(order._id), orderNumber: order.orderNumber },
-          io: req.app.get('io')
+          io: req.app.get('io'),
         });
       }
     } catch (noteErr) {
       // The status change already succeeded; a missed notification is reported, never allowed to fail the seller's action.
-      console.error(JSON.stringify({ event: 'order_status_notify_failed', order: order.orderNumber, message: String(noteErr.message).slice(0, 140) }));
-    };
+      console.error(
+        JSON.stringify({
+          event: 'order_status_notify_failed',
+          order: order.orderNumber,
+          message: String(noteErr.message).slice(0, 140),
+        })
+      );
+    }
 
     // Tell the customer what changed. Populated lazily so the mail carries the
     // buyer address; a failure here must never break the seller's action.
@@ -475,7 +518,9 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
       const { offerQueue } = await import('../services/partnerDispatch.js');
       setTimeout(() => {
         offerQueue(order._id, req.app.get('io'))
-          .then((r) => { if (!r.success && r.error) console.error('Partner cascade for', order.orderNumber, ':', r.error); })
+          .then((r) => {
+            if (!r.success && r.error) console.error('Partner cascade for', order.orderNumber, ':', r.error);
+          })
           .catch((e) => console.error('Partner cascade threw for', order.orderNumber, ':', e.message));
       }, 0);
     }
@@ -483,7 +528,7 @@ router.put('/orders/:id/status', verifySeller, async (req, res) => {
     res.json({
       success: true,
       message: `Order status updated to ${status}.`,
-      order
+      order,
     });
   } catch (error) {
     console.error('Update order status error:', error);
@@ -511,7 +556,7 @@ router.put('/orders/:id/pack', verifySeller, async (req, res) => {
     res.json({
       success: true,
       message: 'Order marked as packed.',
-      order
+      order,
     });
   } catch (error) {
     console.error('Pack order error:', error);
@@ -531,7 +576,7 @@ router.get('/analytics', verifySeller, async (req, res) => {
 
     const revenueResult = await Order.aggregate([
       { $match: { seller: sellerId, paymentStatus: 'completed', orderStatus: { $ne: 'cancelled' } } },
-      { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' }, avgOrderValue: { $avg: '$totalAmount' } } }
+      { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' }, avgOrderValue: { $avg: '$totalAmount' } } },
     ]);
 
     const totalRevenue = revenueResult[0]?.totalRevenue || 0;
@@ -545,7 +590,7 @@ router.get('/analytics', verifySeller, async (req, res) => {
 
     const recentOrders = await Order.find({
       seller: sellerId,
-      createdAt: { $gte: last7Days }
+      createdAt: { $gte: last7Days },
     }).sort({ createdAt: -1 });
 
     res.json({
@@ -560,8 +605,8 @@ router.get('/analytics', verifySeller, async (req, res) => {
         avgOrderValue: Math.round(avgOrderValue),
         totalProducts,
         activeProducts,
-        recentOrders: recentOrders.length
-      }
+        recentOrders: recentOrders.length,
+      },
     });
   } catch (error) {
     console.error('Get analytics error:', error);
@@ -576,19 +621,21 @@ router.get('/pickups', verifySeller, async (req, res) => {
     const orders = await Order.find({
       seller: sellerId,
       orderStatus: { $in: ['packed', 'picked_up'] },
-      pickupDate: { $exists: true, $ne: null }
-    }).sort({ pickupDate: 1 }).limit(20);
+      pickupDate: { $exists: true, $ne: null },
+    })
+      .sort({ pickupDate: 1 })
+      .limit(20);
 
     res.json({
       success: true,
-      pickups: orders.map(order => ({
+      pickups: orders.map((order) => ({
         orderId: order._id,
         orderNumber: order.orderNumber,
         pickupDate: order.pickupDate,
         status: order.orderStatus,
         trackingId: order.shiprocketTrackingId,
-        trackingUrl: order.shiprocketTrackingUrl
-      }))
+        trackingUrl: order.shiprocketTrackingUrl,
+      })),
     });
   } catch (error) {
     console.error('Get pickups error:', error);
@@ -606,7 +653,9 @@ router.put('/products/:id/offer', verifySeller, async (req, res) => {
     }
 
     if (product.isUnderSaleEvent) {
-      return res.status(400).json({ success: false, message: 'Cannot modify offers while product is under a platform sale event.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Cannot modify offers while product is under a platform sale event.' });
     }
 
     product.sellerOffer = {
@@ -614,7 +663,7 @@ router.put('/products/:id/offer', verifySeller, async (req, res) => {
       value: value || 0,
       isActive: type && type !== 'none' && value > 0,
       startFrom: startFrom ? new Date(startFrom) : undefined,
-      endAt: endAt ? new Date(endAt) : undefined
+      endAt: endAt ? new Date(endAt) : undefined,
     };
 
     if (product.sellerOffer.isActive && product.sellerOffer.type === 'percentage') {
@@ -642,7 +691,9 @@ router.delete('/products/:id/offer', verifySeller, async (req, res) => {
     }
 
     if (product.isUnderSaleEvent) {
-      return res.status(400).json({ success: false, message: 'Cannot remove offer while product is under a platform sale event.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Cannot remove offer while product is under a platform sale event.' });
     }
 
     product.sellerOffer = { type: 'none', value: 0, isActive: false };
@@ -657,12 +708,12 @@ router.delete('/products/:id/offer', verifySeller, async (req, res) => {
 });
 
 // Inventory Alerts
-import { 
-  getSellerAlerts, 
-  markAlertAsRead, 
-  markAllAlertsAsRead, 
+import {
+  getSellerAlerts,
+  markAlertAsRead,
+  markAllAlertsAsRead,
   getUnreadAlertCount,
-  checkInventoryLevels 
+  checkInventoryLevels,
 } from '../services/inventoryAlert.js';
 
 router.get('/inventory-alerts', verifySeller, async (req, res) => {
@@ -736,7 +787,7 @@ router.get('/payouts/history', verifySeller, async (req, res) => {
         deliveredOrders: ledger.deliveredOrders,
         codUncollected: ledger.codUncollected,
         lastPayoutAt: ledger.lastPayoutAt,
-        latestDeliveredAt: ledger.latestDeliveredAt
+        latestDeliveredAt: ledger.latestDeliveredAt,
       },
       recentDeliveries: ledger.recentDeliveries,
       // bankAccount is a subdocument, not a string, so pulling the whole thing
@@ -745,8 +796,8 @@ router.get('/payouts/history', verifySeller, async (req, res) => {
         accountNumber: req.seller.bankAccount?.accountNumber || '',
         ifscCode: req.seller.bankAccount?.ifscCode || '',
         bankName: req.seller.bankAccount?.bankName || '',
-        accountHolderName: req.seller.bankAccount?.accountHolderName || req.seller.storeName || ''
-      }
+        accountHolderName: req.seller.bankAccount?.accountHolderName || req.seller.storeName || '',
+      },
     });
   } catch (error) {
     console.error('Seller payout ledger error:', error);
@@ -770,41 +821,38 @@ router.get('/inventory', verifySeller, async (req, res) => {
     const query = { seller: sellerId };
     if (category) query.category = category;
     if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } }
-      ];
+      query.$or = [{ title: { $regex: search, $options: 'i' } }, { brand: { $regex: search, $options: 'i' } }];
     }
 
     let products = await Product.find(query).sort({ createdAt: -1 });
 
     // Apply stock filters
     if (stockFilter === 'in') {
-      products = products.filter(p => p.stock > 10);
+      products = products.filter((p) => p.stock > 10);
     } else if (stockFilter === 'low') {
-      products = products.filter(p => p.stock > 0 && p.stock <= 10);
+      products = products.filter((p) => p.stock > 0 && p.stock <= 10);
     } else if (stockFilter === 'out') {
-      products = products.filter(p => !p.stock || p.stock === 0);
+      products = products.filter((p) => !p.stock || p.stock === 0);
     }
 
     // Calculate variant-level totals
-    const inventoryData = products.map(product => {
+    const inventoryData = products.map((product) => {
       const variantStock = (product.variants || []).reduce((sum, v) => sum + (v.stock || 0), 0);
       const totalVariants = (product.variants || []).length;
-      const activeVariants = (product.variants || []).filter(v => v.isActive).length;
-      const lowStockVariants = (product.variants || []).filter(v => v.stock > 0 && v.stock <= 5).length;
-      const outOfStockVariants = (product.variants || []).filter(v => !v.stock || v.stock === 0).length;
+      const activeVariants = (product.variants || []).filter((v) => v.isActive).length;
+      const lowStockVariants = (product.variants || []).filter((v) => v.stock > 0 && v.stock <= 5).length;
+      const outOfStockVariants = (product.variants || []).filter((v) => !v.stock || v.stock === 0).length;
 
       return {
         ...product.toObject(),
         variantStock,
         // The client reads `totalStock`; keep both names so the inventory
         // summary cannot disagree with the variant rows it renders.
-        totalStock: product.variants && product.variants.length ? variantStock : (product.stock || 0),
+        totalStock: product.variants && product.variants.length ? variantStock : product.stock || 0,
         totalVariants,
         activeVariants,
         lowStockVariants,
-        outOfStockVariants
+        outOfStockVariants,
       };
     });
 
@@ -814,9 +862,9 @@ router.get('/inventory', verifySeller, async (req, res) => {
       summary: {
         totalProducts: inventoryData.length,
         totalStock: inventoryData.reduce((sum, p) => sum + (p.stock || 0), 0),
-        lowStockProducts: inventoryData.filter(p => p.stock > 0 && p.stock <= 10).length,
-        outOfStockProducts: inventoryData.filter(p => !p.stock || p.stock === 0).length
-      }
+        lowStockProducts: inventoryData.filter((p) => p.stock > 0 && p.stock <= 10).length,
+        outOfStockProducts: inventoryData.filter((p) => !p.stock || p.stock === 0).length,
+      },
     });
   } catch (error) {
     console.error('Get seller inventory error:', error);
@@ -840,11 +888,11 @@ router.post('/inventory/:productId/variants', verifySeller, async (req, res) => 
     }
 
     // Check for duplicate variant
-    const existingVariant = product.variants.find(v =>
-      v.color === color && v.size === size && v.gender === gender
-    );
+    const existingVariant = product.variants.find((v) => v.color === color && v.size === size && v.gender === gender);
     if (existingVariant) {
-      return res.status(400).json({ success: false, message: 'Variant with same color, size, and gender already exists.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Variant with same color, size, and gender already exists.' });
     }
 
     const newVariant = {
@@ -856,7 +904,7 @@ router.post('/inventory/:productId/variants', verifySeller, async (req, res) => 
       stock: stock || 0,
       sku: sku || `${product.modelNumber || product._id}-${color || 'X'}-${size || 'X'}-${gender || 'U'}`,
       images: images || [],
-      isActive: true
+      isActive: true,
     };
 
     product.variants.push(newVariant);
@@ -872,7 +920,7 @@ router.post('/inventory/:productId/variants', verifySeller, async (req, res) => 
     res.json({
       success: true,
       message: 'Variant added successfully',
-      data: product
+      data: product,
     });
   } catch (error) {
     console.error('Add variant error:', error);
@@ -895,7 +943,7 @@ router.put('/inventory/:productId/variants/:variantId', verifySeller, async (req
       return res.status(404).json({ success: false, message: 'Product not found or not owned by you.' });
     }
 
-    const variantIndex = product.variants.findIndex(v => v._id.toString() === variantId);
+    const variantIndex = product.variants.findIndex((v) => v._id.toString() === variantId);
     if (variantIndex === -1) {
       return res.status(404).json({ success: false, message: 'Variant not found.' });
     }
@@ -917,7 +965,7 @@ router.put('/inventory/:productId/variants/:variantId', verifySeller, async (req
     res.json({
       success: true,
       message: 'Variant updated successfully',
-      data: product
+      data: product,
     });
   } catch (error) {
     console.error('Update variant error:', error);
@@ -939,7 +987,7 @@ router.delete('/inventory/:productId/variants/:variantId', verifySeller, async (
       return res.status(404).json({ success: false, message: 'Product not found or not owned by you.' });
     }
 
-    const variantIndex = product.variants.findIndex(v => v._id.toString() === variantId);
+    const variantIndex = product.variants.findIndex((v) => v._id.toString() === variantId);
     if (variantIndex === -1) {
       return res.status(404).json({ success: false, message: 'Variant not found.' });
     }
@@ -955,7 +1003,7 @@ router.delete('/inventory/:productId/variants/:variantId', verifySeller, async (
     res.json({
       success: true,
       message: 'Variant removed successfully',
-      data: product
+      data: product,
     });
   } catch (error) {
     console.error('Delete variant error:', error);
@@ -986,7 +1034,7 @@ router.post('/inventory/bulk-variants', verifySeller, async (req, res) => {
         continue;
       }
 
-      const variantIndex = product.variants.findIndex(v => v._id.toString() === variantId);
+      const variantIndex = product.variants.findIndex((v) => v._id.toString() === variantId);
       if (variantIndex === -1) {
         results.push({ productId, variantId, success: false, message: 'Variant not found' });
         continue;
@@ -1006,7 +1054,7 @@ router.post('/inventory/bulk-variants', verifySeller, async (req, res) => {
     res.json({
       success: true,
       message: 'Bulk update completed',
-      data: results
+      data: results,
     });
   } catch (error) {
     console.error('Bulk variant update error:', error);

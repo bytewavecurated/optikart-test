@@ -11,8 +11,8 @@ let tokenExpiry = null;
 const shiprocketApi = axios.create({
   baseURL: SHIPROCKET_BASE_URL,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
 export const authenticate = async () => {
@@ -23,7 +23,7 @@ export const authenticate = async () => {
 
     const response = await axios.post(`${SHIPROCKET_BASE_URL}/auth/login`, {
       email: process.env.SHIPROCKET_EMAIL,
-      password: process.env.SHIPROCKET_PASSWORD
+      password: process.env.SHIPROCKET_PASSWORD,
     });
 
     authToken = response.data.token;
@@ -62,16 +62,16 @@ export const createOrder = async (orderDetails) => {
       billing_country: orderDetails.billingCountry || 'India',
       billing_email: orderDetails.billingEmail,
       billing_phone: orderDetails.billingPhone,
-      order_items: orderDetails.items.map(item => ({
+      order_items: orderDetails.items.map((item) => ({
         name: item.name,
         sku: item.sku || `SKU-${Date.now()}`,
         units: item.quantity,
-        selling_price: item.price
+        selling_price: item.price,
       })),
       payment_method: orderDetails.paymentMethod || 'Prepaid',
       shipping_is_gift: false,
       sp_shipping_charges: orderDetails.shippingCharges || 0,
-      sub_total: orderDetails.subtotal
+      sub_total: orderDetails.subtotal,
     };
 
     const response = await shiprocketApi.post('/orders/create/adhoc', payload);
@@ -82,7 +82,7 @@ export const createOrder = async (orderDetails) => {
       shipmentId: response.data.shipment_id,
       awbCode: response.data.awb_code,
       courierId: response.data.courier_id,
-      courierName: response.data.courier_name
+      courierName: response.data.courier_name,
     };
   } catch (error) {
     console.error('Shiprocket create order error:', error.response?.data || error.message);
@@ -99,7 +99,7 @@ export const schedulePickup = async (pickupDetails) => {
       pickup_date: pickupDetails.pickupDate,
       pickup_time: pickupDetails.pickupTime || '13:00-16:00',
       package_count: pickupDetails.packageCount || 1,
-      package_type: pickupDetails.packageType || 'small'
+      package_type: pickupDetails.packageType || 'small',
     };
 
     const response = await shiprocketApi.post('/courier/assign/pickup', payload);
@@ -108,7 +108,7 @@ export const schedulePickup = async (pickupDetails) => {
       success: true,
       pickupDate: response.data.pickup_date,
       pickupTime: response.data.pickup_time,
-      pickupLocation: response.data.pickup_location
+      pickupLocation: response.data.pickup_location,
     };
   } catch (error) {
     console.error('Shiprocket schedule pickup error:', error.response?.data || error.message);
@@ -129,7 +129,7 @@ export const getTracking = async (awbNumber) => {
       trackingStatusId: response.data.tracking_status_id,
       shipmentStatus: response.data.shipment_status,
       lastEvent: response.data.last_event,
-      lastLocation: response.data.last_location
+      lastLocation: response.data.last_location,
     };
   } catch (error) {
     console.error('Shiprocket tracking error:', error.response?.data || error.message);
@@ -142,13 +142,13 @@ export const cancelPickup = async (orderId) => {
     await ensureAuth();
 
     const response = await shiprocketApi.post('/courier/pickup/cancel', {
-      awbs: [orderId]
+      awbs: [orderId],
     });
 
     return {
       success: true,
       message: 'Pickup cancelled successfully',
-      data: response.data
+      data: response.data,
     };
   } catch (error) {
     console.error('Shiprocket cancel pickup error:', error.response?.data || error.message);
@@ -161,12 +161,12 @@ export const generateLabel = async (orderId) => {
     await ensureAuth();
 
     const response = await shiprocketApi.get(`/courier/generate/label`, {
-      params: { shipment_id: orderId }
+      params: { shipment_id: orderId },
     });
 
     return {
       success: true,
-      labelUrl: response.data.label_url
+      labelUrl: response.data.label_url,
     };
   } catch (error) {
     console.error('Shiprocket generate label error:', error.response?.data || error.message);
@@ -180,5 +180,5 @@ export default {
   schedulePickup,
   getTracking,
   cancelPickup,
-  generateLabel
+  generateLabel,
 };

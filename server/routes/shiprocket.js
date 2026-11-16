@@ -13,7 +13,7 @@ router.post('/create-order', verifySeller, async (req, res) => {
 
     const order = await Order.findOne({
       _id: orderId,
-      seller: req.seller._id
+      seller: req.seller._id,
     })
       .populate('items.product', 'title')
       .populate('user', 'name email phone');
@@ -40,21 +40,23 @@ router.post('/create-order', verifySeller, async (req, res) => {
       billingState: order.shippingAddress.state,
       billingEmail: order.shippingAddress.email || order.user.email,
       billingPhone: order.shippingAddress.phone,
-      items: order.items.map(item => ({
+      items: order.items.map((item) => ({
         name: item.product?.title || 'Eyewear Product',
         sku: `SKU-${order.orderNumber}`,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
       })),
       paymentMethod: order.paymentStatus === 'completed' ? 'Prepaid' : 'COD',
       shippingCharges: order.deliveryCharge,
-      subtotal: order.subtotal
+      subtotal: order.subtotal,
     };
 
     const result = await shiprocketService.createOrder(orderDetails);
 
     if (!result.success) {
-      return res.status(500).json({ success: false, message: 'Failed to create Shiprocket order.', error: result.error });
+      return res
+        .status(500)
+        .json({ success: false, message: 'Failed to create Shiprocket order.', error: result.error });
     }
 
     order.shiprocketOrderId = result.orderId?.toString();
@@ -69,8 +71,8 @@ router.post('/create-order', verifySeller, async (req, res) => {
         shipmentId: result.shipmentId,
         awbCode: result.awbCode,
         courierId: result.courierId,
-        courierName: result.courierName
-      }
+        courierName: result.courierName,
+      },
     });
   } catch (error) {
     console.error('Create Shiprocket order error:', error);
@@ -84,7 +86,7 @@ router.post('/pickup', verifySeller, async (req, res) => {
 
     const order = await Order.findOne({
       _id: orderId,
-      seller: req.seller._id
+      seller: req.seller._id,
     }).populate('user', 'email');
 
     if (!order) {
@@ -100,7 +102,7 @@ router.post('/pickup', verifySeller, async (req, res) => {
       pickupDate: pickupDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
       pickupTime: pickupTime || '13:00-16:00',
       packageCount: order.items.reduce((sum, item) => sum + item.quantity, 1),
-      packageType: 'small'
+      packageType: 'small',
     };
 
     const result = await shiprocketService.schedulePickup(pickupDetails);
@@ -117,7 +119,7 @@ router.post('/pickup', verifySeller, async (req, res) => {
     await sendPickupAlert(seller.email, {
       orderNumber: order.orderNumber,
       pickupDate: pickupDetails.pickupDate,
-      address: order.shippingAddress.street
+      address: order.shippingAddress.street,
     });
 
     res.json({
@@ -126,8 +128,8 @@ router.post('/pickup', verifySeller, async (req, res) => {
       data: {
         pickupDate: result.pickupDate,
         pickupTime: result.pickupTime,
-        pickupLocation: result.pickupLocation
-      }
+        pickupLocation: result.pickupLocation,
+      },
     });
   } catch (error) {
     console.error('Schedule pickup error:', error);
@@ -161,8 +163,8 @@ router.get('/tracking/:orderId', verifyToken, async (req, res) => {
         lastLocation: tracking.lastLocation,
         shipmentStatus: tracking.shipmentStatus,
         trackingUrl: order.shiprocketTrackingUrl,
-        awbCode: order.shiprocketTrackingId
-      }
+        awbCode: order.shiprocketTrackingId,
+      },
     });
   } catch (error) {
     console.error('Get tracking error:', error);

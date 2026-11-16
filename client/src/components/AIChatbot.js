@@ -9,15 +9,15 @@ const AIChatbot = () => {
       id: 1,
       text: "Hi! I'm OptiKart AI assistant. How can I help you today?",
       sender: 'bot',
-      timestamp: new Date()
-    }
+      timestamp: new Date(),
+    },
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const messagesEndRef = useRef(null);
   const { user, seller, isAuthenticated } = useAuth();
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -31,30 +31,32 @@ const AIChatbot = () => {
       id: messages.length + 1,
       text: inputMessage,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
 
     // Simulate AI response
     setTimeout(() => {
       let botResponse = "I'd be happy to help you with that! ";
-      
+
       if (!isAuthenticated) {
-        botResponse += "For more personalized assistance, please login or sign up. ";
+        botResponse += 'For more personalized assistance, please login or sign up. ';
       }
 
       if (inputMessage.toLowerCase().includes('order')) {
         botResponse += "You can track your orders in the 'My Orders' section. ";
       } else if (inputMessage.toLowerCase().includes('product')) {
-        botResponse += "We have a wide range of eyewear products. You can browse by category or use our search feature. ";
+        botResponse +=
+          'We have a wide range of eyewear products. You can browse by category or use our search feature. ';
       } else if (inputMessage.toLowerCase().includes('return')) {
-        botResponse += "Our return policy allows returns within 7 days of delivery. Please check the Return Policy page for details. ";
+        botResponse +=
+          'Our return policy allows returns within 7 days of delivery. Please check the Return Policy page for details. ';
       } else if (inputMessage.toLowerCase().includes('payment')) {
-        botResponse += "We accept all major payment methods including credit/debit cards, UPI, and net banking. ";
+        botResponse += 'We accept all major payment methods including credit/debit cards, UPI, and net banking. ';
       } else if (inputMessage.toLowerCase().includes('shipping')) {
-        botResponse += "Shipping is free for orders above ₹500. Standard delivery takes 3-5 business days. ";
+        botResponse += 'Shipping is free for orders above ₹500. Standard delivery takes 3-5 business days. ';
       } else {
         botResponse += "Is there anything specific you'd like to know about our products or services?";
       }
@@ -63,10 +65,10 @@ const AIChatbot = () => {
         id: messages.length + 2,
         text: botResponse,
         sender: 'bot',
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
-      setMessages(prev => [...prev, botMessage]);
+      setMessages((prev) => [...prev, botMessage]);
     }, 1000);
   };
 
@@ -98,10 +100,10 @@ const AIChatbot = () => {
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 999,
-          transition: 'transform 0.2s'
+          transition: 'transform 0.2s',
         }}
-        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
       >
         {isOpen ? <FiX size={24} /> : <FiMessageSquare size={24} />}
       </button>
@@ -121,7 +123,7 @@ const AIChatbot = () => {
             display: 'flex',
             flexDirection: 'column',
             zIndex: 998,
-            overflow: 'hidden'
+            overflow: 'hidden',
           }}
         >
           {/* Header */}
@@ -132,7 +134,7 @@ const AIChatbot = () => {
               padding: '16px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px'
+              gap: '12px',
             }}
           >
             <FiMessageCircle size={24} />
@@ -152,7 +154,7 @@ const AIChatbot = () => {
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px'
+              gap: '12px',
             }}
           >
             {messages.map((message) => (
@@ -162,7 +164,7 @@ const AIChatbot = () => {
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '8px',
-                  flexDirection: message.sender === 'user' ? 'row-reverse' : 'row'
+                  flexDirection: message.sender === 'user' ? 'row-reverse' : 'row',
                 }}
               >
                 <div
@@ -175,7 +177,7 @@ const AIChatbot = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexShrink: 0
+                    flexShrink: 0,
                   }}
                 >
                   {message.sender === 'user' ? <FiUser size={16} /> : <FiMessageCircle size={16} />}
@@ -187,7 +189,7 @@ const AIChatbot = () => {
                     borderRadius: 'var(--radius)',
                     maxWidth: '70%',
                     fontSize: '14px',
-                    lineHeight: '1.5'
+                    lineHeight: '1.5',
                   }}
                 >
                   {message.text}
@@ -203,7 +205,7 @@ const AIChatbot = () => {
               padding: '16px',
               borderTop: '1px solid var(--border)',
               display: 'flex',
-              gap: '8px'
+              gap: '8px',
             }}
           >
             <input
@@ -218,7 +220,7 @@ const AIChatbot = () => {
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-md)',
                 fontSize: '14px',
-                outline: 'none'
+                outline: 'none',
               }}
             />
             <button
@@ -234,7 +236,7 @@ const AIChatbot = () => {
                 cursor: inputMessage.trim() ? 'pointer' : 'not-allowed',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
               }}
             >
               <FiSend size={18} />

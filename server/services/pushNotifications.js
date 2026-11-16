@@ -22,7 +22,7 @@ export const sendPushNotification = async (userId, title, body, type, data = {})
       title,
       body,
       type,
-      data
+      data,
     });
 
     // Get user's push subscription from database
@@ -41,8 +41,8 @@ export const sendPushNotification = async (userId, title, body, type, data = {})
             badge: '/badge72.png',
             data: {
               url: data.url || '/',
-              ...data
-            }
+              ...data,
+            },
           })
         );
       } catch (error) {
@@ -63,19 +63,19 @@ export const sendPushNotification = async (userId, title, body, type, data = {})
         title,
         body,
         type,
-        data
+        data,
       });
     }
 
     return {
       success: true,
-      notification
+      notification,
     };
   } catch (error) {
     console.error('Error sending push notification:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -90,7 +90,7 @@ export const sendOrderUpdateNotification = async (userId, orderId, status) => {
     shipped: 'Your order has been shipped!',
     out_for_delivery: 'Your order is out for delivery',
     delivered: 'Your order has been delivered!',
-    cancelled: 'Your order has been cancelled'
+    cancelled: 'Your order has been cancelled',
   };
 
   const title = 'Order Update';
@@ -98,7 +98,7 @@ export const sendOrderUpdateNotification = async (userId, orderId, status) => {
 
   return await sendPushNotification(userId, title, body, 'order_update', {
     orderId,
-    url: `/orders/${orderId}`
+    url: `/orders/${orderId}`,
   });
 };
 
@@ -107,13 +107,13 @@ export const sendOrderUpdateNotification = async (userId, orderId, status) => {
  */
 export const sendPriceDropNotification = async (userId, productId, productName, oldPrice, newPrice) => {
   const discount = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
-  
+
   const title = 'Price Drop Alert!';
   const body = `${productName} is now ${discount}% off! Was ₹${oldPrice}, now ₹${newPrice}`;
 
   return await sendPushNotification(userId, title, body, 'price_drop', {
     productId,
-    url: `/product/${productId}`
+    url: `/product/${productId}`,
   });
 };
 
@@ -126,7 +126,7 @@ export const sendSaleEventNotification = async (userId, saleEventId, eventName, 
 
   return await sendPushNotification(userId, title, body, 'sale_alert', {
     saleEventId,
-    url: `/sale/${saleEventId}`
+    url: `/sale/${saleEventId}`,
   });
 };
 
@@ -139,7 +139,7 @@ export const sendWishlistNotification = async (userId, productId, productName, m
 
   return await sendPushNotification(userId, title, body, 'wishlist', {
     productId,
-    url: `/product/${productId}`
+    url: `/product/${productId}`,
   });
 };
 
@@ -151,25 +151,23 @@ export const getUserNotifications = async (userId, limit = 20, unreadOnly = fals
     const query = { user: userId };
     if (unreadOnly) query.isRead = false;
 
-    const notifications = await PushNotification.find(query)
-      .sort({ sentAt: -1 })
-      .limit(limit);
+    const notifications = await PushNotification.find(query).sort({ sentAt: -1 }).limit(limit);
 
     const unreadCount = await PushNotification.countDocuments({
       user: userId,
-      isRead: false
+      isRead: false,
     });
 
     return {
       success: true,
       notifications,
-      unreadCount
+      unreadCount,
     };
   } catch (error) {
     console.error('Error getting user notifications:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -191,13 +189,13 @@ export const markAsRead = async (notificationId, userId) => {
 
     return {
       success: true,
-      notification
+      notification,
     };
   } catch (error) {
     console.error('Error marking notification as read:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -207,20 +205,17 @@ export const markAsRead = async (notificationId, userId) => {
  */
 export const markAllAsRead = async (userId) => {
   try {
-    await PushNotification.updateMany(
-      { user: userId, isRead: false },
-      { isRead: true, readAt: new Date() }
-    );
+    await PushNotification.updateMany({ user: userId, isRead: false }, { isRead: true, readAt: new Date() });
 
     return {
       success: true,
-      message: 'All notifications marked as read'
+      message: 'All notifications marked as read',
     };
   } catch (error) {
     console.error('Error marking all notifications as read:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -232,7 +227,7 @@ export const deleteNotification = async (notificationId, userId) => {
   try {
     const notification = await PushNotification.findOneAndDelete({
       _id: notificationId,
-      user: userId
+      user: userId,
     });
 
     if (!notification) {
@@ -241,13 +236,13 @@ export const deleteNotification = async (notificationId, userId) => {
 
     return {
       success: true,
-      message: 'Notification deleted'
+      message: 'Notification deleted',
     };
   } catch (error) {
     console.error('Error deleting notification:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -276,5 +271,5 @@ export default {
   getUserNotifications,
   markAsRead,
   markAllAsRead,
-  deleteNotification
+  deleteNotification,
 };

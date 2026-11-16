@@ -35,8 +35,8 @@ router.get('/', verifyAnyPrincipal, async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error('Get notifications error:', error);
@@ -48,7 +48,7 @@ router.put('/:id/read', verifyToken, async (req, res) => {
   try {
     const notification = await Notification.findOne({
       _id: req.params.id,
-      $or: [{ user: req.user._id }, { seller: req.user._id }]
+      $or: [{ user: req.user._id }, { seller: req.user._id }],
     });
 
     if (!notification) {
@@ -67,10 +67,7 @@ router.put('/:id/read', verifyToken, async (req, res) => {
 
 router.put('/read-all', verifyToken, async (req, res) => {
   try {
-    await Notification.updateMany(
-      { user: req.user._id, isRead: false },
-      { isRead: true }
-    );
+    await Notification.updateMany({ user: req.user._id, isRead: false }, { isRead: true });
 
     res.json({ success: true, message: 'All notifications marked as read.' });
   } catch (error) {

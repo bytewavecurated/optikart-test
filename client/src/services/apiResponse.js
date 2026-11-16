@@ -6,12 +6,35 @@
 // working with whatever the server actually sends.
 
 const COLLECTION_KEYS = [
-  'data', 'products', 'orders', 'banners', 'reviews', 'articles',
-  'coupons', 'blogs', 'sellers', 'users', 'events', 'results',
-  'items', 'notifications', 'categories', 'brands', 'returns',
-  'variants', 'inventory', 'lists', 'staff', 'executives',
-  'manufacturers', 'deliveries', 'payouts', 'commissions',
-  'transactions', 'partner', 'deliveryPartners'
+  'data',
+  'products',
+  'orders',
+  'banners',
+  'reviews',
+  'articles',
+  'coupons',
+  'blogs',
+  'sellers',
+  'users',
+  'events',
+  'results',
+  'items',
+  'notifications',
+  'categories',
+  'brands',
+  'returns',
+  'variants',
+  'inventory',
+  'lists',
+  'staff',
+  'executives',
+  'manufacturers',
+  'deliveries',
+  'payouts',
+  'commissions',
+  'transactions',
+  'partner',
+  'deliveryPartners',
 ];
 
 export const listOf = (payload) => {
@@ -46,10 +69,27 @@ export const wishlistItemsOf = (payload) => {
 // ({ product }, { order }, { blog }, ...). Fall back through the usual names.
 export const oneOf = (payload, ...keys) => {
   if (!payload || typeof payload !== 'object') return null;
-  const candidates = [...keys, 'data', 'product', 'order', 'blog', 'article',
-                      'coupon', 'banner', 'user', 'seller', 'staff', 'executive',
-                      'manufacturer', 'analytics', 'summary', 'revenue',
-                      'results', 'result', 'item'];
+  const candidates = [
+    ...keys,
+    'data',
+    'product',
+    'order',
+    'blog',
+    'article',
+    'coupon',
+    'banner',
+    'user',
+    'seller',
+    'staff',
+    'executive',
+    'manufacturer',
+    'analytics',
+    'summary',
+    'revenue',
+    'results',
+    'result',
+    'item',
+  ];
   for (const k of candidates) {
     if (payload[k] !== undefined && payload[k] !== null) return payload[k];
   }
@@ -62,14 +102,15 @@ export const oneOf = (payload, ...keys) => {
  * how a seller ends up believing they have ten orders.
  */
 export const paginationOf = (payload) => {
-  const p = (payload && (payload.pagination || payload.meta))
-    || (payload && payload.data && (payload.data.pagination || payload.data.meta))
-    || null;
+  const p =
+    (payload && (payload.pagination || payload.meta)) ||
+    (payload && payload.data && (payload.data.pagination || payload.data.meta)) ||
+    null;
   if (!p) return null;
   return {
     total: Number(p.total ?? p.totalItems ?? 0) || 0,
     page: Number(p.page ?? p.current ?? 1) || 1,
     pages: Number(p.pages ?? p.totalPages ?? 1) || 1,
-    limit: Number(p.limit ?? p.pageSize ?? 10) || 10
+    limit: Number(p.limit ?? p.pageSize ?? 10) || 10,
   };
 };

@@ -25,15 +25,15 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
       paymentStatus: 'completed',
       deliveredAt: {
         $gte: new Date(startDate),
-        $lte: new Date(endDate)
+        $lte: new Date(endDate),
       },
-      payoutProcessed: { $ne: true }
+      payoutProcessed: { $ne: true },
     });
 
     if (orders.length === 0) {
       return {
         success: false,
-        message: 'No eligible orders found for this period'
+        message: 'No eligible orders found for this period',
       };
     }
 
@@ -45,20 +45,20 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
     let platformCommission = 0;
 
     orders.forEach((order) => {
-      const merchandise = Number(order.subtotal)
-        || (order.items || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
+      const merchandise =
+        Number(order.subtotal) ||
+        (order.items || []).reduce((sum, i) => sum + Number(i.price || 0) * Number(i.quantity || 0), 0);
       totalSales += merchandise;
 
       // Prefer the figure recorded when the order was delivered, so the payout
       // always matches what commission tracking already booked.
       const booked = Number(order.commissionAmount || 0);
-      platformCommission += booked > 0
-        ? booked
-        : Math.round(merchandise * COMMISSION_RATE * 100) / 100;
+      platformCommission += booked > 0 ? booked : Math.round(merchandise * COMMISSION_RATE * 100) / 100;
 
-      fulfilmentCost += order.deliveryAssignmentMode === 'self'
-        ? Number(order.deliveryFee || 0)
-        : Number(order.shiprocketDeliveryCharge || 0);
+      fulfilmentCost +=
+        order.deliveryAssignmentMode === 'self'
+          ? Number(order.deliveryFee || 0)
+          : Number(order.shiprocketDeliveryCharge || 0);
     });
 
     totalSales = Math.round(totalSales * 100) / 100;
@@ -71,7 +71,7 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
     if (!seller) {
       return {
         success: false,
-        message: 'Seller not found'
+        message: 'Seller not found',
       };
     }
 
@@ -82,7 +82,7 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
       payoutNumber,
       period: {
         startDate: new Date(startDate),
-        endDate: new Date(endDate)
+        endDate: new Date(endDate),
       },
       totalSales,
       platformCommission,
@@ -93,22 +93,19 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
         accountNumber: seller.bankAccount.accountNumber,
         ifscCode: seller.bankAccount.ifscCode,
         accountHolderName: seller.bankAccount.accountHolderName || seller.name,
-        bankName: seller.bankAccount.bankName
-      }
+        bankName: seller.bankAccount.bankName,
+      },
     });
 
     await payout.save();
 
     // Mark orders as payout processed
-    await Order.updateMany(
-      { _id: { $in: orders.map(o => o._id) } },
-      { payoutProcessed: true }
-    );
+    await Order.updateMany({ _id: { $in: orders.map((o) => o._id) } }, { payoutProcessed: true });
 
     return {
       success: true,
       payout,
-      orderCount: orders.length
+      orderCount: orders.length,
     };
   } catch (error) {
     console.error('Error calculating seller payout:', error);
@@ -121,9 +118,7 @@ export const calculateSellerPayout = async (sellerId, startDate, endDate) => {
  */
 export const processPendingPayouts = async () => {
   try {
-    const pendingPayouts = await SellerPayout.find({ status: 'pending' })
-      .populate('seller', 'name email')
-      .limit(10);
+    const pendingPayouts = await SellerPayout.find({ status: 'pending' }).populate('seller', 'name email').limit(10);
 
     const results = [];
 
@@ -139,8 +134,11 @@ export const processPendingPayouts = async () => {
         const sourcePayment = await Order.findOne({
           seller: payout.seller._id || payout.seller,
           paymentStatus: 'completed',
-          paymentId: { $exists: true, $ne: null }
-        }).sort({ deliveredAt: -1 }).select('paymentId').lean();
+          paymentId: { $exists: true, $ne: null },
+        })
+          .sort({ deliveredAt: -1 })
+          .select('paymentId')
+          .lean();
 
         const transferResult = await transferFunds({
           amount: payout.netAmount,
@@ -148,7 +146,7 @@ export const processPendingPayouts = async () => {
           accountNumber: payout.bankDetails.accountNumber,
           ifscCode: payout.bankDetails.ifscCode,
           name: payout.bankDetails.accountHolderName,
-          notes: { payout: payout.payoutNumber, seller: String(payout.seller._id || payout.seller) }
+          notes: { payout: payout.payoutNumber, seller: String(payout.seller._id || payout.seller) },
         });
 
         if (!transferResult.success) {
@@ -163,7 +161,7 @@ export const processPendingPayouts = async () => {
             payoutId: payout._id,
             payoutNumber: payout.payoutNumber,
             status: payout.status === 'pending' ? 'awaiting_settlement' : 'failed',
-            error: transferResult.message
+            error: transferResult.message,
           });
           continue;
         }
@@ -178,9 +176,8 @@ export const processPendingPayouts = async () => {
           payoutId: payout._id,
           payoutNumber: payout.payoutNumber,
           status: 'success',
-          transferId: transferResult.id
+          transferId: transferResult.id,
         });
-
       } catch (error) {
         // Mark as failed
         payout.status = 'failed';
@@ -192,7 +189,7 @@ export const processPendingPayouts = async () => {
           payoutId: payout._id,
           payoutNumber: payout.payoutNumber,
           status: 'failed',
-          error: error.message
+          error: error.message,
         });
       }
     }
@@ -200,7 +197,7 @@ export const processPendingPayouts = async () => {
     return {
       success: true,
       processed: results.length,
-      results
+      results,
     };
   } catch (error) {
     console.error('Error processing pending payouts:', error);
@@ -213,9 +210,7 @@ export const processPendingPayouts = async () => {
  */
 export const getSellerPayoutHistory = async (sellerId, limit = 20) => {
   try {
-    const payouts = await SellerPayout.find({ seller: sellerId })
-      .sort({ createdAt: -1 })
-      .limit(limit);
+    const payouts = await SellerPayout.find({ seller: sellerId }).sort({ createdAt: -1 }).limit(limit);
 
     return payouts;
   } catch (error) {
@@ -245,10 +240,7 @@ export const getSellerPayoutLedger = async (sellerId, limit = 24) => {
     .sort({ deliveredAt: -1 })
     .lean();
 
-  const payouts = await SellerPayout.find({ seller: sellerId })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .lean();
+  const payouts = await SellerPayout.find({ seller: sellerId }).sort({ createdAt: -1 }).limit(limit).lean();
 
   const round = (n) => Math.round((n || 0) * 100) / 100;
   const earned = round(rows.reduce((sum, o) => sum + (o.netAmountToSeller || 0), 0));
@@ -266,9 +258,11 @@ export const getSellerPayoutLedger = async (sellerId, limit = 24) => {
 
   // Cash the buyer handed the courier that has not been marked collected is not
   // the platform's to pay out yet, so it is shown rather than counted as earned.
-  const codUncollected = round(rows
-    .filter((o) => o.paymentMethod === 'cod' && o.paymentStatus !== 'completed')
-    .reduce((sum, o) => sum + (o.netAmountToSeller || 0), 0));
+  const codUncollected = round(
+    rows
+      .filter((o) => o.paymentMethod === 'cod' && o.paymentStatus !== 'completed')
+      .reduce((sum, o) => sum + (o.netAmountToSeller || 0), 0)
+  );
 
   return {
     earnings: earned,
@@ -284,7 +278,7 @@ export const getSellerPayoutLedger = async (sellerId, limit = 24) => {
     lastPayoutAt: paidRows[0]?.completedAt || paidRows[0]?.processedAt || null,
     latestDeliveredAt: rows[0]?.deliveredAt || null,
     payouts,
-    recentDeliveries: rows.slice(0, 10)
+    recentDeliveries: rows.slice(0, 10),
   };
 };
 
@@ -315,20 +309,18 @@ export const getPayoutSummary = async () => {
         $group: {
           _id: '$status',
           count: { $sum: 1 },
-          totalAmount: { $sum: '$netAmount' }
-        }
-      }
+          totalAmount: { $sum: '$netAmount' },
+        },
+      },
     ]);
 
     const totalPayouts = await SellerPayout.countDocuments();
-    const totalAmount = await SellerPayout.aggregate([
-      { $group: { _id: null, total: { $sum: '$netAmount' } } }
-    ]);
+    const totalAmount = await SellerPayout.aggregate([{ $group: { _id: null, total: { $sum: '$netAmount' } } }]);
 
     return {
       byStatus: summary,
       totalPayouts,
-      totalAmount: totalAmount[0]?.total || 0
+      totalAmount: totalAmount[0]?.total || 0,
     };
   } catch (error) {
     console.error('Error getting payout summary:', error);

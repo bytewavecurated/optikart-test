@@ -22,11 +22,11 @@ const SmartChoice = () => {
     try {
       // Analyze user behavior to determine preferences
       const preferences = analyzeUserPreferences();
-      
+
       // Fetch products based on preferences
       const params = {
         limit: 8,
-        sort: 'popularity'
+        sort: 'popularity',
       };
 
       if (preferences.category) {
@@ -39,7 +39,7 @@ const SmartChoice = () => {
 
       const response = await productsApi.getAll(params);
       const allProducts = listOf(response.data);
-      
+
       // Shuffle and take 8 products
       const shuffled = [...allProducts].sort(() => Math.random() - 0.5);
       setRecommendedProducts(shuffled.slice(0, 8));
@@ -54,7 +54,7 @@ const SmartChoice = () => {
     const preferences = {
       category: null,
       gender: null,
-      brands: []
+      brands: [],
     };
 
     // Analyze browsing history
@@ -62,7 +62,7 @@ const SmartChoice = () => {
     const historyGenders = {};
     const historyBrands = {};
 
-    browsingHistory.forEach(product => {
+    browsingHistory.forEach((product) => {
       if (product.category) {
         historyCategories[product.category] = (historyCategories[product.category] || 0) + 1;
       }
@@ -75,7 +75,7 @@ const SmartChoice = () => {
     });
 
     // Analyze wishlist
-    wishlist.forEach(product => {
+    wishlist.forEach((product) => {
       if (product.category) {
         historyCategories[product.category] = (historyCategories[product.category] || 0) + 2;
       }
@@ -85,7 +85,7 @@ const SmartChoice = () => {
     });
 
     // Analyze cart
-    cartItems.forEach(item => {
+    cartItems.forEach((item) => {
       if (item.product?.category) {
         historyCategories[item.product.category] = (historyCategories[item.product.category] || 0) + 3;
       }
@@ -111,7 +111,7 @@ const SmartChoice = () => {
 
   const handleViewAll = () => {
     const preferences = analyzeUserPreferences();
-    
+
     if (!isAuthenticated) {
       // Show gender selection modal for non-authenticated users
       navigate('/smart-choice/gender');
@@ -158,7 +158,7 @@ const SmartChoice = () => {
             <div>
               <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 700 }}>Smart Choice For You</h2>
               <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                {isAuthenticated 
+                {isAuthenticated
                   ? 'Personalized recommendations based on your preferences'
                   : 'Login for personalized recommendations'}
               </p>
@@ -177,7 +177,7 @@ const SmartChoice = () => {
               borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
               fontSize: '14px',
-              fontWeight: 500
+              fontWeight: 500,
             }}
           >
             View All
@@ -187,21 +187,19 @@ const SmartChoice = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
           {recommendedProducts.map((product) => (
-            <Link
-              key={product._id}
-              to={`/product/${product._id}`}
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
+            <Link key={product._id} to={`/product/${product._id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
               <div className="card" style={{ overflow: 'hidden', transition: 'transform 0.2s', cursor: 'pointer' }}>
-                <div style={{ 
-                  width: '100%', 
-                  height: '200px', 
-                  background: 'var(--bg-secondary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden'
-                }}>
+                <div
+                  style={{
+                    width: '100%',
+                    height: '200px',
+                    background: 'var(--bg-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
                   <img
                     src={product.images?.[0] || '/placeholder.svg'}
                     alt={product.title}
@@ -209,9 +207,23 @@ const SmartChoice = () => {
                   />
                 </div>
                 <div style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'start',
+                      marginBottom: '8px',
+                    }}
+                  >
                     <div>
-                      <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase' }}>
+                      <p
+                        style={{
+                          margin: '0 0 4px 0',
+                          fontSize: '12px',
+                          color: 'var(--text-light)',
+                          textTransform: 'uppercase',
+                        }}
+                      >
                         {product.brand}
                       </p>
                       <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, lineHeight: '1.4' }}>
@@ -227,13 +239,15 @@ const SmartChoice = () => {
                       </span>
                     </div>
                     {product.gender && (
-                      <span style={{ 
-                        padding: '2px 8px', 
-                        background: 'var(--bg-primary)', 
-                        borderRadius: 'var(--radius-xs)',
-                        fontSize: '11px',
-                        textTransform: 'capitalize'
-                      }}>
+                      <span
+                        style={{
+                          padding: '2px 8px',
+                          background: 'var(--bg-primary)',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '11px',
+                          textTransform: 'capitalize',
+                        }}
+                      >
                         {product.gender}
                       </span>
                     )}

@@ -53,16 +53,18 @@ const resolveSeller = async (sellerId) => {
   const byId = await Seller.findById(sellerId).select('email name storeName').lean();
   if (byId) return { doc: byId, kind: 'seller' };
   // Manufacturer-appointed retailers live in their own collection.
-  const alt = await ManufacturerSeller.findById(sellerId).select('email name storeName manufacturer').lean().catch(() => null);
+  const alt = await ManufacturerSeller.findById(sellerId)
+    .select('email name storeName manufacturer')
+    .lean()
+    .catch(() => null);
   return alt ? { doc: alt, kind: 'manufacturerSeller' } : null;
 };
 
 const priceLabel = (n) => `Rs. ${Number(n || 0).toLocaleString('en-IN')}`;
 
 const buildEmail = ({ sellerName, product, stock, fromPrice, toPrice, expiresAt, acceptUrl, declineUrl }) => {
-  const discount = fromPrice && toPrice && toPrice < fromPrice
-    ? Math.round(((fromPrice - toPrice) / fromPrice) * 100)
-    : 0;
+  const discount =
+    fromPrice && toPrice && toPrice < fromPrice ? Math.round(((fromPrice - toPrice) / fromPrice) * 100) : 0;
   const lines = [
     `Hello ${sellerName || 'there'},`,
     '',
@@ -85,7 +87,7 @@ const buildEmail = ({ sellerName, product, stock, fromPrice, toPrice, expiresAt,
     'If either link does not work, paste it into your browser address bar, or',
     'open your seller dashboard and confirm it from the price-change prompt.',
     '',
-    '- OptiKart'
+    '- OptiKart',
   ];
   return lines.join('\n');
 };
@@ -93,7 +95,14 @@ const buildEmail = ({ sellerName, product, stock, fromPrice, toPrice, expiresAt,
 /**
  * Raise a price-change proposal. The new price is NOT applied here.
  */
-export const proposePriceChange = async ({ sellerStockId, sellerId, product, newPrice, requestedBy = 'price update', actorLabel = 'the platform' }) => {
+export const proposePriceChange = async ({
+  sellerStockId,
+  sellerId,
+  product,
+  newPrice,
+  requestedBy = 'price update',
+  actorLabel = 'the platform',
+}) => {
   try {
     const stock = await SellerStock.findById(sellerStockId).populate('product', 'title brand');
     if (!stock) return { success: false, error: 'Listing not found' };
@@ -121,7 +130,7 @@ export const proposePriceChange = async ({ sellerStockId, sellerId, product, new
       status: 'awaiting_acceptance',
       acceptedAt: null,
       declinedAt: null,
-      proposedFromPrice: fromPrice
+      proposedFromPrice: fromPrice,
     };
     await stock.save();
 
@@ -142,8 +151,8 @@ export const proposePriceChange = async ({ sellerStockId, sellerId, product, new
           toPrice: target,
           expiresAt,
           acceptUrl,
-          declineUrl
-        })
+          declineUrl,
+        }),
       });
     }
 
@@ -155,7 +164,7 @@ export const proposePriceChange = async ({ sellerStockId, sellerId, product, new
       toPrice: target,
       expiresAt,
       acceptUrl,
-      declineUrl
+      declineUrl,
     };
   } catch (error) {
     console.error('proposePriceChange error:', error);
@@ -180,7 +189,11 @@ export const decidePriceChange = async ({ stockId, token, decision }) => {
     if (stock.pendingChange.expiresAt && new Date(stock.pendingChange.expiresAt) < new Date()) {
       stock.pendingChange.status = 'expired';
       await stock.save();
-      return { success: false, expired: true, error: `The ${WORKING_DAYS} working-day window closed, so the price stayed at ${priceLabel(stock.sellingPrice)}.` };
+      return {
+        success: false,
+        expired: true,
+        error: `The ${WORKING_DAYS} working-day window closed, so the price stayed at ${priceLabel(stock.sellingPrice)}.`,
+      };
     }
 
     if (decision === 'accept') {
@@ -196,7 +209,7 @@ export const decidePriceChange = async ({ stockId, token, decision }) => {
         success: true,
         decision: 'accept',
         message: `Price accepted. Your listing now shows ${priceLabel(applied)}.`,
-        sellingPrice: applied
+        sellingPrice: applied,
       };
     }
 
@@ -209,7 +222,7 @@ export const decidePriceChange = async ({ stockId, token, decision }) => {
         success: true,
         decision: 'decline',
         message: `Change declined. Your listing stays at ${priceLabel(kept)}.`,
-        sellingPrice: kept
+        sellingPrice: kept,
       };
     }
 
@@ -241,7 +254,14 @@ export const overridePriceChange = async ({ stockId, adminId, decision = 'accept
       stock.pendingChange.declinedAt = new Date();
     }
     await stock.save();
-    return { success: true, message: decision === 'accept' ? `Applied ${priceLabel(stock.sellingPrice)} on the seller's behalf.` : 'Proposal discarded.', stock };
+    return {
+      success: true,
+      message:
+        decision === 'accept'
+          ? `Applied ${priceLabel(stock.sellingPrice)} on the seller's behalf.`
+          : 'Proposal discarded.',
+      stock,
+    };
   } catch (error) {
     console.error('overridePriceChange error:', error);
     return { success: false, error: error.message };
@@ -252,13 +272,17 @@ export const overridePriceChange = async ({ stockId, adminId, decision = 'accept
 export const sweepExpiredPriceChanges = async () => {
   const due = await SellerStock.find({
     'pendingChange.status': 'awaiting_acceptance',
-    'pendingChange.expiresAt': { $lt: new Date() }
+    'pendingChange.expiresAt': { $lt: new Date() },
   }).populate('product', 'title brand');
   for (const stock of due) {
     stock.pendingChange.status = 'expired';
     await stock.save();
   }
-  return { success: true, expired: due.length, items: due.map((d) => ({ stockId: String(d._id), title: d.product?.title, keptPrice: d.sellingPrice })) };
+  return {
+    success: true,
+    expired: due.length,
+    items: due.map((d) => ({ stockId: String(d._id), title: d.product?.title, keptPrice: d.sellingPrice })),
+  };
 };
 
 /**
@@ -295,7 +319,7 @@ export const listPriceChangeStates = async ({ sellerId, status } = {}) => {
       requestedAt: pc.requestedAt || null,
       expiresAt: pc.expiresAt || null,
       workingDaysLeft: remainingDays,
-      overdue: pc.status === 'awaiting_acceptance' && remainingDays === 0
+      overdue: pc.status === 'awaiting_acceptance' && remainingDays === 0,
     };
   });
 };

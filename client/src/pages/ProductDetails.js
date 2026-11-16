@@ -1,6 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FiShoppingCart, FiHeart, FiShare2, FiTruck, FiShield, FiRefreshCw, FiCheck, FiChevronDown, FiChevronUp, FiStar, FiMinus, FiPlus, FiUser, FiPackage, FiCalendar, FiFileText, FiExternalLink } from 'react-icons/fi';
+import {
+  FiShoppingCart,
+  FiHeart,
+  FiShare2,
+  FiTruck,
+  FiShield,
+  FiRefreshCw,
+  FiCheck,
+  FiChevronDown,
+  FiChevronUp,
+  FiStar,
+  FiMinus,
+  FiPlus,
+  FiUser,
+  FiPackage,
+  FiCalendar,
+  FiFileText,
+  FiExternalLink,
+} from 'react-icons/fi';
 import { Carousel } from 'react-responsive-carousel';
 import ReactStars from 'react-rating-stars-component';
 import api, { products, orders, wishlist as wishlistApi } from '../services/api';
@@ -53,12 +71,12 @@ const ProductDetails = () => {
         const res = await products.getById(id);
         const prod = oneOf(res.data, 'product');
         setProduct(prod);
-        
+
         // Track browsing history
         if (prod) {
           addBrowsingHistory(prod);
         }
-        
+
         // Initialize selected variants
         if (prod?.colors?.length > 0) {
           setSelectedColor(prod.colors[0]);
@@ -66,15 +84,15 @@ const ProductDetails = () => {
         } else {
           setCurrentImages(prod?.images || []);
         }
-        
+
         if (prod?.sizes?.length > 0) {
           setSelectedSize(prod.sizes[0]);
         }
-        
+
         if (prod?.variants?.length > 0) {
           setSelectedVariant(prod.variants[0]);
         }
-        
+
         try {
           const relatedRes = await api.get(`/products/${id}/related`);
           const data = listOf(relatedRes.data).length ? relatedRes.data : relatedRes.data;
@@ -83,7 +101,11 @@ const ProductDetails = () => {
           setBrandCards(data.brands || []);
         } catch {
           const relatedRes = await products.getAll({ category: prod?.category, limit: 8 });
-          setRelatedProducts(listOf(relatedRes.data).filter(p => p._id !== prod?._id).slice(0, 8));
+          setRelatedProducts(
+            listOf(relatedRes.data)
+              .filter((p) => p._id !== prod?._id)
+              .slice(0, 8)
+          );
         }
         if (isAuthenticated) {
           try {
@@ -150,14 +172,14 @@ const ProductDetails = () => {
       toast.error('Please login to add items to cart');
       return;
     }
-    
+
     const cartItem = {
       ...product,
       selectedColor: selectedColor ? { name: selectedColor.name, hexCode: selectedColor.hexCode } : null,
       selectedSize: selectedSize,
-      selectedVariant: selectedVariant
+      selectedVariant: selectedVariant,
     };
-    
+
     addToCart(cartItem, selectedVariant, quantity);
     toast.success('Added to cart!');
   };
@@ -168,14 +190,14 @@ const ProductDetails = () => {
       toast.error('Please login to purchase items');
       return;
     }
-    
+
     const cartItem = {
       ...product,
       selectedColor: selectedColor ? { name: selectedColor.name, hexCode: selectedColor.hexCode } : null,
       selectedSize: selectedSize,
-      selectedVariant: selectedVariant
+      selectedVariant: selectedVariant,
     };
-    
+
     addToCart(cartItem, selectedVariant, quantity);
     toast.success('Added to cart!');
     window.location.href = '/checkout';
@@ -183,18 +205,27 @@ const ProductDetails = () => {
 
   const canReview = useMemo(() => {
     if (!isAuthenticated || !product) return false;
-    return userOrders.some(o =>
-      o.items?.some(item => item.product === product._id || item.productId === product._id)
+    return userOrders.some((o) =>
+      o.items?.some((item) => item.product === product._id || item.productId === product._id)
     );
   }, [isAuthenticated, product, userOrders]);
 
   const handleSubmitReview = async () => {
-    if (reviewRating === 0) { toast.error('Please select a rating'); return; }
-    if (!reviewText.trim()) { toast.error('Please write a review'); return; }
-    const eligibleOrder = userOrders.find(o =>
-      o.items?.some(item => item.product === product._id || item.productId === product._id)
+    if (reviewRating === 0) {
+      toast.error('Please select a rating');
+      return;
+    }
+    if (!reviewText.trim()) {
+      toast.error('Please write a review');
+      return;
+    }
+    const eligibleOrder = userOrders.find((o) =>
+      o.items?.some((item) => item.product === product._id || item.productId === product._id)
     );
-    if (!eligibleOrder) { toast.error('You can only review products you have purchased'); return; }
+    if (!eligibleOrder) {
+      toast.error('You can only review products you have purchased');
+      return;
+    }
     setReviewLoading(true);
     try {
       await orders.review(eligibleOrder._id, { rating: reviewRating, review: reviewText, productId: product._id });
@@ -214,11 +245,13 @@ const ProductDetails = () => {
   const ratings = product?.ratings || [];
   const avgRating = product?.rating || 0;
   const totalRatings = product?.totalRatings || ratings.length;
-  const totalReviews = product?.totalReviews || ratings.filter(r => r.review).length;
+  const totalReviews = product?.totalReviews || ratings.filter((r) => r.review).length;
 
   const ratingDistribution = useMemo(() => {
     const dist = [0, 0, 0, 0, 0];
-    ratings.forEach(r => { if (r.rating >= 1 && r.rating <= 5) dist[r.rating - 1]++; });
+    ratings.forEach((r) => {
+      if (r.rating >= 1 && r.rating <= 5) dist[r.rating - 1]++;
+    });
     return dist.reverse();
   }, [ratings]);
 
@@ -226,7 +259,10 @@ const ProductDetails = () => {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header />
-        <main className="container page-wrapper" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <main
+          className="container page-wrapper"
+          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+        >
           <div className="spinner spinner-lg" />
         </main>
         <Footer />
@@ -258,7 +294,6 @@ const ProductDetails = () => {
     return `Option ${idx + 1}`;
   };
 
-
   if (!product) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -267,7 +302,9 @@ const ProductDetails = () => {
           <div className="empty-state">
             <h3>Product not found</h3>
             <p>The product you're looking for doesn't exist.</p>
-            <Link to="/" className="btn btn-primary">Go Home</Link>
+            <Link to="/" className="btn btn-primary">
+              Go Home
+            </Link>
           </div>
         </main>
         <Footer />
@@ -279,7 +316,8 @@ const ProductDetails = () => {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const images = currentImages?.length > 0 ? currentImages : (product?.images?.length > 0 ? product.images : ['/placeholder.svg']);
+  const images =
+    currentImages?.length > 0 ? currentImages : product?.images?.length > 0 ? product.images : ['/placeholder.svg'];
   const seller = product.seller;
   const sellerSince = seller?.createdAt ? new Date(seller.createdAt).getFullYear() : null;
   const maskedGST = seller?.gstNumber ? `****${seller.gstNumber.slice(-4)}` : null;
@@ -290,35 +328,60 @@ const ProductDetails = () => {
       <main style={{ flex: 1 }}>
         <div className="container" style={{ paddingTop: '16px', paddingBottom: '32px' }}>
           <nav style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>
-            <Link to="/" style={{ color: 'var(--primary)' }}>Home</Link>
+            <Link to="/" style={{ color: 'var(--primary)' }}>
+              Home
+            </Link>
             {' / '}
-            <Link to={`/category/${product.category}`} style={{ color: 'var(--primary)' }}>{product.category}</Link>
+            <Link to={`/category/${product.category}`} style={{ color: 'var(--primary)' }}>
+              {product.category}
+            </Link>
             {' / '}
             <span>{product.brand}</span>
             {' / '}
             <span style={{ color: 'var(--text-primary)' }}>{productTitle}</span>
           </nav>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }} className="product-detail-grid">
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}
+            className="product-detail-grid"
+          >
             <div className="card" style={{ padding: '16px' }}>
               <Carousel showThumbs={false} autoPlay infiniteLoop showStatus={false}>
                 {images.map((img, idx) => (
-                  <div key={idx} style={{ background: 'var(--bg-page)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                    <img src={img} alt={`${productTitle} - ${idx + 1}`} style={{ width: '100%', height: '400px', objectFit: 'contain' }} />
+                  <div
+                    key={idx}
+                    style={{ background: 'var(--bg-page)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}
+                  >
+                    <img
+                      src={img}
+                      alt={`${productTitle} - ${idx + 1}`}
+                      style={{ width: '100%', height: '400px', objectFit: 'contain' }}
+                    />
                   </div>
                 ))}
               </Carousel>
               <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
                 <button
                   className="btn btn-outline"
-                  style={{ flex: 1, color: wishlisted ? 'var(--danger)' : undefined, borderColor: wishlisted ? 'var(--danger)' : undefined }}
+                  style={{
+                    flex: 1,
+                    color: wishlisted ? 'var(--danger)' : undefined,
+                    borderColor: wishlisted ? 'var(--danger)' : undefined,
+                  }}
                   onClick={toggleWishlist}
                   disabled={wishlistBusy}
                   aria-pressed={wishlisted}
                 >
                   <FiHeart fill={wishlisted ? 'currentColor' : 'none'} /> {wishlisted ? 'Saved' : 'Wishlist'}
                 </button>
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }}>
+                <button
+                  className="btn btn-outline"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success('Link copied!');
+                  }}
+                >
                   <FiShare2 /> Share
                 </button>
               </div>
@@ -326,26 +389,42 @@ const ProductDetails = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="card" style={{ padding: '20px' }}>
-                <span className="badge badge-success" style={{ marginBottom: '8px' }}>{product.brand}</span>
-                <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>{productTitle}</h1>
+                <span className="badge badge-success" style={{ marginBottom: '8px' }}>
+                  {product.brand}
+                </span>
+                <h1 style={{ fontSize: '20px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  {productTitle}
+                </h1>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                   {avgRating > 0 && (
                     <>
-                      <span className="rating">{avgRating.toFixed(1)} <FiStar size={10} /></span>
-                      <span style={{ fontSize: '13px', color: 'var(--text-light)' }}>({totalRatings} ratings, {totalReviews} reviews)</span>
+                      <span className="rating">
+                        {avgRating.toFixed(1)} <FiStar size={10} />
+                      </span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-light)' }}>
+                        ({totalRatings} ratings, {totalReviews} reviews)
+                      </span>
                     </>
                   )}
                   {product.soldCount > 0 && (
-                    <span style={{ fontSize: '13px', color: 'var(--text-light)', marginLeft: '8px' }}>{product.soldCount} sold</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-light)', marginLeft: '8px' }}>
+                      {product.soldCount} sold
+                    </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)' }}>₹{product.price}</span>
+                  <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    ₹{product.price}
+                  </span>
                   {product.originalPrice && (
-                    <span className="price-original" style={{ fontSize: '16px' }}>₹{product.originalPrice}</span>
+                    <span className="price-original" style={{ fontSize: '16px' }}>
+                      ₹{product.originalPrice}
+                    </span>
                   )}
                   {discountPercent > 0 && (
-                    <span className="price-discount" style={{ fontSize: '15px' }}>{discountPercent}% off</span>
+                    <span className="price-discount" style={{ fontSize: '15px' }}>
+                      {discountPercent}% off
+                    </span>
                   )}
                 </div>
                 <p style={{ fontSize: '13px', color: 'var(--success)', fontWeight: 500 }}>Inclusive of all taxes</p>
@@ -353,37 +432,107 @@ const ProductDetails = () => {
 
               {seller && (
                 <div className="card" style={{ padding: '20px' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      marginBottom: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <FiPackage size={16} /> Seller Info
                   </h3>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <p style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '2px', textTransform: 'uppercase' }}>Seller ID</p>
-                      <p style={{ fontSize: '13px', fontWeight: 500, fontFamily: 'monospace' }}>{seller.sellerId || 'N/A'}</p>
+                      <p
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--text-light)',
+                          marginBottom: '2px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Seller ID
+                      </p>
+                      <p style={{ fontSize: '13px', fontWeight: 500, fontFamily: 'monospace' }}>
+                        {seller.sellerId || 'N/A'}
+                      </p>
                     </div>
                     <div>
-                      <p style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '2px', textTransform: 'uppercase' }}>Store Name</p>
+                      <p
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--text-light)',
+                          marginBottom: '2px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Store Name
+                      </p>
                       <p style={{ fontSize: '13px', fontWeight: 500 }}>{seller.storeName || 'N/A'}</p>
                     </div>
                     <div>
-                      <p style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '2px', textTransform: 'uppercase' }}>Rating</p>
-                      <p style={{ fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <p
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--text-light)',
+                          marginBottom: '2px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Rating
+                      </p>
+                      <p
+                        style={{ fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
                         <FiStar size={12} style={{ color: 'var(--warning)' }} /> {seller.rating?.toFixed(1) || 'New'}
                       </p>
                     </div>
                     <div>
-                      <p style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '2px', textTransform: 'uppercase' }}>Since</p>
+                      <p
+                        style={{
+                          fontSize: '11px',
+                          color: 'var(--text-light)',
+                          marginBottom: '2px',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Since
+                      </p>
                       <p style={{ fontSize: '13px', fontWeight: 500 }}>{sellerSince || 'N/A'}</p>
                     </div>
                     {maskedGST && (
                       <div>
-                        <p style={{ fontSize: '11px', color: 'var(--text-light)', marginBottom: '2px', textTransform: 'uppercase' }}>GST Number</p>
+                        <p
+                          style={{
+                            fontSize: '11px',
+                            color: 'var(--text-light)',
+                            marginBottom: '2px',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          GST Number
+                        </p>
                         <p style={{ fontSize: '13px', fontWeight: 500, fontFamily: 'monospace' }}>{maskedGST}</p>
                       </div>
                     )}
                   </div>
                   {seller.sellerId && (
-                    <Link to={`/products?sellerCode=${encodeURIComponent(seller.sellerId)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px', color: 'var(--primary)', fontWeight: 500, marginTop: '12px', textDecoration: 'none' }}>
+                    <Link
+                      to={`/products?sellerCode=${encodeURIComponent(seller.sellerId)}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        color: 'var(--primary)',
+                        fontWeight: 500,
+                        marginTop: '12px',
+                        textDecoration: 'none',
+                      }}
+                    >
                       View all products <FiExternalLink size={12} />
                     </Link>
                   )}
@@ -394,7 +543,10 @@ const ProductDetails = () => {
               {product.colors?.length > 0 && (
                 <div className="card" style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
-                    Color: <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{selectedColor?.name || 'Select a color'}</span>
+                    Color:{' '}
+                    <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>
+                      {selectedColor?.name || 'Select a color'}
+                    </span>
                   </h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
                     {product.colors.map((color, idx) => (
@@ -433,7 +585,10 @@ const ProductDetails = () => {
               {product.sizes?.length > 0 && (
                 <div className="card" style={{ padding: '20px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
-                    Size: <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>{selectedSize || 'Select a size'}</span>
+                    Size:{' '}
+                    <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>
+                      {selectedSize || 'Select a size'}
+                    </span>
                   </h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {product.sizes.map((size, idx) => (
@@ -492,11 +647,37 @@ const ProductDetails = () => {
               <div className="card" style={{ padding: '20px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>Quantity</h3>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
                     <FiMinus size={14} />
                   </button>
-                  <span style={{ fontSize: '16px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>{quantity}</span>
-                  <button onClick={() => setQuantity(Math.min(10, quantity + 1))} style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 600, minWidth: '24px', textAlign: 'center' }}>
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(Math.min(10, quantity + 1))}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
                     <FiPlus size={14} />
                   </button>
                 </div>
@@ -507,9 +688,9 @@ const ProductDetails = () => {
                   <FiShoppingCart /> Add to Cart
                 </button>
                 {product.category === 'eyeglasses' ? (
-                  <button 
-                    className="btn btn-secondary btn-lg" 
-                    style={{ flex: 1 }} 
+                  <button
+                    className="btn btn-secondary btn-lg"
+                    style={{ flex: 1 }}
                     onClick={() => navigate(`/product/${id}/lenses`)}
                   >
                     Choose Lenses
@@ -522,7 +703,9 @@ const ProductDetails = () => {
               </div>
 
               <div className="card" style={{ padding: '16px 20px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', textAlign: 'center' }}>
+                <div
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', textAlign: 'center' }}
+                >
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                     <FiTruck size={20} style={{ color: 'var(--primary)' }} />
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Free Delivery</span>
@@ -532,8 +715,16 @@ const ProductDetails = () => {
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>100% Genuine</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                    <FiRefreshCw size={20} style={{ color: product.isReturnable !== false ? 'var(--primary)' : 'var(--text-light)' }} />
-                    <span style={{ fontSize: '11px', color: product.isReturnable !== false ? 'var(--text-secondary)' : 'var(--text-light)' }}>
+                    <FiRefreshCw
+                      size={20}
+                      style={{ color: product.isReturnable !== false ? 'var(--primary)' : 'var(--text-light)' }}
+                    />
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        color: product.isReturnable !== false ? 'var(--text-secondary)' : 'var(--text-light)',
+                      }}
+                    >
                       {product.isReturnable === false
                         ? 'Final sale'
                         : Number(product.returnWindowDays) > 0
@@ -543,7 +734,14 @@ const ProductDetails = () => {
                   </div>
                 </div>
                 {product.isExchangeable !== false && (
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', textAlign: 'center' }}>
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      paddingTop: '12px',
+                      borderTop: '1px solid var(--border-light)',
+                      textAlign: 'center',
+                    }}
+                  >
                     <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 500 }}>
                       Exchange Available
                     </span>
@@ -578,11 +776,22 @@ const ProductDetails = () => {
             <div style={{ padding: '24px' }}>
               {activeTab === 'description' && (
                 <div>
-                  <p style={{ fontSize: '14px', lineHeight: 1.7, color: 'var(--text-secondary)' }}>{product.description || 'No description available.'}</p>
+                  <p style={{ fontSize: '14px', lineHeight: 1.7, color: 'var(--text-secondary)' }}>
+                    {product.description || 'No description available.'}
+                  </p>
                   {product.features?.length > 0 && (
                     <ul style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {product.features.map((feature, idx) => (
-                        <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                        <li
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '14px',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
                           <FiCheck size={14} style={{ color: 'var(--success)', flexShrink: 0 }} />
                           {feature}
                         </li>
@@ -599,8 +808,21 @@ const ProductDetails = () => {
                       <tbody>
                         {Object.entries(product.specifications).map(([key, value]) => (
                           <tr key={key} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 500, color: 'var(--text-secondary)', width: '30%', background: 'var(--bg-page)' }}>{key}</td>
-                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)' }}>{value}</td>
+                            <td
+                              style={{
+                                padding: '12px 16px',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                color: 'var(--text-secondary)',
+                                width: '30%',
+                                background: 'var(--bg-page)',
+                              }}
+                            >
+                              {key}
+                            </td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)' }}>
+                              {value}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -613,12 +835,34 @@ const ProductDetails = () => {
 
               {activeTab === 'reviews' && (
                 <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '32px', marginBottom: '24px', alignItems: 'start' }} className="ratings-summary-grid">
-                    <div style={{ textAlign: 'center', padding: '20px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)' }}>
-                      <p style={{ fontSize: '40px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>{avgRating.toFixed(1)}</p>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '200px 1fr',
+                      gap: '32px',
+                      marginBottom: '24px',
+                      alignItems: 'start',
+                    }}
+                    className="ratings-summary-grid"
+                  >
+                    <div
+                      style={{
+                        textAlign: 'center',
+                        padding: '20px',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: 'var(--radius-md)',
+                      }}
+                    >
+                      <p style={{ fontSize: '40px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
+                        {avgRating.toFixed(1)}
+                      </p>
                       <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <FiStar key={i} size={16} style={{ color: i < Math.round(avgRating) ? 'var(--warning)' : 'var(--border)' }} />
+                          <FiStar
+                            key={i}
+                            size={16}
+                            style={{ color: i < Math.round(avgRating) ? 'var(--warning)' : 'var(--border)' }}
+                          />
                         ))}
                       </div>
                       <p style={{ fontSize: '13px', color: 'var(--text-light)' }}>{totalRatings} ratings</p>
@@ -629,13 +873,44 @@ const ProductDetails = () => {
                         const count = ratingDistribution[5 - star];
                         const pct = totalRatings > 0 ? (count / totalRatings) * 100 : 0;
                         return (
-                          <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 500, width: '16px', textAlign: 'right' }}>{star}</span>
+                          <div
+                            key={star}
+                            style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}
+                          >
+                            <span style={{ fontSize: '13px', fontWeight: 500, width: '16px', textAlign: 'right' }}>
+                              {star}
+                            </span>
                             <FiStar size={12} style={{ color: 'var(--warning)' }} />
-                            <div style={{ flex: 1, height: '8px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', overflow: 'hidden' }}>
-                              <div style={{ width: `${pct}%`, height: '100%', background: star >= 4 ? 'var(--success)' : star === 3 ? 'var(--rating-gold)' : 'var(--danger)', borderRadius: 'var(--radius-xs)', transition: 'width 0.3s' }} />
+                            <div
+                              style={{
+                                flex: 1,
+                                height: '8px',
+                                background: 'var(--bg-subtle)',
+                                borderRadius: 'var(--radius-xs)',
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: `${pct}%`,
+                                  height: '100%',
+                                  background:
+                                    star >= 4 ? 'var(--success)' : star === 3 ? 'var(--rating-gold)' : 'var(--danger)',
+                                  borderRadius: 'var(--radius-xs)',
+                                  transition: 'width 0.3s',
+                                }}
+                              />
                             </div>
-                            <span style={{ fontSize: '12px', color: 'var(--text-light)', width: '32px', textAlign: 'right' }}>{count}</span>
+                            <span
+                              style={{
+                                fontSize: '12px',
+                                color: 'var(--text-light)',
+                                width: '32px',
+                                textAlign: 'right',
+                              }}
+                            >
+                              {count}
+                            </span>
                           </div>
                         );
                       })}
@@ -643,13 +918,24 @@ const ProductDetails = () => {
                   </div>
 
                   {isAuthenticated && canReview && !showReviewForm && (
-                    <button onClick={() => setShowReviewForm(true)} className="btn btn-outline" style={{ marginBottom: '20px' }}>
+                    <button
+                      onClick={() => setShowReviewForm(true)}
+                      className="btn btn-outline"
+                      style={{ marginBottom: '20px' }}
+                    >
                       <FiStar size={14} /> Rate this Product
                     </button>
                   )}
 
                   {showReviewForm && (
-                    <div style={{ background: 'var(--bg-primary)', padding: '20px', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
+                    <div
+                      style={{
+                        background: 'var(--bg-primary)',
+                        padding: '20px',
+                        borderRadius: 'var(--radius-md)',
+                        marginBottom: '20px',
+                      }}
+                    >
                       <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '12px' }}>Write a Review</h4>
                       <div style={{ marginBottom: '12px' }}>
                         <p style={{ fontSize: '13px', marginBottom: '6px' }}>Your Rating</p>
@@ -660,7 +946,13 @@ const ProductDetails = () => {
                               onClick={() => setReviewRating(star)}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px' }}
                             >
-                              <FiStar size={24} style={{ color: star <= reviewRating ? 'var(--warning)' : 'var(--border)', fill: star <= reviewRating ? 'var(--warning)' : 'none' }} />
+                              <FiStar
+                                size={24}
+                                style={{
+                                  color: star <= reviewRating ? 'var(--warning)' : 'var(--border)',
+                                  fill: star <= reviewRating ? 'var(--warning)' : 'none',
+                                }}
+                              />
                             </button>
                           ))}
                         </div>
@@ -680,7 +972,14 @@ const ProductDetails = () => {
                         <button onClick={handleSubmitReview} className="btn btn-primary" disabled={reviewLoading}>
                           {reviewLoading ? 'Submitting...' : 'Submit Review'}
                         </button>
-                        <button onClick={() => { setShowReviewForm(false); setReviewRating(0); setReviewText(''); }} className="btn btn-outline">
+                        <button
+                          onClick={() => {
+                            setShowReviewForm(false);
+                            setReviewRating(0);
+                            setReviewText('');
+                          }}
+                          className="btn btn-outline"
+                        >
                           Cancel
                         </button>
                       </div>
@@ -691,38 +990,92 @@ const ProductDetails = () => {
                     <>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         {(showAllReviews ? ratings : ratings.slice(0, 5)).map((review, idx) => (
-                          <div key={idx} style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '16px' }}>
+                          <div
+                            key={idx}
+                            style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '16px' }}
+                          >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600 }}>
-                                {review.user?.name?.charAt(0)?.toUpperCase() || review.user?.avatar || <FiUser size={14} />}
+                              <div
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '50%',
+                                  background: 'var(--primary-light)',
+                                  color: 'var(--primary)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {review.user?.name?.charAt(0)?.toUpperCase() || review.user?.avatar || (
+                                  <FiUser size={14} />
+                                )}
                               </div>
                               <div>
-                                <p style={{ fontSize: '14px', fontWeight: 500 }}>{review.user?.name || 'Verified Buyer'}</p>
+                                <p style={{ fontSize: '14px', fontWeight: 500 }}>
+                                  {review.user?.name || 'Verified Buyer'}
+                                </p>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <div style={{ display: 'flex', gap: '2px' }}>
                                     {Array.from({ length: 5 }).map((_, i) => (
-                                      <FiStar key={i} size={10} style={{ color: i < review.rating ? 'var(--warning)' : 'var(--border)' }} />
+                                      <FiStar
+                                        key={i}
+                                        size={10}
+                                        style={{ color: i < review.rating ? 'var(--warning)' : 'var(--border)' }}
+                                      />
                                     ))}
                                   </div>
-                                  <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>{new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                  <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>
+                                    {new Date(review.createdAt).toLocaleDateString('en-IN', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                  </span>
                                 </div>
                               </div>
                             </div>
                             {review.review && (
-                              <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, marginLeft: '42px' }}>{review.review}</p>
+                              <p
+                                style={{
+                                  fontSize: '14px',
+                                  color: 'var(--text-secondary)',
+                                  lineHeight: 1.6,
+                                  marginLeft: '42px',
+                                }}
+                              >
+                                {review.review}
+                              </p>
                             )}
                           </div>
                         ))}
                       </div>
                       {ratings.length > 5 && (
-                        <button onClick={() => setShowAllReviews(!showAllReviews)} style={{ marginTop: '16px', color: 'var(--primary)', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', background: 'none' }}>
+                        <button
+                          onClick={() => setShowAllReviews(!showAllReviews)}
+                          style={{
+                            marginTop: '16px',
+                            color: 'var(--primary)',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: 'pointer',
+                            background: 'none',
+                          }}
+                        >
                           {showAllReviews ? 'Show Less' : `View All ${ratings.length} Reviews`}
                           {showAllReviews ? <FiChevronUp /> : <FiChevronDown />}
                         </button>
                       )}
                     </>
                   ) : (
-                    <p style={{ fontSize: '14px', color: 'var(--text-light)' }}>No reviews yet. Be the first to review!</p>
+                    <p style={{ fontSize: '14px', color: 'var(--text-light)' }}>
+                      No reviews yet. Be the first to review!
+                    </p>
                   )}
                 </div>
               )}
@@ -732,10 +1085,15 @@ const ProductDetails = () => {
           {relatedProducts.length > 0 && (
             <section style={{ marginBottom: '32px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Similar Products</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-                {relatedProducts.filter((p) => p._id !== product._id).slice(0, 5).map((p) => (
-                  <ProductCard key={p._id} product={p} />
-                ))}
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}
+              >
+                {relatedProducts
+                  .filter((p) => p._id !== product._id)
+                  .slice(0, 5)
+                  .map((p) => (
+                    <ProductCard key={p._id} product={p} />
+                  ))}
               </div>
             </section>
           )}
@@ -743,7 +1101,9 @@ const ProductDetails = () => {
           {otherBrandProducts.length > 0 && (
             <section style={{ marginBottom: '32px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Browse from Other Brands</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}
+              >
                 {otherBrandProducts.slice(0, 5).map((p) => (
                   <ProductCard key={p._id} product={p} />
                 ))}
@@ -754,20 +1114,46 @@ const ProductDetails = () => {
           {brandCards.length > 0 && (
             <section style={{ marginBottom: '32px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Browse by Brand</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}
+              >
                 {brandCards.slice(0, 8).map((brand, idx) => (
                   <Link
                     key={idx}
                     to={`/brands/${brand.name || brand}`}
                     className="card"
-                    style={{ padding: '20px', textAlign: 'center', textDecoration: 'none', transition: 'box-shadow 0.2s', cursor: 'pointer' }}
+                    style={{
+                      padding: '20px',
+                      textAlign: 'center',
+                      textDecoration: 'none',
+                      transition: 'box-shadow 0.2s',
+                      cursor: 'pointer',
+                    }}
                   >
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 700, margin: '0 auto 8px' }}>
+                    <div
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        background: 'var(--primary-light)',
+                        color: 'var(--primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '18px',
+                        fontWeight: 700,
+                        margin: '0 auto 8px',
+                      }}
+                    >
                       {(typeof brand === 'string' ? brand : brand.name).charAt(0).toUpperCase()}
                     </div>
-                    <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{typeof brand === 'string' ? brand : brand.name}</p>
+                    <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {typeof brand === 'string' ? brand : brand.name}
+                    </p>
                     {brand.count !== undefined && (
-                      <p style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '2px' }}>{brand.count} products</p>
+                      <p style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '2px' }}>
+                        {brand.count} products
+                      </p>
                     )}
                   </Link>
                 ))}

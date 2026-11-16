@@ -6,7 +6,17 @@ import Footer from '../../components/Footer';
 import { listOf } from '../../services/apiResponse.js';
 import { FILTER_STATUSES } from '../../utils/orderStatuses.js';
 
-const STATUS_COLORS = { pending: 'var(--warning)', confirmed: 'var(--brand)', packed: 'var(--brand)', picked_up: 'var(--brand)', in_transit: 'var(--brand)', delivered: 'var(--success)', cancelled: 'var(--danger)', return_requested: 'var(--warning)', returned: 'var(--text-secondary)' };
+const STATUS_COLORS = {
+  pending: 'var(--warning)',
+  confirmed: 'var(--brand)',
+  packed: 'var(--brand)',
+  picked_up: 'var(--brand)',
+  in_transit: 'var(--brand)',
+  delivered: 'var(--success)',
+  cancelled: 'var(--danger)',
+  return_requested: 'var(--warning)',
+  returned: 'var(--text-secondary)',
+};
 
 const ManageOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -14,21 +24,23 @@ const ManageOrders = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => { fetchOrders(); }, [filter]);
-  
+  useEffect(() => {
+    fetchOrders();
+  }, [filter]);
+
   const fetchOrders = async () => {
-    try { 
-      const res = await adminApi.getOrders({ status: filter !== 'all' ? filter : undefined }); 
-      setOrders(listOf(res.data)); 
-    } catch (err) { 
-      console.error(err); 
-    } finally { 
-      setLoading(false); 
+    try {
+      const res = await adminApi.getOrders({ status: filter !== 'all' ? filter : undefined });
+      setOrders(listOf(res.data));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   // Filter orders based on search query
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = orders.filter((order) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -45,11 +57,21 @@ const ManageOrders = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>All Orders ({filteredOrders.length})</h1>
-          
+          <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>
+            All Orders ({filteredOrders.length})
+          </h1>
+
           {/* Search Bar */}
           <div style={{ position: 'relative', marginBottom: '16px', maxWidth: '500px' }}>
-            <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+            <FiSearch
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-light)',
+              }}
+            />
             <input
               type="text"
               placeholder="Search by Order ID, Customer Name, Email..."
@@ -60,29 +82,86 @@ const ManageOrders = () => {
                 padding: '10px 12px 10px 38px',
                 border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-md)',
-                fontSize: '14px'
+                fontSize: '14px',
               }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
             {['all', ...FILTER_STATUSES].map((s) => (
-              <button key={s} onClick={() => setFilter(s)} style={{ padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`, background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)', color: filter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize' }}>{s}</button>
+              <button
+                key={s}
+                onClick={() => setFilter(s)}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 'var(--radius-xl)',
+                  fontSize: '13px',
+                  border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`,
+                  background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)',
+                  color: filter === s ? 'var(--primary)' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {s}
+              </button>
             ))}
           </div>
-          {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : filteredOrders.length === 0 ? <div className="empty-state"><h3>{searchQuery ? 'No orders match your search' : 'No orders found'}</h3></div> : (
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="empty-state">
+              <h3>{searchQuery ? 'No orders match your search' : 'No orders found'}</h3>
+            </div>
+          ) : (
             <div className="card">
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['Order ID', 'Customer', 'Items', 'Total', 'Status', 'Date'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
+                    {['Order ID', 'Customer', 'Items', 'Total', 'Status', 'Date'].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
                 <tbody>
                   {filteredOrders.map((order) => (
                     <tr key={order._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>#{order._id.slice(-8).toUpperCase()}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px' }}>{order.address?.fullName || order.user?.name || '-'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>
+                        #{order._id.slice(-8).toUpperCase()}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px' }}>
+                        {order.address?.fullName || order.user?.name || '-'}
+                      </td>
                       <td style={{ padding: '12px 16px', fontSize: '13px' }}>{order.items?.length || 0}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600 }}>₹{order.total}</td>
-                      <td style={{ padding: '12px 16px' }}><span className="badge" style={{ background: STATUS_COLORS[order.status], color: 'var(--text-white)', textTransform: 'capitalize' }}>{order.status}</span></td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <span
+                          className="badge"
+                          style={{
+                            background: STATUS_COLORS[order.status],
+                            color: 'var(--text-white)',
+                            textTransform: 'capitalize',
+                          }}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

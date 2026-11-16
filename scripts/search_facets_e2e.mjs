@@ -28,7 +28,12 @@ const check = (name, ok, detail = '') => {
 const get = async (p) => {
   const res = await fetch(API + p);
   const text = await res.text();
-  let json = null; try { json = JSON.parse(text); } catch { /* html */ }
+  let json = null;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    /* html */
+  }
   return { status: res.status, json };
 };
 const rowsOf = (j) => j?.products || j?.data || [];
@@ -36,19 +41,24 @@ const rowsOf = (j) => j?.products || j?.data || [];
 async function main() {
   const all = await get('/products?limit=200');
   const products = rowsOf(all.json);
-  if (!check('catalogue is readable', all.status === 200 && products.length > 0, `rows ${products.length}`)) return finish();
+  if (!check('catalogue is readable', all.status === 200 && products.length > 0, `rows ${products.length}`))
+    return finish();
 
   /* text search */
   const word = String(products[0]?.title || '').split(/\s+/)[0];
   const found = await get(`/products?search=${encodeURIComponent(word)}&limit=200`);
-  check('text search returns the searched term\'s products',
+  check(
+    "text search returns the searched term's products",
     found.status === 200 && rowsOf(found.json).some((r) => new RegExp(word, 'i').test(r.title || '')),
-    `"${word}" -> ${rowsOf(found.json).length} rows`);
+    `"${word}" -> ${rowsOf(found.json).length} rows`
+  );
 
   const nonsense = await get('/products?search=zzqxnotathingzz&limit=50');
-  check('a search that matches nothing returns none rather than everything',
+  check(
+    'a search that matches nothing returns none rather than everything',
     nonsense.status === 200 && rowsOf(nonsense.json).length === 0,
-    `rows ${rowsOf(nonsense.json).length}`);
+    `rows ${rowsOf(nonsense.json).length}`
+  );
 
   /* facets scope correctly */
   const facetRes = await get('/products/filters');
@@ -56,10 +66,11 @@ async function main() {
   if (!check('facet endpoint answers', !!f?.brands?.length, JSON.stringify(f || {}).slice(0, 70))) return finish();
 
   const brandScoped = await get('/products/filters?category=sunglasses');
-  check('brand facet narrows when a category is chosen',
-    brandScoped.json?.filters?.brands.length <= f.brands.length
-      && brandScoped.json?.filters?.brands.length > 0,
-    `${brandScoped.json?.filters?.brands.length} of ${f.brands.length}`);
+  check(
+    'brand facet narrows when a category is chosen',
+    brandScoped.json?.filters?.brands.length <= f.brands.length && brandScoped.json?.filters?.brands.length > 0,
+    `${brandScoped.json?.filters?.brands.length} of ${f.brands.length}`
+  );
 
   /* the dead-end property: every offered option returns at least one product */
   const probes = [
@@ -69,7 +80,7 @@ async function main() {
     ['frameShape', f.frameShapes?.[0]],
     ['frameType', f.frameTypes?.[0]],
     ['material', f.materials?.[0]],
-    ['frameColor', f.frameColors?.[0]]
+    ['frameColor', f.frameColors?.[0]],
   ].filter(([, v]) => v);
 
   const empty = [];
@@ -77,18 +88,28 @@ async function main() {
     const r = await get(`/products?${key}=${encodeURIComponent(value)}&limit=5`);
     if (rowsOf(r.json).length === 0) empty.push(`${key}=${value}`);
   }
-  check('no offered facet option is a dead end',
-    empty.length === 0, `dead ends: ${empty.join(', ') || 'none'} (probed ${probes.length})`);
+  check(
+    'no offered facet option is a dead end',
+    empty.length === 0,
+    `dead ends: ${empty.join(', ') || 'none'} (probed ${probes.length})`
+  );
 
   /* combined filters narrow rather than widen or ignore */
-  const single = (await get(`/products?category=sunglasses&limit=200`));
-  const combo = (await get(`/products?category=sunglasses&gender=${encodeURIComponent(f.genders[0])}&limit=200`));
-  check('adding a facet narrows the result set',
+  const single = await get(`/products?category=sunglasses&limit=200`);
+  const combo = await get(`/products?category=sunglasses&gender=${encodeURIComponent(f.genders[0])}&limit=200`);
+  check(
+    'adding a facet narrows the result set',
     rowsOf(combo.json).length <= rowsOf(single.json).length,
-    `combo ${rowsOf(combo.json).length} vs ${rowsOf(single.json).length}`);
-  check('and every combined row satisfies both filters',
+    `combo ${rowsOf(combo.json).length} vs ${rowsOf(single.json).length}`
+  );
+  check(
+    'and every combined row satisfies both filters',
     rowsOf(combo.json).every((p) => p.category === 'sunglasses'),
-    rowsOf(combo.json).slice(0, 3).map((p) => `${p.category}/${p.gender}`).join(' '));
+    rowsOf(combo.json)
+      .slice(0, 3)
+      .map((p) => `${p.category}/${p.gender}`)
+      .join(' ')
+  );
 
   return finish();
 }
@@ -103,4 +124,7 @@ function finish() {
   }
 }
 
-main().catch((e) => { console.error('SCRIPT ERROR', e); process.exitCode = 2; });
+main().catch((e) => {
+  console.error('SCRIPT ERROR', e);
+  process.exitCode = 2;
+});

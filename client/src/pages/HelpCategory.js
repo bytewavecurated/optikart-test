@@ -32,17 +32,34 @@ const HelpCategory = () => {
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <nav style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>
-            <Link to="/help" style={{ color: 'var(--primary)' }}>Help Center</Link> / <span>{categoryName}</span>
+            <Link to="/help" style={{ color: 'var(--primary)' }}>
+              Help Center
+            </Link>{' '}
+            / <span>{categoryName}</span>
           </nav>
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '24px' }}>{categoryName}</h1>
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
           ) : articles.length === 0 ? (
-            <div className="empty-state"><h3>No articles in this category</h3><p>Check back later</p></div>
+            <div className="empty-state">
+              <h3>No articles in this category</h3>
+              <p>Check back later</p>
+            </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {articles.map((article) => (
-                <div key={article._id} className="card" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  key={article._id}
+                  className="card"
+                  style={{
+                    padding: '16px 20px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <div>
                     <h4 style={{ fontSize: '15px', fontWeight: 500 }}>{article.title}</h4>
                     <p style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>{article.excerpt}</p>

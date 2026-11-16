@@ -34,9 +34,7 @@ api.interceptors.response.use(
 
     // Login endpoints must surface their own error instead of triggering a
     // redirect loop (a wrong password should not look like a lost session).
-    const isAuthCall = /\/(login|verify-login-otp|verify-otp|register)$/.test(
-      error.config?.url || ''
-    );
+    const isAuthCall = /\/(login|verify-login-otp|verify-otp|register)$/.test(error.config?.url || '');
 
     if (status === 401 && !isAuthCall) {
       const onSellerArea = path.startsWith('/seller');
@@ -68,15 +66,9 @@ api.interceptors.response.use(
           window.location.href = '/admin/login';
         } else if (path.startsWith('/executive') || role === 'executive') {
           window.location.href = '/executive/login';
-        } else if (
-          path.startsWith('/delivery-partner') ||
-          role === 'deliveryPartner'
-        ) {
+        } else if (path.startsWith('/delivery-partner') || role === 'deliveryPartner') {
           window.location.href = '/delivery-partner/login';
-        } else if (
-          path.startsWith('/manufacturer-seller') ||
-          role === 'manufacturerSeller'
-        ) {
+        } else if (path.startsWith('/manufacturer-seller') || role === 'manufacturerSeller') {
           window.location.href = '/manufacturer-seller/login';
         } else if (path.startsWith('/manufacturer') || role === 'manufacturer') {
           window.location.href = '/manufacturer/login';
@@ -88,9 +80,7 @@ api.interceptors.response.use(
 
     if (status === 429) {
       // Make throttling visible instead of failing silently.
-      const message =
-        error.response?.data?.message ||
-        'Too many requests. Please wait a moment and try again.';
+      const message = error.response?.data?.message || 'Too many requests. Please wait a moment and try again.';
       return Promise.reject(Object.assign(error, { friendlyMessage: message }));
     }
 
@@ -113,7 +103,8 @@ export const auth = {
   getPrescriptions: () => api.get('/auth/prescriptions'),
   addPrescription: (data) => api.post('/auth/prescriptions', data),
   // Multipart variant used by the lens configurator; returns the stored URL.
-  uploadPrescriptionFile: (formData) => api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  uploadPrescriptionFile: (formData) =>
+    api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   updatePrescription: (id, data) => api.put(`/auth/prescriptions/${id}`, data),
   deletePrescription: (id) => api.delete(`/auth/prescriptions/${id}`),
   // Addresses
@@ -147,10 +138,10 @@ export const seller = {
   // Analytics
   getInventoryAnalytics: (params) => api.get('/inventory-analytics/seller', { params }),
   getInventoryHealth: () => api.get('/inventory-analytics/seller/health'),
-  getPendingProducts: (params) => api.get("/product-verification/pending", { params }),
+  getPendingProducts: (params) => api.get('/product-verification/pending', { params }),
   verifyProduct: (productId, data) => api.post(`/product-verification/${productId}/verify`, data),
   rejectProduct: (productId, data) => api.post(`/product-verification/${productId}/reject`, data),
-  getVerificationStats: () => api.get("/product-verification/stats"),
+  getVerificationStats: () => api.get('/product-verification/stats'),
   getReturnAnalytics: (params) => api.get('/return-analytics/seller', { params }),
   // Commission
   getMyCommission: (params) => api.get('/commission/my-commission', { params }),
@@ -189,13 +180,11 @@ export const orders = {
 
 export const cart = {
   get: () => api.get('/cart'),
-  add: (productId, quantity = 1, variant = null) =>
-    api.post('/cart/add', { productId, quantity, variant }),
+  add: (productId, quantity = 1, variant = null) => api.post('/cart/add', { productId, quantity, variant }),
   addWithLens: (payload) => api.post('/cart/add-lens', payload),
   addContactLens: (payload) => api.post('/cart/add-contact-lens', payload),
   update: (data) => api.put('/cart/update', data),
-  updateQuantity: (productId, quantity, variant = null) =>
-    api.put('/cart/update', { productId, quantity, variant }),
+  updateQuantity: (productId, quantity, variant = null) => api.put('/cart/update', { productId, quantity, variant }),
   removeItem: (productId, variant) =>
     api.delete(`/cart/remove/${productId}${variant ? `?variant=${encodeURIComponent(variant)}` : ''}`),
   remove: (productId, variant) =>
@@ -286,11 +275,13 @@ export const admin = {
   // Banners (device upload; server mounts these under /banners)
   getBanners: () => api.get('/banners'),
   createBanner: (formData) => api.post('/banners', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  updateBanner: (id, formData) => api.put(`/banners/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  updateBanner: (id, formData) =>
+    api.put(`/banners/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   deleteBanner: (id) => api.delete(`/banners/${id}`),
   // Order routing queue
   getRoutingQueue: (params) => api.get('/order-routing/queue', { params }),
-  assignOrderToSeller: (orderId, sellerId, adminNotes) => api.post(`/order-routing/${orderId}/assign`, { sellerId, adminNotes }),
+  assignOrderToSeller: (orderId, sellerId, adminNotes) =>
+    api.post(`/order-routing/${orderId}/assign`, { sellerId, adminNotes }),
   sweepRouting: () => api.post('/order-routing/sweep'),
   getRoutingForOrder: (orderId) => api.get(`/order-routing/${orderId}`),
   // Seller stock listings
@@ -301,17 +292,21 @@ export const admin = {
   deleteStock: (id) => api.delete(`/seller-stock/${id}`),
   // Price-change acceptance: proposals expire after a working-day window.
   getMyPriceChanges: () => api.get('/seller-stock/price-changes'),
-  decideMyPriceChange: (stockId, decision, token) => api.post(`/seller-stock/price-changes/${stockId}/decide`, { decision, token }),
-  decidePriceChangeByToken: (stockId, token, decision) => api.post(`/seller-stock/public/price-changes/${stockId}/decide`, { token, decision }),
+  decideMyPriceChange: (stockId, decision, token) =>
+    api.post(`/seller-stock/price-changes/${stockId}/decide`, { decision, token }),
+  decidePriceChangeByToken: (stockId, token, decision) =>
+    api.post(`/seller-stock/public/price-changes/${stockId}/decide`, { token, decision }),
   adminPriceChanges: (params) => api.get('/seller-stock/admin/price-changes', { params }),
-  proposePriceChange: (stockId, newPrice, reason) => api.post(`/seller-stock/admin/price-changes/${stockId}/propose`, { newPrice, reason }),
-  overridePriceChange: (stockId, decision) => api.post(`/seller-stock/admin/price-changes/${stockId}/override`, { decision }),
+  proposePriceChange: (stockId, newPrice, reason) =>
+    api.post(`/seller-stock/admin/price-changes/${stockId}/propose`, { newPrice, reason }),
+  overridePriceChange: (stockId, decision) =>
+    api.post(`/seller-stock/admin/price-changes/${stockId}/override`, { decision }),
 
   // Return Analytics
-  getPendingProducts: (params) => api.get("/product-verification/pending", { params }),
+  getPendingProducts: (params) => api.get('/product-verification/pending', { params }),
   verifyProduct: (productId, data) => api.post(`/product-verification/${productId}/verify`, data),
   rejectProduct: (productId, data) => api.post(`/product-verification/${productId}/reject`, data),
-  getVerificationStats: () => api.get("/product-verification/stats"),
+  getVerificationStats: () => api.get('/product-verification/stats'),
   getReturnAnalytics: (params) => api.get('/return-analytics/admin', { params }),
 };
 
@@ -364,13 +359,15 @@ export const deliveryPartner = {
 };
 
 export const lensConfiguration = {
-  create: (data) => api.post('/lens-configuration', data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
+  create: (data) =>
+    api.post('/lens-configuration', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   getByProduct: (productId) => api.get(`/lens-configuration/${productId}`),
-  update: (id, data) => api.put(`/lens-configuration/${id}`, data, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
+  update: (id, data) =>
+    api.put(`/lens-configuration/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   delete: (id) => api.delete(`/lens-configuration/${id}`),
   getPricing: () => api.get('/lens-configuration/pricing/info'),
 };
@@ -387,9 +384,10 @@ export const returns = {
   processRefund: (id) => api.post(`/returns/${id}/refund`),
   // Customer return portal
   checkEligibility: (orderId) => api.get(`/customer-returns/eligibility/${orderId}`),
-  uploadImages: (returnId, formData) => api.post(`/customer-returns/${returnId}/images`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
+  uploadImages: (returnId, formData) =>
+    api.post(`/customer-returns/${returnId}/images`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   getMyReturns: (params) => api.get('/customer-returns/my-returns', { params }),
   cancelReturn: (returnId) => api.post(`/customer-returns/${returnId}/cancel`),
 };
@@ -424,12 +422,14 @@ export const manufacturerEnhancements = {
 // Banner Management APIs
 export const bannerManagement = {
   getAll: () => api.get('/banners'),
-  create: (data) => api.post('/banners', data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
-  update: (id, data) => api.put(`/banners/${id}`, data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  }),
+  create: (data) =>
+    api.post('/banners', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  update: (id, data) =>
+    api.put(`/banners/${id}`, data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   delete: (id) => api.delete(`/banners/${id}`),
   getBySlug: (slug) => api.get(`/banners/slug/${slug}`),
 };
@@ -468,8 +468,9 @@ export const prescriptionVerification = {
   all: (params) => api.get('/prescription-verification', { params }),
   approve: (id, notes) => api.post(`/prescription-verification/${id}/approve`, { notes }),
   attachDocument: (id, fileUrl, note) => api.patch(`/prescription-verification/${id}/document`, { fileUrl, note }),
-  uploadFile: (formData) => api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
-  reject: (id, reason) => api.post(`/prescription-verification/${id}/reject`, { reason })
+  uploadFile: (formData) =>
+    api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  reject: (id, reason) => api.post(`/prescription-verification/${id}/reject`, { reason }),
 };
 
 /*
@@ -494,5 +495,5 @@ export const toast = {
    * appearing. Styled as a warning rather than an error: nothing here went wrong
    * yet, which is the entire point of a countdown.
    */
-  warn: (message, options) => hotToast(message, { icon: '\u23F1\uFE0F', duration: 6000, ...options })
+  warn: (message, options) => hotToast(message, { icon: '\u23F1\uFE0F', duration: 6000, ...options }),
 };

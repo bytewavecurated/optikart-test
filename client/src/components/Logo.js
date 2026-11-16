@@ -14,11 +14,13 @@ import React from 'react';
  *   mark   - symbol only (no wordmark)
  */
 const MONOGRAM_PATHS = {
-  leftLens: 'M3.2 9.4h6.1a1.6 1.6 0 0 1 1.6 1.6v2.6a2.6 2.6 0 0 1-2.6 2.6H4.2a2.6 2.6 0 0 1-2.6-2.6v-2.6a1.6 1.6 0 0 1 1.6-1.6Z',
-  rightLens: 'M14.7 9.4h6.1a1.6 1.6 0 0 1 1.6 1.6v2.6a2.6 2.6 0 0 1-2.6 2.6h-4.1a2.6 2.6 0 0 1-2.6-2.6v-2.6a1.6 1.6 0 0 1 1.6-1.6Z',
+  leftLens:
+    'M3.2 9.4h6.1a1.6 1.6 0 0 1 1.6 1.6v2.6a2.6 2.6 0 0 1-2.6 2.6H4.2a2.6 2.6 0 0 1-2.6-2.6v-2.6a1.6 1.6 0 0 1 1.6-1.6Z',
+  rightLens:
+    'M14.7 9.4h6.1a1.6 1.6 0 0 1 1.6 1.6v2.6a2.6 2.6 0 0 1-2.6 2.6h-4.1a2.6 2.6 0 0 1-2.6-2.6v-2.6a1.6 1.6 0 0 1 1.6-1.6Z',
   bridge: 'M10.9 11.6c.7-.9 1.5-.9 2.2 0',
   leftTemple: 'M1.6 10.6 0.2 8.6',
-  rightTemple: 'M22.4 10.6l1.4-2'
+  rightTemple: 'M22.4 10.6l1.4-2',
 };
 
 export default function Logo({
@@ -27,7 +29,7 @@ export default function Logo({
   showWordmark = true,
   tagline = false,
   gap = 10,
-  style
+  style,
 }) {
   const isDark = variant === 'onDark';
   const accent = 'var(--brand)';
@@ -42,7 +44,7 @@ export default function Logo({
         gap,
         textDecoration: 'none',
         lineHeight: 1,
-        ...style
+        ...style,
       }}
     >
       <svg
@@ -72,7 +74,7 @@ export default function Logo({
               fontWeight: 800,
               letterSpacing: '-0.02em',
               color: textColor,
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
             }}
           >
             Opti<span style={{ color: accent }}>Kart</span>
@@ -87,7 +89,7 @@ export default function Logo({
                 letterSpacing: '0.14em',
                 textTransform: 'uppercase',
                 color: subColor,
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
               }}
             >
               Eyewear, fitted right

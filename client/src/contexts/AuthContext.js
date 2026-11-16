@@ -106,22 +106,35 @@ export const AuthProvider = ({ children }) => {
       const matches = (obj) => {
         const r = obj?.role || obj?.accountType || '';
         switch (role) {
-          case 'user': return r === '' || r === 'customer' || r === 'user';
-          case 'staff': return r === 'staff' || r === 'admin';
-          case 'admin': return r === 'admin';
-          case 'seller': return r === 'seller' || (!!obj?.storeName && r !== 'manufacturer');
-          case 'manufacturer': return r === 'manufacturer' || (!!obj?.companyName && !obj?.storeName);
-          case 'manufacturerSeller': return r === 'retailer' || r === 'manufacturerSeller';
-          case 'deliveryPartner': return r === 'deliveryPartner' || (!!obj?.vehicleType && !obj?.storeName);
-          case 'executive': return r === 'executive' || (!!obj?.department && !obj?.storeName);
-          default: return false;
+          case 'user':
+            return r === '' || r === 'customer' || r === 'user';
+          case 'staff':
+            return r === 'staff' || r === 'admin';
+          case 'admin':
+            return r === 'admin';
+          case 'seller':
+            return r === 'seller' || (!!obj?.storeName && r !== 'manufacturer');
+          case 'manufacturer':
+            return r === 'manufacturer' || (!!obj?.companyName && !obj?.storeName);
+          case 'manufacturerSeller':
+            return r === 'retailer' || r === 'manufacturerSeller';
+          case 'deliveryPartner':
+            return r === 'deliveryPartner' || (!!obj?.vehicleType && !obj?.storeName);
+          case 'executive':
+            return r === 'executive' || (!!obj?.department && !obj?.storeName);
+          default:
+            return false;
         }
       };
 
       let userDataCache = userData;
       if (userDataCache) {
         let parsed = null;
-        try { parsed = JSON.parse(userDataCache); } catch { parsed = null; }
+        try {
+          parsed = JSON.parse(userDataCache);
+        } catch {
+          parsed = null;
+        }
         if (parsed && !matches(parsed)) {
           localStorage.removeItem(USER_KEY);
           userDataCache = null;
@@ -212,11 +225,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const data = response.data;
-      
+
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email };
       }
-      
+
       if (data.token) {
         const { token, user: userData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -229,7 +242,7 @@ export const AuthProvider = ({ children }) => {
         toast.success('Login successful!');
         return { success: true, token };
       }
-      
+
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
@@ -358,43 +371,52 @@ export const AuthProvider = ({ children }) => {
    * storage?" bounced a freshly signed-in partner straight back to the login
    * page.
    */
-  const partnerSession = useCallback((data) => {
-    const profile = data.partner || data.deliveryPartner || data.data || {};
-    localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(ROLE_KEY, 'deliveryPartner');
-    localStorage.setItem(USER_KEY, JSON.stringify(profile));
-    setSessionExpiry('deliveryPartner');
-    setDeliveryPartner(profile);
-    setIsAuthenticated(true);
-    connectSocket(data.token);
-    return profile;
-  }, [setSessionExpiry]);
+  const partnerSession = useCallback(
+    (data) => {
+      const profile = data.partner || data.deliveryPartner || data.data || {};
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(ROLE_KEY, 'deliveryPartner');
+      localStorage.setItem(USER_KEY, JSON.stringify(profile));
+      setSessionExpiry('deliveryPartner');
+      setDeliveryPartner(profile);
+      setIsAuthenticated(true);
+      connectSocket(data.token);
+      return profile;
+    },
+    [setSessionExpiry]
+  );
 
-  const partnerLogin = useCallback(async (email, password) => {
-    try {
-      const response = await api.post('/delivery-partner/login', { email, password });
-      const data = response.data;
-      if (data.requiresOTP) {
-        return { success: true, requiresOTP: true, partnerId: data.partnerId || data.id };
+  const partnerLogin = useCallback(
+    async (email, password) => {
+      try {
+        const response = await api.post('/delivery-partner/login', { email, password });
+        const data = response.data;
+        if (data.requiresOTP) {
+          return { success: true, requiresOTP: true, partnerId: data.partnerId || data.id };
+        }
+        if (!data.token) return { success: false, message: 'Unexpected response from the server.' };
+        return { success: true, partner: partnerSession(data) };
+      } catch (error) {
+        return { success: false, message: error.response?.data?.message || 'Login failed' };
       }
-      if (!data.token) return { success: false, message: 'Unexpected response from the server.' };
-      return { success: true, partner: partnerSession(data) };
-    } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Login failed' };
-    }
-  }, [partnerSession]);
+    },
+    [partnerSession]
+  );
 
-  const partnerVerifyOTP = useCallback(async (partnerId, otp) => {
-    try {
-      const response = await api.post('/delivery-partner/verify-login-otp', { partnerId, otp });
-      const data = response.data;
-      if (!data.token) return { success: false, message: data.message || 'OTP verification failed' };
-      partnerSession(data);
-      return { success: true };
-    } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'OTP verification failed' };
-    }
-  }, [partnerSession]);
+  const partnerVerifyOTP = useCallback(
+    async (partnerId, otp) => {
+      try {
+        const response = await api.post('/delivery-partner/verify-login-otp', { partnerId, otp });
+        const data = response.data;
+        if (!data.token) return { success: false, message: data.message || 'OTP verification failed' };
+        partnerSession(data);
+        return { success: true };
+      } catch (error) {
+        return { success: false, message: error.response?.data?.message || 'OTP verification failed' };
+      }
+    },
+    [partnerSession]
+  );
 
   const partnerLogout = useCallback(() => {
     clearAllState();
@@ -429,7 +451,7 @@ export const AuthProvider = ({ children }) => {
         gstNumber: data.gstNumber || '',
         panNumber: data.panNumber || '',
         aadharNumber: data.aadharNumber || '',
-                // The store's position decides which orders can be routed here; the
+        // The store's position decides which orders can be routed here; the
         // PIN code is resolved to coordinates server side, and browser
         // coordinates are preferred when the applicant allows the map prompt.
         storeAddress: {
@@ -439,9 +461,9 @@ export const AuthProvider = ({ children }) => {
           pincode: data.pincode || '',
           country: 'India',
           lat: data.lat,
-          lng: data.lng
+          lng: data.lng,
         },
-        bankAccount: data.bankAccount
+        bankAccount: data.bankAccount,
       });
 
       const payload = response.data;
@@ -451,7 +473,7 @@ export const AuthProvider = ({ children }) => {
         success: true,
         sellerId: payload.sellerId,
         message: payload.message,
-        needsPhoneVerify: true
+        needsPhoneVerify: true,
       };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
@@ -476,11 +498,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/seller/login', { email, password });
       const data = response.data;
-      
+
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email, sellerId: data.sellerId };
       }
-      
+
       if (data.token) {
         const { token, seller: sellerData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -493,7 +515,7 @@ export const AuthProvider = ({ children }) => {
         toast.success('Seller login successful!');
         return { success: true, token };
       }
-      
+
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Seller login failed';
@@ -531,11 +553,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/admin/auth/login', { email, password });
       const data = response.data;
-      
+
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email };
       }
-      
+
       if (data.token) {
         const { token, admin: adminData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -548,7 +570,7 @@ export const AuthProvider = ({ children }) => {
         toast.success('Admin login successful!');
         return { success: true, token };
       }
-      
+
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Admin login failed';
@@ -586,11 +608,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/executive/login', { email, password });
       const data = response.data;
-      
+
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email, executiveId: data.executiveId };
       }
-      
+
       if (data.token) {
         const { token, executive: executiveData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -603,7 +625,7 @@ export const AuthProvider = ({ children }) => {
         toast.success('Executive login successful!');
         return { success: true, token, executive: executiveData };
       }
-      
+
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Executive login failed';
@@ -641,11 +663,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/manufacturer/login', { email, password });
       const data = response.data;
-      
+
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email, manufacturerId: data.manufacturerId };
       }
-      
+
       if (data.token) {
         const { token, manufacturer: manufacturerData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -658,7 +680,7 @@ export const AuthProvider = ({ children }) => {
         toast.success('Manufacturer login successful!');
         return { success: true, token, manufacturer: manufacturerData };
       }
-      
+
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Manufacturer login failed';
@@ -696,11 +718,11 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/manufacturer-seller/login', { email, password });
       const data = response.data;
-      
+
       if (data.requiresOTP) {
         return { success: true, requiresOTP: true, email: data.email, sellerId: data.sellerId };
       }
-      
+
       if (data.token) {
         const { token, seller: sellerData } = data;
         localStorage.setItem(TOKEN_KEY, token);
@@ -713,7 +735,7 @@ export const AuthProvider = ({ children }) => {
         toast.success('Manufacturer seller login successful!');
         return { success: true, token, seller: sellerData };
       }
-      
+
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Manufacturer seller login failed';
@@ -754,15 +776,23 @@ export const AuthProvider = ({ children }) => {
    * does not exist. The roles are exclusive by construction, so a session
    * belongs to exactly one of them.
    */
-  const activeRole = seller ? 'seller'
-    : admin ? 'admin'
-    : staff ? 'staff'
-    : executive ? 'executive'
-    : manufacturer ? 'manufacturer'
-    : manufacturerSeller ? 'manufacturerSeller'
-    : deliveryPartner ? 'deliveryPartner'
-    : user ? CUSTOMER_ROLE
-    : null;
+  const activeRole = seller
+    ? 'seller'
+    : admin
+      ? 'admin'
+      : staff
+        ? 'staff'
+        : executive
+          ? 'executive'
+          : manufacturer
+            ? 'manufacturer'
+            : manufacturerSeller
+              ? 'manufacturerSeller'
+              : deliveryPartner
+                ? 'deliveryPartner'
+                : user
+                  ? CUSTOMER_ROLE
+                  : null;
 
   /*
    * Derived from the role, not from the `isAuthenticated` flag.
@@ -817,15 +847,16 @@ export const AuthProvider = ({ children }) => {
    */
   const isCustomerAuthenticated = activeRole === CUSTOMER_ROLE;
 
-  const roleConsole = {
-    seller: { label: 'Seller Console', path: '/seller/dashboard' },
-    admin: { label: 'Admin Panel', path: '/admin' },
-    staff: { label: 'Staff Workspace', path: '/staff' },
-    executive: { label: 'Executive Desk', path: '/executive/dashboard' },
-    manufacturer: { label: 'Manufacturer Portal', path: '/manufacturer/dashboard' },
-    manufacturerSeller: { label: 'Manufacturer-Seller Portal', path: '/manufacturer-seller/dashboard' },
-    deliveryPartner: { label: 'Partner Dashboard', path: '/delivery-partner/dashboard' }
-  }[activeRole] || null;
+  const roleConsole =
+    {
+      seller: { label: 'Seller Console', path: '/seller/dashboard' },
+      admin: { label: 'Admin Panel', path: '/admin' },
+      staff: { label: 'Staff Workspace', path: '/staff' },
+      executive: { label: 'Executive Desk', path: '/executive/dashboard' },
+      manufacturer: { label: 'Manufacturer Portal', path: '/manufacturer/dashboard' },
+      manufacturerSeller: { label: 'Manufacturer-Seller Portal', path: '/manufacturer-seller/dashboard' },
+      deliveryPartner: { label: 'Partner Dashboard', path: '/delivery-partner/dashboard' },
+    }[activeRole] || null;
 
   const value = {
     user,

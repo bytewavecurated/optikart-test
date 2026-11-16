@@ -17,7 +17,7 @@ const ContactLenses = () => {
   const [filters, setFilters] = useState({
     power: '',
     brand: '',
-    boxQuantity: ''
+    boxQuantity: '',
   });
 
   useEffect(() => {
@@ -28,10 +28,10 @@ const ContactLenses = () => {
     try {
       const res = await productsApi.getAll({ category: 'contactlenses', limit: 100 });
       const products = listOf(res.data);
-      
-      setLenses(products.filter(p => p.subCategory === 'lenses'));
-      setSolutions(products.filter(p => p.subCategory === 'solutions'));
-      setAccessories(products.filter(p => p.subCategory === 'accessories'));
+
+      setLenses(products.filter((p) => p.subCategory === 'lenses'));
+      setSolutions(products.filter((p) => p.subCategory === 'solutions'));
+      setAccessories(products.filter((p) => p.subCategory === 'accessories'));
     } catch (error) {
       console.error('Error fetching products:', error);
     } finally {
@@ -40,28 +40,85 @@ const ContactLenses = () => {
   };
 
   const lensTypes = [
-    { id: 'distance', name: 'Distance Power', description: 'For nearsightedness & farsightedness', icon: <FiEye size={40} color="var(--primary)" /> },
-    { id: 'toric', name: 'Toric/Cylindrical', description: 'For astigmatism correction', icon: <FiRefreshCw size={40} color="var(--primary)" /> },
-    { id: 'multifocal', name: 'Multi-focal', description: 'For presbyopia (reading + distance)', icon: <FiActivity size={40} color="var(--primary)" /> },
-    { id: 'color-zero', name: 'Color Lenses (Zero Power)', description: 'Cosmetic colored lenses', icon: <FiAperture size={40} color="var(--primary)" /> },
-    { id: 'color-power', name: 'Color Lenses (With Power)', description: 'Colored lenses with prescription', icon: <FiStar size={40} color="var(--primary)" /> },
-    { id: 'all-powers', name: 'All Powers', description: 'Browse the full contact lens range', icon: <FiGrid size={40} color="var(--primary)" /> },
-    { id: 'color-combos', name: 'Color Combos', description: 'Ready-made colour sets, buy directly', icon: <FiAperture size={40} color="var(--primary)" /> },
-    { id: 'solution', name: 'Solution', description: 'Cleaning solutions, brand and quantity wise', icon: <FiDroplet size={40} color="var(--primary)" /> },
-    { id: 'accessories', name: 'Accessories', description: 'Cases, tweezers and lens tools', icon: <FiTool size={40} color="var(--primary)" /> }
+    {
+      id: 'distance',
+      name: 'Distance Power',
+      description: 'For nearsightedness & farsightedness',
+      icon: <FiEye size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'toric',
+      name: 'Toric/Cylindrical',
+      description: 'For astigmatism correction',
+      icon: <FiRefreshCw size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'multifocal',
+      name: 'Multi-focal',
+      description: 'For presbyopia (reading + distance)',
+      icon: <FiActivity size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'color-zero',
+      name: 'Color Lenses (Zero Power)',
+      description: 'Cosmetic colored lenses',
+      icon: <FiAperture size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'color-power',
+      name: 'Color Lenses (With Power)',
+      description: 'Colored lenses with prescription',
+      icon: <FiStar size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'all-powers',
+      name: 'All Powers',
+      description: 'Browse the full contact lens range',
+      icon: <FiGrid size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'color-combos',
+      name: 'Color Combos',
+      description: 'Ready-made colour sets, buy directly',
+      icon: <FiAperture size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'solution',
+      name: 'Solution',
+      description: 'Cleaning solutions, brand and quantity wise',
+      icon: <FiDroplet size={40} color="var(--primary)" />,
+    },
+    {
+      id: 'accessories',
+      name: 'Accessories',
+      description: 'Cases, tweezers and lens tools',
+      icon: <FiTool size={40} color="var(--primary)" />,
+    },
   ];
 
   // Each contact-lens entry point drives the same flow with different rules.
   const FLOW_CONFIG = {
-    distance:      { title: 'Distance Power Lenses',    allowZero: true,  allowPower: true,  needCyl: false, needAdd: false },
-    toric:         { title: 'Toric / Cylindrical Lenses', allowZero: false, allowPower: true,  needCyl: true,  needAdd: false },
-    multifocal:    { title: 'Multi-focal Lenses',        allowZero: false,  allowPower: true,  needCyl: false, needAdd: true },
-    'color-zero':  { title: 'Color Lenses (Zero Power)', allowZero: true,   allowPower: false, needCyl: false, needAdd: false },
-    'color-power': { title: 'Color Lenses (With Power)', allowZero: false,  allowPower: true,  needCyl: false, needAdd: false },
+    distance: { title: 'Distance Power Lenses', allowZero: true, allowPower: true, needCyl: false, needAdd: false },
+    toric: { title: 'Toric / Cylindrical Lenses', allowZero: false, allowPower: true, needCyl: true, needAdd: false },
+    multifocal: { title: 'Multi-focal Lenses', allowZero: false, allowPower: true, needCyl: false, needAdd: true },
+    'color-zero': {
+      title: 'Color Lenses (Zero Power)',
+      allowZero: true,
+      allowPower: false,
+      needCyl: false,
+      needAdd: false,
+    },
+    'color-power': {
+      title: 'Color Lenses (With Power)',
+      allowZero: false,
+      allowPower: true,
+      needCyl: false,
+      needAdd: false,
+    },
     'all-powers': { title: 'All Powers', allowZero: true, allowPower: true, needCyl: false, needAdd: false },
     'color-combos': { title: 'Color Combos', browseOnly: true, buyNow: true },
     solution: { title: 'Contact Lens Solution', browseOnly: true, buyNow: true },
-    accessories: { title: 'Accessories', browseOnly: true, buyNow: true }
+    accessories: { title: 'Accessories', browseOnly: true, buyNow: true },
   };
 
   const flowConfig = selectedType ? FLOW_CONFIG[selectedType] : null;
@@ -71,11 +128,16 @@ const ContactLenses = () => {
     setSelectedType(typeId);
     // Pre-select the only power option where the type forces one.
     setFilters({
-      power: cfg && !cfg.browseOnly
-        ? (cfg.allowPower && !cfg.allowZero ? 'with-power' : (cfg.allowZero && !cfg.allowPower ? 'zero-power' : ''))
-        : '',
+      power:
+        cfg && !cfg.browseOnly
+          ? cfg.allowPower && !cfg.allowZero
+            ? 'with-power'
+            : cfg.allowZero && !cfg.allowPower
+              ? 'zero-power'
+              : ''
+          : '',
       brand: '',
-      boxQuantity: ''
+      boxQuantity: '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -86,12 +148,15 @@ const ContactLenses = () => {
     if (selectedType === 'solution') return solutions;
     if (selectedType === 'accessories') return accessories;
     if (selectedType === 'color-combos') {
-      return lenses.filter((l) => (l.colors || []).length > 1 || /color|coloured|colour/i.test(String(l.tags || ' ') + String(l.title || ' ')));
+      return lenses.filter(
+        (l) =>
+          (l.colors || []).length > 1 || /color|coloured|colour/i.test(String(l.tags || ' ') + String(l.title || ' '))
+      );
     }
     return [];
   }, [selectedType, lenses, solutions, accessories]);
 
-  const filteredLenses = lenses.filter(lens => {
+  const filteredLenses = lenses.filter((lens) => {
     if (filters.power && lens.powerType !== filters.power) return false;
     if (filters.brand && lens.brand !== filters.brand) return false;
     if (filters.boxQuantity && lens.boxQuantity !== filters.boxQuantity) return false;
@@ -134,7 +199,14 @@ const ContactLenses = () => {
                   style={{ padding: '24px', cursor: 'pointer', transition: 'all 0.2s' }}
                 >
                   <div style={{ fontSize: '48px', marginBottom: '16px', textAlign: 'center' }}>{type.icon}</div>
-                  <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', marginBottom: '8px', textAlign: 'center' }}>
+                  <h3
+                    style={{
+                      fontSize: '18px',
+                      fontFamily: 'var(--font-heading)',
+                      marginBottom: '8px',
+                      textAlign: 'center',
+                    }}
+                  >
                     {type.name}
                   </h3>
                   <p style={{ fontSize: '14px', color: 'var(--text-secondary)', textAlign: 'center' }}>
@@ -149,24 +221,47 @@ const ContactLenses = () => {
         {/* Browse-only entries (color combos, solution, accessories) */}
         {flowConfig?.browseOnly && (
           <div style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}
+            >
               <h2 style={{ fontFamily: 'var(--font-heading)' }}>{flowConfig.title}</h2>
-              <button onClick={() => setSelectedType(null)} className="btn btn-outline">Back to Types</button>
+              <button onClick={() => setSelectedType(null)} className="btn btn-outline">
+                Back to Types
+              </button>
             </div>
             {browseItems.length === 0 ? (
               <div className="card" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                 No {flowConfig.title.toLowerCase()} are listed right now.
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}
+              >
                 {browseItems.map((product) => (
-                  <Link key={product._id} to={`/product/${product._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <img src={product.images?.[0] || '/placeholder.svg'} alt={product.title} style={{ width: '100%', height: '200px', objectFit: 'contain' }} />
+                  <Link
+                    key={product._id}
+                    to={`/product/${product._id}`}
+                    className="card"
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                  >
+                    <img
+                      src={product.images?.[0] || '/placeholder.svg'}
+                      alt={product.title}
+                      style={{ width: '100%', height: '200px', objectFit: 'contain' }}
+                    />
                     <div style={{ padding: '16px' }}>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{product.brand}</p>
-                      <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{product.title}</h3>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{product.boxQuantity || product.quantity} lenses</p>
-                      <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>Buy Now: ₹{product.discountedPrice || product.price}</div>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        {product.brand}
+                      </p>
+                      <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
+                        {product.title}
+                      </h3>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                        {product.boxQuantity || product.quantity} lenses
+                      </p>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>
+                        Buy Now: ₹{product.discountedPrice || product.price}
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -178,7 +273,9 @@ const ContactLenses = () => {
         {/* Shared contact-lens configuration flow */}
         {flowConfig && !flowConfig.browseOnly && (
           <div style={{ marginBottom: '48px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}
+            >
               <h2 style={{ fontFamily: 'var(--font-heading)' }}>{flowConfig.title}</h2>
               <button onClick={() => setSelectedType(null)} className="btn btn-outline">
                 Back to Types
@@ -187,42 +284,44 @@ const ContactLenses = () => {
 
             {/* Power Selection */}
             {flowConfig.allowZero && flowConfig.allowPower && (
-            <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
-              <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Do you have power?</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div
-                  onClick={() => setFilters({ ...filters, power: 'with-power' })}
-                  className="card"
-                  style={{
-                    padding: '20px',
-                    cursor: 'pointer',
-                    border: filters.power === 'with-power' ? '2px solid var(--primary)' : '2px solid transparent'
-                  }}
-                >
-                  <h4 style={{ fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>With Power</h4>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>I have a prescription</p>
-                </div>
-                <div
-                  onClick={() => setFilters({ ...filters, power: 'zero-power' })}
-                  className="card"
-                  style={{
-                    padding: '20px',
-                    cursor: 'pointer',
-                    border: filters.power === 'zero-power' ? '2px solid var(--primary)' : '2px solid transparent'
-                  }}
-                >
-                  <h4 style={{ fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>Zero Power</h4>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>No prescription needed</p>
+              <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
+                <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Do you have power?</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div
+                    onClick={() => setFilters({ ...filters, power: 'with-power' })}
+                    className="card"
+                    style={{
+                      padding: '20px',
+                      cursor: 'pointer',
+                      border: filters.power === 'with-power' ? '2px solid var(--primary)' : '2px solid transparent',
+                    }}
+                  >
+                    <h4 style={{ fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>With Power</h4>
+                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>I have a prescription</p>
+                  </div>
+                  <div
+                    onClick={() => setFilters({ ...filters, power: 'zero-power' })}
+                    className="card"
+                    style={{
+                      padding: '20px',
+                      cursor: 'pointer',
+                      border: filters.power === 'zero-power' ? '2px solid var(--primary)' : '2px solid transparent',
+                    }}
+                  >
+                    <h4 style={{ fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>Zero Power</h4>
+                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>No prescription needed</p>
+                  </div>
                 </div>
               </div>
-            </div>
             )}
 
             {/* Prescription Entry */}
             {filters.power === 'with-power' && (
               <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
                 <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Enter Your Prescription</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '-8px', marginBottom: '16px' }}>
+                <p
+                  style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '-8px', marginBottom: '16px' }}
+                >
                   {flowConfig.needCyl
                     ? 'Toric lenses require Sphere, Cylinder and Axis for both eyes.'
                     : flowConfig.needAdd
@@ -279,7 +378,9 @@ const ContactLenses = () => {
             {/* Box Quantity Selection */}
             <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
               <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Box Quantity</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}
+              >
                 {['30 lenses', '6 lenses', '90 lenses'].map((qty) => (
                   <div
                     key={qty}
@@ -289,7 +390,7 @@ const ContactLenses = () => {
                       padding: '16px',
                       cursor: 'pointer',
                       textAlign: 'center',
-                      border: filters.boxQuantity === qty ? '2px solid var(--primary)' : '2px solid transparent'
+                      border: filters.boxQuantity === qty ? '2px solid var(--primary)' : '2px solid transparent',
                     }}
                   >
                     <h4 style={{ fontFamily: 'var(--font-heading)' }}>{qty}</h4>
@@ -317,24 +418,35 @@ const ContactLenses = () => {
             {/* Product List */}
             {filteredLenses.length > 0 && (
               <div>
-                <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Available Lenses ({filteredLenses.length})</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+                <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>
+                  Available Lenses ({filteredLenses.length})
+                </h3>
+                <div
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}
+                >
                   {filteredLenses.map((lens) => (
-                    <Link key={lens._id} to={`/product/${lens._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <Link
+                      key={lens._id}
+                      to={`/product/${lens._id}`}
+                      className="card"
+                      style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
                       <img
                         src={lens.images?.[0] || '/placeholder.svg'}
                         alt={lens.title}
                         style={{ width: '100%', height: '250px', objectFit: 'cover' }}
                       />
                       <div style={{ padding: '16px' }}>
-                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{lens.brand}</p>
-                        <h4 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{lens.title}</h4>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                          {lens.brand}
+                        </p>
+                        <h4 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
+                          {lens.title}
+                        </h4>
                         <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                           {lens.boxQuantity} per box
                         </p>
-                        <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
-                          ₹{lens.price}
-                        </div>
+                        <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>₹{lens.price}</div>
                       </div>
                     </Link>
                   ))}
@@ -349,21 +461,28 @@ const ContactLenses = () => {
           <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Lens Solutions</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {solutions.map((solution) => (
-              <Link key={solution._id} to={`/product/${solution._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link
+                key={solution._id}
+                to={`/product/${solution._id}`}
+                className="card"
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
                 <img
                   src={solution.images?.[0] || '/placeholder.svg'}
                   alt={solution.title}
                   style={{ width: '100%', height: '250px', objectFit: 'cover' }}
                 />
                 <div style={{ padding: '16px' }}>
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{solution.brand}</p>
-                  <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{solution.title}</h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    {solution.brand}
+                  </p>
+                  <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
+                    {solution.title}
+                  </h3>
                   <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                     {solution.quantity}
                   </p>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
-                    ₹{solution.price}
-                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>₹{solution.price}</div>
                 </div>
               </Link>
             ))}
@@ -375,17 +494,22 @@ const ContactLenses = () => {
           <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Accessories</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
             {accessories.map((accessory) => (
-              <Link key={accessory._id} to={`/product/${accessory._id}`} className="card" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link
+                key={accessory._id}
+                to={`/product/${accessory._id}`}
+                className="card"
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
                 <img
                   src={accessory.images?.[0] || '/placeholder.svg'}
                   alt={accessory.title}
                   style={{ width: '100%', height: '250px', objectFit: 'cover' }}
                 />
                 <div style={{ padding: '16px' }}>
-                  <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>{accessory.title}</h3>
-                  <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
-                    ₹{accessory.price}
-                  </div>
+                  <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
+                    {accessory.title}
+                  </h3>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>₹{accessory.price}</div>
                 </div>
               </Link>
             ))}

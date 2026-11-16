@@ -5,7 +5,19 @@ import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiPackage, FiMapPin, FiDollarSign, FiCheckCircle, FiClock, FiTruck, FiLogOut, FiRefreshCw, FiNavigation, FiCreditCard, FiAlertTriangle } from 'react-icons/fi';
+import {
+  FiPackage,
+  FiMapPin,
+  FiDollarSign,
+  FiCheckCircle,
+  FiClock,
+  FiTruck,
+  FiLogOut,
+  FiRefreshCw,
+  FiNavigation,
+  FiCreditCard,
+  FiAlertTriangle,
+} from 'react-icons/fi';
 import { toastError } from '../../services/errors.js';
 
 /**
@@ -24,15 +36,45 @@ const RouteRow = ({ kind, place }) => {
 
   return (
     <div style={{ border: '1px solid #eee', borderRadius: 10, padding: 10, background: 'var(--bg-white)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: hasCoords ? 8 : 0 }}>
-        <span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.05, color: 'var(--text-secondary, #757575)' }}>{kind}</span>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: hasCoords ? 8 : 0,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 11.5,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: 0.05,
+            color: 'var(--text-secondary, #757575)',
+          }}
+        >
+          {kind}
+        </span>
         {link && (
-          <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--primary, #2874f0)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: 'var(--primary, #2874f0)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
             <FiMapPin size={13} /> Open map
           </a>
         )}
       </div>
-      {(place?.name && place.name !== place.address) && (
+      {place?.name && place.name !== place.address && (
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{place.name}</div>
       )}
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary, #757575)', lineHeight: 1.4 }}>{addr}</div>
@@ -112,19 +154,19 @@ const DeliveryPartnerDashboard = () => {
       const offersResponse = await deliveryApi.getOffers();
       setOffers(offersResponse.data.offers || []);
 
-      const [week, month] = await Promise.all([
-        deliveryApi.getEarnings('week'),
-        deliveryApi.getEarnings('month')
-      ]);
+      const [week, month] = await Promise.all([deliveryApi.getEarnings('week'), deliveryApi.getEarnings('month')]);
       // /payment/earnings answers under a `data` envelope like the rest of this
       // API, so reading the body directly would always have produced zeros.
       const wk = week.data.data || week.data;
       const mt = month.data.data || month.data;
-      setPayoutHistory({ deliveries: mt.deliveries || [], withdrawals: body.partner?.withdrawals || body.withdrawals || [] });
+      setPayoutHistory({
+        deliveries: mt.deliveries || [],
+        withdrawals: body.partner?.withdrawals || body.withdrawals || [],
+      });
       setEarnings({
         week: wk.totalEarnings ?? 0,
         month: mt.totalEarnings ?? 0,
-        totalDeliveries: mt.totalDeliveries ?? 0
+        totalDeliveries: mt.totalDeliveries ?? 0,
       });
     } catch (error) {
       if (error.response?.status === 401) {
@@ -133,7 +175,7 @@ const DeliveryPartnerDashboard = () => {
         navigate('/delivery-partner/login');
         return;
       }
-      toastError(error, "Failed to load dashboard data");
+      toastError(error, 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
@@ -209,7 +251,7 @@ const DeliveryPartnerDashboard = () => {
     ['wrong_address', 'Address did not match'],
     ['refused', 'Parcel refused at the door'],
     ['damaged', 'Parcel damaged'],
-    ['other', 'Something else']
+    ['other', 'Something else'],
   ];
 
   const submitReport = async (delivery) => {
@@ -237,7 +279,7 @@ const DeliveryPartnerDashboard = () => {
               setLocationSharing(true);
               toast.success('Location sharing enabled');
             } catch (error) {
-              toastError(error, "Failed to update location");
+              toastError(error, 'Failed to update location');
             }
           },
           () => {
@@ -322,7 +364,17 @@ const DeliveryPartnerDashboard = () => {
         <Header />
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ width: '50px', height: '50px', border: '4px solid #f3f3f3', borderTop: '4px solid var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+            <div
+              style={{
+                width: '50px',
+                height: '50px',
+                border: '4px solid #f3f3f3',
+                borderTop: '4px solid var(--primary)',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                margin: '0 auto 16px',
+              }}
+            />
             <p style={{ color: 'var(--text-secondary, #757575)' }}>Loading dashboard...</p>
           </div>
         </main>
@@ -337,15 +389,36 @@ const DeliveryPartnerDashboard = () => {
     { label: "Today's Deliveries", value: stats.todayDeliveries ?? 0, icon: FiTruck },
     { label: 'Total Earned', value: inr(stats.totalEarnings), icon: FiDollarSign },
     { label: 'Available to Withdraw', value: inr(stats.availableBalance), icon: FiCreditCard },
-    { label: 'Pending Deliveries', value: stats.pendingDeliveries ?? 0, icon: FiClock }
+    { label: 'Pending Deliveries', value: stats.pendingDeliveries ?? 0, icon: FiClock },
   ];
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary, #f5f5f5)' }}>
+    <div
+      style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary, #f5f5f5)' }}
+    >
       <Header />
 
-      <main className="container page-wrapper" style={{ flex: 1, padding: '24px 16px', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
+      <main
+        className="container page-wrapper"
+        style={{
+          flex: 1,
+          padding: '24px 16px',
+          maxWidth: '1200px',
+          margin: '0 auto',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '24px',
+            gap: '16px',
+          }}
+        >
           <div>
             <h1 style={{ fontSize: '26px', fontWeight: 700, margin: 0, color: 'var(--text-dark, #212121)' }}>
               Welcome, {partner?.name || 'Partner'}
@@ -377,25 +450,74 @@ const DeliveryPartnerDashboard = () => {
             </div>
             <button
               onClick={handleLogout}
-              style={{ padding: '8px 16px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600 }}
+              style={{
+                padding: '8px 16px',
+                background: 'var(--danger)',
+                color: 'var(--text-white)',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
             >
               <FiLogOut size={14} /> Logout
             </button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '16px',
+            marginBottom: '28px',
+          }}
+        >
           {statCards.map((card, idx) => {
             const Icon = card.icon;
             return (
-              <div className="card" key={idx} style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '20px', boxShadow: 'var(--shadow)' }}>
+              <div
+                className="card"
+                key={idx}
+                style={{
+                  background: 'var(--bg-white, #fff)',
+                  borderRadius: 'var(--radius)',
+                  padding: '20px',
+                  boxShadow: 'var(--shadow)',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '48px', height: '48px', background: card.bg, borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: card.color, flexShrink: 0 }}>
+                  <div
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      background: card.bg,
+                      borderRadius: 'var(--radius)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: card.color,
+                      flexShrink: 0,
+                    }}
+                  >
                     <Icon size={22} />
                   </div>
                   <div>
                     <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-light, #999)' }}>{card.label}</p>
-                    <h3 style={{ margin: '4px 0 0', fontSize: '24px', fontWeight: 700, color: 'var(--text-dark, #212121)' }}>{card.value}</h3>
+                    <h3
+                      style={{
+                        margin: '4px 0 0',
+                        fontSize: '24px',
+                        fontWeight: 700,
+                        color: 'var(--text-dark, #212121)',
+                      }}
+                    >
+                      {card.value}
+                    </h3>
                   </div>
                 </div>
               </div>
@@ -404,10 +526,24 @@ const DeliveryPartnerDashboard = () => {
         </div>
 
         {/* Route Optimization Button */}
-        <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '20px', boxShadow: 'var(--shadow)', marginBottom: '28px', textAlign: 'center' }}>
+        <div
+          className="card"
+          style={{
+            background: 'var(--bg-white, #fff)',
+            borderRadius: 'var(--radius)',
+            padding: '20px',
+            boxShadow: 'var(--shadow)',
+            marginBottom: '28px',
+            textAlign: 'center',
+          }}
+        >
           <FiNavigation size={32} color="var(--primary)" style={{ marginBottom: '12px' }} />
-          <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Optimize Your Delivery Route</h3>
-          <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--text-secondary, #757575)' }}>Get AI-powered route suggestions for efficient deliveries</p>
+          <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>
+            Optimize Your Delivery Route
+          </h3>
+          <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--text-secondary, #757575)' }}>
+            Get AI-powered route suggestions for efficient deliveries
+          </p>
           <button
             onClick={() => navigate('/delivery-partner/route-optimization')}
             className="btn btn-primary"
@@ -435,10 +571,32 @@ const DeliveryPartnerDashboard = () => {
             nobody should have to accept a delivery they have to guess at.
         */}
         {offers.length > 0 && (
-          <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', marginBottom: '24px', overflow: 'hidden', borderLeft: '4px solid var(--primary)' }}>
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div
+            className="card"
+            style={{
+              background: 'var(--bg-white, #fff)',
+              borderRadius: 'var(--radius)',
+              boxShadow: 'var(--shadow)',
+              marginBottom: '24px',
+              overflow: 'hidden',
+              borderLeft: '4px solid var(--primary)',
+            }}
+          >
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid #eee',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+              }}
+            >
               <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Delivery offers for you</h2>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Answer before the timer runs out or the next partner is asked</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                Answer before the timer runs out or the next partner is asked
+              </span>
             </div>
             <div style={{ display: 'grid', gap: '12px', padding: '16px 24px' }}>
               {offers.map((o) => {
@@ -447,31 +605,56 @@ const DeliveryPartnerDashboard = () => {
                 const secs = msLeft === null ? null : Math.max(0, Math.floor((msLeft % 60000) / 1000));
                 const expired = msLeft === 0;
                 return (
-                  <div key={o.orderId} style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                  <div
+                    key={o.orderId}
+                    style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        flexWrap: 'wrap',
+                        alignItems: 'flex-start',
+                      }}
+                    >
                       <div style={{ minWidth: 0 }}>
                         <div style={{ fontSize: 15, fontWeight: 700 }}>{o.orderNumber}</div>
                         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Pick up:</span> {o.pickup || 'Store address pending'}
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Pick up:</span>{' '}
+                          {o.pickup || 'Store address pending'}
                         </div>
                         <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Drop:</span> {o.drop || 'Address pending'}
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Drop:</span>{' '}
+                          {o.drop || 'Address pending'}
                         </div>
                         <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 13, flexWrap: 'wrap' }}>
                           <span>{o.distanceKm != null ? `${o.distanceKm} km to the store` : 'Distance varies'}</span>
                           <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{inr(o.earning)} for the run</span>
                           {msLeft !== null && !expired && (
-                            <span style={{ color: msLeft < 5 * 60000 ? 'var(--danger, #d93025)' : 'var(--text-secondary)' }}>
+                            <span
+                              style={{ color: msLeft < 5 * 60000 ? 'var(--danger, #d93025)' : 'var(--text-secondary)' }}
+                            >
                               {mins}m {String(secs).padStart(2, '0')}s left
                             </span>
                           )}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                        <button onClick={() => respondToOffer(o, 'decline')} disabled={answering === o.orderId} className="btn btn-outline" style={{ padding: '8px 14px', fontSize: 13.5 }}>
+                        <button
+                          onClick={() => respondToOffer(o, 'decline')}
+                          disabled={answering === o.orderId}
+                          className="btn btn-outline"
+                          style={{ padding: '8px 14px', fontSize: 13.5 }}
+                        >
                           No thanks
                         </button>
-                        <button onClick={() => respondToOffer(o, 'accept')} disabled={answering === o.orderId || expired} className="btn btn-primary" style={{ padding: '8px 18px', fontSize: 13.5 }}>
+                        <button
+                          onClick={() => respondToOffer(o, 'accept')}
+                          disabled={answering === o.orderId || expired}
+                          className="btn btn-primary"
+                          style={{ padding: '8px 18px', fontSize: 13.5 }}
+                        >
                           {answering === o.orderId ? 'Working...' : expired ? 'Offer expired' : 'Accept run'}
                         </button>
                       </div>
@@ -483,13 +666,44 @@ const DeliveryPartnerDashboard = () => {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }} className="delivery-dashboard-grid">
-          <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Active Deliveries</h2>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '28px' }}
+          className="delivery-dashboard-grid"
+        >
+          <div
+            className="card"
+            style={{
+              background: 'var(--bg-white, #fff)',
+              borderRadius: 'var(--radius)',
+              boxShadow: 'var(--shadow)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid #eee',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>
+                Active Deliveries
+              </h2>
               <button
                 onClick={fetchDashboardData}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 500 }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                }}
               >
                 <FiRefreshCw size={14} /> Refresh
               </button>
@@ -498,10 +712,20 @@ const DeliveryPartnerDashboard = () => {
               {activeDeliveries.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px 0' }}>
                   <FiPackage size={40} style={{ color: 'var(--text-light, #ccc)', marginBottom: '12px' }} />
-                  <p style={{ color: 'var(--text-secondary, #757575)', margin: 0, fontSize: '14px' }}>No active deliveries right now</p>
+                  <p style={{ color: 'var(--text-secondary, #757575)', margin: 0, fontSize: '14px' }}>
+                    No active deliveries right now
+                  </p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    maxHeight: '400px',
+                    overflowY: 'auto',
+                  }}
+                >
                   {activeDeliveries.map((delivery) => (
                     <div
                       key={delivery.orderId}
@@ -512,20 +736,51 @@ const DeliveryPartnerDashboard = () => {
                         background: 'var(--bg-primary, #fafafa)',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          marginBottom: '10px',
+                          flexWrap: 'wrap',
+                          gap: '8px',
+                        }}
+                      >
                         <div>
                           <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)' }}>
                             Order {delivery.orderNumber || `#${String(delivery.orderId || '').slice(-8)}`}
                           </span>
-                          <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-dark, #212121)', fontWeight: 500 }}>
+                          <p
+                            style={{
+                              margin: '4px 0 0',
+                              fontSize: '13px',
+                              color: 'var(--text-dark, #212121)',
+                              fontWeight: 500,
+                            }}
+                          >
                             {delivery.customerName}
                           </p>
                         </div>
-                        <span style={{ fontSize: '12px', color: 'var(--text-light, #999)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            color: 'var(--text-light, #999)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
                           <FiMapPin size={12} /> {delivery.distance || 'N/A'}
                         </span>
                       </div>
-                      <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-secondary, #757575)', lineHeight: 1.4 }}>
+                      <p
+                        style={{
+                          margin: '0 0 12px',
+                          fontSize: '13px',
+                          color: 'var(--text-secondary, #757575)',
+                          lineHeight: 1.4,
+                        }}
+                      >
                         {delivery.address || 'Address not available'}
                       </p>
                       <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
@@ -535,68 +790,109 @@ const DeliveryPartnerDashboard = () => {
                       {/* Two actions on the same run: hand it over, or say why
                           you could not. */}
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button
-                        onClick={() => handleCompleteDelivery(delivery.orderId)}
-                        className="btn btn-primary"
-                        style={{
-                          flex: '1 1 190px',
-                          padding: '10px',
-                          background: 'var(--primary)',
-                          color: 'var(--text-white)',
-                          border: 'none',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <FiCheckCircle size={14} /> Mark Delivered
-                      </button>
-                      <button
-                        onClick={() => setReporting(reporting === delivery.orderId ? '' : delivery.orderId)}
-                        className="btn btn-outline"
-                        style={{ padding: '8px 12px', fontSize: 13, flex: '0 0 auto' }}
-                      >
-                        <FiAlertTriangle size={14} /> {reporting === delivery.orderId ? 'Close' : 'Report a problem'}
-                      </button>
-                      </div>
-                    {reporting === delivery.orderId && (
-                      <div style={{ marginTop: 12, border: '1px solid var(--border)', borderRadius: 8, padding: 12, background: 'var(--bg-secondary, #fafafa)' }}>
-                        <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>What happened?</label>
-                        <select
-                          className="input"
-                          value={reportType}
-                          onChange={(e) => setReportType(e.target.value)}
-                          style={{ width: '100%', marginBottom: 8, padding: '9px 10px', fontSize: 13.5 }}
+                        <button
+                          onClick={() => handleCompleteDelivery(delivery.orderId)}
+                          className="btn btn-primary"
+                          style={{
+                            flex: '1 1 190px',
+                            padding: '10px',
+                            background: 'var(--primary)',
+                            color: 'var(--text-white)',
+                            border: 'none',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                          }}
                         >
-                          {REPORT_REASONS.map(([value, text]) => <option key={value} value={value}>{text}</option>)}
-                        </select>
-                        <textarea
-                          className="input"
-                          rows={2}
-                          value={reportNote}
-                          onChange={(e) => setReportNote(e.target.value.slice(0, 400))}
-                          placeholder="Anything the desk should know - door code, second attempt time, who refused"
-                          style={{ width: '100%', padding: '9px 10px', fontSize: 13.5, fontFamily: 'inherit', marginBottom: 8 }}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: 12, color: 'var(--text-light)' }}>Goes on the order timeline for the operations desk.</span>
-                          <button
-                            onClick={() => submitReport(delivery)}
-                            disabled={reporting === `sending:${delivery.orderId}` || (reportType === 'other' && !reportNote.trim())}
-                            className="btn btn-primary"
-                            style={{ padding: '7px 14px', fontSize: 13 }}
-                          >
-                            {reportType === 'other' && !reportNote.trim() ? 'Add a note first' : 'Send report'}
-                          </button>
-                        </div>
+                          <FiCheckCircle size={14} /> Mark Delivered
+                        </button>
+                        <button
+                          onClick={() => setReporting(reporting === delivery.orderId ? '' : delivery.orderId)}
+                          className="btn btn-outline"
+                          style={{ padding: '8px 12px', fontSize: 13, flex: '0 0 auto' }}
+                        >
+                          <FiAlertTriangle size={14} /> {reporting === delivery.orderId ? 'Close' : 'Report a problem'}
+                        </button>
                       </div>
-                    )}
-                  </div>
+                      {reporting === delivery.orderId && (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            border: '1px solid var(--border)',
+                            borderRadius: 8,
+                            padding: 12,
+                            background: 'var(--bg-secondary, #fafafa)',
+                          }}
+                        >
+                          <label
+                            style={{
+                              display: 'block',
+                              fontSize: 12.5,
+                              fontWeight: 600,
+                              marginBottom: 6,
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            What happened?
+                          </label>
+                          <select
+                            className="input"
+                            value={reportType}
+                            onChange={(e) => setReportType(e.target.value)}
+                            style={{ width: '100%', marginBottom: 8, padding: '9px 10px', fontSize: 13.5 }}
+                          >
+                            {REPORT_REASONS.map(([value, text]) => (
+                              <option key={value} value={value}>
+                                {text}
+                              </option>
+                            ))}
+                          </select>
+                          <textarea
+                            className="input"
+                            rows={2}
+                            value={reportNote}
+                            onChange={(e) => setReportNote(e.target.value.slice(0, 400))}
+                            placeholder="Anything the desk should know - door code, second attempt time, who refused"
+                            style={{
+                              width: '100%',
+                              padding: '9px 10px',
+                              fontSize: 13.5,
+                              fontFamily: 'inherit',
+                              marginBottom: 8,
+                            }}
+                          />
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: 10,
+                              flexWrap: 'wrap',
+                            }}
+                          >
+                            <span style={{ fontSize: 12, color: 'var(--text-light)' }}>
+                              Goes on the order timeline for the operations desk.
+                            </span>
+                            <button
+                              onClick={() => submitReport(delivery)}
+                              disabled={
+                                reporting === `sending:${delivery.orderId}` ||
+                                (reportType === 'other' && !reportNote.trim())
+                              }
+                              className="btn btn-primary"
+                              style={{ padding: '7px 14px', fontSize: 13 }}
+                            >
+                              {reportType === 'other' && !reportNote.trim() ? 'Add a note first' : 'Send report'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -604,29 +900,81 @@ const DeliveryPartnerDashboard = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
-              <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Earnings Summary</h2>
+            <div
+              className="card"
+              style={{
+                background: 'var(--bg-white, #fff)',
+                borderRadius: 'var(--radius)',
+                padding: '24px',
+                boxShadow: 'var(--shadow)',
+              }}
+            >
+              <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>
+                Earnings Summary
+              </h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--success-light)', borderRadius: 'var(--radius-md)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    background: 'var(--success-light)',
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                >
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Completed today</span>
                   <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--success)' }}>
                     {stats.completedToday || 0}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    background: 'var(--brand-tint)',
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                >
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Last 7 days</span>
                   <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--brand)' }}>{inr(earnings.week)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--warning-light)', borderRadius: 'var(--radius-md)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    background: 'var(--warning-light)',
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                >
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary, #555)' }}>Last 30 days</span>
-                  <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--warning)' }}>{inr(earnings.month)}</span>
+                  <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--warning)' }}>
+                    {inr(earnings.month)}
+                  </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'var(--brand-tint)', borderRadius: 'var(--radius-md)' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Available Balance</span>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    background: 'var(--brand-tint)',
+                    borderRadius: 'var(--radius-md)',
+                  }}
+                >
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>
+                    Available Balance
+                  </span>
                   {/* This printed totalEarnings under the label "Available
                       Balance", so it could never agree with the withdrawal form
                       sitting next to it. */}
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>{inr(stats.availableBalance)}</span>
+                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
+                    {inr(stats.availableBalance)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -637,28 +985,92 @@ const DeliveryPartnerDashboard = () => {
                 the only number available is a total, which cannot be checked
                 against a week of work.
             */}
-            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
-              <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Recent deliveries</h2>
+            <div
+              className="card"
+              style={{
+                background: 'var(--bg-white, #fff)',
+                borderRadius: 'var(--radius)',
+                padding: '24px',
+                boxShadow: 'var(--shadow)',
+              }}
+            >
+              <h2 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>
+                Recent deliveries
+              </h2>
               <p style={{ margin: '0 0 14px', fontSize: 12.5, color: 'var(--text-secondary)' }}>Last 30 days</p>
               {payoutHistory.deliveries.length === 0 ? (
-                <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: 0 }}>No completed runs in this window yet.</p>
+                <p style={{ fontSize: 13.5, color: 'var(--text-secondary)', margin: 0 }}>
+                  No completed runs in this window yet.
+                </p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table className="table-clean" style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
                     <thead>
                       <tr>
                         {['Order', 'Delivered', 'Distance', 'Payout'].map((h) => (
-                          <th key={h} style={{ textAlign: 'left', fontSize: 11, fontWeight: 700, letterSpacing: .5, textTransform: 'uppercase', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', padding: '8px 10px', whiteSpace: 'nowrap' }}>{h}</th>
+                          <th
+                            key={h}
+                            style={{
+                              textAlign: 'left',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              letterSpacing: 0.5,
+                              textTransform: 'uppercase',
+                              color: 'var(--text-secondary)',
+                              borderBottom: '1px solid var(--border)',
+                              padding: '8px 10px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {h}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {payoutHistory.deliveries.slice(0, 15).map((d, i) => (
                         <tr key={d.orderId || i}>
-                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', fontWeight: 600 }}>{d.orderNumber || String(d.orderId || '').slice(-8).toUpperCase()}</td>
-                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>{d.deliveredAt ? new Date(d.deliveredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '-'}</td>
-                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>{d.distanceKm ? `${d.distanceKm} km` : '-'}</td>
-                          <td style={{ padding: '9px 10px', borderBottom: '1px solid var(--border-light)', fontWeight: 600 }}>{inr(d.fee)}</td>
+                          <td
+                            style={{
+                              padding: '9px 10px',
+                              borderBottom: '1px solid var(--border-light)',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {d.orderNumber ||
+                              String(d.orderId || '')
+                                .slice(-8)
+                                .toUpperCase()}
+                          </td>
+                          <td
+                            style={{
+                              padding: '9px 10px',
+                              borderBottom: '1px solid var(--border-light)',
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {d.deliveredAt
+                              ? new Date(d.deliveredAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                              : '-'}
+                          </td>
+                          <td
+                            style={{
+                              padding: '9px 10px',
+                              borderBottom: '1px solid var(--border-light)',
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {d.distanceKm ? `${d.distanceKm} km` : '-'}
+                          </td>
+                          <td
+                            style={{
+                              padding: '9px 10px',
+                              borderBottom: '1px solid var(--border-light)',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {inr(d.fee)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -677,15 +1089,55 @@ const DeliveryPartnerDashboard = () => {
                   </h3>
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
                     {payoutHistory.withdrawals.slice(0, 8).map((w, i) => (
-                      <li key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-light)', paddingBottom: 6 }}>
-                        <span>{w.at ? new Date(w.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'} {w.payoutId ? `· ${w.payoutId}` : ''}</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{inr(w.netPaid ?? w.amount)}{' '}
-                          <span style={{
-                            fontWeight: 600, fontSize: 11, padding: '2px 7px', borderRadius: 999,
-                            color: w.status === 'processed' ? 'var(--success)' : w.status === 'failed' ? 'var(--error)' : 'var(--warning-dark, #8a6d3b)',
-                            background: w.status === 'processed' ? 'rgba(22, 163, 74, .10)' : w.status === 'failed' ? 'rgba(220, 38, 38, .10)' : 'rgba(217, 119, 6, .12)'
-                          }}>
-                            {w.status === 'processed' ? 'Paid' : w.status === 'failed' ? 'Failed' : 'Awaiting settlement'}
+                      <li
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          gap: 10,
+                          fontSize: 13,
+                          color: 'var(--text-secondary)',
+                          borderBottom: '1px solid var(--border-light)',
+                          paddingBottom: 6,
+                        }}
+                      >
+                        <span>
+                          {w.at
+                            ? new Date(w.at).toLocaleDateString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : '-'}{' '}
+                          {w.payoutId ? `· ${w.payoutId}` : ''}
+                        </span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {inr(w.netPaid ?? w.amount)}{' '}
+                          <span
+                            style={{
+                              fontWeight: 600,
+                              fontSize: 11,
+                              padding: '2px 7px',
+                              borderRadius: 999,
+                              color:
+                                w.status === 'processed'
+                                  ? 'var(--success)'
+                                  : w.status === 'failed'
+                                    ? 'var(--error)'
+                                    : 'var(--warning-dark, #8a6d3b)',
+                              background:
+                                w.status === 'processed'
+                                  ? 'rgba(22, 163, 74, .10)'
+                                  : w.status === 'failed'
+                                    ? 'rgba(220, 38, 38, .10)'
+                                    : 'rgba(217, 119, 6, .12)',
+                            }}
+                          >
+                            {w.status === 'processed'
+                              ? 'Paid'
+                              : w.status === 'failed'
+                                ? 'Failed'
+                                : 'Awaiting settlement'}
                           </span>
                         </span>
                       </li>
@@ -695,15 +1147,41 @@ const DeliveryPartnerDashboard = () => {
               )}
             </div>
 
-            <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '24px', boxShadow: 'var(--shadow)' }}>
-              <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Withdraw Funds</h2>
+            <div
+              className="card"
+              style={{
+                background: 'var(--bg-white, #fff)',
+                borderRadius: 'var(--radius)',
+                padding: '24px',
+                boxShadow: 'var(--shadow)',
+              }}
+            >
+              <h2 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>
+                Withdraw Funds
+              </h2>
               <form onSubmit={handleWithdraw}>
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary, #555)', marginBottom: 6 }}>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: 'var(--text-secondary, #555)',
+                      marginBottom: 6,
+                    }}
+                  >
                     Amount (₹)
                   </label>
                   <div style={{ position: 'relative' }}>
-                    <FiDollarSign style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light, #999)' }} />
+                    <FiDollarSign
+                      style={{
+                        position: 'absolute',
+                        left: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        color: 'var(--text-light, #999)',
+                      }}
+                    />
                     <input
                       className="input"
                       type="number"
@@ -718,16 +1196,17 @@ const DeliveryPartnerDashboard = () => {
                   </div>
                   <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-light, #999)', lineHeight: 1.5 }}>
                     Available: ₹{(stats.availableBalance || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                    {' - '}₹3 fee per started ₹50, so ₹{withdrawAmount && Number(withdrawAmount) >= 50
-                      ? Math.ceil(Number(withdrawAmount) / 50) * 3
-                      : 0}
+                    {' - '}₹3 fee per started ₹50, so ₹
+                    {withdrawAmount && Number(withdrawAmount) >= 50 ? Math.ceil(Number(withdrawAmount) / 50) * 3 : 0}
                     {' would be deducted. One withdrawal per day'}
-                    {stats.canWithdrawToday === false ? ', and you have already used today\'s.' : '.'}
+                    {stats.canWithdrawToday === false ? ", and you have already used today's." : '.'}
                   </p>
                 </div>
                 <button
                   type="submit"
-                  disabled={withdrawing || !withdrawAmount || Number(withdrawAmount) < 50 || stats.canWithdrawToday === false}
+                  disabled={
+                    withdrawing || !withdrawAmount || Number(withdrawAmount) < 50 || stats.canWithdrawToday === false
+                  }
                   className="btn btn-primary"
                   style={{
                     width: '100%',
@@ -748,13 +1227,30 @@ const DeliveryPartnerDashboard = () => {
           </div>
         </div>
 
-        <div className="card" style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', padding: '20px 24px', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div
+          className="card"
+          style={{
+            background: 'var(--bg-white, #fff)',
+            borderRadius: 'var(--radius)',
+            padding: '20px 24px',
+            boxShadow: 'var(--shadow)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <FiMapPin size={20} style={{ color: locationSharing ? 'var(--success)' : 'var(--text-light, #999)' }} />
             <div>
-              <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>Location Sharing</p>
+              <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: 'var(--text-dark, #212121)' }}>
+                Location Sharing
+              </p>
               <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary, #757575)' }}>
-                {locationSharing ? 'Your location is being shared for delivery assignments' : 'Enable to receive nearby delivery assignments'}
+                {locationSharing
+                  ? 'Your location is being shared for delivery assignments'
+                  : 'Enable to receive nearby delivery assignments'}
               </p>
             </div>
           </div>

@@ -83,8 +83,26 @@ const DeliveryPartnerLogin = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-page)', padding: '20px' }}>
-      <div style={{ background: 'var(--bg-white, #fff)', borderRadius: 'var(--radius)', boxShadow: '0 10px 40px rgba(0,0,0,0.15)', width: '100%', maxWidth: '420px', overflow: 'hidden' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--bg-page)',
+        padding: '20px',
+      }}
+    >
+      <div
+        style={{
+          background: 'var(--bg-white, #fff)',
+          borderRadius: 'var(--radius)',
+          boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
+          width: '100%',
+          maxWidth: '420px',
+          overflow: 'hidden',
+        }}
+      >
         <div style={{ background: 'var(--bg-dark)', padding: '26px 32px', textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
             <Logo variant="onDark" size={22} />
@@ -97,70 +115,181 @@ const DeliveryPartnerLogin = () => {
         {step === 1 ? (
           <form onSubmit={handleSubmit} style={{ padding: '32px' }}>
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #555)', marginBottom: '6px' }}>Email Address</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary, #555)',
+                  marginBottom: '6px',
+                }}
+              >
+                Email Address
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiMail style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light, #999)', fontSize: '16px' }} />
+                <FiMail
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light, #999)',
+                    fontSize: '16px',
+                  }}
+                />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className={`input ${errors.email ? 'input-error' : ''}`}
-                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '14px', boxSizing: 'border-box' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 12px 12px 40px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                  }}
                 />
               </div>
-              {errors.email && <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.email}</span>}
+              {errors.email && (
+                <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                  {errors.email}
+                </span>
+              )}
             </div>
 
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #555)', marginBottom: '6px' }}>Password</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary, #555)',
+                  marginBottom: '6px',
+                }}
+              >
+                Password
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiLock style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light, #999)', fontSize: '16px' }} />
+                <FiLock
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light, #999)',
+                    fontSize: '16px',
+                  }}
+                />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className={`input ${errors.password ? 'input-error' : ''}`}
-                  style={{ width: '100%', padding: '12px 40px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '14px', boxSizing: 'border-box' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 40px 12px 40px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                  }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light, #999)', padding: 0 }}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-light, #999)',
+                    padding: 0,
+                  }}
                 >
                   {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                 </button>
               </div>
-              {errors.password && <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.password}</span>}
+              {errors.password && (
+                <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                  {errors.password}
+                </span>
+              )}
             </div>
 
             <button
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-block btn-lg"
-              style={{ width: '100%', padding: '14px', background: loading ? 'var(--text-light)' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-md)', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: loading ? 'var(--text-light)' : 'var(--primary)',
+                color: 'var(--text-white)',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                marginBottom: '16px',
+              }}
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
 
             <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary, #757575)', margin: 0 }}>
-              <Link to="/" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>Back to Home</Link>
+              <Link to="/" style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                Back to Home
+              </Link>
             </p>
           </form>
         ) : (
           <form onSubmit={handleOTPSubmit} style={{ padding: '32px' }}>
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary, #555)', marginBottom: '6px' }}>Enter OTP</label>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: 'var(--text-secondary, #555)',
+                  marginBottom: '6px',
+                }}
+              >
+                Enter OTP
+              </label>
               <div style={{ position: 'relative' }}>
-                <FiKey style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light, #999)', fontSize: '16px' }} />
+                <FiKey
+                  style={{
+                    position: 'absolute',
+                    left: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-light, #999)',
+                    fontSize: '16px',
+                  }}
+                />
                 <input
                   type="text"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter 6-digit OTP"
                   className="input"
-                  style={{ width: '100%', padding: '12px 12px 12px 40px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', fontSize: '18px', fontWeight: 600, letterSpacing: '8px', boxSizing: 'border-box' }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 12px 12px 40px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '18px',
+                    fontWeight: 600,
+                    letterSpacing: '8px',
+                    boxSizing: 'border-box',
+                  }}
                   maxLength={6}
                   autoFocus
                 />
@@ -171,16 +300,41 @@ const DeliveryPartnerLogin = () => {
               type="submit"
               disabled={loading}
               className="btn btn-primary btn-block btn-lg"
-              style={{ width: '100%', padding: '14px', background: loading ? 'var(--text-light)' : 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-md)', fontSize: '16px', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: '16px' }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: loading ? 'var(--text-light)' : 'var(--primary)',
+                color: 'var(--text-white)',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                marginBottom: '16px',
+              }}
             >
               {loading ? 'Verifying...' : 'Verify & Login'}
             </button>
 
             <button
               type="button"
-              onClick={() => { setStep(1); setOtp(''); }}
+              onClick={() => {
+                setStep(1);
+                setOtp('');
+              }}
               className="btn btn-outline btn-block"
-              style={{ width: '100%', padding: '12px', background: 'transparent', color: 'var(--primary)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-md)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', marginBottom: '16px' }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'transparent',
+                color: 'var(--primary)',
+                border: '1px solid var(--primary)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginBottom: '16px',
+              }}
             >
               Back to Login
             </button>
@@ -194,10 +348,18 @@ const DeliveryPartnerLogin = () => {
                     await deliveryApi.login(email, password);
                     toast.success('OTP resent to your email');
                   } catch (error) {
-                    toastError(error, "Failed to resend OTP");
+                    toastError(error, 'Failed to resend OTP');
                   }
                 }}
-                style={{ color: 'var(--primary)', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '13px' }}
+                style={{
+                  color: 'var(--primary)',
+                  fontWeight: 600,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontSize: '13px',
+                }}
               >
                 Resend OTP
               </button>

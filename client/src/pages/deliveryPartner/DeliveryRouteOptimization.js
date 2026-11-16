@@ -4,7 +4,15 @@ import { deliveryPartner as deliveryApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
-import { FiAlertTriangle, FiCheckCircle, FiClock, FiDollarSign, FiMapPin, FiNavigation, FiTrendingUp } from 'react-icons/fi';
+import {
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiClock,
+  FiDollarSign,
+  FiMapPin,
+  FiNavigation,
+  FiTrendingUp,
+} from 'react-icons/fi';
 import { oneOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 
@@ -21,7 +29,7 @@ const DeliveryRouteOptimization = () => {
         (position) => {
           setPartnerLocation({
             lat: position.coords.latitude,
-            lon: position.coords.longitude
+            lon: position.coords.longitude,
           });
         },
         (error) => {
@@ -45,7 +53,7 @@ const DeliveryRouteOptimization = () => {
       }
     } catch (error) {
       console.error('Error optimizing route:', error);
-      toastError(error, "Failed to optimize route");
+      toastError(error, 'Failed to optimize route');
     } finally {
       setLoading(false);
     }
@@ -80,7 +88,14 @@ const DeliveryRouteOptimization = () => {
         {routeData && (
           <>
             {/* Route Metrics */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px',
+                marginBottom: '24px',
+              }}
+            >
               <div className="card" style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                   <FiTrendingUp size={24} color="var(--primary)" />
@@ -94,7 +109,9 @@ const DeliveryRouteOptimization = () => {
                   <FiClock size={24} color="var(--warning)" />
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Total Time</span>
                 </div>
-                <div style={{ fontSize: '32px', fontWeight: 700 }}>{Math.floor(routeData.metrics.totalTime / 60)}h {routeData.metrics.totalTime % 60}m</div>
+                <div style={{ fontSize: '32px', fontWeight: 700 }}>
+                  {Math.floor(routeData.metrics.totalTime / 60)}h {routeData.metrics.totalTime % 60}m
+                </div>
               </div>
 
               <div className="card" style={{ padding: '20px' }}>
@@ -117,17 +134,25 @@ const DeliveryRouteOptimization = () => {
             {/* Additional Metrics */}
             <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Route Details</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}
+              >
                 <div>
-                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Avg Distance/Delivery</div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Avg Distance/Delivery
+                  </div>
                   <div style={{ fontSize: '20px', fontWeight: 600 }}>{routeData.metrics.avgDistancePerDelivery} km</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Avg Time/Delivery</div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Avg Time/Delivery
+                  </div>
                   <div style={{ fontSize: '20px', fontWeight: 600 }}>{routeData.metrics.avgTimePerDelivery} min</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Est. Fuel Cost</div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                    Est. Fuel Cost
+                  </div>
                   <div style={{ fontSize: '20px', fontWeight: 600 }}>₹{routeData.metrics.estimatedFuelCost}</div>
                 </div>
               </div>
@@ -138,26 +163,57 @@ const DeliveryRouteOptimization = () => {
               <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Optimized Route</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {routeData.optimizedRoute.map((delivery, index) => (
-                  <div key={index} style={{ padding: '16px', border: '2px solid var(--border)', borderRadius: 'var(--radius-md)', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: '-12px', left: '16px', background: 'var(--primary)', color: 'white', padding: '4px 12px', borderRadius: 'var(--radius)', fontSize: '12px', fontWeight: 600 }}>
+                  <div
+                    key={index}
+                    style={{
+                      padding: '16px',
+                      border: '2px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
+                      position: 'relative',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '-12px',
+                        left: '16px',
+                        background: 'var(--primary)',
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: 'var(--radius)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                      }}
+                    >
                       Stop {delivery.sequenceNumber}
                     </div>
                     <div style={{ marginTop: '8px' }}>
-                      <div style={{ fontWeight: 600, marginBottom: '8px' }}>
-                        Order #{delivery.order.orderNumber}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '14px', color: 'var(--text-secondary)' }}>
+                      <div style={{ fontWeight: 600, marginBottom: '8px' }}>Order #{delivery.order.orderNumber}</div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          fontSize: '14px',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <FiMapPin size={16} />
                           <span>{delivery.order.shippingAddress?.name}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <FiMapPin size={16} />
-                          <span>{delivery.order.shippingAddress?.street}, {delivery.order.shippingAddress?.city}</span>
+                          <span>
+                            {delivery.order.shippingAddress?.street}, {delivery.order.shippingAddress?.city}
+                          </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <FiClock size={16} />
-                          <span>Distance: {delivery.distanceFromPrevious.toFixed(2)} km · ETA: {delivery.estimatedTimeFromPrevious} min</span>
+                          <span>
+                            Distance: {delivery.distanceFromPrevious.toFixed(2)} km · ETA:{' '}
+                            {delivery.estimatedTimeFromPrevious} min
+                          </span>
                         </div>
                         {delivery.priority === 1 && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning)' }}>
@@ -178,11 +234,31 @@ const DeliveryRouteOptimization = () => {
                 <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Recommendations</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {routeData.recommendations.map((rec, index) => (
-                    <div key={index} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${rec.priority === 'high' ? 'var(--danger)' : rec.priority === 'medium' ? 'var(--warning)' : 'var(--success)'}` }}>
+                    <div
+                      key={index}
+                      style={{
+                        padding: '12px',
+                        background: 'var(--bg-secondary)',
+                        borderRadius: 'var(--radius-md)',
+                        borderLeft: `4px solid ${rec.priority === 'high' ? 'var(--danger)' : rec.priority === 'medium' ? 'var(--warning)' : 'var(--success)'}`,
+                      }}
+                    >
                       <div style={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                        <FiAlertTriangle size={20} color={rec.priority === 'high' ? 'var(--danger)' : rec.priority === 'medium' ? 'var(--warning)' : 'var(--success)'} style={{ marginTop: '2px' }} />
+                        <FiAlertTriangle
+                          size={20}
+                          color={
+                            rec.priority === 'high'
+                              ? 'var(--danger)'
+                              : rec.priority === 'medium'
+                                ? 'var(--warning)'
+                                : 'var(--success)'
+                          }
+                          style={{ marginTop: '2px' }}
+                        />
                         <div>
-                          <div style={{ fontWeight: 600, marginBottom: '4px', textTransform: 'capitalize' }}>{rec.type}</div>
+                          <div style={{ fontWeight: 600, marginBottom: '4px', textTransform: 'capitalize' }}>
+                            {rec.type}
+                          </div>
                           <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{rec.message}</div>
                         </div>
                       </div>

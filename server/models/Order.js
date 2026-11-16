@@ -8,10 +8,10 @@ const orderItemSchema = new mongoose.Schema({
     lensType: String,
     power: Number,
     cyl: Number,
-    axis: Number
+    axis: Number,
   },
   quantity: { type: Number, required: true, min: 1, max: 10 },
-  price: { type: Number, required: true }
+  price: { type: Number, required: true },
 });
 
 const shippingAddressSchema = new mongoose.Schema({
@@ -25,11 +25,11 @@ const shippingAddressSchema = new mongoose.Schema({
   /* Proximity routing needs a point; without these the distance to every seller
      is unknown and no order can ever be routed by location. */
   coordinates: {
-    type: [Number],   // [longitude, latitude]
-    default: undefined
+    type: [Number], // [longitude, latitude]
+    default: undefined,
   },
   lat: { type: Number },
-  lng: { type: Number }
+  lng: { type: Number },
 });
 
 const prescriptionSchema = new mongoose.Schema({
@@ -43,162 +43,179 @@ const prescriptionSchema = new mongoose.Schema({
   verificationStatus: { type: String, default: '' },
   fileUrl: { type: String },
   type: { type: String },
-  lensPreference: { type: String }
+  lensPreference: { type: String },
 });
 
-const orderSchema = new mongoose.Schema({
-  orderNumber: {
-    type: String,
-    unique: true,
-    required: true
-  },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  seller: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true },
-  items: [orderItemSchema],
-  shippingAddress: { type: shippingAddressSchema, required: true },
-  subtotal: { type: Number, required: true },
-  deliveryCharge: { type: Number, default: 0 },
-  shiprocketDeliveryCharge: { type: Number, default: 0 },
-  platformFee: { type: Number, default: 0 },
-  /*
-   * Cash-on-delivery handling, ₹39 per customer order, stored rather than
-   * derived. Three separate things need to point at the same number: the cash
-   * leg reconciled against a partner's collection, a refund that must not hand
-   * back a charge already spent, and a customer reading their bill. Inferring it
-   * by subtracting the other lines makes all three circular the moment any other
-   * charge changes.
-   *
-   * Only the split that carries the cash leg records it, so the order-level sum
-   * is the ₹39 once and not once per shop.
-   */
-  codFee: { type: Number, default: 0 },
+const orderSchema = new mongoose.Schema(
+  {
+    orderNumber: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    seller: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true },
+    items: [orderItemSchema],
+    shippingAddress: { type: shippingAddressSchema, required: true },
+    subtotal: { type: Number, required: true },
+    deliveryCharge: { type: Number, default: 0 },
+    shiprocketDeliveryCharge: { type: Number, default: 0 },
+    platformFee: { type: Number, default: 0 },
+    /*
+     * Cash-on-delivery handling, ₹39 per customer order, stored rather than
+     * derived. Three separate things need to point at the same number: the cash
+     * leg reconciled against a partner's collection, a refund that must not hand
+     * back a charge already spent, and a customer reading their bill. Inferring it
+     * by subtracting the other lines makes all three circular the moment any other
+     * charge changes.
+     *
+     * Only the split that carries the cash leg records it, so the order-level sum
+     * is the ₹39 once and not once per shop.
+     */
+    codFee: { type: Number, default: 0 },
 
-  /*
-   * What changed hands at the door.
-   *
-   * Completion used to record only `paymentStatus: 'completed'` for a cash
-   * order. That is enough to release a seller's payout and not enough for
-   * anything else: when a partner's cash does not add up at the end of a shift
-   * there is no figure per order to compare against, only a flag saying some
-   * amount was collected somewhere. `cashCollected` is the number the partner
-   * took, recorded when they say they took it, so reconciliation is arithmetic
-   * rather than memory - and it is the order total, ₹39 cash-handling charge
-   * included, because that is what the customer actually handed over.
-   */
-  cashCollected: { type: Number, default: 0 },
-  cashCollectedAt: { type: Date, default: null },
-  cashCollectedBy: { type: String, default: '' },
-  totalAmount: { type: Number, required: true },
-  paymentMethod: {
-    type: String,
-    enum: ['razorpay', 'cod', 'card', 'upi', 'netbanking', 'wallet'],
-    default: 'razorpay'
-  },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
-    default: 'pending'
-  },
-  paymentId: { type: String },
-  orderStatus: {
-    type: String,
-    enum: ['pending', 'confirmed', 'packed', 'picked_up', 'in_transit', 'delivered', 'cancelled', 'return_requested', 'returned'],
-    default: 'pending'
-  },
-  shiprocketOrderId: { type: String },
-  shiprocketTrackingId: { type: String },
-  shiprocketTrackingUrl: { type: String },
-  pickupDate: { type: Date },
-  deliveryDate: { type: Date },
-  cancellationReason: { type: String },
-  returnReason: { type: String },
-  prescription: prescriptionSchema,
-  couponApplied: { type: String },
-  couponDiscount: { type: Number, default: 0 },
-  // Commission tracking
-  commissionPercentage: { type: Number, default: 3 },
-  commissionAmount: { type: Number, default: 0 },
-  sellerPayoutAmount: { type: Number, default: 0 },
-  netAmountToSeller: { type: Number, default: 0 },
-  commissionPaid: { type: Boolean, default: false },
-  commissionPaidAt: { type: Date },
-  commissionRecorded: { type: Boolean, default: false },
-  commissionRecordedAt: { type: Date },
-  // Order assignment tracking
-  assignmentStatus: { 
-    type: String, 
-    enum: ['pending', 'pending_acceptance', 'accepted', 'rejected', 'admin_required', 'assigned'], 
-    default: 'pending' 
-  },
-  assignmentDeadline: { type: Date },
-  assignedAt: { type: Date },
-  acceptedAt: { type: Date },
-  assignmentDistance: { type: Number }, // in km
-  assignmentNotes: { type: String, default: '' },
-  // Delivery execution tracking
-  assignedExecutive: { type: mongoose.Schema.Types.ObjectId, ref: 'Executive', default: null },
-  assignedDeliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner', default: null },
-  deliveryAssignmentMode: { type: String, enum: ['shiprocket', 'self', 'none'], default: 'none' },
-  /*
-   * The recommendation cascade keeps its own state on the order, so "who was
-   * asked, who answered, who is next" survives a restart and can be read by the
-   * partner and the admin from the same record.
-   */
-  partnerQueue: [{
-    partner: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner' },
-    distanceKm: { type: Number },
-    offeredAt: { type: Date, default: null },
-    respondedAt: { type: Date, default: null },
-    response: { type: String, enum: ['pending', 'accepted', 'rejected', 'expired'], default: 'pending' }
-  }],
-  partnerCurrentIndex: { type: Number, default: 0 },
-  partnerDecision: { type: String, enum: ['', 'offering', 'accepted', 'admin_required'], default: '' },
-  partnerQueueDeadline: { type: Date, default: null },
-  pickupLocation: {
-    name: { type: String, default: '' },
-    address: { type: String, default: '' },
-    lat: { type: Number },
-    lng: { type: Number }
-  },
-  deliveryLocation: {
-    address: { type: String, default: '' },
-    lat: { type: Number },
-    lng: { type: Number }
-  },
-  /*
-   * What the partner found at the door. A courier who cannot hand over a parcel
-   * needs somewhere to record it that the operations desk already reads; without
-   * it the run simply sits "in progress" and nobody learns why.
-   */
-  deliveryIssue: {
-    // The allowed reasons are checked where the report is written
-    // (routes/delivery-partner). Listing them as a schema enum here would put an
-    // invalid value on every order created before a partner ever reports
-    // anything, because the subdocument defaults to an empty type.
-    type: { type: String, trim: true, maxlength: 40 },
-    note: { type: String, default: '', maxlength: 400 },
-    reportedAt: { type: Date },
-    reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner' },
-    resolvedAt: { type: Date },
-    resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-  },
-  deliveryJourney: [{
-    status: { type: String },
-    note: { type: String, default: '' },
-    at: { type: Date, default: Date.now }
-  }],
-  deliveryDistanceKm: { type: Number, default: 0 },
-  /* Rs. 59 per product line when the platform delivers the order itself, added
+    /*
+     * What changed hands at the door.
+     *
+     * Completion used to record only `paymentStatus: 'completed'` for a cash
+     * order. That is enough to release a seller's payout and not enough for
+     * anything else: when a partner's cash does not add up at the end of a shift
+     * there is no figure per order to compare against, only a flag saying some
+     * amount was collected somewhere. `cashCollected` is the number the partner
+     * took, recorded when they say they took it, so reconciliation is arithmetic
+     * rather than memory - and it is the order total, ₹39 cash-handling charge
+     * included, because that is what the customer actually handed over.
+     */
+    cashCollected: { type: Number, default: 0 },
+    cashCollectedAt: { type: Date, default: null },
+    cashCollectedBy: { type: String, default: '' },
+    totalAmount: { type: Number, required: true },
+    paymentMethod: {
+      type: String,
+      enum: ['razorpay', 'cod', 'card', 'upi', 'netbanking', 'wallet'],
+      default: 'razorpay',
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'completed', 'failed', 'refunded'],
+      default: 'pending',
+    },
+    paymentId: { type: String },
+    orderStatus: {
+      type: String,
+      enum: [
+        'pending',
+        'confirmed',
+        'packed',
+        'picked_up',
+        'in_transit',
+        'delivered',
+        'cancelled',
+        'return_requested',
+        'returned',
+      ],
+      default: 'pending',
+    },
+    shiprocketOrderId: { type: String },
+    shiprocketTrackingId: { type: String },
+    shiprocketTrackingUrl: { type: String },
+    pickupDate: { type: Date },
+    deliveryDate: { type: Date },
+    cancellationReason: { type: String },
+    returnReason: { type: String },
+    prescription: prescriptionSchema,
+    couponApplied: { type: String },
+    couponDiscount: { type: Number, default: 0 },
+    // Commission tracking
+    commissionPercentage: { type: Number, default: 3 },
+    commissionAmount: { type: Number, default: 0 },
+    sellerPayoutAmount: { type: Number, default: 0 },
+    netAmountToSeller: { type: Number, default: 0 },
+    commissionPaid: { type: Boolean, default: false },
+    commissionPaidAt: { type: Date },
+    commissionRecorded: { type: Boolean, default: false },
+    commissionRecordedAt: { type: Date },
+    // Order assignment tracking
+    assignmentStatus: {
+      type: String,
+      enum: ['pending', 'pending_acceptance', 'accepted', 'rejected', 'admin_required', 'assigned'],
+      default: 'pending',
+    },
+    assignmentDeadline: { type: Date },
+    assignedAt: { type: Date },
+    acceptedAt: { type: Date },
+    assignmentDistance: { type: Number }, // in km
+    assignmentNotes: { type: String, default: '' },
+    // Delivery execution tracking
+    assignedExecutive: { type: mongoose.Schema.Types.ObjectId, ref: 'Executive', default: null },
+    assignedDeliveryPartner: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner', default: null },
+    deliveryAssignmentMode: { type: String, enum: ['shiprocket', 'self', 'none'], default: 'none' },
+    /*
+     * The recommendation cascade keeps its own state on the order, so "who was
+     * asked, who answered, who is next" survives a restart and can be read by the
+     * partner and the admin from the same record.
+     */
+    partnerQueue: [
+      {
+        partner: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner' },
+        distanceKm: { type: Number },
+        offeredAt: { type: Date, default: null },
+        respondedAt: { type: Date, default: null },
+        response: { type: String, enum: ['pending', 'accepted', 'rejected', 'expired'], default: 'pending' },
+      },
+    ],
+    partnerCurrentIndex: { type: Number, default: 0 },
+    partnerDecision: { type: String, enum: ['', 'offering', 'accepted', 'admin_required'], default: '' },
+    partnerQueueDeadline: { type: Date, default: null },
+    pickupLocation: {
+      name: { type: String, default: '' },
+      address: { type: String, default: '' },
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+    deliveryLocation: {
+      address: { type: String, default: '' },
+      lat: { type: Number },
+      lng: { type: Number },
+    },
+    /*
+     * What the partner found at the door. A courier who cannot hand over a parcel
+     * needs somewhere to record it that the operations desk already reads; without
+     * it the run simply sits "in progress" and nobody learns why.
+     */
+    deliveryIssue: {
+      // The allowed reasons are checked where the report is written
+      // (routes/delivery-partner). Listing them as a schema enum here would put an
+      // invalid value on every order created before a partner ever reports
+      // anything, because the subdocument defaults to an empty type.
+      type: { type: String, trim: true, maxlength: 40 },
+      note: { type: String, default: '', maxlength: 400 },
+      reportedAt: { type: Date },
+      reportedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryPartner' },
+      resolvedAt: { type: Date },
+      resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    },
+    deliveryJourney: [
+      {
+        status: { type: String },
+        note: { type: String, default: '' },
+        at: { type: Date, default: Date.now },
+      },
+    ],
+    deliveryDistanceKm: { type: Number, default: 0 },
+    /* Rs. 59 per product line when the platform delivers the order itself, added
      on top of miscellaneous charges. Shiprocket-fulfilled orders are instead
      billed to the seller at the carrier's own rate. */
-  deliveryFee: { type: Number, default: 0 },
-  selfDeliveryCharge: { type: Number, default: 0 },
-  // Payout tracking
-  payoutProcessed: { type: Boolean, default: false },
-  deliveredAt: { type: Date }
-}, {
-  timestamps: true
-});
+    deliveryFee: { type: Number, default: 0 },
+    selfDeliveryCharge: { type: Number, default: 0 },
+    // Payout tracking
+    payoutProcessed: { type: Boolean, default: false },
+    deliveredAt: { type: Date },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 // Human-readable, time-ordered reference. The random suffix keeps it unique
 // when two orders land in the same millisecond.
@@ -207,7 +224,7 @@ const generateOrderNumber = () => {
   const stamp = [
     String(d.getFullYear()).slice(2),
     String(d.getMonth() + 1).padStart(2, '0'),
-    String(d.getDate()).padStart(2, '0')
+    String(d.getDate()).padStart(2, '0'),
   ].join('');
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no look-alike glyphs
   let suffix = '';
@@ -216,7 +233,7 @@ const generateOrderNumber = () => {
 };
 
 // Set the reference before validation runs, so `required` can never trip on it.
-orderSchema.pre('validate', function(next) {
+orderSchema.pre('validate', function (next) {
   if (!this.orderNumber) {
     this.orderNumber = generateOrderNumber();
   }

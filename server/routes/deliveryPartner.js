@@ -14,7 +14,7 @@ import {
   updatePartnerLocation,
   completeDelivery,
   getPartnerDashboard,
-  getAllDeliveryPartners
+  getAllDeliveryPartners,
 } from '../services/deliveryPartner.js';
 
 const router = express.Router();
@@ -37,15 +37,23 @@ const generateDeliveryPartnerToken = (partnerId) => {
 router.post('/register', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const {
-      name, email, password, phone, vehicleType, vehicleNumber,
-      licenseNumber, aadharNumber, panNumber, bankDetails
+      name,
+      email,
+      password,
+      phone,
+      vehicleType,
+      vehicleNumber,
+      licenseNumber,
+      aadharNumber,
+      panNumber,
+      bankDetails,
     } = req.body;
 
     const existingPartner = await DeliveryPartner.findOne({ email });
     if (existingPartner) {
       return res.status(400).json({
         success: false,
-        message: 'Email already registered'
+        message: 'Email already registered',
       });
     }
 
@@ -59,7 +67,7 @@ router.post('/register', verifyToken, verifyAdmin, async (req, res) => {
       licenseNumber,
       aadharNumber,
       panNumber,
-      bankDetails
+      bankDetails,
     });
 
     await partner.save();
@@ -70,14 +78,14 @@ router.post('/register', verifyToken, verifyAdmin, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Delivery partner registered successfully',
-      partner: partner.toJSON()
+      partner: partner.toJSON(),
     });
   } catch (error) {
     console.error('Error registering delivery partner:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -94,21 +102,21 @@ router.post('/login', async (req, res) => {
     if (!partner) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid email or password',
       });
     }
 
     if (!partner.isActive) {
       return res.status(403).json({
         success: false,
-        message: 'Account has been deactivated'
+        message: 'Account has been deactivated',
       });
     }
 
     if (partner.isBanned) {
       return res.status(403).json({
         success: false,
-        message: 'Account has been banned'
+        message: 'Account has been banned',
       });
     }
 
@@ -119,32 +127,32 @@ router.post('/login', async (req, res) => {
         success: false,
         message: `Account is locked. Please try again in ${remainingTime} minutes.`,
         locked: true,
-        lockUntil: partner.lockUntil
+        lockUntil: partner.lockUntil,
       });
     }
 
     const isMatch = await partner.comparePassword(password);
     if (!isMatch) {
       partner.failedLoginAttempts = (partner.failedLoginAttempts || 0) + 1;
-      
+
       if (partner.failedLoginAttempts >= 3) {
         partner.lockUntil = new Date(Date.now() + 3 * 60 * 1000);
         partner.failedLoginAttempts = 0;
         await partner.save();
-        
+
         return res.status(423).json({
           success: false,
           message: 'Too many failed attempts. Account locked for 3 minutes.',
           locked: true,
-          lockUntil: partner.lockUntil
+          lockUntil: partner.lockUntil,
         });
       }
-      
+
       await partner.save();
       const remainingAttempts = 3 - partner.failedLoginAttempts;
       return res.status(401).json({
         success: false,
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`
+        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
       });
     }
 
@@ -158,7 +166,7 @@ router.post('/login', async (req, res) => {
     const testPartnerEmails = [
       'suresh.partner@optikart.com',
       'anjali.partner@optikart.com',
-      'ramesh.partner@optikart.com'
+      'ramesh.partner@optikart.com',
     ];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
@@ -175,13 +183,13 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        partner: partner.toJSON()
+        partner: partner.toJSON(),
       });
     } else {
-      const loginOtp = otpGenerator.generate(6, { 
-        upperCaseAlphabets: false, 
-        specialChars: false, 
-        lowerCaseAlphabets: false 
+      const loginOtp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
       });
 
       partner.loginOtp = loginOtp;
@@ -194,7 +202,7 @@ router.post('/login', async (req, res) => {
         success: true,
         requiresOTP: true,
         message: 'Login OTP sent to your email.',
-        partnerId: partner._id
+        partnerId: partner._id,
       });
     }
   } catch (error) {
@@ -202,7 +210,7 @@ router.post('/login', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error during login.',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -218,7 +226,7 @@ router.post('/verify-login-otp', async (req, res) => {
     if (!partnerId || !otp) {
       return res.status(400).json({
         success: false,
-        message: 'Partner ID and OTP are required'
+        message: 'Partner ID and OTP are required',
       });
     }
 
@@ -226,21 +234,21 @@ router.post('/verify-login-otp', async (req, res) => {
     if (!partner) {
       return res.status(404).json({
         success: false,
-        message: 'Partner not found'
+        message: 'Partner not found',
       });
     }
 
     if (partner.loginOtp !== otp) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid OTP'
+        message: 'Invalid OTP',
       });
     }
 
     if (new Date() > partner.loginOtpExpiry) {
       return res.status(400).json({
         success: false,
-        message: 'OTP has expired'
+        message: 'OTP has expired',
       });
     }
 
@@ -255,14 +263,14 @@ router.post('/verify-login-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      partner: partner.toJSON()
+      partner: partner.toJSON(),
     });
   } catch (error) {
     console.error('Verify delivery partner login OTP error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error.',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -280,12 +288,12 @@ router.get('/me', verifyDeliveryPartner, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -293,7 +301,7 @@ router.get('/me', verifyDeliveryPartner, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -310,7 +318,7 @@ router.post('/location', verifyDeliveryPartner, async (req, res) => {
     if (!latitude || !longitude) {
       return res.status(400).json({
         success: false,
-        message: 'Latitude and longitude are required'
+        message: 'Latitude and longitude are required',
       });
     }
 
@@ -319,12 +327,12 @@ router.post('/location', verifyDeliveryPartner, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: 'Location updated'
+        message: 'Location updated',
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -332,7 +340,7 @@ router.post('/location', verifyDeliveryPartner, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -352,13 +360,13 @@ router.post('/complete/:orderId', verifyDeliveryPartner, async (req, res) => {
         success: true,
         message: 'Delivery completed',
         data: {
-          earnings: result.earnings
-        }
+          earnings: result.earnings,
+        },
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -366,7 +374,7 @@ router.post('/complete/:orderId', verifyDeliveryPartner, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -383,7 +391,7 @@ router.post('/withdraw', verifyDeliveryPartner, async (req, res) => {
     if (!amount) {
       return res.status(400).json({
         success: false,
-        message: 'Amount is required'
+        message: 'Amount is required',
       });
     }
 
@@ -401,12 +409,12 @@ router.post('/withdraw', verifyDeliveryPartner, async (req, res) => {
       res.json({
         success: true,
         message: result.data.message,
-        data: result.data
+        data: result.data,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -414,7 +422,7 @@ router.post('/withdraw', verifyDeliveryPartner, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -437,12 +445,12 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.partners
+        data: result.partners,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -450,7 +458,7 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -470,7 +478,7 @@ router.put('/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
         isBanned: isBanned !== undefined ? isBanned : undefined,
         banReason: banReason || '',
         bannedBy: req.user.id,
-        bannedAt: isBanned ? new Date() : null
+        bannedAt: isBanned ? new Date() : null,
       },
       { new: true }
     ).select('-password');
@@ -478,21 +486,21 @@ router.put('/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
     if (!partner) {
       return res.status(404).json({
         success: false,
-        message: 'Partner not found'
+        message: 'Partner not found',
       });
     }
 
     res.json({
       success: true,
       message: 'Partner ban status updated',
-      partner
+      partner,
     });
   } catch (error) {
     console.error('Error banning partner:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -515,7 +523,7 @@ router.put('/availability', verifyDeliveryPartner, async (req, res) => {
     res.json({
       success: true,
       isAvailable,
-      message: isAvailable ? 'You are now online for deliveries.' : 'You are offline.'
+      message: isAvailable ? 'You are now online for deliveries.' : 'You are offline.',
     });
   } catch (error) {
     console.error('Partner availability error:', error);
@@ -528,7 +536,7 @@ router.get('/recommendations/:orderId', verifyToken, verifyAdmin, async (req, re
   try {
     const { recommendPartners } = await import('../services/partnerDispatch.js');
     const result = await recommendPartners(req.params.orderId, {
-      radiusKm: Number(req.query.radiusKm) || 12
+      radiusKm: Number(req.query.radiusKm) || 12,
     });
     res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
@@ -555,9 +563,15 @@ router.post('/queue/offer/:orderId', verifyToken, verifyAdmin, async (req, res) 
  */
 router.get('/offers', verifyDeliveryPartner, async (req, res) => {
   try {
-    const mine = await Order.find({ 'partnerQueue.partner': req.partner._id, partnerDecision: 'offering', assignedDeliveryPartner: null })
-      .sort({ partnerQueueDeadline: 1 }).limit(20)
-      .populate('seller', 'storeName phone address city location').lean();
+    const mine = await Order.find({
+      'partnerQueue.partner': req.partner._id,
+      partnerDecision: 'offering',
+      assignedDeliveryPartner: null,
+    })
+      .sort({ partnerQueueDeadline: 1 })
+      .limit(20)
+      .populate('seller', 'storeName phone address city location')
+      .lean();
     const now = Date.now();
     const offers = mine
       .map((o) => {
@@ -570,11 +584,13 @@ router.get('/offers', verifyDeliveryPartner, async (req, res) => {
           orderId: String(o._id),
           orderNumber: o.orderNumber,
           pickup: o.pickupLocation?.address || o.seller?.address?.street || o.seller?.storeName || '',
-          drop: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+          drop: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode]
+            .filter(Boolean)
+            .join(', '),
           distanceKm: entry.distanceKm,
           earning: o.deliveryFee || 0,
           deadline: o.partnerQueueDeadline,
-          offeredAt: entry.offeredAt
+          offeredAt: entry.offeredAt,
         };
       })
       .filter(Boolean);
@@ -630,13 +646,15 @@ const ISSUE_LABELS = {
   wrong_address: 'address did not match',
   refused: 'parcel refused at the door',
   damaged: 'parcel damaged',
-  other: 'issue reported'
+  other: 'issue reported',
 };
 
 router.post('/report/:orderId', verifyDeliveryPartner, async (req, res) => {
   try {
     const type = String(req.body?.type || '');
-    const note = String(req.body?.note || '').trim().slice(0, 400);
+    const note = String(req.body?.note || '')
+      .trim()
+      .slice(0, 400);
     if (!ISSUE_TYPES.includes(type)) {
       return res.status(400).json({ success: false, message: 'Pick one of: ' + ISSUE_TYPES.join(', ') });
     }
@@ -659,13 +677,13 @@ router.post('/report/:orderId', verifyDeliveryPartner, async (req, res) => {
       reportedAt: new Date(),
       reportedBy: req.partner._id,
       resolvedAt: null,
-      resolvedBy: null
+      resolvedBy: null,
     };
     order.deliveryJourney = order.deliveryJourney || [];
     order.deliveryJourney.push({
       status: order.orderStatus,
       note: `Partner reported: ${ISSUE_LABELS[type]}${note ? ' - ' + note : ''}`,
-      at: new Date()
+      at: new Date(),
     });
     await order.save();
 
@@ -681,9 +699,10 @@ router.get('/unassigned', verifyToken, verifyAdmin, async (req, res) => {
     const { recommendPartners } = await import('../services/partnerDispatch.js');
     const orders = await Order.find({
       orderStatus: { $in: ['confirmed', 'packed', 'picked_up', 'in_transit'] },
-      assignedDeliveryPartner: null
+      assignedDeliveryPartner: null,
     })
-      .sort({ updatedAt: -1 }).limit(40)
+      .sort({ updatedAt: -1 })
+      .limit(40)
       .populate('user', 'name phone')
       .populate('seller', 'storeName phone address city location')
       .lean();
@@ -700,10 +719,16 @@ router.get('/unassigned', verifyToken, verifyAdmin, async (req, res) => {
         storeUnknown: !!rec.storeLocationUnknown,
         leadKm: rec.leadKm,
         customer: o.user?.name || 'Customer',
-        drop: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+        drop: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode]
+          .filter(Boolean)
+          .join(', '),
         candidates: (rec.recommendations || []).map((r) => ({
-          partnerId: String(r.partnerId), name: r.name, phone: r.phone, distanceKm: r.distance, earning: r.earning
-        }))
+          partnerId: String(r.partnerId),
+          name: r.name,
+          phone: r.phone,
+          distanceKm: r.distance,
+          earning: r.earning,
+        })),
       });
     }
     res.json({ success: true, orders: rows, count: rows.length });
@@ -744,7 +769,7 @@ router.post('/assign', verifyToken, verifyAdmin, async (req, res) => {
         success: false,
         distanceUnknown: true,
         maxKm: MAX_DELIVERY_LEG_KM,
-        message: `The delivery distance for this order cannot be measured (no usable store or drop position), so it cannot be handed to a delivery partner within the ${MAX_DELIVERY_LEG_KM} km limit. Set the store location, or send it by courier.`
+        message: `The delivery distance for this order cannot be measured (no usable store or drop position), so it cannot be handed to a delivery partner within the ${MAX_DELIVERY_LEG_KM} km limit. Set the store location, or send it by courier.`,
       });
     }
     if (distance > PARTNER_MAX_LEAD_KM) {
@@ -753,7 +778,7 @@ router.post('/assign', verifyToken, verifyAdmin, async (req, res) => {
         tooFar: true,
         distanceKm: Math.round(distance * 100) / 100,
         maxKm: PARTNER_MAX_LEAD_KM,
-        message: `${Math.round(distance)} km is beyond a partner delivery (${PARTNER_MAX_LEAD_KM} km). Send this one by courier instead.`
+        message: `${Math.round(distance)} km is beyond a partner delivery (${PARTNER_MAX_LEAD_KM} km). Send this one by courier instead.`,
       });
     }
 
@@ -764,7 +789,8 @@ router.post('/assign', verifyToken, verifyAdmin, async (req, res) => {
     // it "offering" would keep it in the other partners' inboxes as an
     // assignable run.
     const order = await Order.findById(orderId);
-    if (order && !order.assignedDeliveryPartner) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (order && !order.assignedDeliveryPartner)
+      return res.status(404).json({ success: false, message: 'Order not found.' });
     if (order) {
       order.partnerDecision = 'accepted';
       order.partnerQueueDeadline = null;
@@ -790,10 +816,12 @@ router.post('/assign', verifyToken, verifyAdmin, async (req, res) => {
         message: `Order ${order.orderNumber || 'assigned to you'} is yours${order.shippingAddress?.city ? ` - delivery to ${order.shippingAddress.city}` : ''}.`,
         type: 'delivery',
         data: { orderId: String(orderId), orderNumber: order.orderNumber },
-        io: req.app.get('io')
+        io: req.app.get('io'),
       });
     } catch (assignNoteErr) {
-      console.error(JSON.stringify({ event: 'assign_notify_failed', message: String(assignNoteErr.message).slice(0, 140) }));
+      console.error(
+        JSON.stringify({ event: 'assign_notify_failed', message: String(assignNoteErr.message).slice(0, 140) })
+      );
     }
 
     res.json({ success: true, message: 'Partner assigned.' });
@@ -809,7 +837,7 @@ router.get('/working', verifyToken, verifyAdmin, async (req, res) => {
 
     const orderFilter = {
       assignedDeliveryPartner: { $ne: null },
-      orderStatus: { $in: ['picked_up', 'in_transit', 'confirmed', 'packed'] }
+      orderStatus: { $in: ['picked_up', 'in_transit', 'confirmed', 'packed'] },
     };
     if (partnerId) orderFilter.assignedDeliveryPartner = partnerId;
 
@@ -826,34 +854,49 @@ router.get('/working', verifyToken, verifyAdmin, async (req, res) => {
       orderNumber: o.orderNumber || o.orderId,
       orderStatus: o.orderStatus,
       partner: o.assignedDeliveryPartner,
-      seller: o.seller ? {
-        _id: o.seller._id,
-        storeName: o.seller.storeName,
-        phone: o.seller.phone,
-        city: o.seller.city
-      } : null,
-      customer: o.user ? {
-        _id: o.user._id,
-        name: o.user.name,
-        phone: o.user.phone,
-        email: o.user.email
-      } : null,
-      destination: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode].filter(Boolean).join(', '),
+      seller: o.seller
+        ? {
+            _id: o.seller._id,
+            storeName: o.seller.storeName,
+            phone: o.seller.phone,
+            city: o.seller.city,
+          }
+        : null,
+      customer: o.user
+        ? {
+            _id: o.user._id,
+            name: o.user.name,
+            phone: o.user.phone,
+            email: o.user.email,
+          }
+        : null,
+      destination: [o.shippingAddress?.street, o.shippingAddress?.city, o.shippingAddress?.pincode]
+        .filter(Boolean)
+        .join(', '),
       pickupLocation: o.pickupLocation || null,
       deliveryLocation: o.deliveryLocation || null,
       distanceKm: o.deliveryDistanceKm || 0,
       earnings: o.deliveryFee || 0,
       assignmentMode: o.deliveryAssignmentMode || 'none',
-      updatedAt: o.updatedAt
+      updatedAt: o.updatedAt,
     }));
 
     if (status) rows = rows.filter((r) => r.orderStatus === status);
     if (search) {
       const q = String(search).toLowerCase();
       rows = rows.filter((r) =>
-        [r.orderNumber, r.partner?.name, r.partner?.phone, r.seller?.storeName,
-         r.customer?.name, r.customer?.phone, r.destination]
-          .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
+        [
+          r.orderNumber,
+          r.partner?.name,
+          r.partner?.phone,
+          r.seller?.storeName,
+          r.customer?.name,
+          r.customer?.phone,
+          r.destination,
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q))
+      );
     }
 
     const byPartner = {};
@@ -871,8 +914,8 @@ router.get('/working', verifyToken, verifyAdmin, async (req, res) => {
       deliveries: rows,
       partners: Object.values(byPartner).map((p) => ({
         ...p,
-        expectedEarnings: Math.round(p.expectedEarnings * 100) / 100
-      }))
+        expectedEarnings: Math.round(p.expectedEarnings * 100) / 100,
+      })),
     });
   } catch (error) {
     console.error('Working partners error:', error);
@@ -883,12 +926,12 @@ router.get('/working', verifyToken, verifyAdmin, async (req, res) => {
 export default router;
 
 // Payment endpoints
-import { 
-  calculateDeliveryFee, 
-  getDeliveryPartnerEarnings, 
+import {
+  calculateDeliveryFee,
+  getDeliveryPartnerEarnings,
   processWithdrawal as processPaymentWithdrawal,
   pendingPartnerWithdrawals,
-  settlePartnerWithdrawal
+  settlePartnerWithdrawal,
 } from '../services/deliveryPartnerPayment.js';
 
 router.get('/payment/calculate', verifyDeliveryPartner, async (req, res) => {
@@ -965,7 +1008,7 @@ router.post('/payouts/:withdrawalId/settle', verifyToken, verifyAdmin, async (re
       withdrawalId: req.params.withdrawalId,
       reference,
       note,
-      actor: req.user.name || req.user.email || 'admin'
+      actor: req.user.name || req.user.email || 'admin',
     });
     res.status(result.success ? 200 : 400).json(result);
   } catch (error) {

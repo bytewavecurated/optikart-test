@@ -12,7 +12,7 @@ import { schedulePickup } from './shiprocket.js';
 export const createReturnRequest = async (orderId, userId, items, reason) => {
   try {
     const order = await Order.findById(orderId).populate('seller');
-    
+
     if (!order) {
       throw new Error('Order not found');
     }
@@ -28,7 +28,7 @@ export const createReturnRequest = async (orderId, userId, items, reason) => {
 
     const deliveredDate = new Date(order.deliveredAt || order.updatedAt);
     const daysSinceDelivery = (Date.now() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24);
-    
+
     if (daysSinceDelivery > 7) {
       throw new Error('Return window has expired (7 days from delivery)');
     }
@@ -38,8 +38,8 @@ export const createReturnRequest = async (orderId, userId, items, reason) => {
     const returnItems = [];
 
     for (const item of items) {
-      const orderItem = order.items.find(i => i.product.toString() === item.productId);
-      
+      const orderItem = order.items.find((i) => i.product.toString() === item.productId);
+
       if (!orderItem) {
         throw new Error(`Product ${item.productId} not found in order`);
       }
@@ -56,7 +56,7 @@ export const createReturnRequest = async (orderId, userId, items, reason) => {
         quantity: item.quantity,
         reason: reason || item.reason || 'Customer request',
         description: item.description || '',
-        images: item.images || []
+        images: item.images || [],
       });
     }
 
@@ -67,29 +67,29 @@ export const createReturnRequest = async (orderId, userId, items, reason) => {
       seller: order.seller._id,
       items: returnItems,
       refundAmount,
-      status: 'requested'
+      status: 'requested',
     });
 
     // Send confirmation email
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(userId);
-    
+
     await sendReturnConfirmation(user.email, {
       returnId: returnRequest.returnId,
       orderNumber: order.orderNumber,
       reason: reason || 'Customer request',
-      status: returnRequest.status
+      status: returnRequest.status,
     });
 
     return {
       success: true,
-      returnRequest
+      returnRequest,
     };
   } catch (error) {
     console.error('Error creating return request:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -99,9 +99,7 @@ export const createReturnRequest = async (orderId, userId, items, reason) => {
  */
 export const approveReturnRequest = async (returnId, adminNotes = '') => {
   try {
-    const returnRequest = await ReturnRequest.findById(returnId)
-      .populate('order')
-      .populate('user');
+    const returnRequest = await ReturnRequest.findById(returnId).populate('order').populate('user');
 
     if (!returnRequest) {
       throw new Error('Return request not found');
@@ -118,7 +116,7 @@ export const approveReturnRequest = async (returnId, adminNotes = '') => {
 
     // Generate return shipping label
     const shippingLabel = await generateReturnShippingLabel(returnRequest);
-    
+
     if (shippingLabel.success) {
       returnRequest.returnShippingLabel = shippingLabel.label;
       await returnRequest.save();
@@ -130,13 +128,13 @@ export const approveReturnRequest = async (returnId, adminNotes = '') => {
     return {
       success: true,
       returnRequest,
-      shippingLabel: shippingLabel.label
+      shippingLabel: shippingLabel.label,
     };
   } catch (error) {
     console.error('Error approving return request:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -166,13 +164,13 @@ export const rejectReturnRequest = async (returnId, reason) => {
 
     return {
       success: true,
-      returnRequest
+      returnRequest,
     };
   } catch (error) {
     console.error('Error rejecting return request:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -199,9 +197,9 @@ export const generateReturnShippingLabel = async (returnRequest) => {
         address: order.shippingAddress.address,
         city: order.shippingAddress.city,
         state: order.shippingAddress.state,
-        pincode: order.shippingAddress.pincode
+        pincode: order.shippingAddress.pincode,
       },
-      weight: 0.5 // Default weight for eyewear
+      weight: 0.5, // Default weight for eyewear
     });
 
     if (pickupResult.success) {
@@ -210,8 +208,8 @@ export const generateReturnShippingLabel = async (returnRequest) => {
         label: {
           labelUrl: pickupResult.labelUrl,
           trackingNumber: pickupResult.awbCode,
-          courier: pickupResult.courierName
-        }
+          courier: pickupResult.courierName,
+        },
       };
     } else {
       throw new Error('Failed to generate shipping label');
@@ -220,7 +218,7 @@ export const generateReturnShippingLabel = async (returnRequest) => {
     console.error('Error generating return shipping label:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -242,13 +240,13 @@ export const markAsPickedUp = async (returnId) => {
 
     return {
       success: true,
-      returnRequest
+      returnRequest,
     };
   } catch (error) {
     console.error('Error marking return as picked up:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -270,13 +268,13 @@ export const markAsReceived = async (returnId) => {
 
     return {
       success: true,
-      returnRequest
+      returnRequest,
     };
   } catch (error) {
     console.error('Error marking return as received:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -286,8 +284,7 @@ export const markAsReceived = async (returnId) => {
  */
 export const processReturnRefund = async (returnId) => {
   try {
-    const returnRequest = await ReturnRequest.findById(returnId)
-      .populate('order');
+    const returnRequest = await ReturnRequest.findById(returnId).populate('order');
 
     if (!returnRequest) {
       throw new Error('Return request not found');
@@ -306,8 +303,8 @@ export const processReturnRefund = async (returnId) => {
       speed: 'optimum',
       notes: {
         returnId: returnRequest.returnId,
-        orderId: order.orderNumber
-      }
+        orderId: order.orderNumber,
+      },
     });
 
     if (refundResult.success) {
@@ -320,25 +317,25 @@ export const processReturnRefund = async (returnId) => {
       // Return units to the exact colour/size they shipped from, so per-variant
       // stock stays truthful after a refunded return.
       await restoreStockForOrder(await Order.findById(returnRequest.order), null, {
-        reason: `refund-${returnRequest.returnId}`
+        reason: `refund-${returnRequest.returnId}`,
       });
 
       return {
         success: true,
         returnRequest,
-        refundId: refundResult.refundId
+        refundId: refundResult.refundId,
       };
     } else {
       returnRequest.refundStatus = 'failed';
       await returnRequest.save();
-      
+
       throw new Error('Refund processing failed');
     }
   } catch (error) {
     console.error('Error processing return refund:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -355,13 +352,13 @@ export const getUserReturns = async (userId) => {
 
     return {
       success: true,
-      returns
+      returns,
     };
   } catch (error) {
     console.error('Error getting user returns:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -379,13 +376,13 @@ export const getSellerReturns = async (sellerId) => {
 
     return {
       success: true,
-      returns
+      returns,
     };
   } catch (error) {
     console.error('Error getting seller returns:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -404,13 +401,13 @@ export const getAllReturns = async (filters = {}) => {
 
     return {
       success: true,
-      returns
+      returns,
     };
   } catch (error) {
     console.error('Error getting all returns:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -425,5 +422,5 @@ export default {
   processReturnRefund,
   getUserReturns,
   getSellerReturns,
-  getAllReturns
+  getAllReturns,
 };

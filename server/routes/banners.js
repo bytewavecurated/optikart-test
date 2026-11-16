@@ -9,7 +9,7 @@ const router = express.Router();
 const buildImages = (url) => ({
   desktop: { url: url || '', aspectRatio: '1:1' },
   tablet: { url: url || '', aspectRatio: '16:9' },
-  mobile: { url: url || '', aspectRatio: '9:16' }
+  mobile: { url: url || '', aspectRatio: '9:16' },
 });
 
 // Public: active banners for the home page carousel
@@ -48,8 +48,21 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
 // Admin: create banner. Image is uploaded from device (no external links).
 router.post('/', verifyToken, verifyAdmin, uploadSingleImage, async (req, res) => {
   try {
-    const { title, subtitle, linkUrl, link, order, isActive, description,
-            discountType, discountValue, minPrice, maxPrice, startDate, endDate } = req.body;
+    const {
+      title,
+      subtitle,
+      linkUrl,
+      link,
+      order,
+      isActive,
+      description,
+      discountType,
+      discountValue,
+      minPrice,
+      maxPrice,
+      startDate,
+      endDate,
+    } = req.body;
 
     if (!title || !String(title).trim()) {
       return res.status(400).json({ success: false, message: 'Title is required.' });
@@ -72,11 +85,11 @@ router.post('/', verifyToken, verifyAdmin, uploadSingleImage, async (req, res) =
         minPrice: Number(minPrice || 0),
         maxPrice: Number(maxPrice || 0),
         startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null
+        endDate: endDate ? new Date(endDate) : null,
       },
       order: Number(order || 0),
       isActive: isActive === undefined || isActive === true || isActive === 'true',
-      createdBy: req.user.id
+      createdBy: req.user.id,
     });
 
     res.status(201).json({ success: true, message: 'Banner created successfully', banner });
@@ -88,8 +101,21 @@ router.post('/', verifyToken, verifyAdmin, uploadSingleImage, async (req, res) =
 // Admin: update banner. Image replacement is optional.
 router.put('/:id', verifyToken, verifyAdmin, uploadSingleImage, async (req, res) => {
   try {
-    const { title, subtitle, linkUrl, link, order, isActive, description,
-            discountType, discountValue, minPrice, maxPrice, startDate, endDate } = req.body;
+    const {
+      title,
+      subtitle,
+      linkUrl,
+      link,
+      order,
+      isActive,
+      description,
+      discountType,
+      discountValue,
+      minPrice,
+      maxPrice,
+      startDate,
+      endDate,
+    } = req.body;
 
     const banner = await Banner.findById(req.params.id);
     if (!banner) {
@@ -102,7 +128,7 @@ router.put('/:id', verifyToken, verifyAdmin, uploadSingleImage, async (req, res)
     banner.title = title || banner.title;
     banner.subtitle = subtitle ?? banner.subtitle;
     banner.images = buildImages(nextUrl);
-    banner.linkUrl = (linkUrl ?? link) ?? banner.linkUrl;
+    banner.linkUrl = linkUrl ?? link ?? banner.linkUrl;
     banner.description = description ?? banner.description;
     banner.discount = {
       kind: discountType || banner.discount?.kind || 'none',
@@ -110,7 +136,7 @@ router.put('/:id', verifyToken, verifyAdmin, uploadSingleImage, async (req, res)
       minPrice: Number(minPrice ?? banner.discount?.minPrice ?? 0),
       maxPrice: Number(maxPrice ?? banner.discount?.maxPrice ?? 0),
       startDate: startDate ? new Date(startDate) : banner.discount?.startDate || null,
-      endDate: endDate ? new Date(endDate) : banner.discount?.endDate || null
+      endDate: endDate ? new Date(endDate) : banner.discount?.endDate || null,
     };
     banner.order = Number(order ?? banner.order ?? 0);
     if (isActive !== undefined) {

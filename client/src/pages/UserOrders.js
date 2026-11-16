@@ -9,7 +9,17 @@ import { listOf } from '../services/apiResponse.js';
 import { FILTER_STATUSES } from '../utils/orderStatuses.js';
 import BackButton from '../components/BackButton';
 
-const STATUS_COLORS = { pending: 'var(--warning)', confirmed: 'var(--brand)', packed: 'var(--brand)', picked_up: 'var(--brand)', in_transit: 'var(--brand)', delivered: 'var(--success)', cancelled: 'var(--danger)', return_requested: 'var(--warning)', returned: 'var(--text-secondary)' };
+const STATUS_COLORS = {
+  pending: 'var(--warning)',
+  confirmed: 'var(--brand)',
+  packed: 'var(--brand)',
+  picked_up: 'var(--brand)',
+  in_transit: 'var(--brand)',
+  delivered: 'var(--success)',
+  cancelled: 'var(--danger)',
+  return_requested: 'var(--warning)',
+  returned: 'var(--text-secondary)',
+};
 
 const UserOrders = () => {
   const [orderList, setOrderList] = useState([]);
@@ -40,7 +50,9 @@ const UserOrders = () => {
           <div className="empty-state">
             <FiPackage style={{ fontSize: '64px', color: 'var(--text-light)', marginBottom: '16px' }} />
             <h3>Please login to view orders</h3>
-            <Link to="/login" className="btn btn-primary">Login</Link>
+            <Link to="/login" className="btn btn-primary">
+              Login
+            </Link>
           </div>
         </main>
         <Footer />
@@ -57,36 +69,99 @@ const UserOrders = () => {
           <h1 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '16px' }}>My Orders</h1>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
             {['all', ...FILTER_STATUSES].map((s) => (
-              <button key={s} onClick={() => setFilter(s)} style={{ padding: '6px 16px', borderRadius: 'var(--radius-xl)', fontSize: '13px', fontWeight: 500, border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`, background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)', color: filter === s ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', textTransform: 'capitalize' }}>
+              <button
+                key={s}
+                onClick={() => setFilter(s)}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 'var(--radius-xl)',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`,
+                  background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)',
+                  color: filter === s ? 'var(--primary)' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  textTransform: 'capitalize',
+                }}
+              >
                 {s}
               </button>
             ))}
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><div className="spinner spinner-lg" /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
           ) : orderList.length === 0 ? (
             <div className="empty-state">
               <FiPackage style={{ fontSize: '64px', color: 'var(--text-light)', marginBottom: '16px' }} />
               <h3>No orders found</h3>
               <p>You haven't placed any orders yet.</p>
-              <Link to="/" className="btn btn-primary">Start Shopping</Link>
+              <Link to="/" className="btn btn-primary">
+                Start Shopping
+              </Link>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {orderList.map((order) => (
-                <Link key={order._id} to={`/orders/${order._id}`} className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', transition: 'box-shadow 0.2s' }}>
-                  <div style={{ width: '60px', height: '60px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <img src={order.items?.[0]?.product?.images?.[0] || '/placeholder.svg'} alt="" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                <Link
+                  key={order._id}
+                  to={`/orders/${order._id}`}
+                  className="card"
+                  style={{
+                    padding: '16px 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    transition: 'box-shadow 0.2s',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <img
+                      src={order.items?.[0]?.product?.images?.[0] || '/placeholder.svg'}
+                      alt=""
+                      style={{ width: '50px', height: '50px', objectFit: 'contain' }}
+                    />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>Order #{order._id.slice(-8).toUpperCase()}</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-light)' }}>{new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>{order.items?.length || 0} item(s)</div>
+                    <div style={{ fontSize: '14px', fontWeight: 500, marginBottom: '4px' }}>
+                      Order #{order._id.slice(-8).toUpperCase()}
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-light)' }}>
+                      {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      {order.items?.length || 0} item(s)
+                    </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '4px' }}>₹{order.total}</div>
-                    <span className="badge" style={{ background: STATUS_COLORS[order.status] || 'var(--text-light)', color: 'var(--text-white)', textTransform: 'capitalize' }}>{order.status}</span>
+                    <span
+                      className="badge"
+                      style={{
+                        background: STATUS_COLORS[order.status] || 'var(--text-light)',
+                        color: 'var(--text-white)',
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {order.status}
+                    </span>
                   </div>
                   <FiChevronRight style={{ color: 'var(--text-light)' }} />
                 </Link>

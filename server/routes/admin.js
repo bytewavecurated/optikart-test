@@ -9,7 +9,10 @@ import Coupon from '../models/Coupon.js';
 import StaffRole from '../models/StaffRole.js';
 import Notification from '../models/Notification.js';
 import { verifyToken, verifyAdmin, verifyStaff } from '../middleware/auth.js';
-import { adminQueue as adminListingQueues, decideAsAdmin as decideListingAsAdmin } from '../services/listingApproval.js';
+import {
+  adminQueue as adminListingQueues,
+  decideAsAdmin as decideListingAsAdmin,
+} from '../services/listingApproval.js';
 import Executive from '../models/Executive.js';
 import Manufacturer from '../models/Manufacturer.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
@@ -40,7 +43,7 @@ router.post('/listing-approvals/decide', verifyToken, verifyAdmin, async (req, r
       id: listingId,
       decision,
       reason,
-      actorLabel: req.user.name || req.user.email || 'admin'
+      actorLabel: req.user.name || req.user.email || 'admin',
     });
     res.status(result.success ? 200 : 400).json(result);
   } catch (error) {
@@ -75,8 +78,10 @@ function couponFromBody(body = {}, { partial = false } = {}) {
   }
   if (!partial || has('discountValue')) {
     const v = Number(body.discountValue);
-    if (!Number.isFinite(v) || v <= 0) errors.push({ field: 'discountValue', message: 'Discount value must be a number above zero' });
-    else if (out.discountType === 'percentage' && v > 100) errors.push({ field: 'discountValue', message: 'A percentage discount cannot exceed 100' });
+    if (!Number.isFinite(v) || v <= 0)
+      errors.push({ field: 'discountValue', message: 'Discount value must be a number above zero' });
+    else if (out.discountType === 'percentage' && v > 100)
+      errors.push({ field: 'discountValue', message: 'A percentage discount cannot exceed 100' });
     else out.discountValue = v;
   }
   ['minOrderAmount', 'maxDiscount', 'usageLimit'].forEach((k) => {
@@ -103,8 +108,6 @@ function couponFromBody(body = {}, { partial = false } = {}) {
   return { out, errors };
 }
 
-
-
 // GET /api/admin/me - the signed-in administrator's own profile.
 router.get('/me', verifyToken, verifyAdmin, async (req, res) => {
   try {
@@ -129,7 +132,7 @@ router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
 
     const revenueResult = await Order.aggregate([
       { $match: { paymentStatus: 'completed', orderStatus: { $ne: 'cancelled' } } },
-      { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' }, avgOrderValue: { $avg: '$totalAmount' } } }
+      { $group: { _id: null, totalRevenue: { $sum: '$totalAmount' }, avgOrderValue: { $avg: '$totalAmount' } } },
     ]);
 
     const totalRevenue = revenueResult[0]?.totalRevenue || 0;
@@ -137,14 +140,19 @@ router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
 
     const totalProducts = await Product.countDocuments({ isActive: true });
 
-
     const last30Days = new Date();
     last30Days.setDate(last30Days.getDate() - 30);
 
     const recentOrders = await Order.aggregate([
       { $match: { createdAt: { $gte: last30Days } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, count: { $sum: 1 }, revenue: { $sum: '$totalAmount' } } },
-      { $sort: { _id: 1 } }
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 },
+          revenue: { $sum: '$totalAmount' },
+        },
+      },
+      { $sort: { _id: 1 } },
     ]);
 
     const topSellers = await Order.aggregate([
@@ -154,7 +162,7 @@ router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
       { $limit: 5 },
       { $lookup: { from: 'sellers', localField: '_id', foreignField: '_id', as: 'seller' } },
       { $unwind: '$seller' },
-      { $project: { storeName: '$seller.storeName', totalRevenue: 1, orderCount: 1 } }
+      { $project: { storeName: '$seller.storeName', totalRevenue: 1, orderCount: 1 } },
     ]);
 
     res.json({
@@ -171,8 +179,8 @@ router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
         avgOrderValue,
         totalProducts,
         recentOrders,
-        topSellers
-      }
+        topSellers,
+      },
     });
   } catch (error) {
     console.error('Dashboard error:', error);
@@ -184,12 +192,12 @@ router.get('/users', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
     const query = { role: 'user' };
-    
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
+        { phone: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -232,7 +240,7 @@ router.get('/sellers', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 20, search } = req.query;
     const query = {};
-    
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -241,7 +249,7 @@ router.get('/sellers', verifyToken, verifyAdmin, async (req, res) => {
         { storeName: { $regex: search, $options: 'i' } },
         { sellerId: { $regex: search, $options: 'i' } },
         { gstNumber: { $regex: search, $options: 'i' } },
-        { panNumber: { $regex: search, $options: 'i' } }
+        { panNumber: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -275,7 +283,7 @@ router.put('/sellers/:id/verify', verifyToken, verifyAdmin, async (req, res) => 
       seller: seller._id,
       type: 'system',
       title: 'Account Verified',
-      message: `Congratulations! Your seller account "${seller.storeName}" has been verified.`
+      message: `Congratulations! Your seller account "${seller.storeName}" has been verified.`,
     });
 
     res.json({ success: true, message: 'Seller verified successfully.', seller });
@@ -311,9 +319,7 @@ router.get('/orders', verifyToken, verifyAdmin, async (req, res) => {
 
     if (status) query.orderStatus = status;
     if (search) {
-      query.$or = [
-        { orderNumber: { $regex: search, $options: 'i' } }
-      ];
+      query.$or = [{ orderNumber: { $regex: search, $options: 'i' } }];
     }
 
     const orders = await Order.find(query)
@@ -333,8 +339,8 @@ router.get('/orders', verifyToken, verifyAdmin, async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error('Get orders error:', error);
@@ -342,17 +348,23 @@ router.get('/orders', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
-
 router.get('/revenue', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { period = 'monthly' } = req.query;
 
     let dateFormat;
     switch (period) {
-      case 'daily': dateFormat = '%Y-%m-%d'; break;
-      case 'weekly': dateFormat = '%Y-W%V'; break;
-      case 'yearly': dateFormat = '%Y'; break;
-      default: dateFormat = '%Y-%m';
+      case 'daily':
+        dateFormat = '%Y-%m-%d';
+        break;
+      case 'weekly':
+        dateFormat = '%Y-W%V';
+        break;
+      case 'yearly':
+        dateFormat = '%Y';
+        break;
+      default:
+        dateFormat = '%Y-%m';
     }
 
     const revenue = await Order.aggregate([
@@ -363,10 +375,10 @@ router.get('/revenue', verifyToken, verifyAdmin, async (req, res) => {
           revenue: { $sum: '$totalAmount' },
           orders: { $sum: 1 },
           platformFees: { $sum: '$platformFee' },
-          deliveryCharges: { $sum: '$deliveryCharge' }
-        }
+          deliveryCharges: { $sum: '$deliveryCharge' },
+        },
       },
-      { $sort: { _id: 1 } }
+      { $sort: { _id: 1 } },
     ]);
 
     const totalRevenue = revenue.reduce((sum, r) => sum + r.revenue, 0);
@@ -380,8 +392,8 @@ router.get('/revenue', verifyToken, verifyAdmin, async (req, res) => {
         totalRevenue,
         totalPlatformFees,
         totalDeliveryCharges,
-        netRevenue: totalPlatformFees
-      }
+        netRevenue: totalPlatformFees,
+      },
     });
   } catch (error) {
     console.error('Revenue error:', error);
@@ -417,7 +429,7 @@ router.post('/staff', verifyToken, verifyAdmin, async (req, res) => {
       name,
       email,
       password: tempPassword,
-      role: 'staff'
+      role: 'staff',
     });
     await user.save();
 
@@ -426,7 +438,7 @@ router.post('/staff', verifyToken, verifyAdmin, async (req, res) => {
       email,
       name,
       role,
-      permissions: permissions || []
+      permissions: permissions || [],
     });
     await staff.save();
 
@@ -434,7 +446,7 @@ router.post('/staff', verifyToken, verifyAdmin, async (req, res) => {
       success: true,
       message: 'Staff account created successfully.',
       staff,
-      tempPassword
+      tempPassword,
     });
   } catch (error) {
     console.error('Create staff error:', error);
@@ -444,9 +456,7 @@ router.post('/staff', verifyToken, verifyAdmin, async (req, res) => {
 
 router.get('/staff', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const staff = await StaffRole.find()
-      .populate('admin', 'name email')
-      .sort({ createdAt: -1 });
+    const staff = await StaffRole.find().populate('admin', 'name email').sort({ createdAt: -1 });
 
     res.json({ success: true, staff });
   } catch (error) {
@@ -511,7 +521,11 @@ router.post('/coupons', verifyToken, verifyAdmin, async (req, res) => {
     }
     const clash = await Coupon.findOne({ code: out.code });
     if (clash) {
-      return res.status(409).json({ success: false, message: `The code ${out.code} already exists.`, errors: [{ field: 'code', message: 'already in use' }] });
+      return res.status(409).json({
+        success: false,
+        message: `The code ${out.code} already exists.`,
+        errors: [{ field: 'code', message: 'already in use' }],
+      });
     }
     const coupon = await Coupon.create(out);
     res.status(201).json({ success: true, message: 'Coupon created.', coupon });
@@ -520,7 +534,7 @@ router.post('/coupons', verifyToken, verifyAdmin, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Fix the highlighted fields.',
-        errors: Object.entries(error.errors).map(([field, e]) => ({ field, message: e.message }))
+        errors: Object.entries(error.errors).map(([field, e]) => ({ field, message: e.message })),
       });
     }
     console.error('Create coupon error:', error);
@@ -546,7 +560,7 @@ router.put('/coupons/:id', verifyToken, verifyAdmin, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Fix the highlighted fields.',
-        errors: Object.entries(error.errors).map(([field, e]) => ({ field, message: e.message }))
+        errors: Object.entries(error.errors).map(([field, e]) => ({ field, message: e.message })),
       });
     }
     console.error('Update coupon error:', error);
@@ -574,8 +588,8 @@ router.get('/seller-payouts', verifyToken, verifyAdmin, async (req, res) => {
           _id: '$seller',
           totalPayout: { $sum: { $subtract: ['$totalAmount', '$platformFee'] } },
           totalPlatformFee: { $sum: '$platformFee' },
-          orderCount: { $sum: 1 }
-        }
+          orderCount: { $sum: 1 },
+        },
       },
       { $sort: { totalPayout: -1 } },
       { $lookup: { from: 'sellers', localField: '_id', foreignField: '_id', as: 'seller' } },
@@ -587,9 +601,9 @@ router.get('/seller-payouts', verifyToken, verifyAdmin, async (req, res) => {
           bankAccount: '$seller.bankAccount',
           totalPayout: 1,
           totalPlatformFee: 1,
-          orderCount: 1
-        }
-      }
+          orderCount: 1,
+        },
+      },
     ]);
 
     res.json({ success: true, payouts });
@@ -602,23 +616,23 @@ router.get('/seller-payouts', verifyToken, verifyAdmin, async (req, res) => {
 router.get('/delivery', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const orders = await Order.find({
-      orderStatus: { $in: ['in_transit', 'delivered'] }
+      orderStatus: { $in: ['in_transit', 'delivered'] },
     })
       .populate('user', 'name phone email')
       .populate('seller', 'storeName')
       .sort({ updatedAt: -1 })
       .limit(50);
 
-    const inTransit = orders.filter(o => o.orderStatus === 'in_transit');
-    const delivered = orders.filter(o => o.orderStatus === 'delivered');
+    const inTransit = orders.filter((o) => o.orderStatus === 'in_transit');
+    const delivered = orders.filter((o) => o.orderStatus === 'delivered');
 
     res.json({
       success: true,
       delivery: {
         inTransit: inTransit.length,
         delivered: delivered.length,
-        orders
-      }
+        orders,
+      },
     });
   } catch (error) {
     console.error('Delivery error:', error);
@@ -630,7 +644,7 @@ router.get('/pickups', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const orders = await Order.find({
       orderStatus: { $in: ['packed', 'picked_up'] },
-      pickupDate: { $exists: true, $ne: null }
+      pickupDate: { $exists: true, $ne: null },
     })
       .populate('seller', 'storeName')
       .sort({ pickupDate: 1 })
@@ -641,20 +655,20 @@ router.get('/pickups', verifyToken, verifyAdmin, async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const todayPickups = orders.filter(o => {
+    const todayPickups = orders.filter((o) => {
       const pd = new Date(o.pickupDate);
       return pd >= today && pd < tomorrow;
     });
 
-    const upcomingPickups = orders.filter(o => new Date(o.pickupDate) >= tomorrow);
+    const upcomingPickups = orders.filter((o) => new Date(o.pickupDate) >= tomorrow);
 
     res.json({
       success: true,
       pickups: {
         today: todayPickups,
         upcoming: upcomingPickups,
-        total: orders.length
-      }
+        total: orders.length,
+      },
     });
   } catch (error) {
     console.error('Pickups error:', error);
@@ -666,7 +680,7 @@ router.get('/pickups', verifyToken, verifyAdmin, async (req, res) => {
 router.put('/users/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { isBanned, isShadowBanned, banReason } = req.body;
-    
+
     const user = await User.findByIdAndUpdate(
       req.params.id,
       {
@@ -674,7 +688,7 @@ router.put('/users/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
         isShadowBanned: isShadowBanned !== undefined ? isShadowBanned : undefined,
         banReason: banReason || '',
         bannedBy: req.user.id,
-        bannedAt: isBanned || isShadowBanned ? new Date() : null
+        bannedAt: isBanned || isShadowBanned ? new Date() : null,
       },
       { new: true }
     );
@@ -693,7 +707,7 @@ router.put('/users/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
 router.put('/sellers/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { isBanned, isShadowBanned, banReason } = req.body;
-    
+
     const seller = await Seller.findByIdAndUpdate(
       req.params.id,
       {
@@ -701,7 +715,7 @@ router.put('/sellers/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
         isShadowBanned: isShadowBanned !== undefined ? isShadowBanned : undefined,
         banReason: banReason || '',
         bannedBy: req.user.id,
-        bannedAt: isBanned || isShadowBanned ? new Date() : null
+        bannedAt: isBanned || isShadowBanned ? new Date() : null,
       },
       { new: true }
     );
@@ -732,9 +746,7 @@ router.get('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
 // Get user orders
 router.get('/users/:id/orders', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.params.id })
-      .sort({ createdAt: -1 })
-      .populate('seller', 'storeName');
+    const orders = await Order.find({ user: req.params.id }).sort({ createdAt: -1 }).populate('seller', 'storeName');
     res.json({ success: true, data: orders });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -757,8 +769,7 @@ router.get('/sellers/:id', verifyToken, verifyAdmin, async (req, res) => {
 // Get seller products
 router.get('/sellers/:id/products', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const products = await Product.find({ seller: req.params.id })
-      .sort({ createdAt: -1 });
+    const products = await Product.find({ seller: req.params.id }).sort({ createdAt: -1 });
     res.json({ success: true, data: products });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -768,9 +779,7 @@ router.get('/sellers/:id/products', verifyToken, verifyAdmin, async (req, res) =
 // Get seller orders
 router.get('/sellers/:id/orders', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const orders = await Order.find({ seller: req.params.id })
-      .sort({ createdAt: -1 })
-      .populate('user', 'name email');
+    const orders = await Order.find({ seller: req.params.id }).sort({ createdAt: -1 }).populate('user', 'name email');
     res.json({ success: true, data: orders });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -789,7 +798,7 @@ router.get('/executives', verifyToken, verifyAdmin, async (req, res) => {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
-        { executiveId: { $regex: search, $options: 'i' } }
+        { executiveId: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -821,7 +830,7 @@ router.post('/executives', verifyToken, verifyAdmin, async (req, res) => {
       phone,
       department,
       permissions: permissions || [],
-      createdBy: req.user.id
+      createdBy: req.user.id,
     });
 
     await executive.save();
@@ -829,7 +838,7 @@ router.post('/executives', verifyToken, verifyAdmin, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Executive created successfully.',
-      executive: executive.toJSON()
+      executive: executive.toJSON(),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -876,14 +885,14 @@ router.delete('/executives/:id', verifyToken, verifyAdmin, async (req, res) => {
 router.put('/executives/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { isBanned, banReason } = req.body;
-    
+
     const executive = await Executive.findByIdAndUpdate(
       req.params.id,
       {
         isBanned: isBanned !== undefined ? isBanned : undefined,
         banReason: banReason || '',
         bannedBy: req.user.id,
-        bannedAt: isBanned ? new Date() : null
+        bannedAt: isBanned ? new Date() : null,
       },
       { new: true }
     ).select('-password');
@@ -911,7 +920,7 @@ router.get('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
         { companyName: { $regex: search, $options: 'i' } },
-        { manufacturerId: { $regex: search, $options: 'i' } }
+        { manufacturerId: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -931,28 +940,29 @@ router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
     if (existingManufacturer) {
       return res.status(400).json({ success: false, message: 'Email already registered.' });
     }
-  /*
-   * A brand name may belong to one manufacturer only, so the desk cannot create
-   * that clash either - and the admin path is exactly where it would be created
-   * in good faith, when adding a second company that happens to trade under a
-   * name already recorded. Catching it at the write is what makes the storefront
-   * rails safe to group by brand name at all.
-   */
-  try {
-    const list = Array.isArray(brands) ? brands : [];
-    const clash = await validateBrandListOwnership(list, null);
-    if (clash.clashes.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'One brand name can belong to only one manufacturer.',
-        errors: clash.clashes.map((c) => ({ field: 'brands', message: clashMessage(c) }))
-      });
+    /*
+     * A brand name may belong to one manufacturer only, so the desk cannot create
+     * that clash either - and the admin path is exactly where it would be created
+     * in good faith, when adding a second company that happens to trade under a
+     * name already recorded. Catching it at the write is what makes the storefront
+     * rails safe to group by brand name at all.
+     */
+    try {
+      const list = Array.isArray(brands) ? brands : [];
+      const clash = await validateBrandListOwnership(list, null);
+      if (clash.clashes.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'One brand name can belong to only one manufacturer.',
+          errors: clash.clashes.map((c) => ({ field: 'brands', message: clashMessage(c) })),
+        });
+      }
+    } catch (brandCheckErr) {
+      console.error('Brand ownership check failed on manufacturer create:', brandCheckErr);
+      return res
+        .status(500)
+        .json({ success: false, message: 'Brand ownership could not be verified. Nothing was created.' });
     }
-  } catch (brandCheckErr) {
-    console.error('Brand ownership check failed on manufacturer create:', brandCheckErr);
-    return res.status(500).json({ success: false, message: 'Brand ownership could not be verified. Nothing was created.' });
-  }
-
 
     const manufacturer = new Manufacturer({
       name,
@@ -964,7 +974,7 @@ router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
       panNumber,
       address,
       brands: brands || [],
-      createdBy: req.user.id
+      createdBy: req.user.id,
     });
 
     await manufacturer.save();
@@ -972,7 +982,7 @@ router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Manufacturer created successfully.',
-      manufacturer: manufacturer.toJSON()
+      manufacturer: manufacturer.toJSON(),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -1022,14 +1032,14 @@ router.delete('/manufacturers/:id', verifyToken, verifyAdmin, async (req, res) =
 router.put('/manufacturers/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { isBanned, banReason } = req.body;
-    
+
     const manufacturer = await Manufacturer.findByIdAndUpdate(
       req.params.id,
       {
         isBanned: isBanned !== undefined ? isBanned : undefined,
         banReason: banReason || '',
         bannedBy: req.user.id,
-        bannedAt: isBanned ? new Date() : null
+        bannedAt: isBanned ? new Date() : null,
       },
       { new: true }
     ).select('-password');
@@ -1047,8 +1057,7 @@ router.put('/manufacturers/:id/ban', verifyToken, verifyAdmin, async (req, res) 
 // Get manufacturer products
 router.get('/manufacturers/:id/products', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const products = await Product.find({ manufacturer: req.params.id })
-      .sort({ createdAt: -1 });
+    const products = await Product.find({ manufacturer: req.params.id }).sort({ createdAt: -1 });
     res.json({ success: true, data: products });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -1070,14 +1079,16 @@ router.get('/manufacturers/:id/sellers', verifyToken, verifyAdmin, async (req, r
 // Get commissions data
 router.get('/commissions', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const commissions = await Order.find({ 
+    const commissions = await Order.find({
       paymentStatus: 'completed',
-      orderStatus: { $ne: 'cancelled' }
+      orderStatus: { $ne: 'cancelled' },
     })
-    .populate('seller', 'storeName name email')
-    .populate('user', 'name email')
-    .sort({ createdAt: -1 })
-    .select('orderNumber seller subtotal commissionPercentage commissionAmount sellerPayoutAmount commissionPaid commissionPaidAt createdAt');
+      .populate('seller', 'storeName name email')
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .select(
+        'orderNumber seller subtotal commissionPercentage commissionAmount sellerPayoutAmount commissionPaid commissionPaidAt createdAt'
+      );
 
     res.json({ success: true, data: commissions });
   } catch (error) {
@@ -1108,9 +1119,11 @@ router.get('/cash-reconciliation', verifyToken, verifyAdmin, async (req, res) =>
     const cashOrders = await Order.find({
       paymentMethod: 'cod',
       orderStatus: 'delivered',
-      deliveredAt: { $gte: since }
+      deliveredAt: { $gte: since },
     })
-      .select('orderNumber totalAmount codFee cashCollected cashCollectedAt cashCollectedBy deliveredAt assignedDeliveryPartner seller')
+      .select(
+        'orderNumber totalAmount codFee cashCollected cashCollectedAt cashCollectedBy deliveredAt assignedDeliveryPartner seller'
+      )
       .lean();
 
     const due = cashOrders.reduce((n, o) => n + (Number(o.totalAmount) || 0), 0);
@@ -1120,9 +1133,7 @@ router.get('/cash-reconciliation', verifyToken, verifyAdmin, async (req, res) =>
 
     const byPartner = new Map();
     for (const o of cashOrders) {
-      const key = o.assignedDeliveryPartner
-        ? String(o.assignedDeliveryPartner)
-        : (o.cashCollectedBy || 'unassigned');
+      const key = o.assignedDeliveryPartner ? String(o.assignedDeliveryPartner) : o.cashCollectedBy || 'unassigned';
       const row = byPartner.get(key) || { who: key, orders: 0, due: 0, recorded: 0, handling: 0 };
       row.orders += 1;
       row.due += Number(o.totalAmount) || 0;
@@ -1141,15 +1152,15 @@ router.get('/cash-reconciliation', verifyToken, verifyAdmin, async (req, res) =>
         // Anything other than zero here is a person or an order to go and ask.
         discrepancy: Math.round((due - recorded) * 100) / 100,
         cashHandlingCharges: Math.round(handling * 100) / 100,
-        merchandise: Math.round((due - handling) * 100) / 100
+        merchandise: Math.round((due - handling) * 100) / 100,
       },
       unrecorded: {
         count: unrecorded.length,
         orders: unrecorded.slice(0, 25).map((o) => ({
           orderNumber: o.orderNumber,
           totalAmount: o.totalAmount,
-          deliveredAt: o.deliveredAt
-        }))
+          deliveredAt: o.deliveredAt,
+        })),
       },
       byPartner: [...byPartner.values()]
         .map((r) => ({
@@ -1157,9 +1168,9 @@ router.get('/cash-reconciliation', verifyToken, verifyAdmin, async (req, res) =>
           due: Math.round(r.due * 100) / 100,
           recorded: Math.round(r.recorded * 100) / 100,
           handling: Math.round(r.handling * 100) / 100,
-          difference: Math.round((r.due - r.recorded) * 100) / 100
+          difference: Math.round((r.due - r.recorded) * 100) / 100,
         }))
-        .sort((a, b) => b.difference - a.difference)
+        .sort((a, b) => b.difference - a.difference),
     });
   } catch (error) {
     console.error('Cash reconciliation error:', error);
@@ -1168,4 +1179,3 @@ router.get('/cash-reconciliation', verifyToken, verifyAdmin, async (req, res) =>
 });
 
 export default router;
-

@@ -33,10 +33,8 @@ export const distanceKm = (a, b) => {
   const toRad = (d) => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return Math.round((2 * R * Math.asin(Math.sqrt(s))) * 100) / 100;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(2 * R * Math.asin(Math.sqrt(s)) * 100) / 100;
 };
 
 /**
@@ -65,16 +63,36 @@ const buyerPoint = (order) => buyerPointFrom(order.shippingAddress);
  * still works for addresses saved before coordinates were captured.
  */
 const CITY_CENTRES = {
-  mumbai: [72.8777, 19.076], 'navi mumbai': [73.0243, 19.033], thane: [72.9775, 19.1972],
-  delhi: [77.209, 28.6139], 'new delhi': [77.2167, 28.6448], gurugram: [77.0299, 28.4595],
-  noida: [77.3095, 28.5355], 'west bengal': [88.3639, 22.5726], kolkata: [88.3639, 22.5726],
-  chennai: [80.2707, 13.0827], bengaluru: [77.5946, 12.9716], bangalore: [77.5946, 12.9716],
-  hyderabad: [78.4867, 17.385], pune: [73.8567, 18.5204], ahmedabad: [72.5714, 23.0225],
-  surat: [72.8311, 21.1702], jaipur: [75.7873, 26.9124], lucknow: [80.9462, 26.8467],
-  chandigarh: [76.7794, 30.7333], indore: [75.8577, 22.7196], kochi: [76.2673, 9.9312],
-  coimbatore: [76.9558, 11.0168], nagpur: [79.0882, 21.1458], vadodara: [73.0317, 22.3072],
-  kanpur: [80.3498, 26.4499], patna: [85.1432, 25.5941], bhopal: [77.4024, 23.2599],
-  Visakhapatnam: [83.3416, 17.6868], ludhiana: [75.8506, 30.9009], surat: [72.8311, 21.1702]
+  mumbai: [72.8777, 19.076],
+  'navi mumbai': [73.0243, 19.033],
+  thane: [72.9775, 19.1972],
+  delhi: [77.209, 28.6139],
+  'new delhi': [77.2167, 28.6448],
+  gurugram: [77.0299, 28.4595],
+  noida: [77.3095, 28.5355],
+  'west bengal': [88.3639, 22.5726],
+  kolkata: [88.3639, 22.5726],
+  chennai: [80.2707, 13.0827],
+  bengaluru: [77.5946, 12.9716],
+  bangalore: [77.5946, 12.9716],
+  hyderabad: [78.4867, 17.385],
+  pune: [73.8567, 18.5204],
+  ahmedabad: [72.5714, 23.0225],
+  surat: [72.8311, 21.1702],
+  jaipur: [75.7873, 26.9124],
+  lucknow: [80.9462, 26.8467],
+  chandigarh: [76.7794, 30.7333],
+  indore: [75.8577, 22.7196],
+  kochi: [76.2673, 9.9312],
+  coimbatore: [76.9558, 11.0168],
+  nagpur: [79.0882, 21.1458],
+  vadodara: [73.0317, 22.3072],
+  kanpur: [80.3498, 26.4499],
+  patna: [85.1432, 25.5941],
+  bhopal: [77.4024, 23.2599],
+  Visakhapatnam: [83.3416, 17.6868],
+  ludhiana: [75.8506, 30.9009],
+  surat: [72.8311, 21.1702],
 };
 
 const buyerPointFrom = (address) => {
@@ -85,7 +103,9 @@ const buyerPointFrom = (address) => {
   if (address.lat !== undefined && address.lng !== undefined) {
     return { lat: Number(address.lat), lng: Number(address.lng) };
   }
-  const key = String(address.city || '').trim().toLowerCase();
+  const key = String(address.city || '')
+    .trim()
+    .toLowerCase();
   const hit = CITY_CENTRES[key];
   return hit ? { lng: hit[0], lat: hit[1] } : null;
 };
@@ -96,10 +116,10 @@ export const findCandidates = async (order) => {
   const productIds = (order.items || []).map((i) => i.product);
   // A lens-bearing order can only be met by sellers who sell with power;
   // powered requests are otherwise invisible to the rest.
-  const isPoweredOrder = (order.items || []).some((i) => i.lensConfig && i.lensConfig.kind === 'spectacle'
-    ? (i.lensConfig.withPower !== false && i.lensConfig.power)
-    : false)
-    || order.items?.some((i) => i.variant?.lensType);
+  const isPoweredOrder =
+    (order.items || []).some((i) =>
+      i.lensConfig && i.lensConfig.kind === 'spectacle' ? i.lensConfig.withPower !== false && i.lensConfig.power : false
+    ) || order.items?.some((i) => i.variant?.lensType);
 
   /*
    * Routing reads SellerStock, so this is the second half of the gate: an
@@ -111,17 +131,14 @@ export const findCandidates = async (order) => {
   const stockFilter = {
     product: { $in: productIds },
     isListed: true,
-    $or: [
-      { 'listing.brandLinked': { $ne: true } },
-      { 'listing.state': 'live' }
-    ]
+    $or: [{ 'listing.brandLinked': { $ne: true } }, { 'listing.state': 'live' }],
   };
   if (isPoweredOrder) stockFilter.sellsWithPower = true;
 
   const stocks = await SellerStock.find(stockFilter)
     .populate({
       path: 'seller',
-      select: 'name storeName phone email location city address isBanned isActive isVerified rating totalSales'
+      select: 'name storeName phone email location city address isBanned isActive isVerified rating totalSales',
     })
     .lean();
 
@@ -134,7 +151,7 @@ export const findCandidates = async (order) => {
     const wanted = {
       color: line.variant?.color,
       size: line.variant?.size,
-      quantity: line.quantity || 1
+      quantity: line.quantity || 1,
     };
 
     for (const stock of stocks) {
@@ -161,7 +178,7 @@ export const findCandidates = async (order) => {
         lines: [],
         priceTotal: 0,
         rating: stock.seller.rating || 0,
-        totalSales: stock.seller.totalSales || 0
+        totalSales: stock.seller.totalSales || 0,
       };
       entry.lines.push({ product: String(oid(stock.product)), stockId: String(stock._id), price: stock.sellingPrice });
       entry.priceTotal += Number(stock.sellingPrice) * (line.quantity || 1);
@@ -187,10 +204,10 @@ export const findCandidates = async (order) => {
     coverage: {
       complete: full.some((f) => String(f.sellerId || f.seller?._id) === sellerId),
       have: new Set(c.lines.map((l) => l.product)).size,
-      need: lineCount
+      need: lineCount,
     },
     // Unmeasured distances are reported as unknown rather than as a huge number.
-    distance: Number.isFinite(c.distance) ? c.distance : null
+    distance: Number.isFinite(c.distance) ? c.distance : null,
   }));
 
   const ranked = await rankCandidates(prepared, { radiusKm: RADIUS_KM_MAX });
@@ -199,7 +216,7 @@ export const findCandidates = async (order) => {
 
 const notifySeller = async (seller, order, routing) => {
   if (!seller?.email) return;
-  const mins = Math.max(0, Math.round(((routing.timeoutAt - new Date()) / 60000)));
+  const mins = Math.max(0, Math.round((routing.timeoutAt - new Date()) / 60000));
   await sendEmail({
     to: seller.email,
     subject: `New order offer - ${order.orderNumber}`,
@@ -211,8 +228,8 @@ const notifySeller = async (seller, order, routing) => {
       `Pick up from your store and hand over to the delivery partner.`,
       `You have ${mins} minutes to accept before it passes to the next seller.`,
       '',
-      'Open your seller dashboard to accept or decline.'
-    ].join('\n')
+      'Open your seller dashboard to accept or decline.',
+    ].join('\n'),
   });
 };
 
@@ -227,7 +244,9 @@ export const startRouting = async (order, io = null) => {
     customerLocation: {
       latitude: buyerPoint(order)?.lat ?? null,
       longitude: buyerPoint(order)?.lng ?? null,
-      address: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode].filter(Boolean).join(', ')
+      address: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode]
+        .filter(Boolean)
+        .join(', '),
     },
     nearbySellers: candidates.map((c) => ({
       seller: c.sellerId,
@@ -240,10 +259,10 @@ export const startRouting = async (order, io = null) => {
       priceTotal: c.priceTotal,
       coversWholeOrder: !!c.coverage?.complete,
       rankedAt: new Date(),
-      response: 'pending'
+      response: 'pending',
     })),
     currentSellerIndex: 0,
-    status: candidates.length ? 'routing' : 'admin_required'
+    status: candidates.length ? 'routing' : 'admin_required',
   });
 
   if (!candidates.length) {
@@ -258,9 +277,14 @@ export const startRouting = async (order, io = null) => {
       message: `Nobody inside the delivery radius holds every line of this order with the exact colour, size and prescription option requested. It needs a manual assignment.`,
       type: 'order',
       data: { order: String(order._id), orderNumber: order.orderNumber, reason: 'no_candidate' },
-      io
+      io,
     });
-    return { success: true, routing, candidates: [], message: 'No nearby seller stocks this item; it is waiting in the admin queue.' };
+    return {
+      success: true,
+      routing,
+      candidates: [],
+      message: 'No nearby seller stocks this item; it is waiting in the admin queue.',
+    };
   }
 
   const first = candidates[0];
@@ -278,16 +302,17 @@ export const startRouting = async (order, io = null) => {
       // until someone accepts.
       assignmentDeadline: routing.timeoutAt,
       assignmentDistance: first.distance,
-      assignmentNotes: `Offered to ${first.seller.storeName || first.seller.name} (${first.distance ?? 'unknown'} km)`
+      assignmentNotes: `Offered to ${first.seller.storeName || first.seller.name} (${first.distance ?? 'unknown'} km)`,
     }
   );
 
   await notifyAdmins({
     title: `Seller shortlist ready for ${order.orderNumber}`,
-    message: candidates.length > 1
-      ? `Asking ${first.seller.storeName || first.seller.name} first - ranked #1 of ${candidates.length}`
-        + `${first.score ? ` (score ${first.score.toFixed(1)})` : ''}: ${(first.scoreReasons || []).slice(0, 3).join('; ')}`
-      : `Only one seller can cover this order: ${first.seller.storeName || first.seller.name}.`,
+    message:
+      candidates.length > 1
+        ? `Asking ${first.seller.storeName || first.seller.name} first - ranked #1 of ${candidates.length}` +
+          `${first.score ? ` (score ${first.score.toFixed(1)})` : ''}: ${(first.scoreReasons || []).slice(0, 3).join('; ')}`
+        : `Only one seller can cover this order: ${first.seller.storeName || first.seller.name}.`,
     type: 'order',
     data: {
       order: String(order._id),
@@ -298,19 +323,23 @@ export const startRouting = async (order, io = null) => {
         rank: c.rank,
         score: c.score,
         distance: c.distance,
-        priceTotal: c.priceTotal
-      }))
+        priceTotal: c.priceTotal,
+      })),
     },
-    io
+    io,
   });
 
-  try { await notifySeller(first.seller, order, routing); } catch (e) { console.error('Offer mail failed:', e.message); }
+  try {
+    await notifySeller(first.seller, order, routing);
+  } catch (e) {
+    console.error('Offer mail failed:', e.message);
+  }
 
   if (io) {
     io.to(`seller_${first.sellerId}`).emit('newOrder', {
       orderId: String(order._id),
       orderNumber: order.orderNumber,
-      deadline: routing.timeoutAt
+      deadline: routing.timeoutAt,
     });
   }
 
@@ -337,7 +366,7 @@ export const advanceRouting = async (routingDoc, io = null) => {
       message: `${routingDoc.nearbySellers.length} sellers were contacted and none accepted in time. The order is waiting on the assignment desk.`,
       type: 'order',
       data: { order: String(order._id), routing: String(routingDoc._id), reason: 'all_declined' },
-      io
+      io,
     });
 
     try {
@@ -348,11 +377,13 @@ export const advanceRouting = async (routingDoc, io = null) => {
           subject: `No seller accepted order ${order.orderNumber}`,
           text: [
             `${routingDoc.nearbySellers.length} sellers were contacted and none accepted in time.`,
-            'The order is waiting in the admin assignment queue with candidate contact details.'
-          ].join('\n')
+            'The order is waiting in the admin assignment queue with candidate contact details.',
+          ].join('\n'),
         });
       }
-    } catch (e) { console.error('Admin escalation mail failed:', e.message); }
+    } catch (e) {
+      console.error('Admin escalation mail failed:', e.message);
+    }
 
     return { success: true, escalated: true };
   }
@@ -370,17 +401,21 @@ export const advanceRouting = async (routingDoc, io = null) => {
     {
       assignmentStatus: 'pending_acceptance',
       assignmentDeadline: routingDoc.timeoutAt,
-      assignmentNotes: `Offered to ${target.seller?.storeName || target.seller?.name} (${target.distance ?? 'unknown'} km)`
+      assignmentNotes: `Offered to ${target.seller?.storeName || target.seller?.name} (${target.distance ?? 'unknown'} km)`,
     }
   );
 
-  try { await notifySeller(target.seller, order, routingDoc); } catch (e) { console.error('Offer mail failed:', e.message); }
+  try {
+    await notifySeller(target.seller, order, routingDoc);
+  } catch (e) {
+    console.error('Offer mail failed:', e.message);
+  }
 
   if (io && target.seller) {
     io.to(`seller_${target.seller._id}`).emit('newOrder', {
       orderId: String(order._id),
       orderNumber: order.orderNumber,
-      deadline: routingDoc.timeoutAt
+      deadline: routingDoc.timeoutAt,
     });
   }
 
@@ -489,7 +524,7 @@ export const aiPick = (routing) => {
 export const sweepExpiredOffers = async (io = null) => {
   const due = await OrderRouting.find({
     status: 'seller_contacted',
-    timeoutAt: { $lt: new Date() }
+    timeoutAt: { $lt: new Date() },
   }).populate('nearbySellers.seller', 'name storeName phone email rating totalSales');
 
   const results = [];
@@ -505,9 +540,10 @@ export const sweepExpiredOffers = async (io = null) => {
         const r = await acceptRouting(routing.order, oid(pick.entry.seller), io);
         if (r.success) {
           routing.assignedBy = 'auto';
-          routing.aiDecision = pick.basis === 'measured'
-            ? `Asked ${pick.entry.seller.storeName || pick.entry.seller.name} after the window expired - ranked score ${pick.score}.`
-            : `Asked ${pick.entry.seller.storeName || pick.entry.seller.name} after the window expired by nearest-first (this routing has no recorded ranking).`
+          routing.aiDecision =
+            pick.basis === 'measured'
+              ? `Asked ${pick.entry.seller.storeName || pick.entry.seller.name} after the window expired - ranked score ${pick.score}.`
+              : `Asked ${pick.entry.seller.storeName || pick.entry.seller.name} after the window expired by nearest-first (this routing has no recorded ranking).`;
           await routing.save();
           results.push({ routing: String(routing._id), aiAssigned: true });
           continue;
@@ -534,13 +570,21 @@ export const adminAssign = async (orderId, sellerId, io = null, notes = '') => {
   if (!routing) {
     routing = new OrderRouting({
       order: orderId,
-      nearbySellers: [{ seller: sellerId, hasProduct: !!stock, response: 'accepted' }]
+      nearbySellers: [{ seller: sellerId, hasProduct: !!stock, response: 'accepted' }],
     });
   }
 
   const entry = routing.nearbySellers.find((s) => String(oid(s.seller)) === String(sellerId));
-  if (entry) { entry.response = 'accepted'; entry.respondedAt = new Date(); }
-  else routing.nearbySellers.push({ seller: sellerId, hasProduct: !!stock, response: 'accepted', respondedAt: new Date() });
+  if (entry) {
+    entry.response = 'accepted';
+    entry.respondedAt = new Date();
+  } else
+    routing.nearbySellers.push({
+      seller: sellerId,
+      hasProduct: !!stock,
+      response: 'accepted',
+      respondedAt: new Date(),
+    });
 
   routing.status = 'admin_assigned';
   routing.assignedSeller = sellerId;

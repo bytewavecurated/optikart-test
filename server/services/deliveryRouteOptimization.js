@@ -19,7 +19,8 @@ const MINUTES_PER_STOP = 6;
 const estimateMinutes = (distanceKm) => Math.round((distanceKm / AVERAGE_SPEED_KMH) * 60 + MINUTES_PER_STOP);
 
 /** The drop-off point of an order, or null when the address has no coordinates. */
-const dropOf = (order) => pointOf(order?.deliveryLocation) || pointOf(order?.shippingAddress?.coordinates) || pointOf(order?.shippingAddress);
+const dropOf = (order) =>
+  pointOf(order?.deliveryLocation) || pointOf(order?.shippingAddress?.coordinates) || pointOf(order?.shippingAddress);
 
 /**
  * Orders the partner is carrying right now, in the state that means they are
@@ -28,7 +29,7 @@ const dropOf = (order) => pointOf(order?.deliveryLocation) || pointOf(order?.shi
 const carryings = async (partnerId) =>
   Order.find({
     assignedDeliveryPartner: partnerId,
-    orderStatus: { $in: ['packed', 'picked_up', 'in_transit'] }
+    orderStatus: { $in: ['packed', 'picked_up', 'in_transit'] },
   })
     .populate('user', 'name phone')
     .sort({ createdAt: 1 })
@@ -43,7 +44,7 @@ const asStop = (order, from, priority) => {
     distance,
     estimatedMinutes: distance === null ? null : estimateMinutes(distance),
     priority,
-    createdAt: order.createdAt
+    createdAt: order.createdAt,
   };
 };
 
@@ -57,7 +58,10 @@ export const optimizeRoute = async (partnerId) => {
     const partner = await DeliveryPartner.findById(partnerId).lean();
     const start = pointOf(partner?.currentLocation);
     if (!start) {
-      return { success: false, error: 'Turn on location sharing so the route can be planned from where you actually are.' };
+      return {
+        success: false,
+        error: 'Turn on location sharing so the route can be planned from where you actually are.',
+      };
     }
 
     const orders = await carryings(partnerId);
@@ -65,7 +69,11 @@ export const optimizeRoute = async (partnerId) => {
       return {
         success: true,
         message: 'No deliveries in hand right now',
-        data: { optimizedRoute: [], metrics: { totalDistance: 0, totalTime: 0, totalDeliveries: 0 }, recommendations: [] }
+        data: {
+          optimizedRoute: [],
+          metrics: { totalDistance: 0, totalTime: 0, totalDeliveries: 0 },
+          recommendations: [],
+        },
       };
     }
 
@@ -91,7 +99,10 @@ export const optimizeRoute = async (partnerId) => {
         // Picked-up parcels are already in the bag and owed first, so their
         // distance is discounted rather than the list being guessed at.
         const score = leg * (stop.priority === 1 ? 0.8 : 1);
-        if (score < bestScore) { bestScore = score; best = index; }
+        if (score < bestScore) {
+          bestScore = score;
+          best = index;
+        }
       });
 
       const [next] = located.splice(best, 1);
@@ -103,13 +114,16 @@ export const optimizeRoute = async (partnerId) => {
         orderNumber: next.order.orderNumber,
         customerName: next.order.user?.name || 'Customer',
         phone: next.order.user?.phone || '',
-        address: next.order.deliveryLocation?.address
-          || [next.order.shippingAddress?.street, next.order.shippingAddress?.city, next.order.shippingAddress?.pincode].filter(Boolean).join(', '),
+        address:
+          next.order.deliveryLocation?.address ||
+          [next.order.shippingAddress?.street, next.order.shippingAddress?.city, next.order.shippingAddress?.pincode]
+            .filter(Boolean)
+            .join(', '),
         coordinates: next.at,
         status: next.order.orderStatus,
         distanceFromPreviousKm: leg === null ? null : Math.round(leg * 100) / 100,
         minutesFromPrevious: minutes,
-        earnings: Math.round((next.order.deliveryFee || 0) * 100) / 100
+        earnings: Math.round((next.order.deliveryFee || 0) * 100) / 100,
       });
       totalDistance += leg || 0;
       totalTime += minutes;
@@ -122,12 +136,18 @@ export const optimizeRoute = async (partnerId) => {
         orderId: String(stop.order._id),
         orderNumber: stop.order.orderNumber,
         customerName: stop.order.user?.name || 'Customer',
-        address: [stop.order.shippingAddress?.street, stop.order.shippingAddress?.city, stop.order.shippingAddress?.pincode].filter(Boolean).join(', '),
+        address: [
+          stop.order.shippingAddress?.street,
+          stop.order.shippingAddress?.city,
+          stop.order.shippingAddress?.pincode,
+        ]
+          .filter(Boolean)
+          .join(', '),
         coordinates: null,
         status: stop.order.orderStatus,
         distanceFromPreviousKm: null,
         minutesFromPrevious: null,
-        needsAddressFix: true
+        needsAddressFix: true,
       });
     }
 
@@ -142,10 +162,10 @@ export const optimizeRoute = async (partnerId) => {
           totalDeliveries: deliveries,
           avgDistancePerDelivery: deliveries ? Math.round((totalDistance / deliveries) * 100) / 100 : 0,
           avgMinutesPerDelivery: deliveries ? Math.round(totalTime / deliveries) : 0,
-          totalEarnings: Math.round(route.reduce((sum, r) => sum + (r.earnings || 0), 0) * 100) / 100
+          totalEarnings: Math.round(route.reduce((sum, r) => sum + (r.earnings || 0), 0) * 100) / 100,
         },
-        recommendations: generateRecommendations(route, totalDistance, totalTime)
-      }
+        recommendations: generateRecommendations(route, totalDistance, totalTime),
+      },
     };
   } catch (error) {
     console.error('Route optimization error:', error);
@@ -158,20 +178,36 @@ const generateRecommendations = (route, totalDistance, totalTime) => {
   const out = [];
   const unresolved = route.filter((r) => r.needsAddressFix).length;
   if (unresolved) {
-    out.push({ type: 'address', priority: 'high', message: `${unresolved} stop(s) have no usable coordinates, so they are listed last - confirm the address before setting off.` });
+    out.push({
+      type: 'address',
+      priority: 'high',
+      message: `${unresolved} stop(s) have no usable coordinates, so they are listed last - confirm the address before setting off.`,
+    });
   }
   if (totalTime > 240) {
-    out.push({ type: 'time', priority: 'high', message: 'This route is over 4 hours of riding. Consider splitting it into two trips.' });
+    out.push({
+      type: 'time',
+      priority: 'high',
+      message: 'This route is over 4 hours of riding. Consider splitting it into two trips.',
+    });
   }
   if (totalDistance > 60) {
     out.push({ type: 'distance', priority: 'high', message: 'More than 60 km in one run. Plan fuel and a break.' });
   }
   if (route.length > 10) {
-    out.push({ type: 'volume', priority: 'medium', message: `${route.length} stops. Batching the same-building deliveries saves the most time.` });
+    out.push({
+      type: 'volume',
+      priority: 'medium',
+      message: `${route.length} stops. Batching the same-building deliveries saves the most time.`,
+    });
   }
   const urgent = route.filter((r) => r.status === 'picked_up').length;
   if (urgent) {
-    out.push({ type: 'priority', priority: 'medium', message: `${urgent} parcel(s) are already collected and go first.` });
+    out.push({
+      type: 'priority',
+      priority: 'medium',
+      message: `${urgent} parcel(s) are already collected and go first.`,
+    });
   }
   return out;
 };
@@ -194,10 +230,12 @@ export const getRouteUpdates = async (partnerId, currentLat, currentLon) => {
         orderId: String(order._id),
         orderNumber: order.orderNumber,
         customerName: order.user?.name || 'Customer',
-        address: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode].filter(Boolean).join(', '),
+        address: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode]
+          .filter(Boolean)
+          .join(', '),
         distance: distance === null ? null : Math.round(distance * 100) / 100,
         etaMinutes: distance === null ? null : estimateMinutes(distance),
-        status: order.orderStatus
+        status: order.orderStatus,
       };
     });
     return { success: true, data: updates };

@@ -8,7 +8,7 @@ const addressSchema = new mongoose.Schema({
   state: { type: String, required: true },
   pincode: { type: String, required: true },
   phone: { type: String, required: true },
-  isDefault: { type: Boolean, default: false }
+  isDefault: { type: Boolean, default: false },
 });
 
 const prescriptionSchema = new mongoose.Schema({
@@ -22,7 +22,7 @@ const prescriptionSchema = new mongoose.Schema({
   eyePower: {
     leftEye: { sph: String, cyl: String, axis: String },
     rightEye: { sph: String, cyl: String, axis: String },
-    pd: String
+    pd: String,
   },
   uploadedAt: { type: Date, default: Date.now },
   /*
@@ -33,66 +33,69 @@ const prescriptionSchema = new mongoose.Schema({
    */
   verificationId: { type: mongoose.Schema.Types.ObjectId, ref: 'PrescriptionVerification' },
   verificationStatus: { type: String, default: 'pending' },
-  verificationNote: { type: String, default: '' }
+  verificationNote: { type: String, default: '' },
 });
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: [true, 'Name is required'], trim: true },
-  email: {
-    type: String,
-    required: [true, 'Email is required'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: [true, 'Name is required'], trim: true },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
+    },
+    phone: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      match: [/^\d{10}$/, 'Please provide a valid 10-digit phone number'],
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters'],
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'staff'],
+      default: 'user',
+    },
+    avatar: { type: String, default: '' },
+    addresses: [addressSchema],
+    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    prescriptions: [prescriptionSchema],
+    resetOtp: { type: String },
+    resetOtpExpiry: { type: Date },
+    loginOtp: { type: String },
+    loginOtpExpiry: { type: Date },
+    loginTokenExpiry: { type: Date },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
+    isActive: { type: Boolean, default: true },
+    isBanned: { type: Boolean, default: false },
+    isShadowBanned: { type: Boolean, default: false },
+    banReason: { type: String, default: '' },
+    bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    bannedAt: { type: Date },
+    userId: { type: String, unique: true, sparse: true },
   },
-  phone: {
-    type: String,
-    unique: true,
-    sparse: true,
-    trim: true,
-    match: [/^\d{10}$/, 'Please provide a valid 10-digit phone number']
-  },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [6, 'Password must be at least 6 characters']
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin', 'staff'],
-    default: 'user'
-  },
-  avatar: { type: String, default: '' },
-  addresses: [addressSchema],
-  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
-  prescriptions: [prescriptionSchema],
-  resetOtp: { type: String },
-  resetOtpExpiry: { type: Date },
-  loginOtp: { type: String },
-  loginOtpExpiry: { type: Date },
-  loginTokenExpiry: { type: Date },
-  failedLoginAttempts: { type: Number, default: 0 },
-  lockUntil: { type: Date },
-  isActive: { type: Boolean, default: true },
-  isBanned: { type: Boolean, default: false },
-  isShadowBanned: { type: Boolean, default: false },
-  banReason: { type: String, default: '' },
-  bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  bannedAt: { type: Date },
-  userId: { type: String, unique: true, sparse: true }
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  }
+);
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-userSchema.pre('save', function(next) {
+userSchema.pre('save', function (next) {
   if (!this.userId) {
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
     this.userId = `USR-${random}`;
@@ -100,11 +103,11 @@ userSchema.pre('save', function(next) {
   next();
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   delete obj.resetOtp;

@@ -48,20 +48,20 @@ Keep `server/.env` out of version control and out of images.
 
 ### Required
 
-| Key | Notes |
-| --- | --- |
-| `MONGODB_URI` | local `mongodb://localhost:27017/optikart` or an Atlas SRV string |
-| `JWT_SECRET` | long random string; changing it invalidates every session |
-| `PORT` | 5000 by default |
+| Key            | Notes                                                                                                              |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `MONGODB_URI`  | local `mongodb://localhost:27017/optikart` or an Atlas SRV string                                                  |
+| `JWT_SECRET`   | long random string; changing it invalidates every session                                                          |
+| `PORT`         | 5000 by default                                                                                                    |
 | `SEED_ON_BOOT` | `auto` \| `true` \| `false`; the seed deletes the collections it owns, so `auto` only runs it on an empty database |
-| `FRONTEND_URL` | exact browser origin; must match for CORS and Socket.IO |
+| `FRONTEND_URL` | exact browser origin; must match for CORS and Socket.IO                                                            |
 
 ### Environment
 
-| Key | Default | Notes |
-| --- | --- | --- |
-| `NODE_ENV` | `development` | `production` enables stricter behaviour |
-| `TRUST_PROXY_HOPS` | `1` in production, else `0` | number of reverse proxies, not `true` |
+| Key                | Default                     | Notes                                   |
+| ------------------ | --------------------------- | --------------------------------------- |
+| `NODE_ENV`         | `development`               | `production` enables stricter behaviour |
+| `TRUST_PROXY_HOPS` | `1` in production, else `0` | number of reverse proxies, not `true`   |
 
 Set the hop count to the real number of proxies you control. One too many lets clients
 spoof their address; `0` behind a proxy makes every shopper share one IP and trips the
@@ -89,7 +89,6 @@ server/build/static/js/*.js`. A stale bundle was responsible for two dead ends i
 this project's history: a page that "still" showed a link the code no longer
 rendered, and a brand filter that appeared broken while the fix was in a chunk the
 browser had never fetched.
-
 
 1. `cd client && npm run build`
 2. `cd ../server && npm ci --omit=dev && node server.js`
@@ -138,13 +137,12 @@ fails while nobody has looked. A control that reports success and changes nothin
 survives code review and a green build - sellers and shops found these by coming
 back the next day and discovering their listing, payout or session was untouched.
 
-
 ### Distance ceilings, and why they are these numbers
 
-| Constant | Default | Meaning |
-| --- | --- | --- |
-| `PARTNER_PICKUP_RADIUS_KM` | 4.5 km | how far a partner may be from the **store** and still be asked to collect. Pay is ₹10 per km of the delivery leg, so a distant partner would burn fuel and an hour reaching a counter for a few rupees - asking them is not a courtesy, it is a bad instruction. |
-| `MAX_DELIVERY_LEG_KM` | 23 km | the longest **store-to-buyer** leg a partner may be given, on either the cascade or the desk's manual assignment path. `PARTNER_MAX_LEAD_KM` is an alias for the same value so the two paths cannot disagree. |
+| Constant                   | Default | Meaning                                                                                                                                                                                                                                                          |
+| -------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PARTNER_PICKUP_RADIUS_KM` | 4.5 km  | how far a partner may be from the **store** and still be asked to collect. Pay is ₹10 per km of the delivery leg, so a distant partner would burn fuel and an hour reaching a counter for a few rupees - asking them is not a courtesy, it is a bad instruction. |
+| `MAX_DELIVERY_LEG_KM`      | 23 km   | the longest **store-to-buyer** leg a partner may be given, on either the cascade or the desk's manual assignment path. `PARTNER_MAX_LEAD_KM` is an alias for the same value so the two paths cannot disagree.                                                    |
 
 Both moved from the previous 12 km / 60 km. At 60 km the rate pays ₹600 for one
 hand-over, the buyer waits most of a day, and a Mumbai-to-Kolkata parcel was only
@@ -178,22 +176,23 @@ and staff were already reachable because they genuinely are Users.
 
 What now tells whom:
 
-| Event | Who is told |
-| --- | --- |
-| Shop confirms/packs/ships/delivers/cancels | the buyer, with the order number in the text |
-| Order packed or picked up while a partner is assigned | that partner |
-| Desk assigns a run by hand | that partner |
-| Withdrawal settled by the desk | that partner, with net paid and the bank reference |
-| Brand approves or refuses a supply claim | the shop that made it |
-| Platform verifies or refuses a listing | the same shop |
+| Event                                                 | Who is told                                        |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| Shop confirms/packs/ships/delivers/cancels            | the buyer, with the order number in the text       |
+| Order packed or picked up while a partner is assigned | that partner                                       |
+| Desk assigns a run by hand                            | that partner                                       |
+| Withdrawal settled by the desk                        | that partner, with net paid and the bank reference |
+| Brand approves or refuses a supply claim              | the shop that made it                              |
+| Platform verifies or refuses a listing                | the same shop                                      |
 
 Notification failures never fail the action they report: the order status,
 assignment, settlement and decision are all already committed when the note is
 attempted, so a lost note is logged as `shop_notify_failed` /
 `assign_notify_failed` / `settle_notify_failed` and the API still returns success
+
 - which is the only honest arrangement, and the reason the log lines exist.
 
-Two notes for whoever changes this next. A socket `io` is *not* available in
+Two notes for whoever changes this next. A socket `io` is _not_ available in
 `services/listingApproval.js`; the first pass of the fan-out passed `io` into the
 decision functions from scope they never received, which turns the request into a
 `ReferenceError` at the moment a brand clicks approve - a syntax check cannot see
@@ -215,7 +214,7 @@ are written into the URL, which is what makes Back return to the previous filter
 set and a filtered view shareable; `scripts/search_facets_e2e.mjs` asserts both the
 narrowing and the "no dead-end options" property.
 
-One consequence is worth knowing when reading that suite: a *combination* can still
+One consequence is worth knowing when reading that suite: a _combination_ can still
 legitimately return nothing (the seeded sunglasses include no `men` frames, so
 `category=sunglasses&gender=men` is empty), because each option is valid on its own.
 The results page handles that with an explicit empty state plus the **Clear filters**
@@ -245,30 +244,31 @@ contract audit and the suites below, and prints one line per group. It exits
 non-zero if any of them fails. To point it at a database that already exists,
 set `MONGODB_URI`; to use a different port, `VERIFY_PORT`.
 
-| Group | What it proves |
-| --- | --- |
-| `server/scripts/audit/api-contract.mjs` | Every `api.get/post/...` path in the client resolves to a mounted server route (323 calls). |
-| `scripts/session_e2e.mjs` | 60 assertions: each of the eight consoles can sign in, be refused after logout with the same token, and sign in again. |
-| `scripts/safety_e2e.mjs` | 17: prescription gating and concurrent stock reservation. |
-| `scripts/catalog_access_e2e.mjs` | 27: catalogue visibility and role access. |
-| `scripts/dispatch_e2e.mjs` | 21: the delivery dispatch cascade. |
-| `scripts/partner_flow_e2e.mjs` | 18: partner report, earnings, payout. |
+| Group                                   | What it proves                                                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `server/scripts/audit/api-contract.mjs` | Every `api.get/post/...` path in the client resolves to a mounted server route (323 calls).                            |
+| `scripts/session_e2e.mjs`               | 60 assertions: each of the eight consoles can sign in, be refused after logout with the same token, and sign in again. |
+| `scripts/safety_e2e.mjs`                | 17: prescription gating and concurrent stock reservation.                                                              |
+| `scripts/catalog_access_e2e.mjs`        | 27: catalogue visibility and role access.                                                                              |
+| `scripts/dispatch_e2e.mjs`              | 21: the delivery dispatch cascade.                                                                                     |
+| `scripts/partner_flow_e2e.mjs`          | 18: partner report, earnings, payout.                                                                                  |
 
 The audit is there because a client call that hits no route is invisible: the
 server's fallback answers 404, most callers catch it, and the operator sees an
 empty list or a generic "failed to load". Four consoles were doing exactly that
+
 - their Logout buttons called a route that had never existed.
 
 ### Reading a live system
 
-| Check | Command |
-| --- | --- |
-| API alive | `curl -s localhost:3000/api/health` |
-| What it is unhealthy about | the same response names the failing dependency (`status: "degraded"`) |
-| Traffic, latency, errors | `curl -s -H "Authorization: Bearer <admin token>" localhost:3000/api/metrics` |
-| Seeded logins work | `POST /api/auth/login` with a seeded account |
-| Frontend served | `curl -s -o /dev/null -w '%{http_code}' localhost:3000/` |
-| Websocket up | connect, then look for `Client connected` in the server log |
+| Check                      | Command                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| API alive                  | `curl -s localhost:3000/api/health`                                           |
+| What it is unhealthy about | the same response names the failing dependency (`status: "degraded"`)         |
+| Traffic, latency, errors   | `curl -s -H "Authorization: Bearer <admin token>" localhost:3000/api/metrics` |
+| Seeded logins work         | `POST /api/auth/login` with a seeded account                                  |
+| Frontend served            | `curl -s -o /dev/null -w '%{http_code}' localhost:3000/`                      |
+| Websocket up               | connect, then look for `Client connected` in the server log                   |
 
 Every response carries `X-Request-Id`, and every request over 1s or with a 5xx
 status writes one JSON line to stdout with the same `id`. So a user report of
@@ -300,7 +300,6 @@ must be looked up, so if Mongo is unreachable the revocation check is skipped
 rather than rejecting every request - a signed-out session can finish its
 in-flight calls during a database blip, which is smaller than the storefront
 going dark.
-
 
 ## Delivery dispatch, end to end
 
@@ -360,7 +359,7 @@ the flat **₹39 cash-on-delivery handling charge**, and the coupon share.
   order route charged a platform fee that the panel never displayed - a legal
   charge that was invisible is a disputable one, and 2% of ₹9,000 is not a
   rounding error.
-- The order route calls the same function on the prices *it* resolved (from the
+- The order route calls the same function on the prices _it_ resolved (from the
   chosen colour/size and the stock row), so the quote and the order cannot
   round differently. A basket that splits across shops produces one document per
   shop and the ₹39 rides on exactly one of them: per purchase, never per shop.
@@ -397,13 +396,13 @@ verified by the platform:
 
 `awaiting_manufacturer -> awaiting_admin -> live`, plus `rejected` and `paused`.
 
-| Who | Where | What they see |
-| --- | --- | --- |
-| Manufacturer's retailer | `/manufacturer-seller` dashboard, "List this frame" | A source declaration before anything is sent: brand purchase (with invoice/PO), stockist supply, or "somewhere else" in words a brand can check. |
-| Any seller stocking a branded line | `/seller/brand-stock` | The same declaration against the brand catalogue their account is opened to, plus the state each listing is in - waiting on the brand, waiting on OptiKart, live, refused, paused. This writes the `SellerStock` row order routing reads. |
-| The brand | `/manufacturer` dashboard, Listing requests | The claim, the reference, who declared it and how many times; "We supplied them" or refuse with a reason. |
-| Platform admin | `/admin/supply-claims` | What the brand approved, then Verify or refuse. Also the listings that were selling before the rule. |
-| Services | `server/services/listingApproval.js` | One implementation of all three steps, used by both listing documents. |
+| Who                                | Where                                               | What they see                                                                                                                                                                                                                             |
+| ---------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Manufacturer's retailer            | `/manufacturer-seller` dashboard, "List this frame" | A source declaration before anything is sent: brand purchase (with invoice/PO), stockist supply, or "somewhere else" in words a brand can check.                                                                                          |
+| Any seller stocking a branded line | `/seller/brand-stock`                               | The same declaration against the brand catalogue their account is opened to, plus the state each listing is in - waiting on the brand, waiting on OptiKart, live, refused, paused. This writes the `SellerStock` row order routing reads. |
+| The brand                          | `/manufacturer` dashboard, Listing requests         | The claim, the reference, who declared it and how many times; "We supplied them" or refuse with a reason.                                                                                                                                 |
+| Platform admin                     | `/admin/supply-claims`                              | What the brand approved, then Verify or refuse. Also the listings that were selling before the rule.                                                                                                                                      |
+| Services                           | `server/services/listingApproval.js`                | One implementation of all three steps, used by both listing documents.                                                                                                                                                                    |
 
 Rules that hold this together:
 
@@ -481,7 +480,7 @@ Each console is guarded by its own middleware (`verifySeller`, `verifyAdmin`,
 `verifyStaff`, `verifyExecutive`, `verifyManufacturer`, `verifyManufacturerSeller`,
 `verifyDeliveryPartner`) in `middleware/auth.js`. They check the token, that an
 account of that role exists for it, and that it is neither deactivated nor banned,
-answering 403 with the area that was refused. Upload routes authenticate *before*
+answering 403 with the area that was refused. Upload routes authenticate _before_
 multer parses the body.
 
 On the client `ProtectedRoute` reads the role from the signed-in session, never
@@ -509,11 +508,11 @@ is how a promotion goes missing unnoticed.
 Two ways to make a production install unreachable are wired against at boot, and the
 process **exits** rather than starting broken:
 
-| Condition | Why it stops |
-| --- | --- |
-| `SEED_ON_BOOT=true` in production | the seed deletes the collections it owns before writing demo fixtures |
-| no SMTP in production | every role sign-in requires an emailed OTP; without mail no account can be reached again, including the first one |
-| missing/short/placeholder `JWT_SECRET` | a known secret lets anyone mint a session for any role, admin included |
+| Condition                              | Why it stops                                                                                                      |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `SEED_ON_BOOT=true` in production      | the seed deletes the collections it owns before writing demo fixtures                                             |
+| no SMTP in production                  | every role sign-in requires an emailed OTP; without mail no account can be reached again, including the first one |
+| missing/short/placeholder `JWT_SECRET` | a known secret lets anyone mint a session for any role, admin included                                            |
 
 `BOOTSTRAP_ADMIN_EMAIL` / `_PASSWORD` / `_NAME` create exactly one administrator when no
 active admin exists. It is skipped silently when an admin already exists, refuses a weak
@@ -602,6 +601,7 @@ Stated plainly so nothing is mistaken for done.
   and a consent UI).
 
 ### Smaller rough edges worth knowing
+
 - Notifications: fixed. Both `routes/notification.js` and `routes/notifications.js`
   were mounted at `/api/notifications`, and because Express answers from the first
   router that matches, the second file's `GET /`, `PUT /:id/read` and
@@ -614,7 +614,6 @@ Stated plainly so nothing is mistaken for done.
   CI was green because the step never ran, which is its own lesson about verifying
   a check by breaking it on purpose rather than by reading it.
 
-
 - Return and exchange eligibility is evaluated per line against that product's
   `returnWindowDays`. A product with the field unset falls back to the platform's
   7 days; there is no per-category default table yet.
@@ -626,7 +625,7 @@ Stated plainly so nothing is mistaken for done.
 - A partner withdrawal that no gateway paid sits in the ledger as
   `awaiting_settlement` with the balance reserved, and leaves that state only
   when an admin records a bank transfer reference (`GET
-  /api/delivery-partner/payouts/pending`, `POST .../payouts/:id/settle`). Two
+/api/delivery-partner/payouts/pending`, `POST .../payouts/:id/settle`). Two
   things used to stand in the way of that: the withdrawal wrote a generated
   `payout_<timestamp>` id and called it processed, and a Mongoose ObjectId
   answers `_id` with itself, so `partnerOrId._id ? partnerOrId : find(...)`

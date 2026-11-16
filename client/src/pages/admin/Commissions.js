@@ -14,7 +14,7 @@ const Commissions = () => {
     totalCommission: 0,
     totalOrders: 0,
     averageCommission: 0,
-    pendingPayout: 0
+    pendingPayout: 0,
   });
 
   useEffect(() => {
@@ -32,13 +32,15 @@ const Commissions = () => {
       const totalCommission = rows.reduce((sum, c) => sum + (c.commissionAmount || 0), 0);
       const totalOrders = rows.length;
       const averageCommission = totalOrders > 0 ? totalCommission / totalOrders : 0;
-      const pendingPayout = rows.filter(c => !c.commissionPaid).reduce((sum, c) => sum + (c.sellerPayoutAmount || 0), 0);
-      
+      const pendingPayout = rows
+        .filter((c) => !c.commissionPaid)
+        .reduce((sum, c) => sum + (c.sellerPayoutAmount || 0), 0);
+
       setStats({
         totalCommission,
         totalOrders,
         averageCommission,
-        pendingPayout
+        pendingPayout,
       });
     } catch (err) {
       console.error(err);
@@ -47,21 +49,33 @@ const Commissions = () => {
     }
   };
 
-  const filteredCommissions = commissions.filter(comm => {
-    const matchesSearch = searchQuery === '' || 
+  const filteredCommissions = commissions.filter((comm) => {
+    const matchesSearch =
+      searchQuery === '' ||
       comm.orderNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       comm.seller?.storeName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       comm.product?.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesDate = (!dateRange.from || new Date(comm.createdAt) >= new Date(dateRange.from)) &&
-                        (!dateRange.to || new Date(comm.createdAt) <= new Date(dateRange.to));
-    
+
+    const matchesDate =
+      (!dateRange.from || new Date(comm.createdAt) >= new Date(dateRange.from)) &&
+      (!dateRange.to || new Date(comm.createdAt) <= new Date(dateRange.to));
+
     return matchesSearch && matchesDate;
   });
 
   const exportToCSV = () => {
-    const headers = ['Order ID', 'Seller', 'Product', 'Sale Price', 'Commission %', 'Commission Amount', 'Seller Payout', 'Status', 'Date'];
-    const rows = filteredCommissions.map(c => [
+    const headers = [
+      'Order ID',
+      'Seller',
+      'Product',
+      'Sale Price',
+      'Commission %',
+      'Commission Amount',
+      'Seller Payout',
+      'Status',
+      'Date',
+    ];
+    const rows = filteredCommissions.map((c) => [
       c.orderNumber || c._id,
       c.seller?.storeName || 'N/A',
       c.product?.title || 'N/A',
@@ -70,10 +84,10 @@ const Commissions = () => {
       c.commissionAmount || 0,
       c.sellerPayoutAmount || 0,
       c.commissionPaid ? 'Paid' : 'Pending',
-      new Date(c.createdAt).toLocaleDateString()
+      new Date(c.createdAt).toLocaleDateString(),
     ]);
-    
-    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+
+    const csvContent = [headers, ...rows].map((row) => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -113,7 +127,7 @@ const Commissions = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                fontWeight: 600
+                fontWeight: 600,
               }}
             >
               <FiDownload /> Export CSV
@@ -121,11 +135,20 @@ const Commissions = () => {
           </div>
 
           {/* Stats Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '16px',
+              marginBottom: '24px',
+            }}
+          >
             <div className="card" style={{ padding: '20px', borderLeft: '4px solid var(--brand)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>Total Commission</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
+                    Total Commission
+                  </p>
                   <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     ₹{stats.totalCommission.toLocaleString('en-IN')}
                   </h3>
@@ -147,7 +170,9 @@ const Commissions = () => {
             <div className="card" style={{ padding: '20px', borderLeft: '4px solid #26a541' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>Average Commission</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
+                    Average Commission
+                  </p>
                   <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     ₹{Math.round(stats.averageCommission).toLocaleString('en-IN')}
                   </h3>
@@ -158,7 +183,9 @@ const Commissions = () => {
             <div className="card" style={{ padding: '20px', borderLeft: '4px solid #ff6161' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>Pending Payout</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
+                    Pending Payout
+                  </p>
                   <h3 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
                     ₹{stats.pendingPayout.toLocaleString('en-IN')}
                   </h3>
@@ -171,7 +198,15 @@ const Commissions = () => {
           {/* Filters */}
           <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
-              <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+              <FiSearch
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-light)',
+                }}
+              />
               <input
                 type="text"
                 placeholder="Search by order ID, seller, or product..."
@@ -182,7 +217,7 @@ const Commissions = () => {
                   padding: '10px 12px 10px 38px',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-md)',
-                  fontSize: '14px'
+                  fontSize: '14px',
                 }}
               />
             </div>
@@ -196,7 +231,7 @@ const Commissions = () => {
                   padding: '10px',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-md)',
-                  fontSize: '14px'
+                  fontSize: '14px',
                 }}
                 placeholder="From"
               />
@@ -209,7 +244,7 @@ const Commissions = () => {
                   padding: '10px',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-md)',
-                  fontSize: '14px'
+                  fontSize: '14px',
                 }}
                 placeholder="To"
               />
@@ -227,9 +262,22 @@ const Commissions = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-                      {['Order ID', 'Seller', 'Product', 'Sale Price', 'Commission', 'Payout', 'Status', 'Date'].map((h) => (
-                        <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>
-                      ))}
+                      {['Order ID', 'Seller', 'Product', 'Sale Price', 'Commission', 'Payout', 'Status', 'Date'].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            style={{
+                              padding: '12px 16px',
+                              textAlign: 'left',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: 'var(--text-secondary)',
+                            }}
+                          >
+                            {h}
+                          </th>
+                        )
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -238,12 +286,8 @@ const Commissions = () => {
                         <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 500 }}>
                           #{comm.orderNumber || comm._id.slice(-8).toUpperCase()}
                         </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>
-                          {comm.seller?.storeName || 'N/A'}
-                        </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>
-                          {comm.product?.title || 'N/A'}
-                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>{comm.seller?.storeName || 'N/A'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>{comm.product?.title || 'N/A'}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600 }}>
                           ₹{(comm.subtotal || 0).toLocaleString('en-IN')}
                         </td>
@@ -257,18 +301,22 @@ const Commissions = () => {
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--success)' }}>
+                        <td
+                          style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--success)' }}
+                        >
                           ₹{(comm.sellerPayoutAmount || 0).toLocaleString('en-IN')}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: 'var(--radius-xs)',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            background: comm.commissionPaid ? 'var(--success-light)' : 'var(--warning-light)',
-                            color: comm.commissionPaid ? 'var(--success)' : 'var(--warning)'
-                          }}>
+                          <span
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 'var(--radius-xs)',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              background: comm.commissionPaid ? 'var(--success-light)' : 'var(--warning-light)',
+                              color: comm.commissionPaid ? 'var(--success)' : 'var(--warning)',
+                            }}
+                          >
                             {comm.commissionPaid ? 'Paid' : 'Pending'}
                           </span>
                         </td>

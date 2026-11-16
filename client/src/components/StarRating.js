@@ -6,7 +6,7 @@ const styles = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
   },
   starsWrap: {
     display: 'inline-flex',
@@ -169,13 +169,9 @@ export default function StarRating({
         })}
       </div>
 
-      {showNumber && (
-        <span style={styles.ratingText}>{displayRating.toFixed(1)}</span>
-      )}
+      {showNumber && <span style={styles.ratingText}>{displayRating.toFixed(1)}</span>}
 
-      {count !== undefined && (
-        <span style={styles.countText}>({count})</span>
-      )}
+      {count !== undefined && <span style={styles.countText}>({count})</span>}
     </div>
   );
 }

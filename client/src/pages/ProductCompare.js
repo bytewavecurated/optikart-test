@@ -22,7 +22,7 @@ const ProductCompare = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const productIds = params.get('products')?.split(',') || [];
-    
+
     if (productIds.length > 0) {
       loadProducts(productIds);
     }
@@ -67,7 +67,7 @@ const ProductCompare = () => {
       return;
     }
 
-    if (compareProducts.find(p => p._id === product._id)) {
+    if (compareProducts.find((p) => p._id === product._id)) {
       toast.error('Product already in comparison');
       return;
     }
@@ -79,7 +79,7 @@ const ProductCompare = () => {
   };
 
   const removeProduct = (productId) => {
-    setCompareProducts(compareProducts.filter(p => p._id !== productId));
+    setCompareProducts(compareProducts.filter((p) => p._id !== productId));
     toast.success('Product removed from comparison');
   };
 
@@ -93,18 +93,30 @@ const ProductCompare = () => {
 
   const getSpecValue = (product, spec) => {
     switch (spec) {
-      case 'brand': return product.brand || 'N/A';
-      case 'category': return product.category || 'N/A';
-      case 'frameShape': return product.frameShape || 'N/A';
-      case 'frameColor': return product.frameColor || 'N/A';
-      case 'lensType': return product.lensType || 'N/A';
-      case 'gender': return product.gender || 'N/A';
-      case 'frameSize': return product.frameSize || 'N/A';
-      case 'material': return product.material?.join(', ') || 'N/A';
-      case 'weight': return product.weight ? `${product.weight}g` : 'N/A';
-      case 'warranty': return product.warranty || 'N/A';
-      case 'rating': return product.rating ? `${product.rating.toFixed(1)} (${product.totalRatings || 0} reviews)` : 'No ratings';
-      default: return 'N/A';
+      case 'brand':
+        return product.brand || 'N/A';
+      case 'category':
+        return product.category || 'N/A';
+      case 'frameShape':
+        return product.frameShape || 'N/A';
+      case 'frameColor':
+        return product.frameColor || 'N/A';
+      case 'lensType':
+        return product.lensType || 'N/A';
+      case 'gender':
+        return product.gender || 'N/A';
+      case 'frameSize':
+        return product.frameSize || 'N/A';
+      case 'material':
+        return product.material?.join(', ') || 'N/A';
+      case 'weight':
+        return product.weight ? `${product.weight}g` : 'N/A';
+      case 'warranty':
+        return product.warranty || 'N/A';
+      case 'rating':
+        return product.rating ? `${product.rating.toFixed(1)} (${product.totalRatings || 0} reviews)` : 'No ratings';
+      default:
+        return 'N/A';
     }
   };
 
@@ -152,8 +164,16 @@ const ProductCompare = () => {
               </div>
 
               {searchResults.length > 0 && (
-                <div style={{ marginTop: '12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', maxHeight: '300px', overflowY: 'auto' }}>
-                  {searchResults.map(product => (
+                <div
+                  style={{
+                    marginTop: '12px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {searchResults.map((product) => (
                     <div
                       key={product._id}
                       style={{
@@ -163,16 +183,21 @@ const ProductCompare = () => {
                         alignItems: 'center',
                         gap: '12px',
                         cursor: 'pointer',
-                        transition: 'background 0.2s'
+                        transition: 'background 0.2s',
                       }}
                       onClick={() => addProduct(product)}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-primary)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
                       <img
                         src={product.images?.[0] || '/placeholder.svg'}
                         alt={product.name}
-                        style={{ width: '60px', height: '60px', objectFit: 'contain', borderRadius: 'var(--radius-xs)' }}
+                        style={{
+                          width: '60px',
+                          height: '60px',
+                          objectFit: 'contain',
+                          borderRadius: 'var(--radius-xs)',
+                        }}
                       />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '14px', fontWeight: 500 }}>{product.name}</div>
@@ -197,17 +222,21 @@ const ProductCompare = () => {
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
                 Search and add products to compare them side by side
               </p>
-              <Link to="/products" className="btn btn-primary">Browse Products</Link>
+              <Link to="/products" className="btn btn-primary">
+                Browse Products
+              </Link>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
                 <thead>
                   <tr style={{ background: 'var(--bg-primary)' }}>
-                    <th style={{ padding: '16px', textAlign: 'left', fontSize: '14px', fontWeight: 600, width: '150px' }}>
+                    <th
+                      style={{ padding: '16px', textAlign: 'left', fontSize: '14px', fontWeight: 600, width: '150px' }}
+                    >
                       Feature
                     </th>
-                    {compareProducts.map(product => (
+                    {compareProducts.map((product) => (
                       <th key={product._id} style={{ padding: '16px', textAlign: 'center', minWidth: '200px' }}>
                         <div style={{ position: 'relative' }}>
                           <button
@@ -225,7 +254,7 @@ const ProductCompare = () => {
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              cursor: 'pointer'
+                              cursor: 'pointer',
                             }}
                           >
                             <FiX size={14} />
@@ -236,8 +265,12 @@ const ProductCompare = () => {
                             style={{ width: '120px', height: '120px', objectFit: 'contain', marginBottom: '12px' }}
                           />
                           <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{product.name}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--text-light)', marginBottom: '8px' }}>{product.brand}</div>
-                          <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)', marginBottom: '12px' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--text-light)', marginBottom: '8px' }}>
+                            {product.brand}
+                          </div>
+                          <div
+                            style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)', marginBottom: '12px' }}
+                          >
                             ₹{product.price?.toLocaleString()}
                           </div>
                           <button
@@ -253,12 +286,19 @@ const ProductCompare = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {specs.map(spec => (
+                  {specs.map((spec) => (
                     <tr key={spec.key} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      <td
+                        style={{
+                          padding: '12px 16px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
                         {spec.label}
                       </td>
-                      {compareProducts.map(product => (
+                      {compareProducts.map((product) => (
                         <td key={product._id} style={{ padding: '12px 16px', textAlign: 'center', fontSize: '13px' }}>
                           {getSpecValue(product, spec.key)}
                         </td>

@@ -29,7 +29,7 @@ const razorpay = () => {
 const NOT_CONFIGURED = {
   success: false,
   configMissing: true,
-  error: 'Razorpay API keys are not configured. Card payment is unavailable; cash on delivery is unaffected.'
+  error: 'Razorpay API keys are not configured. Card payment is unavailable; cash on delivery is unaffected.',
 };
 
 export const createOrder = async (amount, currency = 'INR', receipt) => {
@@ -38,7 +38,7 @@ export const createOrder = async (amount, currency = 'INR', receipt) => {
       amount: amount * 100,
       currency,
       receipt: receipt || `receipt_${Date.now()}`,
-      payment_capture: 1
+      payment_capture: 1,
     };
 
     const rzp = razorpay();
@@ -50,7 +50,7 @@ export const createOrder = async (amount, currency = 'INR', receipt) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      receipt: order.receipt
+      receipt: order.receipt,
     };
   } catch (error) {
     console.error('Error creating Razorpay order:', error);
@@ -61,10 +61,7 @@ export const createOrder = async (amount, currency = 'INR', receipt) => {
 export const verifyOrder = (orderId, paymentId, signature) => {
   try {
     const sign = orderId + '|' + paymentId;
-    const expectedSign = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(sign)
-      .digest('hex');
+    const expectedSign = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(sign).digest('hex');
 
     if (signature === expectedSign) {
       return { success: true, verified: true };
@@ -76,8 +73,6 @@ export const verifyOrder = (orderId, paymentId, signature) => {
     return { success: false, verified: false, error: error.message };
   }
 };
-
-
 
 export const fetchPayment = async (paymentId) => {
   try {
@@ -91,7 +86,7 @@ export const fetchPayment = async (paymentId) => {
       amount: payment.amount,
       currency: payment.currency,
       status: payment.status,
-      method: payment.method
+      method: payment.method,
     };
   } catch (error) {
     console.error('Error fetching Razorpay payment:', error);
@@ -112,14 +107,14 @@ export const processRefund = async ({ paymentId, amount, speed = 'optimum', note
         refundId: `rf_mock_${Date.now()}`,
         amount: amount,
         status: 'processed',
-        message: 'Mock refund processed'
+        message: 'Mock refund processed',
       };
     }
 
     const refund = await razorpay.payments.refund(paymentId, {
       amount,
       speed,
-      notes
+      notes,
     });
 
     return {
@@ -127,7 +122,7 @@ export const processRefund = async ({ paymentId, amount, speed = 'optimum', note
       refundId: refund.id,
       amount: refund.amount,
       status: refund.status,
-      message: 'Refund processed successfully'
+      message: 'Refund processed successfully',
     };
   } catch (error) {
     console.error('Error processing refund:', error);
@@ -139,7 +134,7 @@ export const processRefund = async ({ paymentId, amount, speed = 'optimum', note
  * Transfer funds to seller's bank account
  * Note: This requires RazorpayX integration for actual fund transfers
  * For now, this is a mock implementation that simulates the transfer
- * 
+ *
  * To enable real transfers:
  * 1. Sign up for RazorpayX (https://razorpay.com/x/)
  * 2. Get RazorpayX API keys
@@ -184,7 +179,8 @@ export const transferFunds = async ({ amount, paymentId, accountNumber, ifscCode
       success: false,
       status: 'not_initiated',
       requiresManualSettlement: true,
-      message: 'No source payment for an automated transfer. Settle from the RazorpayX dashboard or supply paymentId; the payout stays pending until it is actually paid.'
+      message:
+        'No source payment for an automated transfer. Settle from the RazorpayX dashboard or supply paymentId; the payout stays pending until it is actually paid.',
     };
   }
 
@@ -193,7 +189,7 @@ export const transferFunds = async ({ amount, paymentId, accountNumber, ifscCode
       success: false,
       configMissing: true,
       status: 'not_initiated',
-      message: 'Razorpay API keys are not configured. The payout stays pending.'
+      message: 'Razorpay API keys are not configured. The payout stays pending.',
     };
   }
 
@@ -207,15 +203,17 @@ export const transferFunds = async ({ amount, paymentId, accountNumber, ifscCode
       currency: 'INR',
       // A recipient entity is required by the API; without a linked sub-
       // account the call fails loudly rather than reporting false success.
-      transfers: [{
-        account_number: accountNumber,
-        ifsc: ifscCode,
-        amount: Math.round(value * 100),
-        currency: 'INR',
-        name: name || undefined
-      }],
+      transfers: [
+        {
+          account_number: accountNumber,
+          ifsc: ifscCode,
+          amount: Math.round(value * 100),
+          currency: 'INR',
+          name: name || undefined,
+        },
+      ],
       oneshot: true,
-      notes: notes || undefined
+      notes: notes || undefined,
     });
 
     return {
@@ -223,14 +221,14 @@ export const transferFunds = async ({ amount, paymentId, accountNumber, ifscCode
       id: transfer.id,
       amount: value,
       status: transfer.status || 'processed',
-      message: 'Transfer accepted by Razorpay.'
+      message: 'Transfer accepted by Razorpay.',
     };
   } catch (error) {
     console.error('Razorpay transfer failed:', error.message);
     return {
       success: false,
       status: 'failed',
-      message: (error && error.error && error.error.description) || error.message || 'Transfer rejected by Razorpay.'
+      message: (error && error.error && error.error.description) || error.message || 'Transfer rejected by Razorpay.',
     };
   }
 };

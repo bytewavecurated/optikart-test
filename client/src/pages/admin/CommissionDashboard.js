@@ -21,7 +21,7 @@ const CommissionDashboard = () => {
       setLoading(true);
       const [summaryRes, pendingRes] = await Promise.all([
         adminApi.getCommissionSummary(dateRange),
-        adminApi.getPendingCommissions()
+        adminApi.getPendingCommissions(),
       ]);
 
       if (summaryRes.data.success) {
@@ -32,7 +32,7 @@ const CommissionDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching commission data:', error);
-      toastError(error, "Failed to load commission data");
+      toastError(error, 'Failed to load commission data');
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ const CommissionDashboard = () => {
         toast.error(res.data.error || 'Failed to record commission');
       }
     } catch (error) {
-      toastError(error, "Failed to record commission");
+      toastError(error, 'Failed to record commission');
     }
   };
 
@@ -80,7 +80,9 @@ const CommissionDashboard = () => {
         <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'end', flexWrap: 'wrap' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Start Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                Start Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -89,7 +91,9 @@ const CommissionDashboard = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>End Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                End Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -97,13 +101,22 @@ const CommissionDashboard = () => {
                 onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
               />
             </div>
-            <button onClick={fetchData} className="btn btn-primary">Apply Filter</button>
+            <button onClick={fetchData} className="btn btn-primary">
+              Apply Filter
+            </button>
           </div>
         </div>
 
         {/* Summary Cards */}
         {summary && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px',
+              marginBottom: '24px',
+            }}
+          >
             <div className="card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                 <FiDollarSign size={24} color="var(--primary)" />
@@ -140,9 +153,13 @@ const CommissionDashboard = () => {
 
         {/* Pending Commissions */}
         <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Pending Commissions ({pendingOrders.length})</h3>
+          <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>
+            Pending Commissions ({pendingOrders.length})
+          </h3>
           {pendingOrders.length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>No pending commissions</p>
+            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '20px' }}>
+              No pending commissions
+            </p>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -165,10 +182,7 @@ const CommissionDashboard = () => {
                       <td style={{ padding: '12px', textAlign: 'right' }}>₹{order.totalAmount?.toLocaleString()}</td>
                       <td style={{ padding: '12px' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
                       <td style={{ padding: '12px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => handleRecordCommission(order._id)}
-                          className="btn btn-primary btn-sm"
-                        >
+                        <button onClick={() => handleRecordCommission(order._id)} className="btn btn-primary btn-sm">
                           Record
                         </button>
                       </td>
@@ -201,7 +215,9 @@ const CommissionDashboard = () => {
                       <td style={{ padding: '12px', fontWeight: 600 }}>{seller.seller?.storeName || 'N/A'}</td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>{seller.totalOrders}</td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>₹{seller.totalAmount?.toLocaleString()}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>₹{seller.totalCommission?.toLocaleString()}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>
+                        ₹{seller.totalCommission?.toLocaleString()}
+                      </td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>₹{seller.totalNet?.toLocaleString()}</td>
                     </tr>
                   ))}

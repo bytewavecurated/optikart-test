@@ -40,7 +40,9 @@ const Checkout = () => {
       }
     };
     if (isAuthenticated) loadSaved();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
 
   // Same rule as services/prescriptionGate.js, so the shopper is asked for the
@@ -78,10 +80,17 @@ const Checkout = () => {
   useEffect(() => {
     if (!needsPrescription) return undefined;
     let alive = true;
-    auth.getPrescriptions()
-      .then((res) => { if (alive) setPrescriptions(res.data.prescriptions || []); })
-      .catch(() => { if (alive) setPrescriptions([]); });
-    return () => { alive = false; };
+    auth
+      .getPrescriptions()
+      .then((res) => {
+        if (alive) setPrescriptions(res.data.prescriptions || []);
+      })
+      .catch(() => {
+        if (alive) setPrescriptions([]);
+      });
+    return () => {
+      alive = false;
+    };
   }, [needsPrescription]);
 
   const [paymentMethod, setPaymentMethod] = useState('online');
@@ -110,24 +119,34 @@ const Checkout = () => {
 
   useEffect(() => {
     let cancelled = false;
-    const lines = (items || []).map((item) => ({
-      product: item.product?._id || item.product,
-      quantity: item.quantity
-    })).filter((l) => l.product && l.quantity > 0);
+    const lines = (items || [])
+      .map((item) => ({
+        product: item.product?._id || item.product,
+        quantity: item.quantity,
+      }))
+      .filter((l) => l.product && l.quantity > 0);
     if (!lines.length) {
       setQuote(null);
       return undefined;
     }
     const timer = setTimeout(() => {
-      orders.quote({
-        items: lines,
-        paymentMethod,
-        couponCode: coupon?.code || ''
-      })
-        .then((res) => { if (!cancelled) setQuote(res.data?.quote || null); })
-        .catch(() => { if (!cancelled) setQuote(null); });
+      orders
+        .quote({
+          items: lines,
+          paymentMethod,
+          couponCode: coupon?.code || '',
+        })
+        .then((res) => {
+          if (!cancelled) setQuote(res.data?.quote || null);
+        })
+        .catch(() => {
+          if (!cancelled) setQuote(null);
+        });
     }, 220);
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [items, paymentMethod, coupon]);
 
   const handleApplyCoupon = async () => {
@@ -148,7 +167,14 @@ const Checkout = () => {
 
   const handleAddressSubmit = async (e) => {
     e.preventDefault();
-    if (!address.fullName || !address.phone || !address.addressLine || !address.city || !address.state || !address.pincode) {
+    if (
+      !address.fullName ||
+      !address.phone ||
+      !address.addressLine ||
+      !address.city ||
+      !address.state ||
+      !address.pincode
+    ) {
       toast.error('Please fill all address fields');
       return;
     }
@@ -169,7 +195,7 @@ const Checkout = () => {
             city: address.city,
             state: address.state,
             pincode: address.pincode,
-            isDefault: all.length === 0
+            isDefault: all.length === 0,
           });
           await auth.updateProfile({ addresses: all });
           setSavedAddresses(all);
@@ -182,13 +208,12 @@ const Checkout = () => {
     setStep(2);
   };
 
-
   // The API contract: items[].product and shippingAddress.{name,street,...}
   const buildOrderPayload = () => ({
     items: items.map((i) => ({
       product: i.product._id,
       quantity: i.quantity,
-      variant: i.variant || undefined
+      variant: i.variant || undefined,
     })),
     shippingAddress: {
       name: address.fullName,
@@ -197,10 +222,10 @@ const Checkout = () => {
       city: address.city,
       state: address.state,
       pincode: address.pincode,
-      country: address.country || 'India'
+      country: address.country || 'India',
     },
     couponCode: coupon?.code,
-    prescriptionId: prescriptionId || undefined
+    prescriptionId: prescriptionId || undefined,
   });
 
   const handlePlaceOrder = async () => {
@@ -227,7 +252,9 @@ const Checkout = () => {
         const razorpayOrderId = payload.orderId;
         const keyId = payload.key || payload.razorpayKeyId;
         if (!razorpayOrderId || !keyId) {
-          throw new Error(payload.message || 'Payment gateway is unavailable. Choose cash on delivery or try again shortly.');
+          throw new Error(
+            payload.message || 'Payment gateway is unavailable. Choose cash on delivery or try again shortly.'
+          );
         }
 
         if (!window.Razorpay) {
@@ -249,16 +276,18 @@ const Checkout = () => {
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
-                orderIds
+                orderIds,
               });
               toast.success('Order placed successfully!');
               clearCart();
               navigate('/orders');
             } catch (verifyErr) {
               console.error(verifyErr);
-              toast.error('Payment was captured but the order could not be confirmed. Contact support with your payment ID.');
+              toast.error(
+                'Payment was captured but the order could not be confirmed. Contact support with your payment ID.'
+              );
             }
-          }
+          },
         });
         rzp.on('payment.failed', () => toast.error('Payment failed. Your order is still awaiting payment.'));
         rzp.open();
@@ -270,7 +299,9 @@ const Checkout = () => {
       }
     } catch (err) {
       console.error(err);
-      toast.error((err.response && err.response.data && err.response.data.message) || err.message || 'Failed to place order');
+      toast.error(
+        (err.response && err.response.data && err.response.data.message) || err.message || 'Failed to place order'
+      );
     } finally {
       setProcessing(false);
     }
@@ -281,44 +312,115 @@ const Checkout = () => {
       <Header />
       <main style={{ flex: 1, background: 'var(--bg-primary)' }}>
         <div className="container" style={{ paddingTop: '16px', paddingBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', padding: '16px', background: 'var(--bg-white)', borderRadius: 'var(--radius-md)' }}>
-            {[{ num: 1, label: 'Address' }, { num: 2, label: 'Payment' }, { num: 3, label: 'Summary' }].map((s, idx) => (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '24px',
+              padding: '16px',
+              background: 'var(--bg-white)',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            {[
+              { num: 1, label: 'Address' },
+              { num: 2, label: 'Payment' },
+              { num: 3, label: 'Summary' },
+            ].map((s, idx) => (
               <React.Fragment key={s.num}>
-                {idx > 0 && <div style={{ flex: 1, height: '2px', background: step >= s.num ? 'var(--primary)' : 'var(--border)' }} />}
+                {idx > 0 && (
+                  <div
+                    style={{ flex: 1, height: '2px', background: step >= s.num ? 'var(--primary)' : 'var(--border)' }}
+                  />
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: step >= s.num ? 'var(--primary)' : 'var(--border)', color: step >= s.num ? 'var(--text-white)' : 'var(--text-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700 }}>
+                  <div
+                    style={{
+                      width: '28px',
+                      height: '28px',
+                      borderRadius: '50%',
+                      background: step >= s.num ? 'var(--primary)' : 'var(--border)',
+                      color: step >= s.num ? 'var(--text-white)' : 'var(--text-light)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                    }}
+                  >
                     {step > s.num ? <FiCheck /> : s.num}
                   </div>
-                  <span style={{ fontSize: '13px', fontWeight: step === s.num ? 600 : 400, color: step >= s.num ? 'var(--primary)' : 'var(--text-light)' }}>{s.label}</span>
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: step === s.num ? 600 : 400,
+                      color: step >= s.num ? 'var(--primary)' : 'var(--text-light)',
+                    }}
+                  >
+                    {s.label}
+                  </span>
                 </div>
               </React.Fragment>
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '16px', alignItems: 'start' }} className="checkout-grid">
+          <div
+            style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '16px', alignItems: 'start' }}
+            className="checkout-grid"
+          >
             <div>
               {step === 1 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card" style={{ padding: '24px' }}>
-                  <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiMapPin /> Delivery Address</h2>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="card"
+                  style={{ padding: '24px' }}
+                >
+                  <h2
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 600,
+                      marginBottom: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <FiMapPin /> Delivery Address
+                  </h2>
                   {savedAddresses.length > 0 && (
                     <div style={{ marginBottom: 20 }}>
-                      <p className="eyebrow" style={{ marginBottom: 8 }}>Saved addresses</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                      <p className="eyebrow" style={{ marginBottom: 8 }}>
+                        Saved addresses
+                      </p>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                          gap: 12,
+                        }}
+                      >
                         {savedAddresses.map((sa, i) => {
-                          const selected = address.fullName === sa.name && address.pincode === sa.pincode && address.addressLine === sa.street;
+                          const selected =
+                            address.fullName === sa.name &&
+                            address.pincode === sa.pincode &&
+                            address.addressLine === sa.street;
                           return (
                             <button
                               type="button"
                               key={sa._id || i}
-                              onClick={() => setAddress({
-                                ...address,
-                                fullName: sa.name || address.fullName,
-                                phone: sa.phone || address.phone,
-                                addressLine: sa.street,
-                                city: sa.city,
-                                state: sa.state,
-                                pincode: sa.pincode
-                              })}
+                              onClick={() =>
+                                setAddress({
+                                  ...address,
+                                  fullName: sa.name || address.fullName,
+                                  phone: sa.phone || address.phone,
+                                  addressLine: sa.street,
+                                  city: sa.city,
+                                  state: sa.state,
+                                  pincode: sa.pincode,
+                                })
+                              }
                               className="chip"
                               style={{
                                 justifyContent: 'flex-start',
@@ -328,13 +430,21 @@ const Checkout = () => {
                                 textAlign: 'left',
                                 borderColor: selected ? 'var(--brand)' : 'var(--border)',
                                 background: selected ? 'var(--brand-tint)' : 'var(--bg-white)',
-                                padding: '12px 14px'
+                                padding: '12px 14px',
                               }}
                             >
                               <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                                {sa.name}{sa.isDefault ? ' - Default' : ''}
+                                {sa.name}
+                                {sa.isDefault ? ' - Default' : ''}
                               </span>
-                              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)', whiteSpace: 'normal' }}>
+                              <span
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  color: 'var(--text-secondary)',
+                                  whiteSpace: 'normal',
+                                }}
+                              >
                                 {sa.street}, {sa.city} {sa.pincode}
                               </span>
                             </button>
@@ -343,39 +453,89 @@ const Checkout = () => {
                       </div>
                     </div>
                   )}
-                  <form onSubmit={handleAddressSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <form
+                    onSubmit={handleAddressSubmit}
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}
+                  >
                     <div className="input-group" style={{ gridColumn: 'span 2' }}>
                       <label>Full Name</label>
-                      <input className="input" value={address.fullName} onChange={(e) => setAddress({ ...address, fullName: e.target.value })} placeholder="Enter full name" />
+                      <input
+                        className="input"
+                        value={address.fullName}
+                        onChange={(e) => setAddress({ ...address, fullName: e.target.value })}
+                        placeholder="Enter full name"
+                      />
                     </div>
                     <div className="input-group">
                       <label>Phone Number</label>
-                      <input className="input" value={address.phone} onChange={(e) => setAddress({ ...address, phone: e.target.value })} placeholder="10-digit number" />
+                      <input
+                        className="input"
+                        value={address.phone}
+                        onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                        placeholder="10-digit number"
+                      />
                     </div>
                     <div className="input-group">
                       <label>Pincode</label>
-                      <input className="input" value={address.pincode} onChange={(e) => setAddress({ ...address, pincode: e.target.value })} placeholder="6-digit pincode" />
+                      <input
+                        className="input"
+                        value={address.pincode}
+                        onChange={(e) => setAddress({ ...address, pincode: e.target.value })}
+                        placeholder="6-digit pincode"
+                      />
                     </div>
                     <div className="input-group" style={{ gridColumn: 'span 2' }}>
                       <label>Address</label>
-                      <textarea className="input" rows={3} value={address.addressLine} onChange={(e) => setAddress({ ...address, addressLine: e.target.value })} placeholder="House no., building, street, area" />
+                      <textarea
+                        className="input"
+                        rows={3}
+                        value={address.addressLine}
+                        onChange={(e) => setAddress({ ...address, addressLine: e.target.value })}
+                        placeholder="House no., building, street, area"
+                      />
                     </div>
                     <div className="input-group">
                       <label>City</label>
-                      <input className="input" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="City" />
+                      <input
+                        className="input"
+                        value={address.city}
+                        onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                        placeholder="City"
+                      />
                     </div>
                     <div className="input-group">
                       <label>State</label>
-                      <input className="input" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} placeholder="State" />
+                      <input
+                        className="input"
+                        value={address.state}
+                        onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                        placeholder="State"
+                      />
                     </div>
                     <div style={{ gridColumn: 'span 2' }}>
                       {isAuthenticated && (
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)', gridColumn: 'span 2', cursor: 'pointer' }}>
-                          <input type="checkbox" checked={saveThisAddress} onChange={(e) => setSaveThisAddress(e.target.checked)} />
+                        <label
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            fontSize: 13,
+                            color: 'var(--text-secondary)',
+                            gridColumn: 'span 2',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={saveThisAddress}
+                            onChange={(e) => setSaveThisAddress(e.target.checked)}
+                          />
                           Save this address for future orders
                         </label>
                       )}
-                      <button type="submit" className="btn btn-primary btn-lg">Deliver Here</button>
+                      <button type="submit" className="btn btn-primary btn-lg">
+                        Deliver Here
+                      </button>
                     </div>
                   </form>
                 </motion.div>
@@ -385,7 +545,8 @@ const Checkout = () => {
                 <div className="card" style={{ padding: 18, marginBottom: 4 }}>
                   <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 6px' }}>Prescription for these lenses</h3>
                   <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-secondary)' }}>
-                    This basket has lenses ground to your prescription, so our opticians must have checked the numbers before the order can be placed.
+                    This basket has lenses ground to your prescription, so our opticians must have checked the numbers
+                    before the order can be placed.
                   </p>
                   <select
                     className="input"
@@ -397,33 +558,84 @@ const Checkout = () => {
                     <option value="">Select a verified prescription</option>
                     {approvedPrescriptions.map((rx) => (
                       <option key={rx._id} value={rx._id}>
-                        {(rx.patientName || user?.name || 'Prescription') + (rx.createdAt ? ' · ' + new Date(rx.createdAt).toLocaleDateString('en-IN') : '') + (rx.fileUrl ? ' · document on file' : ' · typed numbers')}
+                        {(rx.patientName || user?.name || 'Prescription') +
+                          (rx.createdAt ? ' · ' + new Date(rx.createdAt).toLocaleDateString('en-IN') : '') +
+                          (rx.fileUrl ? ' · document on file' : ' · typed numbers')}
                       </option>
                     ))}
                   </select>
                   {approvedPrescriptions.length === 0 && (
                     <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--danger)' }}>
-                      No approved prescription is on your account yet. Upload one and it is normally reviewed within a few hours.
+                      No approved prescription is on your account yet. Upload one and it is normally reviewed within a
+                      few hours.
                     </p>
                   )}
                   {unapprovedCount > 0 && (
                     <p style={{ margin: '10px 0 0', fontSize: 12.5, color: 'var(--text-secondary)' }}>
-                      {unapprovedCount} prescription{unapprovedCount === 1 ? '' : 's'} on your account {unapprovedCount === 1 ? 'is' : 'are'} still with our opticians or were not accepted, so {unapprovedCount === 1 ? 'it cannot' : 'they cannot'} be used for this order.
+                      {unapprovedCount} prescription{unapprovedCount === 1 ? '' : 's'} on your account{' '}
+                      {unapprovedCount === 1 ? 'is' : 'are'} still with our opticians or were not accepted, so{' '}
+                      {unapprovedCount === 1 ? 'it cannot' : 'they cannot'} be used for this order.
                     </p>
                   )}
-                  <Link to="/prescription" className="btn btn-outline" style={{ alignSelf: 'flex-start', marginTop: 12 }}>
+                  <Link
+                    to="/prescription"
+                    className="btn btn-outline"
+                    style={{ alignSelf: 'flex-start', marginTop: 12 }}
+                  >
                     Upload a prescription
                   </Link>
                 </div>
               )}
 
               {step === 2 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card" style={{ padding: '24px' }}>
-                  <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiCreditCard /> Payment Method</h2>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="card"
+                  style={{ padding: '24px' }}
+                >
+                  <h2
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 600,
+                      marginBottom: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <FiCreditCard /> Payment Method
+                  </h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {[{ id: 'online', label: 'Online Payment', desc: 'UPI, Cards, Net Banking, Wallets' }, { id: 'cod', label: 'Cash on Delivery', desc: 'Pay when your order arrives - adds a flat ₹39 handling charge, not refunded on returns' }].map((method) => (
-                      <label key={method.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', border: `2px solid ${paymentMethod === method.id ? 'var(--primary)' : 'var(--border)'}`, borderRadius: 'var(--radius-md)', cursor: 'pointer', background: paymentMethod === method.id ? 'var(--primary-light)' : 'var(--bg-white)' }}>
-                        <input type="radio" name="payment" value={method.id} checked={paymentMethod === method.id} onChange={() => setPaymentMethod(method.id)} style={{ accentColor: 'var(--primary)' }} />
+                    {[
+                      { id: 'online', label: 'Online Payment', desc: 'UPI, Cards, Net Banking, Wallets' },
+                      {
+                        id: 'cod',
+                        label: 'Cash on Delivery',
+                        desc: 'Pay when your order arrives - adds a flat ₹39 handling charge, not refunded on returns',
+                      },
+                    ].map((method) => (
+                      <label
+                        key={method.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          padding: '16px',
+                          border: `2px solid ${paymentMethod === method.id ? 'var(--primary)' : 'var(--border)'}`,
+                          borderRadius: 'var(--radius-md)',
+                          cursor: 'pointer',
+                          background: paymentMethod === method.id ? 'var(--primary-light)' : 'var(--bg-white)',
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="payment"
+                          value={method.id}
+                          checked={paymentMethod === method.id}
+                          onChange={() => setPaymentMethod(method.id)}
+                          style={{ accentColor: 'var(--primary)' }}
+                        />
                         <div>
                           <div style={{ fontSize: '15px', fontWeight: 500 }}>{method.label}</div>
                           <div style={{ fontSize: '13px', color: 'var(--text-light)' }}>{method.desc}</div>
@@ -432,32 +644,74 @@ const Checkout = () => {
                     ))}
                   </div>
                   <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                    <button onClick={() => setStep(1)} className="btn btn-outline">Back</button>
-                    <button onClick={() => setStep(3)} className="btn btn-primary">Continue</button>
+                    <button onClick={() => setStep(1)} className="btn btn-outline">
+                      Back
+                    </button>
+                    <button onClick={() => setStep(3)} className="btn btn-primary">
+                      Continue
+                    </button>
                   </div>
                 </motion.div>
               )}
 
               {step === 3 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card" style={{ padding: '24px' }}>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="card"
+                  style={{ padding: '24px' }}
+                >
                   <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px' }}>Order Summary</h2>
-                  <div style={{ marginBottom: '16px', padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
+                  <div
+                    style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      background: 'var(--bg-primary)',
+                      borderRadius: 'var(--radius-md)',
+                    }}
+                  >
                     <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Delivering to:</div>
-                    <div style={{ fontSize: '14px' }}>{address.fullName}, {address.addressLine}, {address.city}, {address.state} - {address.pincode}</div>
-                    <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>Phone: {address.phone}</div>
+                    <div style={{ fontSize: '14px' }}>
+                      {address.fullName}, {address.addressLine}, {address.city}, {address.state} - {address.pincode}
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>
+                      Phone: {address.phone}
+                    </div>
                   </div>
                   <div style={{ marginBottom: '16px' }}>
                     {items.map((item, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid var(--border-light)', fontSize: '14px' }}>
-                        <span>{item.product.name} x{item.quantity}</span>
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '8px 0',
+                          borderBottom: '1px solid var(--border-light)',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <span>
+                          {item.product.name} x{item.quantity}
+                        </span>
                         <span style={{ fontWeight: 600 }}>₹{item.product.price * item.quantity}</span>
                       </div>
                     ))}
                   </div>
                   <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
-                    <button onClick={() => setStep(2)} className="btn btn-outline">Back</button>
-                    <button onClick={handlePlaceOrder} disabled={processing} className="btn btn-primary btn-lg" style={{ flex: 1 }}>
-                      {processing ? <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} /> : `Pay ₹${total}`}
+                    <button onClick={() => setStep(2)} className="btn btn-outline">
+                      Back
+                    </button>
+                    <button
+                      onClick={handlePlaceOrder}
+                      disabled={processing}
+                      className="btn btn-primary btn-lg"
+                      style={{ flex: 1 }}
+                    >
+                      {processing ? (
+                        <div className="spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }} />
+                      ) : (
+                        `Pay ₹${total}`
+                      )}
                     </button>
                   </div>
                 </motion.div>
@@ -465,29 +719,40 @@ const Checkout = () => {
             </div>
 
             <div className="card" style={{ position: 'sticky', top: '80px' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-dark)' }}>
-                <h3 style={{ color: 'var(--text-white)', fontSize: '14px', fontWeight: 600, textTransform: 'uppercase' }}>Price Details</h3>
+              <div
+                style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-dark)' }}
+              >
+                <h3
+                  style={{ color: 'var(--text-white)', fontSize: '14px', fontWeight: 600, textTransform: 'uppercase' }}
+                >
+                  Price Details
+                </h3>
               </div>
               <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {(quote?.breakdown || [
-                  { label: `Subtotal (${items.length} item${items.length === 1 ? '' : 's'})`, amount: subtotal },
-                  { label: 'Delivery charges', amount: deliveryCharges },
-                  ...(discount ? [{ label: 'Coupon discount', amount: -discount }] : [])
-                ]).map((row) => (
+                {(
+                  quote?.breakdown || [
+                    { label: `Subtotal (${items.length} item${items.length === 1 ? '' : 's'})`, amount: subtotal },
+                    { label: 'Delivery charges', amount: deliveryCharges },
+                    ...(discount ? [{ label: 'Coupon discount', amount: -discount }] : []),
+                  ]
+                ).map((row) => (
                   <div
                     key={row.label}
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
                       fontSize: '14px',
-                      color: row.amount < 0 ? 'var(--success)' : 'var(--text-primary)'
+                      color: row.amount < 0 ? 'var(--success)' : 'var(--text-primary)',
                     }}
                   >
                     <span>{row.label}</span>
                     <span>
-                      {row.amount < 0 ? '-₹' : '₹'}{Math.abs(row.amount).toLocaleString('en-IN')}
+                      {row.amount < 0 ? '-₹' : '₹'}
+                      {Math.abs(row.amount).toLocaleString('en-IN')}
                       {row.key === 'codFee' && (
-                        <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-light)', textAlign: 'right' }}>
+                        <span
+                          style={{ display: 'block', fontSize: 11.5, color: 'var(--text-light)', textAlign: 'right' }}
+                        >
                           collected with the cash at the door
                         </span>
                       )}
@@ -516,7 +781,13 @@ const Checkout = () => {
               {!coupon && (
                 <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <input className="input" placeholder="Coupon code" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} style={{ flex: 1, fontSize: '13px' }} />
+                    <input
+                      className="input"
+                      placeholder="Coupon code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      style={{ flex: 1, fontSize: '13px' }}
+                    />
                     <button onClick={handleApplyCoupon} disabled={applyingCoupon} className="btn btn-primary btn-sm">
                       {applyingCoupon ? '...' : 'Apply'}
                     </button>
@@ -524,9 +795,31 @@ const Checkout = () => {
                 </div>
               )}
               {coupon && (
-                <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    padding: '12px 20px',
+                    borderTop: '1px solid var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <span style={{ fontSize: '13px', color: 'var(--success)' }}>Coupon: {coupon.code} applied</span>
-                  <button onClick={() => { removeCoupon(); setCouponCode(''); }} style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', background: 'none' }}>Remove</button>
+                  <button
+                    onClick={() => {
+                      removeCoupon();
+                      setCouponCode('');
+                    }}
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--primary)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: 'none',
+                    }}
+                  >
+                    Remove
+                  </button>
                 </div>
               )}
             </div>

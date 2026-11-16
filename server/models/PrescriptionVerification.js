@@ -4,21 +4,21 @@ const prescriptionVerificationSchema = new mongoose.Schema({
   prescription: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Prescription',
-    required: true
+    required: true,
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
   },
   verifiedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' // Admin or staff
+    ref: 'User', // Admin or staff
   },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected', 'needs_review'],
-    default: 'pending'
+    default: 'pending',
   },
   validationResults: {
     isValidFormat: Boolean,
@@ -29,19 +29,19 @@ const prescriptionVerificationSchema = new mongoose.Schema({
     cylinderRange: Boolean,
     axisRange: Boolean,
     pdRange: Boolean,
-    flags: [String]
+    flags: [String],
   },
   adminNotes: String,
   rejectionReason: String,
   verifiedAt: Date,
   createdAt: {
     type: Date,
-    default: Date.now
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 prescriptionVerificationSchema.index({ user: 1, status: 1 });

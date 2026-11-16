@@ -6,7 +6,7 @@ import {
   createCustomerReturnRequest,
   uploadReturnImages,
   getUserReturnRequests,
-  cancelReturnRequest
+  cancelReturnRequest,
 } from '../services/customerReturnPortal.js';
 
 const router = express.Router();
@@ -23,7 +23,7 @@ const upload = multer({
     } else {
       cb(new Error('Only JPEG, PNG, and WebP images are allowed'));
     }
-  }
+  },
 });
 
 /**
@@ -60,7 +60,7 @@ router.post('/', verifyToken, async (req, res) => {
     if (!orderId || !items || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Order ID and items are required'
+        message: 'Order ID and items are required',
       });
     }
 

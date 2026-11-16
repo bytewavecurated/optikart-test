@@ -97,9 +97,7 @@ const storePoint = async (order) => {
 };
 
 const dropPoint = (order) =>
-  pointOf(order?.deliveryLocation)
-  || pointOf(order?.shippingAddress?.coordinates)
-  || pointOf(order?.shippingAddress);
+  pointOf(order?.deliveryLocation) || pointOf(order?.shippingAddress?.coordinates) || pointOf(order?.shippingAddress);
 
 /** The paid leg: store to door, or null when either end is unknown. */
 export const leadKm = async (order) => {
@@ -118,7 +116,9 @@ const describe = (order) => ({
   orderId: String(order._id),
   orderNumber: order.orderNumber,
   pickup: order.pickupLocation?.address || order.seller?.address?.street || order.seller?.storeName || '',
-  drop: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode].filter(Boolean).join(', ')
+  drop: [order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode]
+    .filter(Boolean)
+    .join(', '),
 });
 
 /**
@@ -126,7 +126,10 @@ const describe = (order) => ({
  * `storeLocationUnknown` is honest: without a store position there is nothing to
  * rank, and guessing would send a partner to the wrong address.
  */
-export const recommendPartners = async (orderOrId, { radiusKm = PARTNER_PICKUP_RADIUS_KM, limit = PARTNER_RECOMMENDATION_COUNT } = {}) => {
+export const recommendPartners = async (
+  orderOrId,
+  { radiusKm = PARTNER_PICKUP_RADIUS_KM, limit = PARTNER_RECOMMENDATION_COUNT } = {}
+) => {
   try {
     // Callers pass either an id or a document, and the document is not always
     // populated - without the seller's store position there is nothing to rank
@@ -136,15 +139,31 @@ export const recommendPartners = async (orderOrId, { radiusKm = PARTNER_PICKUP_R
 
     const from = await storePoint(order);
     if (!from) {
-      return { success: true, storeLocationUnknown: true, message: 'The seller store has no usable position, so nearby partners cannot be ranked. Assign a partner manually.', recommendations: [] };
+      return {
+        success: true,
+        storeLocationUnknown: true,
+        message:
+          'The seller store has no usable position, so nearby partners cannot be ranked. Assign a partner manually.',
+        recommendations: [],
+      };
     }
 
-    const pool = await DeliveryPartner.find({ isActive: true, isBanned: false, isAvailable: true, currentOrder: null }).lean();
+    const pool = await DeliveryPartner.find({
+      isActive: true,
+      isBanned: false,
+      isAvailable: true,
+      currentOrder: null,
+    }).lean();
     const to = dropPoint(order);
     const leg = to ? kmBetween(from, to) : null;
 
     const recommendations = pool
-      .map((p) => ({ partner: p, at: pointOf(p.currentLocation) || pointOf({ lat: p.currentLocation?.latitude, lng: p.currentLocation?.longitude }) }))
+      .map((p) => ({
+        partner: p,
+        at:
+          pointOf(p.currentLocation) ||
+          pointOf({ lat: p.currentLocation?.latitude, lng: p.currentLocation?.longitude }),
+      }))
       .filter((x) => x.at)
       .map((x) => ({
         partnerId: x.partner._id,
@@ -153,14 +172,21 @@ export const recommendPartners = async (orderOrId, { radiusKm = PARTNER_PICKUP_R
         email: x.partner.email,
         vehicleType: x.partner.vehicleType,
         distance: kmBetween(from, x.at),
-        rating: x.partner.rating || 0
+        rating: x.partner.rating || 0,
       }))
       .filter((r) => Number.isFinite(r.distance) && r.distance <= radiusKm)
       .sort((a, b) => a.distance - b.distance || b.rating - a.rating)
       .slice(0, limit)
       .map((r) => ({ ...r, earning: Math.round((leg ? leg : 1) * PARTNER_RATE_PER_KM * 100) / 100 }));
 
-    return { success: true, store: from, leadKm: leg, radiusKm, recommendations, excluded: pool.length - recommendations.length };
+    return {
+      success: true,
+      store: from,
+      leadKm: leg,
+      radiusKm,
+      recommendations,
+      excluded: pool.length - recommendations.length,
+    };
   } catch (error) {
     console.error('Partner recommendation error:', error);
     return { success: false, error: error.message, recommendations: [] };
@@ -182,10 +208,12 @@ export const advanceQueue = async (order, io = null) => {
         await sendEmail({
           to: adminEmail,
           subject: `No delivery partner accepted ${order.orderNumber}`,
-          text: `All ${queue.length} recommended partners were offered this run and none answered within ${PARTNER_OFFER_WINDOW_MINUTES} minutes. It is waiting in the admin console with their contact details.`
+          text: `All ${queue.length} recommended partners were offered this run and none answered within ${PARTNER_OFFER_WINDOW_MINUTES} minutes. It is waiting in the admin console with their contact details.`,
         });
       }
-    } catch (e) { console.error('Partner escalation mail failed:', e.message); }
+    } catch (e) {
+      console.error('Partner escalation mail failed:', e.message);
+    }
     return { success: true, escalated: true, message: 'No partner accepted; awaiting admin assignment.' };
   }
 
@@ -198,10 +226,16 @@ export const advanceQueue = async (order, io = null) => {
     (order.deliveryJourney || (order.deliveryJourney = [])).push({
       status: order.orderStatus,
       note: `${Math.round(leg)} km from the store is beyond a local delivery run; handed to admin for courier.`,
-      at: new Date()
+      at: new Date(),
     });
     await order.save();
-    return { success: true, escalated: true, tooFar: true, distanceKm: Math.round(leg * 100) / 100, message: `This run is ${Math.round(leg)} km, further than a partner delivery (${PARTNER_MAX_LEAD_KM} km). It is with the admin to send by courier.` };
+    return {
+      success: true,
+      escalated: true,
+      tooFar: true,
+      distanceKm: Math.round(leg * 100) / 100,
+      message: `This run is ${Math.round(leg)} km, further than a partner delivery (${PARTNER_MAX_LEAD_KM} km). It is with the admin to send by courier.`,
+    };
   }
 
   entry.offeredAt = new Date();
@@ -225,10 +259,12 @@ export const advanceQueue = async (order, io = null) => {
           `Pick up: ${info.pickup}`,
           `Drop: ${info.drop}`,
           `Distance: ${order.deliveryDistanceKm} km, paying ₹${order.deliveryFee}.`,
-          `Open your partner dashboard to accept or decline.`
-        ].join('\n')
+          `Open your partner dashboard to accept or decline.`,
+        ].join('\n'),
       });
-    } catch (e) { console.error('Partner offer mail failed:', e.message); }
+    } catch (e) {
+      console.error('Partner offer mail failed:', e.message);
+    }
   }
 
   if (io) io.to(`partner:${entry.partner}`).emit('partner:offer', describe(order));
@@ -238,14 +274,14 @@ export const advanceQueue = async (order, io = null) => {
     offeredName: partner?.name,
     queuePosition: nextIndex + 1,
     queueLength: queue.length,
-    deadline: order.partnerQueueDeadline
+    deadline: order.partnerQueueDeadline,
   };
 };
 
 /** Start (or restart) the cascade for an order. */
 /** A saved document from whatever the caller had: id, ObjectId, or document. */
 const asOrder = async (orderOrId) => {
-  const id = typeof orderOrId === 'string' ? orderOrId : (orderOrId?._id || orderOrId);
+  const id = typeof orderOrId === 'string' ? orderOrId : orderOrId?._id || orderOrId;
   return Order.findById(id).populate('seller', 'storeName phone address location');
 };
 
@@ -256,7 +292,8 @@ export const offerQueue = async (orderOrId, io = null) => {
   const order = await asOrder(orderOrId);
   if (!order) return { success: false, error: 'Order not found' };
 
-  if (order.partnerQueue?.length && order.partnerDecision === 'accepted') return { success: true, alreadyAssigned: true };
+  if (order.partnerQueue?.length && order.partnerDecision === 'accepted')
+    return { success: true, alreadyAssigned: true };
 
   if (!order.partnerQueue?.length) {
     const rec = await recommendPartners(order);
@@ -264,10 +301,22 @@ export const offerQueue = async (orderOrId, io = null) => {
     if (rec.storeLocationUnknown || !rec.recommendations.length) {
       order.partnerDecision = 'admin_required';
       await order.save();
-      return { success: true, escalated: true, storeLocationUnknown: !!rec.storeLocationUnknown, message: rec.storeLocationUnknown ? rec.message : 'No partner is available within the search radius. Assign one manually.', recommendations: [] };
+      return {
+        success: true,
+        escalated: true,
+        storeLocationUnknown: !!rec.storeLocationUnknown,
+        message: rec.storeLocationUnknown
+          ? rec.message
+          : 'No partner is available within the search radius. Assign one manually.',
+        recommendations: [],
+      };
     }
     order.partnerQueue = rec.recommendations.map((r) => ({
-      partner: r.partnerId, distanceKm: r.distance, offeredAt: null, respondedAt: null, response: 'pending'
+      partner: r.partnerId,
+      distanceKm: r.distance,
+      offeredAt: null,
+      respondedAt: null,
+      response: 'pending',
     }));
     order.partnerDecision = '';
     await order.save();
@@ -313,8 +362,10 @@ export const acceptOffer = async (orderId, partnerId, io = null) => {
 
 /** Close windows nobody answered, so a run cannot sit unclaimed indefinitely. */
 export const sweepExpiredPartnerOffers = async (io = null) => {
-  const due = await Order.find({ partnerDecision: 'offering', partnerQueueDeadline: { $lt: new Date() } })
-    .populate('seller', 'storeName address location');
+  const due = await Order.find({ partnerDecision: 'offering', partnerQueueDeadline: { $lt: new Date() } }).populate(
+    'seller',
+    'storeName address location'
+  );
   for (const order of due) {
     const entry = order.partnerQueue?.[order.partnerCurrentIndex];
     if (entry && (entry.response || 'pending') === 'pending') {

@@ -1,6 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, NavLink } from 'react-router-dom';
-import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMenu, FiX, FiChevronDown, FiCamera, FiMic, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import {
+  FiSearch,
+  FiShoppingCart,
+  FiUser,
+  FiHeart,
+  FiMenu,
+  FiX,
+  FiChevronDown,
+  FiCamera,
+  FiMic,
+  FiChevronLeft,
+  FiChevronRight,
+} from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -18,19 +30,19 @@ const CONSOLE_LINKS = {
     { label: 'Seller Dashboard', path: '/seller/dashboard' },
     { label: 'My Products', path: '/seller/products' },
     { label: 'My Orders', path: '/seller/orders' },
-    { label: 'My Listings', path: '/seller/stock' }
+    { label: 'My Listings', path: '/seller/stock' },
   ],
   admin: [
     { label: 'Admin Panel', path: '/admin' },
     { label: 'Orders', path: '/admin/orders' },
     { label: 'Supply Claims', path: '/admin/supply-claims' },
-    { label: 'Cash Reconciliation', path: '/admin/cash-reconciliation' }
+    { label: 'Cash Reconciliation', path: '/admin/cash-reconciliation' },
   ],
   staff: [{ label: 'Staff Workspace', path: '/staff' }],
   executive: [{ label: 'Executive Desk', path: '/executive/dashboard' }],
   manufacturer: [{ label: 'Manufacturer Portal', path: '/manufacturer/dashboard' }],
   manufacturerSeller: [{ label: 'Manufacturer-Seller Portal', path: '/manufacturer-seller/dashboard' }],
-  deliveryPartner: [{ label: 'Partner Dashboard', path: '/delivery-partner/dashboard' }]
+  deliveryPartner: [{ label: 'Partner Dashboard', path: '/delivery-partner/dashboard' }],
 };
 
 const Header = () => {
@@ -44,8 +56,23 @@ const Header = () => {
   // screen where every link fits they would be dead weight.
   const [railOverflow, setRailOverflow] = useState(false);
   const categoryNavRef = useRef(null);
-  const { user, seller, admin, isAuthenticated, isCustomerAuthenticated, activeRole, roleConsole,
-    logout, sellerLogout, staffLogout, adminLogout, executiveLogout, manufacturerLogout, manufacturerSellerLogout, partnerLogout } = useAuth();
+  const {
+    user,
+    seller,
+    admin,
+    isAuthenticated,
+    isCustomerAuthenticated,
+    activeRole,
+    roleConsole,
+    logout,
+    sellerLogout,
+    staffLogout,
+    adminLogout,
+    executiveLogout,
+    manufacturerLogout,
+    manufacturerSellerLogout,
+    partnerLogout,
+  } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
 
@@ -100,7 +127,7 @@ const Header = () => {
       executive: executiveLogout,
       manufacturer: manufacturerLogout,
       manufacturerSeller: manufacturerSellerLogout,
-      deliveryPartner: partnerLogout
+      deliveryPartner: partnerLogout,
     };
     const fn = byRole[activeRole];
     if (typeof fn === 'function') fn();
@@ -129,14 +156,27 @@ const Header = () => {
 
   return (
     <header style={{ background: 'var(--bg-dark)', position: 'sticky', top: 0, zIndex: 50 }}>
-      <div className="container header-row" style={{ display: 'flex', alignItems: 'center', height: 'var(--header-height)', gap: '28px', paddingBlock: 'var(--header-pad-block)' }}>
+      <div
+        className="container header-row"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          height: 'var(--header-height)',
+          gap: '28px',
+          paddingBlock: 'var(--header-pad-block)',
+        }}
+      >
         {/* Logo */}
         <Link to="/" aria-label="OptiKart home" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
           <Logo variant="onDark" size={22} tagline />
         </Link>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: '560px', position: 'relative' }} className="hide-on-small-mobile">
+        <form
+          onSubmit={handleSearch}
+          style={{ flex: 1, maxWidth: '560px', position: 'relative' }}
+          className="hide-on-small-mobile"
+        >
           <input
             type="text"
             placeholder="Search for sunglasses, eyeglasses, contact lenses and more"
@@ -152,8 +192,26 @@ const Header = () => {
               color: 'var(--text-primary)',
             }}
           />
-          <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--action)', fontSize: '18px' }} />
-          <div style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', display: 'flex', gap: '8px' }}>
+          <FiSearch
+            style={{
+              position: 'absolute',
+              left: '12px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--action)',
+              fontSize: '18px',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              right: '8px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              display: 'flex',
+              gap: '8px',
+            }}
+          >
             <button
               type="button"
               onClick={() => navigate('/face-shape-guide')}
@@ -166,10 +224,10 @@ const Header = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'var(--text-light)',
-                transition: 'color 0.2s'
+                transition: 'color 0.2s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--action)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-light)'}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--action)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-light)')}
               title="Face Shape Guide"
             >
               <FiCamera size={18} />
@@ -200,10 +258,10 @@ const Header = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'var(--text-light)',
-                transition: 'color 0.2s'
+                transition: 'color 0.2s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--action)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-light)'}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--action)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-light)')}
               title="Voice Search"
             >
               <FiMic size={18} />
@@ -217,7 +275,17 @@ const Header = () => {
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setProfileDropdown(!profileDropdown)}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: 'var(--text-white)',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
               >
                 <FiUser size={18} />
                 <span>{displayName}</span>
@@ -244,9 +312,48 @@ const Header = () => {
                   >
                     {isCustomerAuthenticated && (
                       <>
-                        <Link to="/profile" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>My Profile</Link>
-                        <Link to="/orders" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>Orders</Link>
-                        <Link to="/wishlist" onClick={() => setProfileDropdown(false)} style={{ display: 'block', padding: '12px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>Wishlist</Link>
+                        <Link
+                          to="/profile"
+                          onClick={() => setProfileDropdown(false)}
+                          style={{
+                            display: 'block',
+                            padding: '12px 16px',
+                            fontSize: '14px',
+                            color: 'var(--text-primary)',
+                            borderBottom: '1px solid var(--border)',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          My Profile
+                        </Link>
+                        <Link
+                          to="/orders"
+                          onClick={() => setProfileDropdown(false)}
+                          style={{
+                            display: 'block',
+                            padding: '12px 16px',
+                            fontSize: '14px',
+                            color: 'var(--text-primary)',
+                            borderBottom: '1px solid var(--border)',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          Orders
+                        </Link>
+                        <Link
+                          to="/wishlist"
+                          onClick={() => setProfileDropdown(false)}
+                          style={{
+                            display: 'block',
+                            padding: '12px 16px',
+                            fontSize: '14px',
+                            color: 'var(--text-primary)',
+                            borderBottom: '1px solid var(--border)',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          Wishlist
+                        </Link>
                       </>
                     )}
                     {/*
@@ -263,20 +370,56 @@ const Header = () => {
                             key={l.path}
                             to={l.path}
                             onClick={() => setProfileDropdown(false)}
-                            style={{ display: 'block', padding: '10px 16px', fontSize: '14px', color: 'var(--text-primary)', textDecoration: 'none', borderBottom: '1px solid var(--border-light)' }}
+                            style={{
+                              display: 'block',
+                              padding: '10px 16px',
+                              fontSize: '14px',
+                              color: 'var(--text-primary)',
+                              textDecoration: 'none',
+                              borderBottom: '1px solid var(--border-light)',
+                            }}
                           >
                             {l.label}
                           </Link>
                         ))}
                       </>
                     )}
-                    <button onClick={handleLogout} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '12px 16px', fontSize: '14px', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}>Logout</button>
+                    <button
+                      onClick={handleLogout}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        color: 'var(--danger)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Logout
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           ) : roleConsole ? null : (
-            <Link to="/login" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', fontSize: '14px', fontWeight: 600, padding: '6px 24px', background: 'var(--text-white)', borderRadius: 'var(--radius-xs)', textDecoration: 'none' }}>
+            <Link
+              to="/login"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'var(--primary)',
+                fontSize: '14px',
+                fontWeight: 600,
+                padding: '6px 24px',
+                background: 'var(--text-white)',
+                borderRadius: 'var(--radius-xs)',
+                textDecoration: 'none',
+              }}
+            >
               <FiUser size={16} />
               Login
             </Link>
@@ -292,29 +435,90 @@ const Header = () => {
               <Link
                 to={roleConsole.path}
                 title={`Signed in as ${activeRole}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '13px', fontWeight: 600, padding: '7px 12px', border: '1px solid rgba(255,255,255,0.45)', borderRadius: 'var(--radius-xs)', textDecoration: 'none', whiteSpace: 'nowrap' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: 'var(--text-white)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  padding: '7px 12px',
+                  border: '1px solid rgba(255,255,255,0.45)',
+                  borderRadius: 'var(--radius-xs)',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
               >
                 <FiUser size={15} />
                 {roleConsole.label}
               </Link>
               <button
                 onClick={signOutRole}
-                style={{ color: 'rgba(255,255,255,0.85)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', padding: '7px 8px', whiteSpace: 'nowrap' }}
+                style={{
+                  color: 'rgba(255,255,255,0.85)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  padding: '7px 8px',
+                  whiteSpace: 'nowrap',
+                }}
               >
                 Sign out
               </button>
             </div>
           )}
 
-          {!roleConsole && (<Link to="/wishlist" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, textDecoration: 'none' }}>
-            <FiHeart size={18} />
-          </Link>)}
+          {!roleConsole && (
+            <Link
+              to="/wishlist"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'var(--text-white)',
+                fontSize: '14px',
+                fontWeight: 500,
+                textDecoration: 'none',
+              }}
+            >
+              <FiHeart size={18} />
+            </Link>
+          )}
 
           {!roleConsole && (
-            <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-white)', fontSize: '14px', fontWeight: 500, position: 'relative', textDecoration: 'none' }}>
+            <Link
+              to="/cart"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: 'var(--text-white)',
+                fontSize: '14px',
+                fontWeight: 500,
+                position: 'relative',
+                textDecoration: 'none',
+              }}
+            >
               <FiShoppingCart size={18} />
               {totalItems > 0 && (
-                <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: 'var(--secondary)', color: 'var(--text-primary)', fontSize: '10px', fontWeight: 700, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-8px',
+                    right: '-8px',
+                    background: 'var(--secondary)',
+                    color: 'var(--text-primary)',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
                   {totalItems}
                 </span>
               )}
@@ -324,18 +528,57 @@ const Header = () => {
         </nav>
 
         {/* Mobile Icons - Flipkart style */}
-        <div className="mobile-icons" style={{ display: 'none', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexShrink: 0 }}>
+        <div
+          className="mobile-icons"
+          style={{ display: 'none', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexShrink: 0 }}
+        >
           {/* Mobile search toggle */}
-          <button onClick={() => setMobileSearchOpen(!mobileSearchOpen)} style={{ color: 'var(--text-white)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+          <button
+            onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+            style={{
+              color: 'var(--text-white)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
             <FiSearch size={22} />
           </button>
 
           {/* Cart icon: a console session has no shopping cart to open. */}
           {!roleConsole && (
-            <Link to="/cart" style={{ position: 'relative', color: 'var(--text-white)', display: 'flex', alignItems: 'center', padding: '4px' }}>
+            <Link
+              to="/cart"
+              style={{
+                position: 'relative',
+                color: 'var(--text-white)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '4px',
+              }}
+            >
               <FiShoppingCart size={22} />
               {totalItems > 0 && (
-                <span style={{ position: 'absolute', top: '-6px', right: '-8px', background: 'var(--primary)', color: '#fff', fontSize: '10px', fontWeight: '700', minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px' }}>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-8px',
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    minWidth: '16px',
+                    height: '16px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px',
+                  }}
+                >
                   {totalItems}
                 </span>
               )}
@@ -353,20 +596,51 @@ const Header = () => {
               <FiUser size={22} />
             </Link>
           ) : roleConsole ? null : (
-            <Link to="/login" style={{ color: 'var(--text-white)', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 600, gap: '4px' }}>
+            <Link
+              to="/login"
+              style={{
+                color: 'var(--text-white)',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '13px',
+                fontWeight: 600,
+                gap: '4px',
+              }}
+            >
               <FiUser size={20} />
               <span style={{ fontSize: '12px' }}>Login</span>
             </Link>
           )}
 
           {/* Hamburger menu */}
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: 'var(--text-white)', fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              color: 'var(--text-white)',
+              fontSize: '24px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
             {mobileMenuOpen ? <FiX /> : <FiMenu />}
           </button>
         </div>
 
         {/* Desktop hamburger (hidden) */}
-        <button className="hide-desktop" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: 'var(--text-white)', fontSize: '24px', marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', display: 'none' }}>
+        <button
+          className="hide-desktop"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          style={{
+            color: 'var(--text-white)',
+            fontSize: '24px',
+            marginLeft: 'auto',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'none',
+          }}
+        >
           {mobileMenuOpen ? <FiX /> : <FiMenu />}
         </button>
       </div>
@@ -378,7 +652,14 @@ const Header = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{ background: 'var(--bg-white)', overflow: 'hidden', position: 'absolute', width: '100%', zIndex: 98, boxShadow: 'var(--shadow)' }}
+            style={{
+              background: 'var(--bg-white)',
+              overflow: 'hidden',
+              position: 'absolute',
+              width: '100%',
+              zIndex: 98,
+              boxShadow: 'var(--shadow)',
+            }}
             className="mobile-search-bar"
           >
             <form onSubmit={handleSearch} style={{ padding: '12px 16px', display: 'flex', gap: '8px' }}>
@@ -387,10 +668,26 @@ const Header = () => {
                 placeholder="Search for eyewear..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', fontSize: '14px' }}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-xs)',
+                  border: '1px solid var(--border)',
+                  fontSize: '14px',
+                }}
                 autoFocus
               />
-              <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}>
+              <button
+                type="submit"
+                style={{
+                  padding: '10px 16px',
+                  background: 'var(--primary)',
+                  color: 'var(--text-white)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-xs)',
+                  cursor: 'pointer',
+                }}
+              >
                 <FiSearch size={18} />
               </button>
             </form>
@@ -400,8 +697,14 @@ const Header = () => {
 
       {/* Category sub-nav (desktop). Links are padded pills rather than bare text
           on a 40px strip, and the rail scrolls by arrow on wide screens. */}
-      <div className="hide-mobile" style={{ background: 'var(--bg-white)', borderTop: '1px solid var(--border)', position: 'relative' }}>
-        <div className="container category-nav-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <div
+        className="hide-mobile"
+        style={{ background: 'var(--bg-white)', borderTop: '1px solid var(--border)', position: 'relative' }}
+      >
+        <div
+          className="container category-nav-wrap"
+          style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
           {railOverflow && (
             <button
               type="button"
@@ -419,22 +722,130 @@ const Header = () => {
             className="category-nav-scroll"
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === 'ArrowRight') { e.preventDefault(); scrollRail(1); }
-              if (e.key === 'ArrowLeft') { e.preventDefault(); scrollRail(-1); }
+              if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                scrollRail(1);
+              }
+              if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                scrollRail(-1);
+              }
             }}
-            style={{ display: 'flex', alignItems: 'center', gap: '2px', height: '46px', overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none', scrollBehavior: 'smooth', flex: 1, minWidth: 0 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '2px',
+              height: '46px',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              scrollBehavior: 'smooth',
+              flex: 1,
+              minWidth: 0,
+            }}
           >
             {categories.map((cat) => (
-              <NavLink key={cat.path} to={cat.path} className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>
+              <NavLink
+                key={cat.path}
+                to={cat.path}
+                className="cat-nav-link"
+                style={{
+                  fontSize: '13.5px',
+                  fontWeight: 500,
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'nowrap',
+                  textDecoration: 'none',
+                  flexShrink: 0,
+                }}
+              >
                 {cat.name}
               </NavLink>
             ))}
-            <NavLink to="/brands" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>All Brands</NavLink>
-            <NavLink to="/virtual-tryon" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Virtual Try-On</NavLink>
-            <NavLink to="/prescription" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Upload Prescription</NavLink>
-            <NavLink to="/coupons" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--secondary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Offers</NavLink>
-            <NavLink to="/blog" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Blog</NavLink>
-            <NavLink to="/help" className="cat-nav-link" style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap', textDecoration: 'none', flexShrink: 0 }}>Help</NavLink>
+            <NavLink
+              to="/brands"
+              className="cat-nav-link"
+              style={{
+                fontSize: '13.5px',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
+              All Brands
+            </NavLink>
+            <NavLink
+              to="/virtual-tryon"
+              className="cat-nav-link"
+              style={{
+                fontSize: '13.5px',
+                fontWeight: 500,
+                color: 'var(--primary)',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
+              Virtual Try-On
+            </NavLink>
+            <NavLink
+              to="/prescription"
+              className="cat-nav-link"
+              style={{
+                fontSize: '13.5px',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
+              Upload Prescription
+            </NavLink>
+            <NavLink
+              to="/coupons"
+              className="cat-nav-link"
+              style={{
+                fontSize: '13.5px',
+                fontWeight: 500,
+                color: 'var(--secondary)',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
+              Offers
+            </NavLink>
+            <NavLink
+              to="/blog"
+              className="cat-nav-link"
+              style={{
+                fontSize: '13.5px',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
+              Blog
+            </NavLink>
+            <NavLink
+              to="/help"
+              className="cat-nav-link"
+              style={{
+                fontSize: '13.5px',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                whiteSpace: 'nowrap',
+                textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
+              Help
+            </NavLink>
           </div>
           {railOverflow && (
             <button
@@ -458,7 +869,15 @@ const Header = () => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            style={{ background: 'var(--bg-white)', overflow: 'hidden', position: 'absolute', width: '100%', zIndex: 99, maxHeight: 'calc(100vh - 60px)', overflowY: 'auto' }}
+            style={{
+              background: 'var(--bg-white)',
+              overflow: 'hidden',
+              position: 'absolute',
+              width: '100%',
+              zIndex: 99,
+              maxHeight: 'calc(100vh - 60px)',
+              overflowY: 'auto',
+            }}
           >
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
@@ -467,29 +886,128 @@ const Header = () => {
                   placeholder="Search for eyewear..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{ flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border)', fontSize: '14px' }}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    borderRadius: 'var(--radius-xs)',
+                    border: '1px solid var(--border)',
+                    fontSize: '14px',
+                  }}
                 />
-                <button type="submit" style={{ padding: '10px 16px', background: 'var(--primary)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 16px',
+                    background: 'var(--primary)',
+                    color: 'var(--text-white)',
+                    border: 'none',
+                    borderRadius: 'var(--radius-xs)',
+                    cursor: 'pointer',
+                  }}
+                >
                   <FiSearch size={18} />
                 </button>
               </form>
               {categories.map((cat) => (
-                <Link key={cat.path} to={cat.path} onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', fontWeight: 500, padding: '8px 0', borderBottom: '1px solid var(--border-light)', textDecoration: 'none', color: 'var(--text-primary)' }}>
+                <Link
+                  key={cat.path}
+                  to={cat.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    padding: '8px 0',
+                    borderBottom: '1px solid var(--border-light)',
+                    textDecoration: 'none',
+                    color: 'var(--text-primary)',
+                  }}
+                >
                   {cat.name}
                 </Link>
               ))}
-              <Link to="/brands" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>All Brands</Link>
-              <Link to="/virtual-tryon" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', color: 'var(--primary)', textDecoration: 'none' }}>Virtual Try-On</Link>
-              <Link to="/prescription" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Upload Prescription</Link>
-              <Link to="/coupons" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Offers</Link>
-              <Link to="/blog" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Blog</Link>
-              <Link to="/help" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Help</Link>
+              <Link
+                to="/brands"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+              >
+                All Brands
+              </Link>
+              <Link
+                to="/virtual-tryon"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: '14px', padding: '8px 0', color: 'var(--primary)', textDecoration: 'none' }}
+              >
+                Virtual Try-On
+              </Link>
+              <Link
+                to="/prescription"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+              >
+                Upload Prescription
+              </Link>
+              <Link
+                to="/coupons"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+              >
+                Offers
+              </Link>
+              <Link
+                to="/blog"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+              >
+                Blog
+              </Link>
+              <Link
+                to="/help"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+              >
+                Help
+              </Link>
               {isCustomerAuthenticated && (
                 <>
-                  <Link to="/profile" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>My Profile</Link>
-                  <Link to="/orders" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>My Orders</Link>
-                  <Link to="/wishlist" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}>Wishlist</Link>
-                  <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} style={{ fontSize: '14px', padding: '10px', color: 'var(--danger)', background: 'none', border: '1px solid var(--danger)', borderRadius: 'var(--radius-xs)', cursor: 'pointer', fontWeight: 600 }}>Logout</button>
+                  <Link
+                    to="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+                  >
+                    My Profile
+                  </Link>
+                  <Link
+                    to="/orders"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+                  >
+                    My Orders
+                  </Link>
+                  <Link
+                    to="/wishlist"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
+                  >
+                    Wishlist
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{
+                      fontSize: '14px',
+                      padding: '10px',
+                      color: 'var(--danger)',
+                      background: 'none',
+                      border: '1px solid var(--danger)',
+                      borderRadius: 'var(--radius-xs)',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Logout
+                  </button>
                 </>
               )}
             </div>

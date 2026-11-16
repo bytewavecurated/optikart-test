@@ -9,7 +9,7 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_aws
   AWS.config.update({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION || 'us-east-1'
+    region: process.env.AWS_REGION || 'us-east-1',
   });
 }
 
@@ -18,7 +18,7 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_aws
  */
 export const speechToText = async (audioBuffer, language = 'en-US') => {
   const service = process.env.SPEECH_RECOGNITION_SERVICE || 'google';
-  
+
   try {
     switch (service) {
       case 'google':
@@ -39,45 +39,40 @@ export const speechToText = async (audioBuffer, language = 'en-US') => {
  */
 const transcribeWithGoogle = async (audioBuffer, language) => {
   const apiKey = process.env.GOOGLE_SPEECH_API_KEY;
-  
+
   if (!apiKey || apiKey === 'your_google_speech_api_key_here') {
     throw new Error('Google Speech API not configured');
   }
 
   const base64Audio = audioBuffer.toString('base64');
-  
-  const response = await axios.post(
-    `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`,
-    {
-      config: {
-        encoding: 'WEBM_OPUS',
-        sampleRateHertz: 48000,
-        languageCode: language,
-        model: 'default',
-        enableAutomaticPunctuation: true
-      },
-      audio: {
-        content: base64Audio
-      }
-    }
-  );
+
+  const response = await axios.post(`https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`, {
+    config: {
+      encoding: 'WEBM_OPUS',
+      sampleRateHertz: 48000,
+      languageCode: language,
+      model: 'default',
+      enableAutomaticPunctuation: true,
+    },
+    audio: {
+      content: base64Audio,
+    },
+  });
 
   const results = response.data.results;
-  
+
   if (!results || results.length === 0) {
     throw new Error('No speech detected in audio');
   }
 
-  const transcript = results
-    .map(result => result.alternatives[0].transcript)
-    .join(' ');
+  const transcript = results.map((result) => result.alternatives[0].transcript).join(' ');
 
   return {
     success: true,
     transcript: transcript,
     confidence: results[0].alternatives[0].confidence || 0.95,
     language: language,
-    source: 'google-speech'
+    source: 'google-speech',
   };
 };
 
@@ -90,20 +85,20 @@ const transcribeWithAWS = async (audioBuffer, language) => {
   }
 
   const transcribe = new AWS.TranscribeService();
-  
+
   const params = {
     Audio: {
-      Payload: audioBuffer
+      Payload: audioBuffer,
     },
     Settings: {
       LanguageCode: language === 'en-US' ? 'en-US' : 'en-GB',
       MaxAlternatives: 1,
-      ShowAlternatives: false
-    }
+      ShowAlternatives: false,
+    },
   };
 
   const result = await transcribe.startStreamTranscription(params).promise();
-  
+
   const transcript = result.TranscriptResult.Transcripts[0].Transcript;
   const confidence = result.TranscriptResult.Transcripts[0].Confidence;
 
@@ -112,7 +107,7 @@ const transcribeWithAWS = async (audioBuffer, language) => {
     transcript: transcript,
     confidence: confidence || 0.95,
     language: language,
-    source: 'aws-transcribe'
+    source: 'aws-transcribe',
   };
 };
 
@@ -123,23 +118,23 @@ export const processAudioSearch = async (audioBuffer, language = 'en-US') => {
   try {
     // Convert speech to text
     const result = await speechToText(audioBuffer, language);
-    
+
     // Clean and normalize the transcript
     const searchQuery = result.transcript
       .toLowerCase()
       .trim()
       .replace(/[^\w\s]/gi, '');
-    
+
     // Extract keywords for product search
     const keywords = extractKeywords(searchQuery);
-    
+
     return {
       success: true,
       originalTranscript: result.transcript,
       searchQuery: searchQuery,
       keywords: keywords,
       confidence: result.confidence,
-      language: language
+      language: language,
     };
   } catch (error) {
     console.error('Audio search processing error:', error);
@@ -157,7 +152,7 @@ const extractKeywords = (query) => {
     color: null,
     style: null,
     price: null,
-    gender: null
+    gender: null,
   };
 
   // Extract category
@@ -213,7 +208,12 @@ const extractKeywords = (query) => {
   // Extract gender
   if (query.includes('men') || query.includes('male') || query.includes('man')) {
     keywords.gender = 'men';
-  } else if (query.includes('women') || query.includes('female') || query.includes('woman') || query.includes('ladies')) {
+  } else if (
+    query.includes('women') ||
+    query.includes('female') ||
+    query.includes('woman') ||
+    query.includes('ladies')
+  ) {
     keywords.gender = 'women';
   } else if (query.includes('kids') || query.includes('children') || query.includes('child')) {
     keywords.gender = 'kids';
@@ -265,5 +265,5 @@ export const buildSearchFilters = (keywords) => {
 export default {
   speechToText,
   processAudioSearch,
-  buildSearchFilters
+  buildSearchFilters,
 };

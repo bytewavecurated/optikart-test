@@ -15,7 +15,17 @@ import { FiUserPlus, FiTrash2, FiCopy, FiCheckCircle, FiAlertCircle } from 'reac
  * surfaces the one-time password so the credential can actually be handed over.
  */
 
-const th = { padding: '10px 12px', textAlign: 'left', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
+const th = {
+  padding: '10px 12px',
+  textAlign: 'left',
+  fontSize: 11.5,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: 0.4,
+  color: 'var(--text-secondary)',
+  borderBottom: '1px solid var(--border)',
+  whiteSpace: 'nowrap',
+};
 const td = { padding: '12px', fontSize: 13.5, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
 
 const ROLES = [
@@ -25,11 +35,13 @@ const ROLES = [
   ['user_manager', 'Customer accounts'],
   ['seller_manager', 'Seller manager'],
   ['finance_manager', 'Finance'],
-  ['blog_manager', 'Content']
+  ['blog_manager', 'Content'],
 ];
 
 const label = (text) => (
-  <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 5, color: 'var(--text-secondary)' }}>{text}</label>
+  <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 5, color: 'var(--text-secondary)' }}>
+    {text}
+  </label>
 );
 
 export default function ExecutiveTeam() {
@@ -52,7 +64,9 @@ export default function ExecutiveTeam() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const add = async (ev) => {
     ev.preventDefault();
@@ -66,9 +80,11 @@ export default function ExecutiveTeam() {
       toast.success('Team member added');
       if (res.data.tempPassword) {
         setIssued({ email: form.email.trim(), password: res.data.tempPassword });
-        navigator.clipboard?.writeText(
-          `Sign in at ${window.location.origin}/staff/login\nEmail: ${form.email.trim()}\nPassword: ${res.data.tempPassword}`
-        ).catch(() => {});
+        navigator.clipboard
+          ?.writeText(
+            `Sign in at ${window.location.origin}/staff/login\nEmail: ${form.email.trim()}\nPassword: ${res.data.tempPassword}`
+          )
+          .catch(() => {});
       }
       setForm({ name: '', email: '', role: form.role, phone: '', password: '' });
       setShowForm(false);
@@ -109,7 +125,16 @@ export default function ExecutiveTeam() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 12,
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+          marginBottom: 16,
+        }}
+      >
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 4px' }}>Desk team</h1>
           <p style={{ margin: 0, fontSize: 13.5, color: 'var(--text-secondary)', maxWidth: 720 }}>
@@ -117,7 +142,9 @@ export default function ExecutiveTeam() {
             prescription checks and order actions are attributed to these records.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}><FiUserPlus size={15} /> Add member</button>
+        <button className="btn btn-primary" onClick={() => setShowForm((v) => !v)}>
+          <FiUserPlus size={15} /> Add member
+        </button>
       </div>
 
       {issued && (
@@ -129,11 +156,20 @@ export default function ExecutiveTeam() {
             <button
               className="btn btn-outline"
               style={{ padding: '3px 10px', fontSize: 12 }}
-              onClick={() => { navigator.clipboard?.writeText(`${issued.email} / ${issued.password}`).catch(() => {}); toast.success('Copied'); }}
+              onClick={() => {
+                navigator.clipboard?.writeText(`${issued.email} / ${issued.password}`).catch(() => {});
+                toast.success('Copied');
+              }}
             >
               <FiCopy size={12} /> copy
             </button>
-            <button className="btn btn-outline" style={{ padding: '3px 10px', fontSize: 12 }} onClick={() => setIssued(null)}>dismiss</button>
+            <button
+              className="btn btn-outline"
+              style={{ padding: '3px 10px', fontSize: 12 }}
+              onClick={() => setIssued(null)}
+            >
+              dismiss
+            </button>
           </div>
           <p style={{ margin: '8px 0 0', fontSize: 12.5, color: 'var(--text-secondary)' }}>
             Shown once and not recoverable afterwards - send it to them now. They can change it after signing in.
@@ -144,29 +180,64 @@ export default function ExecutiveTeam() {
       {showForm && (
         <form onSubmit={add} className="card-flat" style={{ padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
-            <div>{label('Name')}<input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-            <div>{label('Email')}<input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-            <div>{label('Phone (optional)')}<input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-            <div>{label('Role')}
+            <div>
+              {label('Name')}
+              <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div>
+              {label('Email')}
+              <input
+                className="input"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </div>
+            <div>
+              {label('Phone (optional)')}
+              <input
+                className="input"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+            </div>
+            <div>
+              {label('Role')}
               <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-                {ROLES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+                {ROLES.map(([v, t]) => (
+                  <option key={v} value={v}>
+                    {t}
+                  </option>
+                ))}
               </select>
             </div>
-            <div>{label('Password (blank generates one)')}
-              <input className="input" type="text" value={form.password} placeholder="min 6 characters"
-                onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <div>
+              {label('Password (blank generates one)')}
+              <input
+                className="input"
+                type="text"
+                value={form.password}
+                placeholder="min 6 characters"
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-            <button type="submit" className="btn btn-primary" disabled={busy === 'add'}>{busy === 'add' ? 'Adding…' : 'Add to team'}</button>
-            <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={busy === 'add'}>
+              {busy === 'add' ? 'Adding…' : 'Add to team'}
+            </button>
+            <button type="button" className="btn btn-outline" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
           </div>
         </form>
       )}
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         {loading ? (
-          <div style={{ padding: 50, textAlign: 'center' }}><div className="spinner" /></div>
+          <div style={{ padding: 50, textAlign: 'center' }}>
+            <div className="spinner" />
+          </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-secondary)' }}>
             No one in your department yet. Anyone you add here signs in at <code>/staff/login</code>.
@@ -174,7 +245,13 @@ export default function ExecutiveTeam() {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>{['Name', 'Email', 'Role', 'Sign-in', 'Last login', 'Access', ''].map((h, i) => <th key={i} style={th}>{h}</th>)}</tr>
+              <tr>
+                {['Name', 'Email', 'Role', 'Sign-in', 'Last login', 'Access', ''].map((h, i) => (
+                  <th key={i} style={th}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
@@ -183,23 +260,58 @@ export default function ExecutiveTeam() {
                   <td style={{ ...td, color: 'var(--text-secondary)' }}>{row.email}</td>
                   <td style={{ ...td, textTransform: 'capitalize' }}>{String(row.role || '').replace(/_/g, ' ')}</td>
                   <td style={td}>
-                    {row.hasLogin
-                      ? <span style={{ fontSize: 12.5, color: 'var(--success)' }}>account exists</span>
-                      : <span style={{ fontSize: 12.5, color: 'var(--danger)', display: 'inline-flex', gap: 5, alignItems: 'center' }}><FiAlertCircle size={12} /> no login</span>}
+                    {row.hasLogin ? (
+                      <span style={{ fontSize: 12.5, color: 'var(--success)' }}>account exists</span>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: 12.5,
+                          color: 'var(--danger)',
+                          display: 'inline-flex',
+                          gap: 5,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <FiAlertCircle size={12} /> no login
+                      </span>
+                    )}
                   </td>
                   <td style={{ ...td, color: 'var(--text-light)', fontSize: 12.5 }}>
-                    {row.lastLogin ? new Date(row.lastLogin).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'never'}
+                    {row.lastLogin
+                      ? new Date(row.lastLogin).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                      : 'never'}
                   </td>
                   <td style={td}>
-                    <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', fontSize: 12.5, cursor: 'pointer' }}>
-                      <input type="checkbox" checked={row.isActive !== false} disabled={busy === row._id}
-                        onChange={(e) => toggleActive(row, e.target.checked)} />
+                    <label
+                      style={{
+                        display: 'inline-flex',
+                        gap: 6,
+                        alignItems: 'center',
+                        fontSize: 12.5,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={row.isActive !== false}
+                        disabled={busy === row._id}
+                        onChange={(e) => toggleActive(row, e.target.checked)}
+                      />
                       active
                     </label>
                   </td>
                   <td style={td}>
-                    <button className="btn btn-outline" style={{ padding: '4px 10px', fontSize: 12.5, color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                      disabled={busy === row._id} onClick={() => remove(row)}>
+                    <button
+                      className="btn btn-outline"
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: 12.5,
+                        color: 'var(--danger)',
+                        borderColor: 'var(--danger)',
+                      }}
+                      disabled={busy === row._id}
+                      onClick={() => remove(row)}
+                    >
                       <FiTrash2 size={12} /> deactivate
                     </button>
                   </td>

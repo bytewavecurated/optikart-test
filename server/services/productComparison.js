@@ -10,18 +10,18 @@ export const createComparisonList = async (userId, name = 'My Comparison') => {
     const comparisonList = await ComparisonList.create({
       user: userId,
       name,
-      products: []
+      products: [],
     });
 
     return {
       success: true,
-      comparisonList
+      comparisonList,
     };
   } catch (error) {
     console.error('Error creating comparison list:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -33,7 +33,7 @@ export const addToComparison = async (userId, listId, productId) => {
   try {
     const comparisonList = await ComparisonList.findOne({
       _id: listId,
-      user: userId
+      user: userId,
     });
 
     if (!comparisonList) {
@@ -56,13 +56,13 @@ export const addToComparison = async (userId, listId, productId) => {
 
     return {
       success: true,
-      comparisonList
+      comparisonList,
     };
   } catch (error) {
     console.error('Error adding to comparison:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -74,28 +74,26 @@ export const removeFromComparison = async (userId, listId, productId) => {
   try {
     const comparisonList = await ComparisonList.findOne({
       _id: listId,
-      user: userId
+      user: userId,
     });
 
     if (!comparisonList) {
       throw new Error('Comparison list not found');
     }
 
-    comparisonList.products = comparisonList.products.filter(
-      p => p.toString() !== productId
-    );
+    comparisonList.products = comparisonList.products.filter((p) => p.toString() !== productId);
     comparisonList.updatedAt = new Date();
     await comparisonList.save();
 
     return {
       success: true,
-      comparisonList
+      comparisonList,
     };
   } catch (error) {
     console.error('Error removing from comparison:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -108,19 +106,20 @@ export const getUserComparisonLists = async (userId) => {
     const lists = await ComparisonList.find({ user: userId })
       .populate({
         path: 'products',
-        select: 'title brand price images rating totalRatings stock category frameShape frameColor lensType gender frameSize'
+        select:
+          'title brand price images rating totalRatings stock category frameShape frameColor lensType gender frameSize',
       })
       .sort({ updatedAt: -1 });
 
     return {
       success: true,
-      lists
+      lists,
     };
   } catch (error) {
     console.error('Error getting user comparison lists:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -132,13 +131,13 @@ export const getComparisonList = async (listId, userId) => {
   try {
     const list = await ComparisonList.findOne({
       _id: listId,
-      user: userId
+      user: userId,
     }).populate({
       path: 'products',
       populate: {
         path: 'seller',
-        select: 'storeName rating'
-      }
+        select: 'storeName rating',
+      },
     });
 
     if (!list) {
@@ -147,13 +146,13 @@ export const getComparisonList = async (listId, userId) => {
 
     return {
       success: true,
-      list
+      list,
     };
   } catch (error) {
     console.error('Error getting comparison list:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -165,7 +164,7 @@ export const deleteComparisonList = async (userId, listId) => {
   try {
     const list = await ComparisonList.findOneAndDelete({
       _id: listId,
-      user: userId
+      user: userId,
     });
 
     if (!list) {
@@ -174,13 +173,13 @@ export const deleteComparisonList = async (userId, listId) => {
 
     return {
       success: true,
-      message: 'Comparison list deleted'
+      message: 'Comparison list deleted',
     };
   } catch (error) {
     console.error('Error deleting comparison list:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -192,7 +191,7 @@ export const generateShareToken = async (userId, listId) => {
   try {
     const list = await ComparisonList.findOne({
       _id: listId,
-      user: userId
+      user: userId,
     });
 
     if (!list) {
@@ -201,7 +200,7 @@ export const generateShareToken = async (userId, listId) => {
 
     // Generate unique share token
     const shareToken = crypto.randomBytes(16).toString('hex');
-    
+
     list.shareToken = shareToken;
     list.isPublic = true;
     list.updatedAt = new Date();
@@ -210,13 +209,13 @@ export const generateShareToken = async (userId, listId) => {
     return {
       success: true,
       shareToken,
-      shareUrl: `/compare/shared/${shareToken}`
+      shareUrl: `/compare/shared/${shareToken}`,
     };
   } catch (error) {
     console.error('Error generating share token:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -228,14 +227,15 @@ export const getSharedComparisonList = async (shareToken) => {
   try {
     const list = await ComparisonList.findOne({
       shareToken,
-      isPublic: true
+      isPublic: true,
     }).populate({
       path: 'products',
-      select: 'title brand price images rating totalRatings stock category frameShape frameColor lensType gender frameSize description',
+      select:
+        'title brand price images rating totalRatings stock category frameShape frameColor lensType gender frameSize description',
       populate: {
         path: 'seller',
-        select: 'storeName rating'
-      }
+        select: 'storeName rating',
+      },
     });
 
     if (!list) {
@@ -244,13 +244,13 @@ export const getSharedComparisonList = async (shareToken) => {
 
     return {
       success: true,
-      list
+      list,
     };
   } catch (error) {
     console.error('Error getting shared comparison list:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -261,10 +261,10 @@ export const getSharedComparisonList = async (shareToken) => {
 export const compareAcrossCategories = async (productIds) => {
   try {
     const products = await Product.find({
-      _id: { $in: productIds }
+      _id: { $in: productIds },
     }).populate({
       path: 'seller',
-      select: 'storeName rating'
+      select: 'storeName rating',
     });
 
     if (products.length !== productIds.length) {
@@ -272,19 +272,19 @@ export const compareAcrossCategories = async (productIds) => {
     }
 
     // Get unique categories
-    const categories = [...new Set(products.map(p => p.category))];
+    const categories = [...new Set(products.map((p) => p.category))];
 
     return {
       success: true,
       products,
       categories,
-      isCrossCategory: categories.length > 1
+      isCrossCategory: categories.length > 1,
     };
   } catch (error) {
     console.error('Error comparing across categories:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -298,5 +298,5 @@ export default {
   deleteComparisonList,
   generateShareToken,
   getSharedComparisonList,
-  compareAcrossCategories
+  compareAcrossCategories,
 };

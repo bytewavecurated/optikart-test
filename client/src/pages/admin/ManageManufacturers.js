@@ -20,7 +20,7 @@ const ManageManufacturers = () => {
     gstNumber: '',
     panNumber: '',
     address: { street: '', city: '', state: '', pincode: '' },
-    brands: []
+    brands: [],
   });
 
   useEffect(() => {
@@ -33,7 +33,7 @@ const ManageManufacturers = () => {
       setManufacturers(listOf(res.data));
     } catch (error) {
       console.error(error);
-      toastError(error, "Failed to fetch manufacturers");
+      toastError(error, 'Failed to fetch manufacturers');
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ const ManageManufacturers = () => {
         gstNumber: '',
         panNumber: '',
         address: { street: '', city: '', state: '', pincode: '' },
-        brands: []
+        brands: [],
       });
       fetchManufacturers();
     } catch (error) {
@@ -75,7 +75,7 @@ const ManageManufacturers = () => {
         gstNumber: '',
         panNumber: '',
         address: { street: '', city: '', state: '', pincode: '' },
-        brands: []
+        brands: [],
       });
       fetchManufacturers();
     } catch (error) {
@@ -84,13 +84,18 @@ const ManageManufacturers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this manufacturer? This will also delete all their products and sellers.')) return;
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this manufacturer? This will also delete all their products and sellers.'
+      )
+    )
+      return;
     try {
       await adminApi.deleteManufacturer(id);
       toast.success('Manufacturer deleted successfully');
       fetchManufacturers();
     } catch (error) {
-      toastError(error, "Failed to delete manufacturer");
+      toastError(error, 'Failed to delete manufacturer');
     }
   };
 
@@ -100,15 +105,16 @@ const ManageManufacturers = () => {
       toast.success(isBanned ? 'Manufacturer banned' : 'Manufacturer unbanned');
       fetchManufacturers();
     } catch (error) {
-      toastError(error, "Failed to update manufacturer status");
+      toastError(error, 'Failed to update manufacturer status');
     }
   };
 
-  const filteredManufacturers = manufacturers.filter(mfr =>
-    mfr.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    mfr.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    mfr.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (mfr.manufacturerId && mfr.manufacturerId.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredManufacturers = manufacturers.filter(
+    (mfr) =>
+      mfr.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mfr.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mfr.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (mfr.manufacturerId && mfr.manufacturerId.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   if (loading) {
@@ -135,7 +141,7 @@ const ManageManufacturers = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontWeight: 600
+            fontWeight: 600,
           }}
         >
           <FiPlus /> Add Manufacturer
@@ -143,7 +149,15 @@ const ManageManufacturers = () => {
       </div>
 
       <div style={{ position: 'relative', marginBottom: '20px' }}>
-        <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
+        <FiSearch
+          style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'var(--text-light)',
+          }}
+        />
         <input
           type="text"
           placeholder="Search by name, email, company, or ID..."
@@ -154,21 +168,40 @@ const ManageManufacturers = () => {
             padding: '10px 10px 10px 40px',
             border: '1px solid var(--border)',
             borderRadius: 'var(--radius-sm)',
-            fontSize: '14px'
+            fontSize: '14px',
           }}
         />
       </div>
 
-      <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', overflow: 'hidden' }}>
+      <div
+        style={{
+          background: 'var(--bg-white)',
+          borderRadius: 'var(--radius)',
+          boxShadow: 'var(--shadow)',
+          overflow: 'hidden',
+        }}
+      >
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--bg-subtle)', borderBottom: '2px solid var(--border)' }}>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Manufacturer ID</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Company Name</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Contact Person</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Email</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Status</th>
-              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>Actions</th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Manufacturer ID
+              </th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Company Name
+              </th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Contact Person
+              </th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Email
+              </th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Status
+              </th>
+              <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -181,31 +214,37 @@ const ManageManufacturers = () => {
             ) : (
               filteredManufacturers.map((mfr) => (
                 <tr key={mfr._id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '12px', fontFamily: 'monospace', fontSize: '13px' }}>{mfr.manufacturerId || '-'}</td>
+                  <td style={{ padding: '12px', fontFamily: 'monospace', fontSize: '13px' }}>
+                    {mfr.manufacturerId || '-'}
+                  </td>
                   <td style={{ padding: '12px', fontWeight: 500 }}>{mfr.companyName}</td>
                   <td style={{ padding: '12px' }}>{mfr.name}</td>
                   <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{mfr.email}</td>
                   <td style={{ padding: '12px' }}>
                     {mfr.isBanned ? (
-                      <span style={{
-                        padding: '4px 12px',
-                        borderRadius: 'var(--radius)',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        background: 'var(--danger-light)',
-                        color: 'var(--danger)'
-                      }}>
+                      <span
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: 'var(--radius)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          background: 'var(--danger-light)',
+                          color: 'var(--danger)',
+                        }}
+                      >
                         Banned
                       </span>
                     ) : (
-                      <span style={{
-                        padding: '4px 12px',
-                        borderRadius: 'var(--radius)',
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        background: 'var(--success-light)',
-                        color: 'var(--success)'
-                      }}>
+                      <span
+                        style={{
+                          padding: '4px 12px',
+                          borderRadius: 'var(--radius)',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          background: 'var(--success-light)',
+                          color: 'var(--success)',
+                        }}
+                      >
                         Active
                       </span>
                     )}
@@ -224,24 +263,45 @@ const ManageManufacturers = () => {
                             gstNumber: mfr.gstNumber || '',
                             panNumber: mfr.panNumber || '',
                             address: mfr.address || { street: '', city: '', state: '', pincode: '' },
-                            brands: mfr.brands || []
+                            brands: mfr.brands || [],
                           });
                         }}
-                        style={{ padding: '6px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
+                        style={{
+                          padding: '6px',
+                          background: 'var(--brand)',
+                          color: 'var(--text-white)',
+                          border: 'none',
+                          borderRadius: 'var(--radius-xs)',
+                          cursor: 'pointer',
+                        }}
                         title="Edit"
                       >
                         <FiEdit size={16} />
                       </button>
                       <button
                         onClick={() => handleBan(mfr._id, !mfr.isBanned)}
-                        style={{ padding: '6px', background: mfr.isBanned ? 'var(--success)' : 'var(--warning)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
+                        style={{
+                          padding: '6px',
+                          background: mfr.isBanned ? 'var(--success)' : 'var(--warning)',
+                          color: 'var(--text-white)',
+                          border: 'none',
+                          borderRadius: 'var(--radius-xs)',
+                          cursor: 'pointer',
+                        }}
                         title={mfr.isBanned ? 'Unban' : 'Ban'}
                       >
                         {mfr.isBanned ? <FiEye size={16} /> : <FiEyeOff size={16} />}
                       </button>
                       <button
                         onClick={() => handleDelete(mfr._id)}
-                        style={{ padding: '6px', background: 'var(--danger)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
+                        style={{
+                          padding: '6px',
+                          background: 'var(--danger)',
+                          color: 'var(--text-white)',
+                          border: 'none',
+                          borderRadius: 'var(--radius-xs)',
+                          cursor: 'pointer',
+                        }}
                         title="Delete"
                       >
                         <FiTrash2 size={16} />
@@ -257,8 +317,31 @@ const ManageManufacturers = () => {
 
       {/* Add/Edit Modal */}
       {(showAddModal || editingManufacturer) && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius)', padding: '32px', maxWidth: '600px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg-white)',
+              borderRadius: 'var(--radius)',
+              padding: '32px',
+              maxWidth: '600px',
+              width: '90%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
             <h2 style={{ fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}>
               {editingManufacturer ? 'Edit Manufacturer' : 'Add New Manufacturer'}
             </h2>
@@ -266,23 +349,37 @@ const ManageManufacturers = () => {
             <div style={{ display: 'grid', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Contact Person Name *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    Contact Person Name *
+                  </label>
                   <input
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="Contact person name"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Company Name *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    Company Name *
+                  </label>
                   <input
                     type="text"
                     value={formData.companyName}
-                    onChange={(e) => setFormData({...formData, companyName: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="Company name"
                   />
                 </div>
@@ -290,23 +387,37 @@ const ManageManufacturers = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Email *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    Email *
+                  </label>
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="manufacturer@email.com"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Phone *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    Phone *
+                  </label>
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="+91 9876543210"
                   />
                 </div>
@@ -314,12 +425,19 @@ const ManageManufacturers = () => {
 
               {!editingManufacturer && (
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Password *</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    Password *
+                  </label>
                   <input
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="Password"
                   />
                 </div>
@@ -327,81 +445,146 @@ const ManageManufacturers = () => {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>GST Number</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    GST Number
+                  </label>
                   <input
                     type="text"
                     value={formData.gstNumber}
-                    onChange={(e) => setFormData({...formData, gstNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="GST number"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>PAN Number</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    PAN Number
+                  </label>
                   <input
                     type="text"
                     value={formData.panNumber}
-                    onChange={(e) => setFormData({...formData, panNumber: e.target.value})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) => setFormData({ ...formData, panNumber: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="PAN number"
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Brands (comma separated)</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                  Brands (comma separated)
+                </label>
                 <input
                   type="text"
                   value={formData.brands.join(', ')}
-                  onChange={(e) => setFormData({...formData, brands: e.target.value.split(',').map(b => b.trim()).filter(b => b)})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      brands: e.target.value
+                        .split(',')
+                        .map((b) => b.trim())
+                        .filter((b) => b),
+                    })
+                  }
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                  }}
                   placeholder="Ray-Ban, Oakley, etc."
                 />
               </div>
 
               <h3 style={{ fontSize: '16px', fontWeight: '600', marginTop: '16px' }}>Address</h3>
               <div>
-                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Street</label>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                  Street
+                </label>
                 <input
                   type="text"
                   value={formData.address.street}
-                  onChange={(e) => setFormData({...formData, address: {...formData.address, street: e.target.value}})}
-                  style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: { ...formData.address, street: e.target.value } })
+                  }
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)',
+                  }}
                   placeholder="Street address"
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>City</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    City
+                  </label>
                   <input
                     type="text"
                     value={formData.address.city}
-                    onChange={(e) => setFormData({...formData, address: {...formData.address, city: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: { ...formData.address, city: e.target.value } })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="City"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>State</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    State
+                  </label>
                   <input
                     type="text"
                     value={formData.address.state}
-                    onChange={(e) => setFormData({...formData, address: {...formData.address, state: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: { ...formData.address, state: e.target.value } })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="State"
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>Pincode</label>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', marginBottom: '8px' }}>
+                    Pincode
+                  </label>
                   <input
                     type="text"
                     value={formData.address.pincode}
-                    onChange={(e) => setFormData({...formData, address: {...formData.address, pincode: e.target.value}})}
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: { ...formData.address, pincode: e.target.value } })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
                     placeholder="Pincode"
                   />
                 </div>
@@ -411,7 +594,16 @@ const ManageManufacturers = () => {
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
               <button
                 onClick={editingManufacturer ? handleEdit : handleAdd}
-                style={{ flex: 1, padding: '12px', background: 'var(--brand)', color: 'var(--text-white)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'var(--brand)',
+                  color: 'var(--text-white)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                }}
               >
                 {editingManufacturer ? 'Update' : 'Add'} Manufacturer
               </button>
@@ -428,10 +620,19 @@ const ManageManufacturers = () => {
                     gstNumber: '',
                     panNumber: '',
                     address: { street: '', city: '', state: '', pincode: '' },
-                    brands: []
+                    brands: [],
                   });
                 }}
-                style={{ flex: 1, padding: '12px', background: 'var(--border)', color: 'var(--text-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontWeight: '600' }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  background: 'var(--border)',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                }}
               >
                 Cancel
               </button>

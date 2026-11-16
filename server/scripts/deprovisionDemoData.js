@@ -24,18 +24,31 @@ const DEMO_ACCOUNTS = {
   users: ['testuser@optikart.com', 'demo@optikart.com'],
   admins: ['samedayopticians@gmail.com'],
   staff: ['priya.staff@optikart.com', 'meera.staff@optikart.com'],
-  sellers: ['opticalworld@gmail.com', 'visioncare@gmail.com', 'lensstudio@gmail.com', 'eyefashion@gmail.com', 'meera12345@rediffmail.com', 'sunil.b@eye-dhiq.com', 'rahul.s@eye-dhiq.com', 'priya.m@eye-dhiq.com', 'kavita.j@eye-dhiq.com', 'arjun.r@eye-dhiq.com'],
+  sellers: [
+    'opticalworld@gmail.com',
+    'visioncare@gmail.com',
+    'lensstudio@gmail.com',
+    'eyefashion@gmail.com',
+    'meera12345@rediffmail.com',
+    'sunil.b@eye-dhiq.com',
+    'rahul.s@eye-dhiq.com',
+    'priya.m@eye-dhiq.com',
+    'kavita.j@eye-dhiq.com',
+    'arjun.r@eye-dhiq.com',
+  ],
   executives: ['executive.delivery@optikart.com'],
   manufacturers: ['rayban.manufacturer@optikart.com'],
   manufacturerSellers: ['rayban.retailer1@optikart.com'],
-  partners: ['suresh.partner@optikart.com', 'anjali.partner@optikart.com', 'ramesh.partner@optikart.com']
+  partners: ['suresh.partner@optikart.com', 'anjali.partner@optikart.com', 'ramesh.partner@optikart.com'],
 };
 
 const flat = Object.values(DEMO_ACCOUNTS).flat();
 
 const main = async () => {
   if (process.env.DANGEROUS_CONFIRM !== 'yes') {
-    console.error('Set DANGEROUS_CONFIRM=yes to remove demo accounts. This deletes logins that exist in a fresh install.');
+    console.error(
+      'Set DANGEROUS_CONFIRM=yes to remove demo accounts. This deletes logins that exist in a fresh install.'
+    );
     process.exit(1);
   }
   const mongoose = (await import('mongoose')).default;
@@ -56,8 +69,11 @@ const main = async () => {
     ['sellers', await Seller.deleteMany({ email: { $in: DEMO_ACCOUNTS.sellers } })],
     ['executives', await Executive.deleteMany({ email: { $in: DEMO_ACCOUNTS.executives } })],
     ['manufacturers', await Manufacturer.deleteMany({ email: { $in: DEMO_ACCOUNTS.manufacturers } })],
-    ['manufacturer sellers', await ManufacturerSeller.deleteMany({ email: { $in: DEMO_ACCOUNTS.manufacturerSellers } })],
-    ['delivery partners', await DeliveryPartner.deleteMany({ email: { $in: DEMO_ACCOUNTS.partners } })]
+    [
+      'manufacturer sellers',
+      await ManufacturerSeller.deleteMany({ email: { $in: DEMO_ACCOUNTS.manufacturerSellers } }),
+    ],
+    ['delivery partners', await DeliveryPartner.deleteMany({ email: { $in: DEMO_ACCOUNTS.partners } })],
   ];
   removals.forEach(([label, res]) => console.log(`  removed ${res.deletedCount ?? 0} ${label}`));
 
@@ -71,10 +87,17 @@ const main = async () => {
 
   const remainingAdmins = await User.countDocuments({ role: 'admin', isActive: true });
   if (!remainingAdmins) {
-    console.warn('\nWARNING: no active administrator is left. Set BOOTSTRAP_ADMIN_EMAIL/BOOTSTRAP_ADMIN_PASSWORD and restart, or the console cannot be reached.');
+    console.warn(
+      '\nWARNING: no active administrator is left. Set BOOTSTRAP_ADMIN_EMAIL/BOOTSTRAP_ADMIN_PASSWORD and restart, or the console cannot be reached.'
+    );
   }
   await mongoose.disconnect();
-  console.log('\nDemo logins removed. Confirm AUTH_OTP_BYPASS is unset or false, and that SMTP is configured, before going live.');
+  console.log(
+    '\nDemo logins removed. Confirm AUTH_OTP_BYPASS is unset or false, and that SMTP is configured, before going live.'
+  );
 };
 
-main().catch((e) => { console.error('Deprovision failed:', e.message); process.exit(1); });
+main().catch((e) => {
+  console.error('Deprovision failed:', e.message);
+  process.exit(1);
+});

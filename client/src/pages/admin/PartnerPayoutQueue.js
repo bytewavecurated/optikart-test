@@ -39,7 +39,7 @@ const PartnerPayoutQueue = () => {
       setData({
         withdrawals: res.data?.withdrawals || [],
         count: res.data?.count || 0,
-        totalValue: res.data?.totalValue || 0
+        totalValue: res.data?.totalValue || 0,
       });
     } catch (err) {
       setError(err.response?.data?.message || 'The payout queue could not be loaded.');
@@ -48,7 +48,9 @@ const PartnerPayoutQueue = () => {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const settle = async (row) => {
     const reference = String(refs[row.withdrawalId] || '').trim();
@@ -58,10 +60,11 @@ const PartnerPayoutQueue = () => {
     }
     setBusy(row.withdrawalId);
     try {
-      const res = await api.post(
-        `/delivery-partner/payouts/${row.withdrawalId}/settle`,
-        { partnerId: row.partner.id, reference, note: notes[row.withdrawalId] || '' }
-      );
+      const res = await api.post(`/delivery-partner/payouts/${row.withdrawalId}/settle`, {
+        partnerId: row.partner.id,
+        reference,
+        note: notes[row.withdrawalId] || '',
+      });
       toast.success(res.data?.message || 'Withdrawal marked as settled.');
       setRefs((prev) => ({ ...prev, [row.withdrawalId]: '' }));
       setNotes((prev) => ({ ...prev, [row.withdrawalId]: '' }));
@@ -73,19 +76,44 @@ const PartnerPayoutQueue = () => {
     }
   };
 
-  const cell = { padding: '9px 12px', fontSize: 13, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
-  const head = { padding: '9px 12px', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', color: 'var(--text-secondary)', textAlign: 'left' };
+  const cell = {
+    padding: '9px 12px',
+    fontSize: 13,
+    borderBottom: '1px solid var(--border-light)',
+    verticalAlign: 'top',
+  };
+  const head = {
+    padding: '9px 12px',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: 'var(--text-secondary)',
+    textAlign: 'left',
+  };
 
   return (
     <div style={{ padding: '0 0 36px' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 12,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 6,
+        }}
+      >
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
           <FiDollarSign style={{ color: 'var(--primary)' }} /> Partner payout queue
         </h1>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <Link to="/admin/cash-reconciliation" style={{ fontSize: 12.5, color: 'var(--primary)' }}>Cash reconciliation</Link>
+          <Link to="/admin/cash-reconciliation" style={{ fontSize: 12.5, color: 'var(--primary)' }}>
+            Cash reconciliation
+          </Link>
           <button className="btn btn-quiet" onClick={load} disabled={loading}>
-            <FiRefreshCw style={{ marginRight: 6 }} />{loading ? 'Loading' : 'Refresh'}
+            <FiRefreshCw style={{ marginRight: 6 }} />
+            {loading ? 'Loading' : 'Refresh'}
           </button>
         </div>
       </div>
@@ -97,18 +125,41 @@ const PartnerPayoutQueue = () => {
       </p>
 
       {error && (
-        <div style={{ display: 'flex', gap: 10, padding: 12, marginBottom: 16, borderRadius: 'var(--radius)', background: 'rgba(220,38,38,.07)', color: 'var(--danger)', fontSize: 13 }}>
-          <FiAlertTriangle style={{ marginTop: 2 }} /><span>{error}</span>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            padding: 12,
+            marginBottom: 16,
+            borderRadius: 'var(--radius)',
+            background: 'rgba(220,38,38,.07)',
+            color: 'var(--danger)',
+            fontSize: 13,
+          }}
+        >
+          <FiAlertTriangle style={{ marginTop: 2 }} />
+          <span>{error}</span>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12, marginBottom: 18 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          gap: 12,
+          marginBottom: 18,
+        }}
+      >
         {[
           { label: 'Awaiting settlement', value: data.count },
-          { label: 'Total to pay out', value: inr(data.totalValue) }
+          { label: 'Total to pay out', value: inr(data.totalValue) },
         ].map((card) => (
           <div key={card.label} className="card" style={{ padding: 14, border: '1px solid var(--border-light)' }}>
-            <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>{card.label}</div>
+            <div
+              style={{ fontSize: 11.5, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: 0.5 }}
+            >
+              {card.label}
+            </div>
             <div style={{ fontSize: 20, fontWeight: 700, marginTop: 4 }}>
               {typeof card.value === 'number' ? card.value.toLocaleString('en-IN') : card.value}
             </div>
@@ -143,7 +194,8 @@ const PartnerPayoutQueue = () => {
                     <td style={cell}>
                       <div style={{ fontWeight: 700 }}>{row.partner?.name || 'Partner'}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                        {row.partner?.uniqueId}{row.partner?.phone ? ` · ${row.partner.phone}` : ''}
+                        {row.partner?.uniqueId}
+                        {row.partner?.phone ? ` · ${row.partner.phone}` : ''}
                       </div>
                       <div style={{ fontSize: 11.5, color: 'var(--text-light)' }}>
                         requested {row.requestedAt ? new Date(row.requestedAt).toLocaleString('en-IN') : 'unknown'}
@@ -157,11 +209,14 @@ const PartnerPayoutQueue = () => {
                             {row.bank.accountNumber}
                           </div>
                           <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                            {row.bank.ifsc}{row.bank.holder ? ` · ${row.bank.holder}` : ''}
+                            {row.bank.ifsc}
+                            {row.bank.holder ? ` · ${row.bank.holder}` : ''}
                           </div>
                         </>
                       ) : (
-                        <span style={{ color: 'var(--danger)', fontSize: 12 }}>No bank details on file - the partner must add them before payment.</span>
+                        <span style={{ color: 'var(--danger)', fontSize: 12 }}>
+                          No bank details on file - the partner must add them before payment.
+                        </span>
                       )}
                     </td>
                     <td style={{ ...cell, textAlign: 'right' }}>

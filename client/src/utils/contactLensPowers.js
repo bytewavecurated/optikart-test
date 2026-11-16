@@ -65,7 +65,7 @@ export const POWER_TYPES = {
   distance: { label: 'Distance Power', needs: ['sphere'], hint: 'Sphere only (SPH)' },
   toric: { label: 'Toric / Cylindrical', needs: ['sphere', 'cylinder', 'axis'], hint: 'SPH, CYL and AXIS' },
   multifocal: { label: 'Multi-focal', needs: ['sphere', 'addition'], hint: 'SPH and ADD (down-segment)' },
-  none: { label: 'No power needed', needs: [], hint: 'Cosmetic or plano' }
+  none: { label: 'No power needed', needs: [], hint: 'Cosmetic or plano' },
 };
 
 export const needsAxis = (t) => t === 'toric';
@@ -84,23 +84,31 @@ export const validatePowerSet = (power, powerType) => {
     const label = eye === 'left' ? 'Left eye (OS)' : 'Right eye (OD)';
     if (req.includes('sphere')) {
       const sp = Number(e.sphere);
-      if (e.sphere === '' || e.sphere === null || e.sphere === undefined) errors[`${eye}.sphere`] = `${label}: sphere is required`;
-      else if (!Number.isFinite(sp) || sp < SPHERE_MIN || sp > SPHERE_MAX) errors[`${eye}.sphere`] = `${label}: sphere must be between ${SPHERE_MIN} and +${SPHERE_MAX}`;
-      else if (Math.abs(sp * 4 - Math.round(sp * 4)) > 1e-9) errors[`${eye}.sphere`] = `${label}: sphere moves in 0.25 steps`;
+      if (e.sphere === '' || e.sphere === null || e.sphere === undefined)
+        errors[`${eye}.sphere`] = `${label}: sphere is required`;
+      else if (!Number.isFinite(sp) || sp < SPHERE_MIN || sp > SPHERE_MAX)
+        errors[`${eye}.sphere`] = `${label}: sphere must be between ${SPHERE_MIN} and +${SPHERE_MAX}`;
+      else if (Math.abs(sp * 4 - Math.round(sp * 4)) > 1e-9)
+        errors[`${eye}.sphere`] = `${label}: sphere moves in 0.25 steps`;
     }
     if (req.includes('cylinder')) {
       const cy = Number(e.cylinder);
-      if (e.cylinder === '' || e.cylinder === undefined || e.cylinder === null) errors[`${eye}.cylinder`] = `${label}: cylinder is required (enter 0 if none)`;
-      else if (!(cy === 0 || (cy <= CYL_MAX && cy >= CYL_MIN))) errors[`${eye}.cylinder`] = `${label}: cylinder must be 0 or between ${CYL_MIN} and ${CYL_MAX}`;
+      if (e.cylinder === '' || e.cylinder === undefined || e.cylinder === null)
+        errors[`${eye}.cylinder`] = `${label}: cylinder is required (enter 0 if none)`;
+      else if (!(cy === 0 || (cy <= CYL_MAX && cy >= CYL_MIN)))
+        errors[`${eye}.cylinder`] = `${label}: cylinder must be 0 or between ${CYL_MIN} and ${CYL_MAX}`;
       if (cy !== 0 && Number.isFinite(cy)) {
         const ax = Number(e.axis);
-        if (!Number.isFinite(ax) || ax < AXIS_MIN || ax > AXIS_MAX) errors[`${eye}.axis`] = `${label}: axis must be ${AXIS_MIN}-${AXIS_MAX} when a cylinder is given`;
+        if (!Number.isFinite(ax) || ax < AXIS_MIN || ax > AXIS_MAX)
+          errors[`${eye}.axis`] = `${label}: axis must be ${AXIS_MIN}-${AXIS_MAX} when a cylinder is given`;
       }
     }
     if (req.includes('addition')) {
       const ad = Number(e.addition);
-      if (e.addition === '' || e.addition === undefined || e.addition === null) errors[`${eye}.addition`] = `${label}: ADD is required for multi-focal lenses`;
-      else if (!Number.isFinite(ad) || ad < ADD_MIN || ad > ADD_MAX) errors[`${eye}.addition`] = `${label}: ADD must be between ${ADD_MIN} and ${ADD_MAX}`;
+      if (e.addition === '' || e.addition === undefined || e.addition === null)
+        errors[`${eye}.addition`] = `${label}: ADD is required for multi-focal lenses`;
+      else if (!Number.isFinite(ad) || ad < ADD_MIN || ad > ADD_MAX)
+        errors[`${eye}.addition`] = `${label}: ADD must be between ${ADD_MIN} and ${ADD_MAX}`;
     }
   });
   return { valid: Object.keys(errors).length === 0, errors };
@@ -113,9 +121,11 @@ export const describePower = (config) => {
     const e = config[eye] || {};
     const parts = [];
     if (e.sphere !== undefined && e.sphere !== '' && e.sphere !== null) parts.push(`SPH ${formatPower(e.sphere)}`);
-    if (e.cylinder !== undefined && e.cylinder !== '' && Number(e.cylinder) !== 0) parts.push(`CYL ${formatPower(e.cylinder)}`);
+    if (e.cylinder !== undefined && e.cylinder !== '' && Number(e.cylinder) !== 0)
+      parts.push(`CYL ${formatPower(e.cylinder)}`);
     if (e.axis !== undefined && e.axis !== '' && Number(e.cylinder) !== 0) parts.push(`AX ${e.axis}\u00B0`);
-    if (e.addition !== undefined && e.addition !== '' && e.addition !== null) parts.push(`ADD ${formatPower(e.addition)}`);
+    if (e.addition !== undefined && e.addition !== '' && e.addition !== null)
+      parts.push(`ADD ${formatPower(e.addition)}`);
     return parts.join(' ');
   };
   return [`OD ${fmt('right')}`.trim(), `OS ${fmt('left')}`.trim()].filter((x) => x !== 'OD' && x !== 'OS').join(' | ');
@@ -129,7 +139,7 @@ export const REPLACEMENTS = [
   { value: 'monthly', label: 'Monthly disposable', note: 'Replace every 30 days' },
   { value: 'quarterly', label: 'Quarterly', note: 'Replace every 3 months' },
   { value: 'halfyearly', label: 'Every 6 months', note: 'Semi-annual replacement' },
-  { value: 'yearly', label: 'Yearly', note: 'Annual replacement, needs solution' }
+  { value: 'yearly', label: 'Yearly', note: 'Annual replacement, needs solution' },
 ];
 
 // Box quantities actually sold; drives "how many lenses per box".

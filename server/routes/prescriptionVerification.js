@@ -6,7 +6,7 @@ import {
   rejectVerification,
   getUserVerifications,
   getPendingVerifications,
-  getAllVerifications
+  getAllVerifications,
 } from '../services/prescriptionVerification.js';
 
 import Prescription from '../models/Prescription.js';
@@ -26,7 +26,7 @@ router.post('/submit', verifyToken, async (req, res) => {
     if (!prescriptionId) {
       return res.status(400).json({
         success: false,
-        message: 'Prescription ID is required'
+        message: 'Prescription ID is required',
       });
     }
 
@@ -36,12 +36,12 @@ router.post('/submit', verifyToken, async (req, res) => {
       res.status(201).json({
         success: true,
         message: 'Prescription submitted for verification',
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -49,7 +49,7 @@ router.post('/submit', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -67,12 +67,12 @@ router.get('/user', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.verifications
+        data: result.verifications,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -80,7 +80,7 @@ router.get('/user', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -96,12 +96,12 @@ router.get('/pending', verifyToken, verifyPrescriptionVerifier, async (req, res)
     if (result.success) {
       res.json({
         success: true,
-        data: result.verifications
+        data: result.verifications,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -109,7 +109,7 @@ router.get('/pending', verifyToken, verifyPrescriptionVerifier, async (req, res)
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -131,12 +131,12 @@ router.get('/', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.verifications
+        data: result.verifications,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -144,7 +144,7 @@ router.get('/', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -166,9 +166,15 @@ router.get('/', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
 router.patch('/:id/document', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
   try {
     const fileUrl = String(req.body?.fileUrl || '').trim();
-    const note = String(req.body?.note || '').trim().slice(0, 300);
+    const note = String(req.body?.note || '')
+      .trim()
+      .slice(0, 300);
     if (!/^(\/uploads\/|https:\/\/)/.test(fileUrl)) {
-      return res.status(400).json({ success: false, message: 'Attach a file through the upload endpoint first; send back the /uploads/prescriptions/... address it returns.' });
+      return res.status(400).json({
+        success: false,
+        message:
+          'Attach a file through the upload endpoint first; send back the /uploads/prescriptions/... address it returns.',
+      });
     }
 
     const verification = await PrescriptionVerification.findById(req.params.id);
@@ -191,7 +197,12 @@ router.patch('/:id/document', verifyToken, verifyPrescriptionVerifier, async (re
     prescription.validatedAt = new Date();
     await prescription.save();
 
-    res.json({ success: true, message: 'Document attached to the prescription.', fileUrl, previousFiles: prescription.previousFiles });
+    res.json({
+      success: true,
+      message: 'Document attached to the prescription.',
+      fileUrl,
+      previousFiles: prescription.previousFiles,
+    });
   } catch (error) {
     console.error('Attach prescription document error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -210,12 +221,12 @@ router.post('/:id/approve', verifyToken, verifyPrescriptionVerifier, async (req,
       res.json({
         success: true,
         message: 'Prescription verification approved',
-        data: result.verification
+        data: result.verification,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -223,7 +234,7 @@ router.post('/:id/approve', verifyToken, verifyPrescriptionVerifier, async (req,
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -249,12 +260,12 @@ router.post('/:id/reject', verifyToken, verifyPrescriptionVerifier, async (req, 
       res.json({
         success: true,
         message: 'Prescription verification rejected',
-        data: result.verification
+        data: result.verification,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -262,7 +273,7 @@ router.post('/:id/reject', verifyToken, verifyPrescriptionVerifier, async (req, 
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

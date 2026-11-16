@@ -28,7 +28,7 @@ const LOGIN_BY_ROLE = {
   executive: '/executive/login',
   manufacturer: '/manufacturer/login',
   manufacturerSeller: '/manufacturer-seller/login',
-  deliveryPartner: '/delivery-partner/login'
+  deliveryPartner: '/delivery-partner/login',
 };
 
 // Prompt again this long before the drop, and once more a minute out.
@@ -40,22 +40,27 @@ const SessionIdleWatch = () => {
   const warned = useRef(new Set());
   const signedOut = useRef(false);
 
-  const signOut = useCallback(async (message) => {
-    if (signedOut.current) return;
-    signedOut.current = true;
-    const role = localStorage.getItem('optikart_role');
-    try {
-      const path = role === 'seller' ? '/seller/logout' : LOGIN_BY_ROLE[role] ? `/auth/logout` : '/auth/logout';
-      await api.post(path).catch(() => {});
-    } finally {
-      // The console-specific logout actions also clear context state; a plain
-      // reload does the same job without importing every role's context.
-      ['optikart_token', 'optikart_role', 'optikart_user', 'optikart_session_expiry'].forEach((k) => localStorage.removeItem(k));
-      toast.info(message || 'Signed out after a period of inactivity.');
-      navigate(LOGIN_BY_ROLE[role] || '/login', { replace: true });
-      window.setTimeout(() => window.location.reload(), 150);
-    }
-  }, [navigate]);
+  const signOut = useCallback(
+    async (message) => {
+      if (signedOut.current) return;
+      signedOut.current = true;
+      const role = localStorage.getItem('optikart_role');
+      try {
+        const path = role === 'seller' ? '/seller/logout' : LOGIN_BY_ROLE[role] ? `/auth/logout` : '/auth/logout';
+        await api.post(path).catch(() => {});
+      } finally {
+        // The console-specific logout actions also clear context state; a plain
+        // reload does the same job without importing every role's context.
+        ['optikart_token', 'optikart_role', 'optikart_user', 'optikart_session_expiry'].forEach((k) =>
+          localStorage.removeItem(k)
+        );
+        toast.info(message || 'Signed out after a period of inactivity.');
+        navigate(LOGIN_BY_ROLE[role] || '/login', { replace: true });
+        window.setTimeout(() => window.location.reload(), 150);
+      }
+    },
+    [navigate]
+  );
 
   useEffect(() => {
     let stopped = false;
@@ -83,7 +88,10 @@ const SessionIdleWatch = () => {
         for (const mark of WARN_AT_SECONDS) {
           if (left <= mark && !warned.current.has(mark)) {
             warned.current.add(mark);
-            toast.warn(`This console signs itself out in ${Math.max(1, Math.round(left / 60))} minute${left > 90 ? 's' : ''} of no activity. Work you have not sent will be lost.`, { duration: 8000 });
+            toast.warn(
+              `This console signs itself out in ${Math.max(1, Math.round(left / 60))} minute${left > 90 ? 's' : ''} of no activity. Work you have not sent will be lost.`,
+              { duration: 8000 }
+            );
           }
         }
         if (left <= 0) await signOut('Signed out: this console was left idle.');
@@ -100,7 +108,10 @@ const SessionIdleWatch = () => {
 
     tick();
     timer = setInterval(tick, 30000);
-    return () => { stopped = true; clearInterval(timer); };
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
   }, [signOut]);
 
   if (countdown === null || countdown > WARN_AT_SECONDS[0]) return null;
@@ -124,16 +135,21 @@ const SessionIdleWatch = () => {
         background: 'var(--bg-white, #fff)',
         border: '1px solid var(--warning, #d97706)',
         boxShadow: 'var(--shadow-md, 0 8px 24px rgba(15, 23, 42, .14))',
-        fontSize: 13
+        fontSize: 13,
       }}
     >
       <FiClock style={{ color: 'var(--warning-dark, #8a6d3b)' }} />
       <span>
-        Idle sign-out in <strong>{minutes}:{String(seconds).padStart(2, '0')}</strong>
+        Idle sign-out in{' '}
+        <strong>
+          {minutes}:{String(seconds).padStart(2, '0')}
+        </strong>
       </span>
       <a
         href="#main-content"
-        onClick={() => { warned.current.clear(); }}
+        onClick={() => {
+          warned.current.clear();
+        }}
         style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}
       >
         Keep working

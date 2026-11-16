@@ -25,7 +25,7 @@ const AdminReturnAnalytics = () => {
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      toastError(error, "Failed to load analytics");
+      toastError(error, 'Failed to load analytics');
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,9 @@ const AdminReturnAnalytics = () => {
         <div className="card" style={{ padding: '20px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'end', flexWrap: 'wrap' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>Start Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                Start Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -84,7 +86,9 @@ const AdminReturnAnalytics = () => {
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>End Date</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+                End Date
+              </label>
               <input
                 type="date"
                 className="input"
@@ -92,12 +96,21 @@ const AdminReturnAnalytics = () => {
                 onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
               />
             </div>
-            <button onClick={fetchAnalytics} className="btn btn-primary">Apply Filter</button>
+            <button onClick={fetchAnalytics} className="btn btn-primary">
+              Apply Filter
+            </button>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            marginBottom: '24px',
+          }}
+        >
           <div className="card" style={{ padding: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
               <FiPackage size={24} color="var(--primary)" />
@@ -143,7 +156,14 @@ const AdminReturnAnalytics = () => {
                     <td style={{ padding: '12px', fontWeight: 600 }}>{item.seller.storeName}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>{item.totalOrders}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>{item.totalReturns}</td>
-                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: parseFloat(item.returnRate) > 15 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                    <td
+                      style={{
+                        padding: '12px',
+                        textAlign: 'right',
+                        fontWeight: 600,
+                        color: parseFloat(item.returnRate) > 15 ? 'var(--danger)' : 'var(--text-primary)',
+                      }}
+                    >
                       {item.returnRate}%
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>₹{item.totalRefundAmount.toLocaleString()}</td>
@@ -173,7 +193,14 @@ const AdminReturnAnalytics = () => {
                     <td style={{ padding: '12px', fontWeight: 600 }}>{item.state}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>{item.totalOrders}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>{item.totalReturns}</td>
-                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: 600, color: parseFloat(item.returnRate) > 10 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                    <td
+                      style={{
+                        padding: '12px',
+                        textAlign: 'right',
+                        fontWeight: 600,
+                        color: parseFloat(item.returnRate) > 10 ? 'var(--danger)' : 'var(--text-primary)',
+                      }}
+                    >
                       {item.returnRate}%
                     </td>
                   </tr>
@@ -188,7 +215,17 @@ const AdminReturnAnalytics = () => {
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Return Reason Distribution</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {reasonDistribution.slice(0, 8).map((item, index) => (
-              <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px',
+                  background: 'var(--bg-secondary)',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
                 <div>
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>{item.reason}</div>
                   <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{item.count} returns</div>
@@ -204,9 +241,19 @@ const AdminReturnAnalytics = () => {
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Return Status Distribution</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
             {Object.entries(statusDistribution).map(([status, count]) => (
-              <div key={status} style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', textAlign: 'center' }}>
+              <div
+                key={status}
+                style={{
+                  padding: '16px',
+                  background: 'var(--bg-secondary)',
+                  borderRadius: 'var(--radius-md)',
+                  textAlign: 'center',
+                }}
+              >
                 <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>{count}</div>
-                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{status.replace('_', ' ')}</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>
+                  {status.replace('_', ' ')}
+                </div>
               </div>
             ))}
           </div>

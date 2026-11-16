@@ -12,7 +12,10 @@ import Manufacturer from '../models/Manufacturer.js';
  * Matching is case-insensitive on trimmed values: "Ray-Ban" and "ray-ban" are one
  * brand to a shopper, so they must be one brand to the check as well.
  */
-export const foldBrand = (name) => String(name ?? '').trim().toLowerCase();
+export const foldBrand = (name) =>
+  String(name ?? '')
+    .trim()
+    .toLowerCase();
 
 /**
  * Map of every *other* manufacturer's brand name -> who owns it.
@@ -24,10 +27,10 @@ export const foldBrand = (name) => String(name ?? '').trim().toLowerCase();
  * that are also pattern syntax cannot corrupt the check.
  */
 export const brandOwnersByFoldedName = async (selfManufacturerId) => {
-  const others = await Manufacturer.find(
-    selfManufacturerId ? { _id: { $ne: selfManufacturerId } } : {},
-    { companyName: 1, brands: 1 }
-  ).lean();
+  const others = await Manufacturer.find(selfManufacturerId ? { _id: { $ne: selfManufacturerId } } : {}, {
+    companyName: 1,
+    brands: 1,
+  }).lean();
 
   const owners = new Map();
   for (const other of others) {
@@ -41,7 +44,8 @@ export const brandOwnersByFoldedName = async (selfManufacturerId) => {
   return owners;
 };
 
-export const clashMessage = (c) => `"${c.brand}" is already owned by ${c.owner} (declared there as "${c.ownerBrand}"). One brand name has one manufacturer - upload under a brand you own, or ask OptiKart to reassign it.`;
+export const clashMessage = (c) =>
+  `"${c.brand}" is already owned by ${c.owner} (declared there as "${c.ownerBrand}"). One brand name has one manufacturer - upload under a brand you own, or ask OptiKart to reassign it.`;
 
 /**
  * Validate a proposed brand list for one manufacturer.

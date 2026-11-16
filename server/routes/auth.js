@@ -7,7 +7,7 @@ import Prescription from '../models/Prescription.js';
 import { submitForVerification } from '../services/prescriptionVerification.js';
 import { registerValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
-import { verifyToken , verifyAnyPrincipal } from '../middleware/auth.js';
+import { verifyToken, verifyAnyPrincipal } from '../middleware/auth.js';
 import { uploadPrescription } from '../middleware/upload.js';
 import { sendOTP, sendPasswordReset } from '../services/email.js';
 import { otpBypassAllowed } from '../config/authMode.js';
@@ -24,7 +24,7 @@ router.post('/register', authLimiter, registerValidation, async (req, res) => {
     const { name, email, phone, password } = req.body;
 
     const existingUser = await User.findOne({
-      $or: [{ email }, { phone }]
+      $or: [{ email }, { phone }],
     });
 
     if (existingUser) {
@@ -45,7 +45,7 @@ router.post('/register', authLimiter, registerValidation, async (req, res) => {
       success: true,
       message: 'Registration successful.',
       token,
-      user: user.toJSON()
+      user: user.toJSON(),
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -69,11 +69,11 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     // Check if account is locked
     if (user.lockUntil && user.lockUntil > new Date()) {
       const remainingTime = Math.ceil((user.lockUntil - new Date()) / 1000 / 60);
-      return res.status(423).json({ 
-        success: false, 
+      return res.status(423).json({
+        success: false,
         message: `Account is locked. Please try again in ${remainingTime} minutes.`,
         locked: true,
-        lockUntil: user.lockUntil
+        lockUntil: user.lockUntil,
       });
     }
 
@@ -81,26 +81,26 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     if (!isMatch) {
       // Increment failed login attempts
       user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-      
+
       // Lock account after 3 failed attempts for 3 minutes
       if (user.failedLoginAttempts >= 3) {
         user.lockUntil = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
         user.failedLoginAttempts = 0; // Reset after locking
         await user.save();
-        
-        return res.status(423).json({ 
-          success: false, 
+
+        return res.status(423).json({
+          success: false,
           message: 'Too many failed attempts. Account locked for 3 minutes.',
           locked: true,
-          lockUntil: user.lockUntil
+          lockUntil: user.lockUntil,
         });
       }
-      
+
       await user.save();
       const remainingAttempts = 3 - user.failedLoginAttempts;
-      return res.status(401).json({ 
-        success: false, 
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`
+      return res.status(401).json({
+        success: false,
+        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
       });
     }
 
@@ -109,7 +109,13 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
     user.lockUntil = null;
 
     // Check if this is a test credential - bypass OTP for testing
-    const testEmails = ['testuser@optikart.com', 'demo@optikart.com', 'samedayopticians@gmail.com', 'priya.staff@optikart.com', 'meera.staff@optikart.com'];
+    const testEmails = [
+      'testuser@optikart.com',
+      'demo@optikart.com',
+      'samedayopticians@gmail.com',
+      'priya.staff@optikart.com',
+      'meera.staff@optikart.com',
+    ];
     // Second-factor OTP may only be skipped outside production, and only
     // for the well-known seededdemo accounts whose password is also public.
     const isTestCredential = otpBypassAllowed(testEmails, email);
@@ -125,15 +131,15 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        user: user.toJSON()
+        user: user.toJSON(),
       });
     } else {
       // Generate OTP for login verification (production flow)
-      const otp = otpGenerator.generate(6, { 
-        upperCaseAlphabets: false, 
-        specialChars: false, 
+      const otp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
         lowerCaseAlphabets: false,
-        length: 6
+        length: 6,
       });
 
       user.loginOtp = otp;
@@ -147,7 +153,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
         success: true,
         message: 'OTP sent to your email. Please verify to complete login.',
         requiresOTP: true,
-        email: user.email
+        email: user.email,
       });
     }
   } catch (error) {
@@ -180,7 +186,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
     res.json({
       success: true,
       message: 'OTP sent successfully.',
-      otp
+      otp,
     });
   } catch (error) {
     console.error('Send OTP error:', error);
@@ -220,7 +226,7 @@ router.post('/verify-otp', async (req, res) => {
       success: true,
       message: 'OTP verified successfully.',
       token,
-      user: user.toJSON()
+      user: user.toJSON(),
     });
   } catch (error) {
     console.error('Verify OTP error:', error);
@@ -263,7 +269,7 @@ router.post('/verify-login-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      user: user.toJSON()
+      user: user.toJSON(),
     });
   } catch (error) {
     console.error('Verify login OTP error:', error);
@@ -301,8 +307,8 @@ router.get('/session-policy', verifyAnyPrincipal, async (req, res) => {
       policy: {
         windowMinutes: idleWindowMinutes(),
         controlledRoles: CONTROLLED_ROLES,
-        ...state
-      }
+        ...state,
+      },
     });
   } catch (error) {
     console.error('Session policy error:', error);
@@ -314,7 +320,7 @@ router.get('/me', verifyToken, async (req, res) => {
   try {
     res.json({
       success: true,
-      user: req.user.toJSON()
+      user: req.user.toJSON(),
     });
   } catch (error) {
     console.error('Get me error:', error);
@@ -345,7 +351,7 @@ router.put('/update-profile', verifyToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Profile updated successfully.',
-      user: user.toJSON()
+      user: user.toJSON(),
     });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -376,7 +382,7 @@ router.post('/forgot-password', otpLimiter, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password reset OTP sent to your email.'
+      message: 'Password reset OTP sent to your email.',
     });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -416,7 +422,7 @@ router.post('/reset-password', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Password reset successfully.'
+      message: 'Password reset successfully.',
     });
   } catch (error) {
     console.error('Reset password error:', error);
@@ -449,7 +455,7 @@ router.post('/prescription-upload', verifyToken, uploadPrescription, async (req,
       url,
       fileUrl: url,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
     });
   } catch (error) {
     console.error('Prescription upload error:', error);
@@ -476,7 +482,7 @@ const toEye = (eye = {}) => ({
   sphere: num(eye.sph ?? eye.sphere),
   cylinder: num(eye.cyl ?? eye.cylinder),
   axis: num(eye.axis),
-  addition: num(eye.add ?? eye.addition)
+  addition: num(eye.add ?? eye.addition),
 });
 
 const hasPower = (eyePower = {}) =>
@@ -485,17 +491,28 @@ const hasPower = (eyePower = {}) =>
     return num(e.sph ?? e.sphere) !== undefined;
   });
 
-const mapType = (t) => ({
-  single_vision: 'single-vision', singlevision: 'single-vision', bifocal: 'bifocal',
-  progressive: 'progressive', reading: 'reading', computer: 'computer'
-}[String(t || '').toLowerCase().replace(/[\s_-]/g, '')] || 'single-vision');
+const mapType = (t) =>
+  ({
+    single_vision: 'single-vision',
+    singlevision: 'single-vision',
+    bifocal: 'bifocal',
+    progressive: 'progressive',
+    reading: 'reading',
+    computer: 'computer',
+  })[
+    String(t || '')
+      .toLowerCase()
+      .replace(/[\s_-]/g, '')
+  ] || 'single-vision';
 
 router.post('/prescriptions', verifyToken, async (req, res) => {
   try {
     const { fileUrl, prescriptionType, lensType, notes, eyePower, patientName, doctorName } = req.body;
 
     if (!fileUrl && !hasPower(eyePower)) {
-      return res.status(400).json({ success: false, message: 'Upload the prescription document, or enter the numbers from it.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Upload the prescription document, or enter the numbers from it.' });
     }
 
     const user = await User.findById(req.user._id);
@@ -506,7 +523,7 @@ router.post('/prescriptions', verifyToken, async (req, res) => {
       lensType: lensType || '',
       notes: notes || '',
       eyePower: eyePower || {},
-      uploadedAt: new Date()
+      uploadedAt: new Date(),
     };
 
     user.prescriptions.push(prescription);
@@ -531,7 +548,7 @@ router.post('/prescriptions', verifyToken, async (req, res) => {
         pd: Number(eyePower?.pd) || undefined,
         type: mapType(prescriptionType),
         fileUrl: fileUrl || '',
-        notes: notes || ''
+        notes: notes || '',
       });
       const submitted = await submitForVerification(String(created._id), String(user._id));
       verification = submitted.verification || null;
@@ -553,7 +570,7 @@ router.post('/prescriptions', verifyToken, async (req, res) => {
         : 'Prescription saved. It could not be queued for verification - contact support.',
       prescription: savedLine,
       verificationId: verification?._id || null,
-      verificationStatus: verification?.status || null
+      verificationStatus: verification?.status || null,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -563,22 +580,22 @@ router.post('/prescriptions', verifyToken, async (req, res) => {
 router.put('/prescriptions/:prescriptionId', verifyToken, async (req, res) => {
   try {
     const { prescriptionType, lensType, notes, eyePower, fileUrl } = req.body;
-    
+
     const user = await User.findById(req.user._id);
     const prescription = user.prescriptions.id(req.params.prescriptionId);
-    
+
     if (!prescription) {
       return res.status(404).json({ success: false, message: 'Prescription not found.' });
     }
-    
+
     if (prescriptionType) prescription.prescriptionType = prescriptionType;
     if (lensType) prescription.lensType = lensType;
     if (notes !== undefined) prescription.notes = notes;
     if (eyePower) prescription.eyePower = eyePower;
     if (fileUrl) prescription.fileUrl = fileUrl;
-    
+
     await user.save();
-    
+
     res.json({ success: true, message: 'Prescription updated successfully.', prescription });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -589,14 +606,14 @@ router.delete('/prescriptions/:prescriptionId', verifyToken, async (req, res) =>
   try {
     const user = await User.findById(req.user._id);
     const prescription = user.prescriptions.id(req.params.prescriptionId);
-    
+
     if (!prescription) {
       return res.status(404).json({ success: false, message: 'Prescription not found.' });
     }
-    
+
     user.prescriptions.pull(req.params.prescriptionId);
     await user.save();
-    
+
     res.json({ success: true, message: 'Prescription deleted successfully.' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -615,30 +632,32 @@ router.get('/addresses', verifyToken, async (req, res) => {
 router.post('/addresses', verifyToken, async (req, res) => {
   try {
     const { name, street, city, state, pincode, phone, isDefault } = req.body;
-    
+
     if (!street || !city || !state || !pincode || !phone) {
       return res.status(400).json({ success: false, message: 'All address fields are required.' });
     }
-    
+
     const user = await User.findById(req.user._id);
-    
+
     const address = { name: name || user.name, street, city, state, pincode, phone, isDefault: isDefault || false };
-    
+
     if (address.isDefault) {
-      user.addresses.forEach(addr => { addr.isDefault = false; });
+      user.addresses.forEach((addr) => {
+        addr.isDefault = false;
+      });
     }
-    
+
     if (user.addresses.length === 0) {
       address.isDefault = true;
     }
-    
+
     user.addresses.push(address);
     await user.save();
-    
-    res.status(201).json({ 
-      success: true, 
+
+    res.status(201).json({
+      success: true,
       message: 'Address added successfully.',
-      addresses: user.addresses
+      addresses: user.addresses,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -648,14 +667,14 @@ router.post('/addresses', verifyToken, async (req, res) => {
 router.put('/addresses/:addressId', verifyToken, async (req, res) => {
   try {
     const { name, street, city, state, pincode, phone, isDefault } = req.body;
-    
+
     const user = await User.findById(req.user._id);
     const address = user.addresses.id(req.params.addressId);
-    
+
     if (!address) {
       return res.status(404).json({ success: false, message: 'Address not found.' });
     }
-    
+
     if (name) address.name = name;
     if (street) address.street = street;
     if (city) address.city = city;
@@ -665,14 +684,14 @@ router.put('/addresses/:addressId', verifyToken, async (req, res) => {
     if (isDefault !== undefined) {
       address.isDefault = isDefault;
       if (isDefault) {
-        user.addresses.forEach(addr => { 
-          if (addr._id.toString() !== req.params.addressId) addr.isDefault = false; 
+        user.addresses.forEach((addr) => {
+          if (addr._id.toString() !== req.params.addressId) addr.isDefault = false;
         });
       }
     }
-    
+
     await user.save();
-    
+
     res.json({ success: true, message: 'Address updated successfully.', addresses: user.addresses });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -683,14 +702,14 @@ router.delete('/addresses/:addressId', verifyToken, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
     const address = user.addresses.id(req.params.addressId);
-    
+
     if (!address) {
       return res.status(404).json({ success: false, message: 'Address not found.' });
     }
-    
+
     user.addresses.pull(req.params.addressId);
     await user.save();
-    
+
     res.json({ success: true, message: 'Address deleted successfully.', addresses: user.addresses });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });

@@ -8,7 +8,7 @@ const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
@@ -17,7 +17,7 @@ const upload = multer({
     } else {
       cb(new Error('Invalid file type. Only JPEG and PNG are allowed.'));
     }
-  }
+  },
 });
 
 /**
@@ -29,7 +29,7 @@ router.post('/detect', upload.single('image'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'No image uploaded'
+        message: 'No image uploaded',
       });
     }
 
@@ -48,15 +48,15 @@ router.post('/detect', upload.single('image'), async (req, res) => {
         recommendedFrames: recommendations.recommended,
         framesToAvoid: recommendations.avoid,
         source: result.source,
-        message: result.message
-      }
+        message: result.message,
+      },
     });
   } catch (error) {
     console.error('Face detection error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to detect face shape',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -73,7 +73,7 @@ router.get('/recommendations/:faceShape', (req, res) => {
     if (!recommendations) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid face shape'
+        message: 'Invalid face shape',
       });
     }
 
@@ -81,15 +81,15 @@ router.get('/recommendations/:faceShape', (req, res) => {
       success: true,
       data: {
         faceShape,
-        ...recommendations
-      }
+        ...recommendations,
+      },
     });
   } catch (error) {
     console.error('Get recommendations error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get recommendations',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -107,57 +107,41 @@ router.get('/face-shapes', (req, res) => {
         characteristics: [
           'Face length is greater than the width',
           'Forehead is slightly wider than the jaw',
-          'Rounded chin'
-        ]
+          'Rounded chin',
+        ],
       },
       round: {
         name: 'Round',
         description: 'Similar width and length with full cheeks',
-        characteristics: [
-          'Face width and length are similar',
-          'Full, rounded cheeks',
-          'Soft, rounded chin'
-        ]
+        characteristics: ['Face width and length are similar', 'Full, rounded cheeks', 'Soft, rounded chin'],
       },
       square: {
         name: 'Square',
         description: 'Strong jawline with similar width and length',
-        characteristics: [
-          'Face width and length are similar',
-          'Strong, angular jawline',
-          'Broad forehead'
-        ]
+        characteristics: ['Face width and length are similar', 'Strong, angular jawline', 'Broad forehead'],
       },
       heart: {
         name: 'Heart',
         description: 'Wider forehead with narrow chin',
-        characteristics: [
-          'Wider forehead',
-          'High, prominent cheekbones',
-          'Narrow, pointed chin'
-        ]
+        characteristics: ['Wider forehead', 'High, prominent cheekbones', 'Narrow, pointed chin'],
       },
       oblong: {
         name: 'Oblong',
         description: 'Long face with similar width throughout',
-        characteristics: [
-          'Face length is significantly greater than width',
-          'Straight cheek lines',
-          'Longer chin'
-        ]
-      }
+        characteristics: ['Face length is significantly greater than width', 'Straight cheek lines', 'Longer chin'],
+      },
     };
 
     res.json({
       success: true,
-      data: faceShapes
+      data: faceShapes,
     });
   } catch (error) {
     console.error('Get face shapes error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get face shapes',
-      error: error.message
+      error: error.message,
     });
   }
 });

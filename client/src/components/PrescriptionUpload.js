@@ -1,6 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import {
-  FiAlertTriangle, FiCamera, FiCheck, FiEye, FiFile, FiUpload, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiCamera, FiCheck, FiEye, FiFile, FiUpload, FiX } from 'react-icons/fi';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -13,7 +12,7 @@ const LENS_OPTIONS = [
 
 const styles = {
   container: {
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
     background: 'var(--bg-white)',
     borderRadius: 'var(--radius-xs)',
     border: '1px solid var(--border)',
@@ -252,13 +251,16 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
     return true;
   }, []);
 
-  const handleFile = useCallback((f) => {
-    if (validateFile(f)) {
-      setFile(f);
-      setUploaded(false);
-      onUpload && onUpload(f);
-    }
-  }, [validateFile, onUpload]);
+  const handleFile = useCallback(
+    (f) => {
+      if (validateFile(f)) {
+        setFile(f);
+        setUploaded(false);
+        onUpload && onUpload(f);
+      }
+    },
+    [validateFile, onUpload]
+  );
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -293,7 +295,7 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
   };
 
   const handlePowerChange = (eye, field, value) => {
-    setPower(prev => ({
+    setPower((prev) => ({
       ...prev,
       [eye]: { ...prev[eye], [field]: value },
     }));
@@ -324,12 +326,8 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
         <div style={styles.dropzoneIcon}>
           <FiUpload />
         </div>
-        <div style={styles.dropzoneText}>
-          Drag & drop your prescription here
-        </div>
-        <div style={styles.dropzoneSubtext}>
-          Supports PDF, JPG, PNG (max 5MB)
-        </div>
+        <div style={styles.dropzoneText}>Drag & drop your prescription here</div>
+        <div style={styles.dropzoneSubtext}>Supports PDF, JPG, PNG (max 5MB)</div>
       </div>
 
       <input
@@ -346,10 +344,7 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
         <div style={styles.orLine} />
       </div>
 
-      <button
-        style={styles.cameraBtn}
-        onClick={() => cameraInputRef.current?.click()}
-      >
+      <button style={styles.cameraBtn} onClick={() => cameraInputRef.current?.click()}>
         <FiCamera /> Capture with Camera
       </button>
       <input
@@ -374,7 +369,12 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
         </div>
       )}
 
-      {error && <div style={styles.error}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />{error}</div>}
+      {error && (
+        <div style={styles.error}>
+          <FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+          {error}
+        </div>
+      )}
 
       <h4 style={styles.sectionTitle}>Lens Preference</h4>
       <div style={styles.lensGrid} className="lens-grid">
@@ -410,8 +410,8 @@ export default function PrescriptionUpload({ onUpload, onPrescriptionChange }) {
                     value={power[eye][field]}
                     onChange={(e) => handlePowerChange(eye, field, e.target.value)}
                     style={styles.fieldInput}
-                    onFocus={(e) => e.target.style.borderColor = 'var(--brand)'}
-                    onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+                    onFocus={(e) => (e.target.style.borderColor = 'var(--brand)')}
+                    onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
                   />
                 </div>
               ))}

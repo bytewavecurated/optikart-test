@@ -32,7 +32,7 @@ export const powerBoundsFor = (product) => {
     addMax: Number.isFinite(cl.additionMax) ? cl.additionMax : ADD_MAX,
     lensesPerBox: cl.lensesPerBox || 6,
     allowsZeroPower: !!cl.allowsZeroPower,
-    withPowerAvailable: cl.withPowerAvailable !== false
+    withPowerAvailable: cl.withPowerAvailable !== false,
   };
 };
 
@@ -43,7 +43,10 @@ export const validateContactLensPrescription = (power, bounds) => {
   const errors = [];
   if (bounds.powerType === 'none') return { valid: true, errors };
 
-  for (const [eye, label] of [['right', 'OD (right eye)'], ['left', 'OS (left eye)']]) {
+  for (const [eye, label] of [
+    ['right', 'OD (right eye)'],
+    ['left', 'OS (left eye)'],
+  ]) {
     const e = power?.[eye] || {};
     const sphere = Number(e.sphere);
     if (!Number.isFinite(sphere)) {

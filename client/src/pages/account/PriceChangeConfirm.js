@@ -30,11 +30,13 @@ export default function PriceChangeConfirm() {
           phase: 'done',
           failed: true,
           expired: !!err.response?.data?.expired,
-          message: err.response?.data?.message || 'This confirmation link is no longer valid.'
+          message: err.response?.data?.message || 'This confirmation link is no longer valid.',
         });
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [stockId, token, decision, cartApi]);
 
   const ok = state.phase === 'done' && !state.failed;
@@ -42,29 +44,46 @@ export default function PriceChangeConfirm() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-page)' }}>
       <Header />
-      <main className="container" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+      <main
+        className="container"
+        style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}
+      >
         <div className="card-flat" style={{ maxWidth: 520, width: '100%', padding: 34, textAlign: 'center' }}>
           {state.phase === 'working' && (
             <>
               <FiClock size={36} style={{ color: 'var(--text-light)', marginBottom: 14 }} />
               <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>Confirming…</h1>
-              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: 0 }}>Checking your link against the request.</p>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: 0 }}>
+                Checking your link against the request.
+              </p>
             </>
           )}
           {state.phase === 'done' && ok && (
             <>
               <FiCheckCircle size={38} style={{ color: 'var(--success)', marginBottom: 14 }} />
-              <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>{decision === 'accept' ? 'Price accepted' : 'Change declined'}</h1>
-              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 22px', lineHeight: 1.6 }}>{state.result.message}</p>
-              <Link to="/seller/stock" className="btn btn-primary">Open my listings</Link>
+              <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>
+                {decision === 'accept' ? 'Price accepted' : 'Change declined'}
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 22px', lineHeight: 1.6 }}>
+                {state.result.message}
+              </p>
+              <Link to="/seller/stock" className="btn btn-primary">
+                Open my listings
+              </Link>
             </>
           )}
           {state.phase === 'done' && state.failed && (
             <>
               <FiXCircle size={38} style={{ color: 'var(--danger)', marginBottom: 14 }} />
-              <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>{state.expired ? 'The window has closed' : 'We could not apply that change'}</h1>
-              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 22px', lineHeight: 1.6 }}>{state.message}</p>
-              <Link to="/seller/stock" className="btn btn-outline">Review my listings</Link>
+              <h1 style={{ fontSize: 20, fontWeight: 800, margin: '0 0 8px' }}>
+                {state.expired ? 'The window has closed' : 'We could not apply that change'}
+              </h1>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: '0 0 22px', lineHeight: 1.6 }}>
+                {state.message}
+              </p>
+              <Link to="/seller/stock" className="btn btn-outline">
+                Review my listings
+              </Link>
             </>
           )}
         </div>

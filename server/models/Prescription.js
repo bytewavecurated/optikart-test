@@ -1,56 +1,59 @@
 import mongoose from 'mongoose';
 
-const prescriptionSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  patientName: { type: String },
-  doctorName: { type: String },
-  doctorEmail: { type: String },
-  dateOfExamination: { type: Date },
-  rightEye: {
-    sphere: { type: Number },
-    cylinder: { type: Number },
-    axis: { type: Number, min: 0, max: 180 },
-    addition: { type: Number },
-    prism: { type: String },
-    base: { type: String }
+const prescriptionSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    patientName: { type: String },
+    doctorName: { type: String },
+    doctorEmail: { type: String },
+    dateOfExamination: { type: Date },
+    rightEye: {
+      sphere: { type: Number },
+      cylinder: { type: Number },
+      axis: { type: Number, min: 0, max: 180 },
+      addition: { type: Number },
+      prism: { type: String },
+      base: { type: String },
+    },
+    leftEye: {
+      sphere: { type: Number },
+      cylinder: { type: Number },
+      axis: { type: Number, min: 0, max: 180 },
+      addition: { type: Number },
+      prism: { type: String },
+      base: { type: String },
+    },
+    pd: { type: Number },
+    nearPd: { type: Number },
+    type: {
+      type: String,
+      enum: ['single-vision', 'bifocal', 'progressive', 'reading', 'computer'],
+      default: 'single-vision',
+    },
+    fileUrl: { type: String },
+    /*
+     * Earlier versions of the same prescription. A verifier replacing a blurry scan
+     * must not lose what the customer originally sent - that is the record a
+     * disputed order gets judged on.
+     */
+    previousFiles: { type: [String], default: [] },
+    /*
+     * Both writers below already assigned this field, but it was never declared -
+     * mongoose dropped an unknown path silently, so the record's own status never
+     * changed even after a human decision was recorded.
+     */
+    verificationStatus: { type: String, default: 'pending' },
+    isValidated: { type: Boolean, default: false },
+    validatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    validatedAt: { type: Date },
+    validationNotes: { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
+    notes: { type: String, default: '' },
   },
-  leftEye: {
-    sphere: { type: Number },
-    cylinder: { type: Number },
-    axis: { type: Number, min: 0, max: 180 },
-    addition: { type: Number },
-    prism: { type: String },
-    base: { type: String }
-  },
-  pd: { type: Number },
-  nearPd: { type: Number },
-  type: {
-    type: String,
-    enum: ['single-vision', 'bifocal', 'progressive', 'reading', 'computer'],
-    default: 'single-vision'
-  },
-  fileUrl: { type: String },
-  /*
-   * Earlier versions of the same prescription. A verifier replacing a blurry scan
-   * must not lose what the customer originally sent - that is the record a
-   * disputed order gets judged on.
-   */
-  previousFiles: { type: [String], default: [] },
-  /*
-   * Both writers below already assigned this field, but it was never declared -
-   * mongoose dropped an unknown path silently, so the record's own status never
-   * changed even after a human decision was recorded.
-   */
-  verificationStatus: { type: String, default: 'pending' },
-  isValidated: { type: Boolean, default: false },
-  validatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  validatedAt: { type: Date },
-  validationNotes: { type: String, default: '' },
-  isActive: { type: Boolean, default: true },
-  notes: { type: String, default: '' }
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  }
+);
 
 prescriptionSchema.index({ user: 1, isActive: 1 });
 

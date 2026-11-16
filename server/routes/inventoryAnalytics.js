@@ -1,9 +1,6 @@
 import express from 'express';
 import { verifyToken, verifySeller, verifyAdmin } from '../middleware/auth.js';
-import {
-  getSellerInventoryAnalytics,
-  getInventoryHealthScore
-} from '../services/inventoryAnalytics.js';
+import { getSellerInventoryAnalytics, getInventoryHealthScore } from '../services/inventoryAnalytics.js';
 
 const router = express.Router();
 

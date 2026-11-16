@@ -79,12 +79,26 @@ const Sitemap = () => {
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>Sitemap</h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-light)', marginBottom: '32px' }}>Complete directory of all pages on OptiKart</p>
+          <p style={{ fontSize: '14px', color: 'var(--text-light)', marginBottom: '32px' }}>
+            Complete directory of all pages on OptiKart
+          </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }} className="sitemap-grid">
+          <div
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '32px' }}
+            className="sitemap-grid"
+          >
             {sitemapData.map((category) => (
               <div key={category.title} className="card" style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px', paddingBottom: '12px', borderBottom: '2px solid var(--primary)' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    marginBottom: '16px',
+                    paddingBottom: '12px',
+                    borderBottom: '2px solid var(--primary)',
+                  }}
+                >
                   <div style={{ color: 'var(--primary)' }}>{category.icon}</div>
                   <h2 style={{ fontSize: '17px', fontWeight: 600 }}>{category.title}</h2>
                 </div>
@@ -93,7 +107,15 @@ const Sitemap = () => {
                     <Link
                       key={link.path}
                       to={link.path}
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 0', fontSize: '14px', color: 'var(--text-secondary)', transition: 'color 0.15s' }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 0',
+                        fontSize: '14px',
+                        color: 'var(--text-secondary)',
+                        transition: 'color 0.15s',
+                      }}
                       className="sitemap-link"
                     >
                       <FiChevronRight size={14} style={{ color: 'var(--text-light)', flexShrink: 0 }} />

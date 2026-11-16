@@ -25,11 +25,16 @@ const ManageUsers = () => {
       const res = await adminApi.getUsers(params);
       setUsers(listOf(res.data));
       setTotalPages(res.data.totalPages || 1);
-    } catch (error) { console.error(error); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -37,28 +42,36 @@ const ManageUsers = () => {
       setPage(1);
       fetchUsers(search, 1);
     }, 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [search, fetchUsers]);
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this user?')) return;
-    try { await adminApi.deleteUser(id); toast.success('User deleted'); fetchUsers(search, page); } catch (error) { toastError(error, "Failed"); }
+    try {
+      await adminApi.deleteUser(id);
+      toast.success('User deleted');
+      fetchUsers(search, page);
+    } catch (error) {
+      toastError(error, 'Failed');
+    }
   };
 
   const handleBan = async (id, banType) => {
     const action = banType === 'ban' ? 'ban' : 'shadow ban';
     if (!window.confirm(`Are you sure you want to ${action} this user?`)) return;
-    
+
     try {
-      await adminApi.banUser(id, { 
+      await adminApi.banUser(id, {
         isBanned: banType === 'ban',
         isShadowBanned: banType === 'shadow',
-        banReason: banType !== 'unban' ? 'Banned by admin' : ''
+        banReason: banType !== 'unban' ? 'Banned by admin' : '',
       });
       toast.success(`User ${action}ned successfully`);
       fetchUsers(search, page);
     } catch (error) {
-      toastError(error, "Failed to update user status");
+      toastError(error, 'Failed to update user status');
     }
   };
 
@@ -69,74 +82,210 @@ const ManageUsers = () => {
         <div className="container page-wrapper">
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Manage Users</h1>
           <div style={{ position: 'relative', maxWidth: '400px', marginBottom: '20px' }}>
-            <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
-            <input className="input" placeholder="Search by name, email, or phone..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ paddingLeft: '38px' }} />
+            <FiSearch
+              style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'var(--text-light)',
+              }}
+            />
+            <input
+              className="input"
+              placeholder="Search by name, email, or phone..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ paddingLeft: '38px' }}
+            />
           </div>
-          {loading ? <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner spinner-lg" /></div> : (
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
+          ) : (
             <>
               <div className="card">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead><tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>{['User', 'Email', 'Phone', 'Joined', 'Status', 'Actions'].map((h) => <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>)}</tr></thead>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
+                      {['User', 'Email', 'Phone', 'Joined', 'Status', 'Actions'].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: '12px 16px',
+                            textAlign: 'left',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
                   <tbody>
                     {users.length === 0 ? (
-                      <tr><td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)', fontSize: '14px' }}>No users found</td></tr>
-                    ) : users.map((user) => (
-                      <tr key={user._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 600 }}>
-                              {(user.name || 'U')[0].toUpperCase()}
-                            </div>
-                            <span style={{ fontSize: '14px', fontWeight: 500 }}>{user.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>{user.email}</td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px' }}>{user.phone || '-'}</td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>{new Date(user.createdAt).toLocaleDateString()}</td>
-                        <td style={{ padding: '12px 16px' }}>
-                          {user.isBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--danger-light)', color: 'var(--danger)' }}>Banned</span>
-                          ) : user.isShadowBanned ? (
-                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)' }}>Shadow Banned</span>
-                          ) : (
-                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)' }}>Active</span>
-                          )}
-                        </td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button onClick={() => navigate(`/admin/users/${user._id}`)} className="btn btn-outline btn-sm" title="View Details">
-                              <FiEye size={12} />
-                            </button>
-                            {!user.isBanned && !user.isShadowBanned && (
-                              <>
-                                <button onClick={() => handleBan(user._id, 'shadow')} className="btn btn-outline btn-sm" title="Shadow Ban" style={{ color: 'var(--warning)', borderColor: 'var(--warning)' }}>
-                                  <FiEyeOff size={12} />
-                                </button>
-                                <button onClick={() => handleBan(user._id, 'ban')} className="btn btn-danger btn-sm" title="Ban User">
-                                  <FiShield size={12} />
-                                </button>
-                              </>
-                            )}
-                            {(user.isBanned || user.isShadowBanned) && (
-                              <button onClick={() => handleBan(user._id, 'unban')} className="btn btn-outline btn-sm" title="Unban User" style={{ color: 'var(--success)', borderColor: 'var(--success)' }}>
-                                <FiEye size={12} />
-                              </button>
-                            )}
-                            <button onClick={() => handleDelete(user._id)} className="btn btn-danger btn-sm" title="Delete User">
-                              <FiTrash2 size={12} />
-                            </button>
-                          </div>
+                      <tr>
+                        <td
+                          colSpan={6}
+                          style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)', fontSize: '14px' }}
+                        >
+                          No users found
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      users.map((user) => (
+                        <tr key={user._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '50%',
+                                  background: 'var(--primary-light)',
+                                  color: 'var(--primary)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {(user.name || 'U')[0].toUpperCase()}
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: 500 }}>{user.name}</span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                            {user.email}
+                          </td>
+                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>{user.phone || '-'}</td>
+                          <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-light)' }}>
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            {user.isBanned ? (
+                              <span
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: 'var(--radius-xs)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  background: 'var(--danger-light)',
+                                  color: 'var(--danger)',
+                                }}
+                              >
+                                Banned
+                              </span>
+                            ) : user.isShadowBanned ? (
+                              <span
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: 'var(--radius-xs)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  background: 'var(--warning-light)',
+                                  color: 'var(--warning)',
+                                }}
+                              >
+                                Shadow Banned
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: 'var(--radius-xs)',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  background: 'var(--success-light)',
+                                  color: 'var(--success)',
+                                }}
+                              >
+                                Active
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => navigate(`/admin/users/${user._id}`)}
+                                className="btn btn-outline btn-sm"
+                                title="View Details"
+                              >
+                                <FiEye size={12} />
+                              </button>
+                              {!user.isBanned && !user.isShadowBanned && (
+                                <>
+                                  <button
+                                    onClick={() => handleBan(user._id, 'shadow')}
+                                    className="btn btn-outline btn-sm"
+                                    title="Shadow Ban"
+                                    style={{ color: 'var(--warning)', borderColor: 'var(--warning)' }}
+                                  >
+                                    <FiEyeOff size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleBan(user._id, 'ban')}
+                                    className="btn btn-danger btn-sm"
+                                    title="Ban User"
+                                  >
+                                    <FiShield size={12} />
+                                  </button>
+                                </>
+                              )}
+                              {(user.isBanned || user.isShadowBanned) && (
+                                <button
+                                  onClick={() => handleBan(user._id, 'unban')}
+                                  className="btn btn-outline btn-sm"
+                                  title="Unban User"
+                                  style={{ color: 'var(--success)', borderColor: 'var(--success)' }}
+                                >
+                                  <FiEye size={12} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDelete(user._id)}
+                                className="btn btn-danger btn-sm"
+                                title="Delete User"
+                              >
+                                <FiTrash2 size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
               {totalPages > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
-                  <button onClick={() => { setPage(p => Math.max(1, p - 1)); fetchUsers(search, page - 1); }} disabled={page === 1} className="btn btn-outline btn-sm">Previous</button>
-                  <span style={{ padding: '6px 12px', fontSize: '14px' }}>Page {page} of {totalPages}</span>
-                  <button onClick={() => { setPage(p => p + 1); fetchUsers(search, page + 1); }} disabled={page === totalPages} className="btn btn-outline btn-sm">Next</button>
+                  <button
+                    onClick={() => {
+                      setPage((p) => Math.max(1, p - 1));
+                      fetchUsers(search, page - 1);
+                    }}
+                    disabled={page === 1}
+                    className="btn btn-outline btn-sm"
+                  >
+                    Previous
+                  </button>
+                  <span style={{ padding: '6px 12px', fontSize: '14px' }}>
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setPage((p) => p + 1);
+                      fetchUsers(search, page + 1);
+                    }}
+                    disabled={page === totalPages}
+                    className="btn btn-outline btn-sm"
+                  >
+                    Next
+                  </button>
                 </div>
               )}
             </>

@@ -8,23 +8,16 @@ const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit for audio
+    fileSize: 10 * 1024 * 1024, // 10MB limit for audio
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'audio/webm',
-      'audio/wav',
-      'audio/mp3',
-      'audio/mpeg',
-      'audio/ogg',
-      'audio/webm;codecs=opus'
-    ];
+    const allowedTypes = ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/ogg', 'audio/webm;codecs=opus'];
     if (allowedTypes.includes(file.mimetype) || file.mimetype.startsWith('audio/')) {
       cb(null, true);
     } else {
       cb(new Error('Invalid file type. Only audio files are allowed.'));
     }
-  }
+  },
 });
 
 /**
@@ -36,7 +29,7 @@ router.post('/search', upload.single('audio'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'No audio file uploaded'
+        message: 'No audio file uploaded',
       });
     }
 
@@ -56,15 +49,15 @@ router.post('/search', upload.single('audio'), async (req, res) => {
         keywords: result.keywords,
         filters: filters,
         confidence: result.confidence,
-        language: result.language
-      }
+        language: result.language,
+      },
     });
   } catch (error) {
     console.error('Speech search error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to process audio search',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -78,7 +71,7 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'No audio file uploaded'
+        message: 'No audio file uploaded',
       });
     }
 
@@ -94,15 +87,15 @@ router.post('/transcribe', upload.single('audio'), async (req, res) => {
         transcript: result.transcript,
         confidence: result.confidence,
         language: result.language,
-        source: result.source
-      }
+        source: result.source,
+      },
     });
   } catch (error) {
     console.error('Speech transcribe error:', error);
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to transcribe audio',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -122,19 +115,19 @@ router.get('/languages', (req, res) => {
       { code: 'fr-FR', name: 'French (France)' },
       { code: 'de-DE', name: 'German (Germany)' },
       { code: 'ja-JP', name: 'Japanese (Japan)' },
-      { code: 'zh-CN', name: 'Chinese (Mandarin)' }
+      { code: 'zh-CN', name: 'Chinese (Mandarin)' },
     ];
 
     res.json({
       success: true,
-      data: languages
+      data: languages,
     });
   } catch (error) {
     console.error('Get languages error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get languages',
-      error: error.message
+      error: error.message,
     });
   }
 });

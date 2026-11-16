@@ -9,7 +9,17 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import { FiTruck, FiArrowLeft, FiMapPin, FiClock, FiPackage, FiAlertTriangle, FiCheck } from 'react-icons/fi';
 
-const th = { padding: '10px 12px', textAlign: 'left', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
+const th = {
+  padding: '10px 12px',
+  textAlign: 'left',
+  fontSize: 12,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: 0.4,
+  color: 'var(--text-secondary)',
+  borderBottom: '1px solid var(--border)',
+  whiteSpace: 'nowrap',
+};
 const td = { padding: '12px', fontSize: 14, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
 
 /*
@@ -21,13 +31,19 @@ const ISSUE_LABELS = {
   wrong_address: 'address did not match',
   refused: 'refused at the door',
   damaged: 'parcel damaged',
-  other: 'issue reported'
+  other: 'issue reported',
 };
 
 const STATUS_LABELS = {
-  pending: 'Pending', confirmed: 'Confirmed', packed: 'Packed',
-  picked_up: 'Picked up', in_transit: 'In transit', delivered: 'Delivered',
-  cancelled: 'Cancelled', return_requested: 'Return requested', returned: 'Returned'
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  packed: 'Packed',
+  picked_up: 'Picked up',
+  in_transit: 'In transit',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+  return_requested: 'Return requested',
+  returned: 'Returned',
 };
 
 const title = (t, sub) => (
@@ -47,13 +63,16 @@ function DeliveriesView() {
   const [clearing, setClearing] = useState('');
 
   const load = useCallback(() => {
-    executiveApi.getAssignedDeliveries()
+    executiveApi
+      .getAssignedDeliveries()
       .then((res) => setRows(listOf(res.data)))
       .catch((e) => toastError(e, 'Could not load the delivery queue'))
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   /*
    * A courier who cannot finish a run reports it from the door. The desk has to
@@ -80,19 +99,31 @@ function DeliveriesView() {
     if (!query) return true;
     const q = query.toLowerCase();
     return [r.orderId, r.customer?.name, r.customer?.email, r.seller?.storeName, r.deliveryPartner?.name]
-      .filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
+      .filter(Boolean)
+      .some((v) => String(v).toLowerCase().includes(q));
   });
 
   return (
     <>
       <div style={{ display: 'flex', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-        <input className="input" style={{ maxWidth: 320 }} placeholder="Search order, customer, seller or partner"
-          value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input
+          className="input"
+          style={{ maxWidth: 320 }}
+          placeholder="Search order, customer, seller or partner"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
         <select className="input" style={{ maxWidth: 220 }} value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option>
-          {Object.keys(STATUS_LABELS).map((k) => <option key={k} value={k}>{STATUS_LABELS[k]}</option>)}
+          {Object.keys(STATUS_LABELS).map((k) => (
+            <option key={k} value={k}>
+              {STATUS_LABELS[k]}
+            </option>
+          ))}
         </select>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, color: 'var(--text-secondary)' }}>
+        <label
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, color: 'var(--text-secondary)' }}
+        >
           <input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} />
           Only runs with an open report{openIssues > 0 ? ` (${openIssues})` : ''}
         </label>
@@ -102,61 +133,90 @@ function DeliveriesView() {
         {loading ? (
           <p style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>Loading deliveries...</p>
         ) : filtered.length === 0 ? (
-          <p style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>No deliveries match this view.</p>
+          <p style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
+            No deliveries match this view.
+          </p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr>
-              <th style={th}>Order</th><th style={th}>Customer</th><th style={th}>Seller / pickup</th>
-              <th style={th}>Items</th><th style={th}>Partner</th><th style={th}>Status</th><th style={th}>Amount</th><th style={th}>Partner report</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th style={th}>Order</th>
+                <th style={th}>Customer</th>
+                <th style={th}>Seller / pickup</th>
+                <th style={th}>Items</th>
+                <th style={th}>Partner</th>
+                <th style={th}>Status</th>
+                <th style={th}>Amount</th>
+                <th style={th}>Partner report</th>
+              </tr>
+            </thead>
             <tbody>
               {filtered.map((r) => (
                 <tr key={r._id}>
                   <td style={td}>
-                    <Link to={`/executive/delivery/${r._id}`} style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                    <Link
+                      to={`/executive/delivery/${r._id}`}
+                      style={{ color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}
+                    >
                       {r.orderNumber || r.orderId || `#${String(r._id).slice(-8).toUpperCase()}`}
                     </Link>
                   </td>
                   <td style={td}>
                     <div>{r.customer?.name || 'N/A'}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{r.customer?.phone} {r.customer?.email ? `· ${r.customer.email}` : ''}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-light)' }}>
+                      {r.customer?.phone} {r.customer?.email ? `· ${r.customer.email}` : ''}
+                    </div>
                   </td>
                   <td style={td}>
                     <div>{r.seller?.storeName || 'N/A'}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{r.seller?.address || r.seller?.city || ''}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-light)' }}>
+                      {r.seller?.address || r.seller?.city || ''}
+                    </div>
                   </td>
                   <td style={td}>{(r.items || []).map((i) => `${i.name} x${i.quantity}`).join(', ') || '-'}</td>
                   <td style={td}>
-                    {r.deliveryPartner ? `${r.deliveryPartner.name} (${r.deliveryPartner.phone})` : (r.trackingId ? `Shiprocket ${r.trackingId}` : 'Not assigned')}
+                    {r.deliveryPartner
+                      ? `${r.deliveryPartner.name} (${r.deliveryPartner.phone})`
+                      : r.trackingId
+                        ? `Shiprocket ${r.trackingId}`
+                        : 'Not assigned'}
                   </td>
                   <td style={td}>{STATUS_LABELS[r.orderStatus] || r.orderStatus}</td>
                   <td style={td}>₹{(r.totalAmount || 0).toLocaleString('en-IN')}</td>
                   <td style={td}>
                     {r.deliveryIssue ? (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 260 }}>
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
-                          fontSize: 12, fontWeight: 700, padding: '3px 8px', borderRadius: 4,
-                          background: r.deliveryIssue.resolved ? 'var(--success-light)' : 'var(--danger-light)',
-                          color: r.deliveryIssue.resolved ? 'var(--success)' : 'var(--danger)'
-                        }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            alignSelf: 'flex-start',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: 4,
+                            background: r.deliveryIssue.resolved ? 'var(--success-light)' : 'var(--danger-light)',
+                            color: r.deliveryIssue.resolved ? 'var(--success)' : 'var(--danger)',
+                          }}
+                        >
                           <FiAlertTriangle size={12} /> {ISSUE_LABELS[r.deliveryIssue.type] || r.deliveryIssue.type}
                         </span>
                         {r.deliveryIssue.note && (
                           <span style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>{r.deliveryIssue.note}</span>
                         )}
-                        {r.deliveryIssue.resolved
-                          ? <span style={{ fontSize: 12, color: 'var(--text-light)' }}>resolved</span>
-                          : (
-                            <button
-                              className="btn btn-outline"
-                              style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: 12.5 }}
-                              onClick={() => resolveIssue(r)}
-                              disabled={clearing === r._id}
-                            >
-                              <FiCheck size={12} /> {clearing === r._id ? 'Saving…' : 'Mark resolved'}
-                            </button>
-                          )}
+                        {r.deliveryIssue.resolved ? (
+                          <span style={{ fontSize: 12, color: 'var(--text-light)' }}>resolved</span>
+                        ) : (
+                          <button
+                            className="btn btn-outline"
+                            style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: 12.5 }}
+                            onClick={() => resolveIssue(r)}
+                            disabled={clearing === r._id}
+                          >
+                            <FiCheck size={12} /> {clearing === r._id ? 'Saving…' : 'Mark resolved'}
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <span style={{ fontSize: 12.5, color: 'var(--text-light)' }}>—</span>
@@ -178,36 +238,61 @@ function CustomersView() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    executiveApi.getCustomers()
+    executiveApi
+      .getCustomers()
       .then((res) => setRows(listOf(res.data)))
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = rows.filter((r) =>
-    !query || [r.name, r.email, r.phone].filter(Boolean).some((v) => String(v).toLowerCase().includes(query.toLowerCase())));
+  const filtered = rows.filter(
+    (r) =>
+      !query ||
+      [r.name, r.email, r.phone].filter(Boolean).some((v) => String(v).toLowerCase().includes(query.toLowerCase()))
+  );
 
   return (
     <>
-      <input className="input" style={{ maxWidth: 340, marginBottom: 18 }} placeholder="Search customers"
-        value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input
+        className="input"
+        style={{ maxWidth: 340, marginBottom: 18 }}
+        placeholder="Search customers"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-        {loading ? <p style={{ padding: 40, textAlign: 'center' }}>Loading customers...</p>
-          : filtered.length === 0 ? <p style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>No customers on your assigned orders yet.</p>
-          : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr><th style={th}>Name</th><th style={th}>Phone</th><th style={th}>Email</th><th style={th}>Orders</th><th style={th}>Spent</th><th style={th}>Last order</th></tr></thead>
-              <tbody>
-                {filtered.map((c) => (
-                  <tr key={c._id}>
-                    <td style={td}>{c.name}</td><td style={td}>{c.phone || '-'}</td><td style={td}>{c.email || '-'}</td>
-                    <td style={td}>{c.orders}</td><td style={td}>₹{Math.round(c.spent).toLocaleString('en-IN')}</td>
-                    <td style={td}>{c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString('en-IN') : '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        {loading ? (
+          <p style={{ padding: 40, textAlign: 'center' }}>Loading customers...</p>
+        ) : filtered.length === 0 ? (
+          <p style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
+            No customers on your assigned orders yet.
+          </p>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={th}>Name</th>
+                <th style={th}>Phone</th>
+                <th style={th}>Email</th>
+                <th style={th}>Orders</th>
+                <th style={th}>Spent</th>
+                <th style={th}>Last order</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((c) => (
+                <tr key={c._id}>
+                  <td style={td}>{c.name}</td>
+                  <td style={td}>{c.phone || '-'}</td>
+                  <td style={td}>{c.email || '-'}</td>
+                  <td style={td}>{c.orders}</td>
+                  <td style={td}>₹{Math.round(c.spent).toLocaleString('en-IN')}</td>
+                  <td style={td}>{c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString('en-IN') : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </>
   );
@@ -218,7 +303,8 @@ function ReportsView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    executiveApi.getReports()
+    executiveApi
+      .getReports()
       .then((res) => setData(res.data.data))
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
@@ -226,21 +312,30 @@ function ReportsView() {
 
   if (loading) return <p style={{ padding: 40, textAlign: 'center' }}>Loading reports...</p>;
   if (!data || !data.totals || data.totals.orders === 0) {
-    return <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-secondary)' }}>
-      No completed work to report on yet. Reports appear once orders are assigned to you.
-    </div>;
+    return (
+      <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--text-secondary)' }}>
+        No completed work to report on yet. Reports appear once orders are assigned to you.
+      </div>
+    );
   }
 
   const totalUnits = data.totals.orders;
 
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 16,
+          marginBottom: 24,
+        }}
+      >
         {[
           { label: 'Orders handled', value: totalUnits },
           { label: 'Revenue', value: `₹${Math.round(data.totals.revenue).toLocaleString('en-IN')}` },
           { label: 'Delivery fees', value: `₹${Math.round(data.totals.deliveryFees).toLocaleString('en-IN')}` },
-          { label: 'Distance covered', value: `${data.totals.distanceKm} km` }
+          { label: 'Distance covered', value: `${data.totals.distanceKm} km` },
         ].map((c) => (
           <div key={c.label} className="card" style={{ padding: 20 }}>
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{c.label}</div>
@@ -251,10 +346,20 @@ function ReportsView() {
 
       <div className="card" style={{ padding: 0, overflowX: 'auto', marginBottom: 24 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr><th style={th}>Status</th><th style={th}>Orders</th><th style={th}>Value</th></tr></thead>
+          <thead>
+            <tr>
+              <th style={th}>Status</th>
+              <th style={th}>Orders</th>
+              <th style={th}>Value</th>
+            </tr>
+          </thead>
           <tbody>
             {data.byStatus.map((s) => (
-              <tr key={s.status}><td style={td}>{STATUS_LABELS[s.status] || s.status}</td><td style={td}>{s.count}</td><td style={td}>₹{Math.round(s.amount).toLocaleString('en-IN')}</td></tr>
+              <tr key={s.status}>
+                <td style={td}>{STATUS_LABELS[s.status] || s.status}</td>
+                <td style={td}>{s.count}</td>
+                <td style={td}>₹{Math.round(s.amount).toLocaleString('en-IN')}</td>
+              </tr>
             ))}
           </tbody>
         </table>
@@ -262,10 +367,20 @@ function ReportsView() {
 
       <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr><th style={th}>Date</th><th style={th}>Orders</th><th style={th}>Value</th></tr></thead>
+          <thead>
+            <tr>
+              <th style={th}>Date</th>
+              <th style={th}>Orders</th>
+              <th style={th}>Value</th>
+            </tr>
+          </thead>
           <tbody>
             {data.daily.map((d) => (
-              <tr key={d.date}><td style={td}>{d.date}</td><td style={td}>{d.count}</td><td style={td}>₹{Math.round(d.amount).toLocaleString('en-IN')}</td></tr>
+              <tr key={d.date}>
+                <td style={td}>{d.date}</td>
+                <td style={td}>{d.count}</td>
+                <td style={td}>₹{Math.round(d.amount).toLocaleString('en-IN')}</td>
+              </tr>
             ))}
           </tbody>
         </table>
@@ -280,20 +395,37 @@ function DetailView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    executiveApi.getDeliveryDetails(id)
-      .then((res) => setOrder(oneOf(res.data, "order")))
+    executiveApi
+      .getDeliveryDetails(id)
+      .then((res) => setOrder(oneOf(res.data, 'order')))
       .catch((e) => console.error(e))
       .finally(() => setLoading(false));
   }, [id]);
 
   if (loading) return <p style={{ padding: 40, textAlign: 'center' }}>Loading delivery...</p>;
-  if (!order) return <div className="card" style={{ padding: 48, textAlign: 'center' }}>This delivery could not be found.</div>;
+  if (!order)
+    return (
+      <div className="card" style={{ padding: 48, textAlign: 'center' }}>
+        This delivery could not be found.
+      </div>
+    );
 
   const journey = order.deliveryJourney || [];
 
   return (
     <>
-      <Link to="/executive/deliveries" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--primary)', textDecoration: 'none', fontWeight: 600, marginBottom: 16 }}>
+      <Link
+        to="/executive/deliveries"
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          color: 'var(--primary)',
+          textDecoration: 'none',
+          fontWeight: 600,
+          marginBottom: 16,
+        }}
+      >
         <FiArrowLeft size={16} /> Back to deliveries
       </Link>
       <h1 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 20px' }}>Order {order.orderId || order._id}</h1>
@@ -302,17 +434,26 @@ function DetailView() {
         <div className="card" style={{ padding: 20 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Customer</h3>
           <p style={{ margin: '0 0 6px' }}>{order.customer?.name}</p>
-          <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)' }}>{order.customer?.phone} · {order.customer?.email}</p>
+          <p style={{ margin: '0 0 6px', color: 'var(--text-secondary)' }}>
+            {order.customer?.phone} · {order.customer?.email}
+          </p>
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 13 }}>
-            {[order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode].filter(Boolean).join(', ')}
+            {[order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode]
+              .filter(Boolean)
+              .join(', ')}
           </p>
         </div>
 
         <div className="card" style={{ padding: 20 }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Source & partner</h3>
-          <p style={{ margin: '0 0 6px' }}><FiTruck size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />{order.seller?.storeName || 'Seller not set'}</p>
+          <p style={{ margin: '0 0 6px' }}>
+            <FiTruck size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+            {order.seller?.storeName || 'Seller not set'}
+          </p>
           <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-            {order.deliveryPartner ? `${order.deliveryPartner.name} · ${order.deliveryPartner.phone}` : 'No partner assigned'}
+            {order.deliveryPartner
+              ? `${order.deliveryPartner.name} · ${order.deliveryPartner.phone}`
+              : 'No partner assigned'}
           </p>
         </div>
 
@@ -320,7 +461,9 @@ function DetailView() {
           <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Items</h3>
           {(order.items || []).map((it, i) => (
             <div key={i} style={{ marginBottom: 8, fontSize: 14 }}>
-              <div>{it.name} × {it.quantity}</div>
+              <div>
+                {it.name} × {it.quantity}
+              </div>
               {it.lensConfig && (
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                   Lens: {it.lensConfig.lensType} {it.lensConfig.lensPackage ? `/ ${it.lensConfig.lensPackage}` : ''}
@@ -340,21 +483,31 @@ function DetailView() {
           </p>
           <p style={{ margin: 0, fontSize: 13 }}>
             <FiMapPin size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-            Drop: {[order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode].filter(Boolean).join(', ')}
+            Drop:{' '}
+            {[order.shippingAddress?.street, order.shippingAddress?.city, order.shippingAddress?.pincode]
+              .filter(Boolean)
+              .join(', ')}
           </p>
         </div>
       </div>
 
       <div className="card" style={{ padding: 20, marginTop: 20 }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}><FiClock size={15} style={{ verticalAlign: 'middle', marginRight: 8 }} />Delivery journey</h3>
+        <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>
+          <FiClock size={15} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+          Delivery journey
+        </h3>
         {journey.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>No status updates recorded yet. Current status: {STATUS_LABELS[order.orderStatus] || order.orderStatus}</p>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>
+            No status updates recorded yet. Current status: {STATUS_LABELS[order.orderStatus] || order.orderStatus}
+          </p>
         ) : (
           <ol style={{ margin: 0, paddingLeft: 18 }}>
             {journey.map((j, i) => (
               <li key={i} style={{ marginBottom: 8, fontSize: 14 }}>
                 {STATUS_LABELS[j.status] || j.status}
-                <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{j.note} · {new Date(j.at).toLocaleString('en-IN')}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-light)' }}>
+                  {j.note} · {new Date(j.at).toLocaleString('en-IN')}
+                </div>
               </li>
             ))}
           </ol>
@@ -369,7 +522,7 @@ export default function ExecutiveSection({ section = 'deliveries' }) {
     deliveries: ['Deliveries', 'Every order you are responsible for delivering'],
     customers: ['Customers', 'Buyers on the orders assigned to you'],
     reports: ['Reports', 'Volume, value and status breakdown of your work'],
-    detail: ['Delivery detail', 'Complete journey of a single delivery']
+    detail: ['Delivery detail', 'Complete journey of a single delivery'],
   };
 
   return (
@@ -377,13 +530,28 @@ export default function ExecutiveSection({ section = 'deliveries' }) {
       <Header />
       <main className="container" style={{ flex: 1, maxWidth: 1400 }}>
         <div style={{ display: 'flex', gap: 8, margin: '20px 0' }}>
-          <Link to="/executive/dashboard" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <Link
+            to="/executive/dashboard"
+            className="btn btn-outline"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+          >
             <FiPackage size={15} /> Dashboard
           </Link>
-          <Link to="/executive/deliveries" className={`btn ${section === 'deliveries' ? 'btn-primary' : 'btn-outline'}`}>Deliveries</Link>
-          <Link to="/executive/customers" className={`btn ${section === 'customers' ? 'btn-primary' : 'btn-outline'}`}>Customers</Link>
-          <Link to="/executive/reports" className={`btn ${section === 'reports' ? 'btn-primary' : 'btn-outline'}`}>Reports</Link>
-          <Link to="/executive/team" className={`btn ${section === 'team' ? 'btn-primary' : 'btn-outline'}`}>Desk team</Link>
+          <Link
+            to="/executive/deliveries"
+            className={`btn ${section === 'deliveries' ? 'btn-primary' : 'btn-outline'}`}
+          >
+            Deliveries
+          </Link>
+          <Link to="/executive/customers" className={`btn ${section === 'customers' ? 'btn-primary' : 'btn-outline'}`}>
+            Customers
+          </Link>
+          <Link to="/executive/reports" className={`btn ${section === 'reports' ? 'btn-primary' : 'btn-outline'}`}>
+            Reports
+          </Link>
+          <Link to="/executive/team" className={`btn ${section === 'team' ? 'btn-primary' : 'btn-outline'}`}>
+            Desk team
+          </Link>
         </div>
 
         {title(...(headings[section] || headings.deliveries))}

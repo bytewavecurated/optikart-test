@@ -6,9 +6,8 @@ import rateLimit from 'express-rate-limit';
 // which would otherwise log a spurious warning on every request.
 const VALIDATE = {
   trustProxy: true,
-  xForwardedForHeader: false
+  xForwardedForHeader: false,
 };
-
 
 // Authentication endpoints. Successful attempts are not counted so a normal
 // user logging in a few times is never blocked; only failures burn quota.
@@ -24,7 +23,9 @@ const VALIDATE = {
  */
 export const identifyAttempt = (req) => {
   const body = req.body || {};
-  const email = String(body.email || '').trim().toLowerCase();
+  const email = String(body.email || '')
+    .trim()
+    .toLowerCase();
   const phone = String(body.phone || '').replace(/[^0-9]/g, '');
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return `id:${email}`;
   if (phone.length >= 8) return `id:ph${phone.slice(-10)}`;
@@ -37,12 +38,12 @@ export const authLimiter = rateLimit({
   keyGenerator: identifyAttempt,
   message: {
     success: false,
-    message: 'Too many sign-in attempts. Please try again in a few minutes.'
+    message: 'Too many sign-in attempts. Please try again in a few minutes.',
   },
   standardHeaders: true,
   legacyHeaders: false,
   validate: VALIDATE,
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
 });
 
 // Global API limiter.
@@ -56,12 +57,12 @@ export const apiLimiter = rateLimit({
   max: 2000,
   message: {
     success: false,
-    message: 'Too many requests. Please slow down and try again shortly.'
+    message: 'Too many requests. Please slow down and try again shortly.',
   },
   standardHeaders: true,
   legacyHeaders: false,
   validate: VALIDATE,
-  skip: (req) => req.method === 'GET' || req.path === '/api/health'
+  skip: (req) => req.method === 'GET' || req.path === '/api/health',
 });
 
 export const otpLimiter = rateLimit({
@@ -73,12 +74,12 @@ export const otpLimiter = rateLimit({
   keyGenerator: identifyAttempt,
   message: {
     success: false,
-    message: 'Too many OTP requests. Please try again after 5 minutes.'
+    message: 'Too many OTP requests. Please try again after 5 minutes.',
   },
   standardHeaders: true,
   legacyHeaders: false,
   validate: VALIDATE,
-  skipSuccessfulRequests: true
+  skipSuccessfulRequests: true,
 });
 
 export const paymentLimiter = rateLimit({
@@ -89,8 +90,8 @@ export const paymentLimiter = rateLimit({
   keyGenerator: (req) => (req.user ? `id:${req.user._id || req.user.id}` : identifyAttempt(req)),
   message: {
     success: false,
-    message: 'Too many payment requests. Please try again after a minute.'
+    message: 'Too many payment requests. Please try again after a minute.',
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
 });

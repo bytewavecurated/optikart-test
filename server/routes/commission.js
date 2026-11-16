@@ -4,7 +4,7 @@ import {
   recordCommission,
   getCommissionSummary,
   getSellerCommissionDetails,
-  getPendingCommissions
+  getPendingCommissions,
 } from '../services/commissionTracking.js';
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.post('/record/:orderId', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { orderId } = req.params;
     const result = await recordCommission(orderId);
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -36,7 +36,7 @@ router.get('/summary', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     const result = await getCommissionSummary({ startDate, endDate });
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -63,9 +63,9 @@ router.get('/seller/:sellerId', verifyAnyPrincipal, async (req, res) => {
     if (!isAdmin && !isSelf) {
       return res.status(403).json({ success: false, error: 'Unauthorized' });
     }
-    
+
     const result = await getSellerCommissionDetails(sellerId, { startDate, endDate });
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -84,9 +84,9 @@ router.get('/my-commission', verifySeller, async (req, res) => {
   try {
     const sellerId = req.seller._id;
     const { startDate, endDate } = req.query;
-    
+
     const result = await getSellerCommissionDetails(sellerId, { startDate, endDate });
-    
+
     if (result.success) {
       res.json(result);
     } else {
@@ -104,7 +104,7 @@ router.get('/my-commission', verifySeller, async (req, res) => {
 router.get('/pending', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const result = await getPendingCommissions();
-    
+
     if (result.success) {
       res.json(result);
     } else {

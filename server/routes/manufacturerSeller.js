@@ -31,7 +31,7 @@ router.post('/products/:id/withdraw', verifyManufacturerSeller, async (req, res)
 
     const clone = await Product.findOne({
       manufacturerProduct: brandProduct._id,
-      seller: req.manufacturerSeller._id
+      seller: req.manufacturerSeller._id,
     });
     if (!clone) {
       return res.status(404).json({ success: false, message: 'You have no listing from that brand product.' });
@@ -41,7 +41,8 @@ router.post('/products/:id/withdraw', verifyManufacturerSeller, async (req, res)
       return res.status(400).json({
         success: false,
         reason: 'approved_listing',
-        message: 'This listing was approved and may have orders against it. Ask OptiKart to remove it, or pause it instead.'
+        message:
+          'This listing was approved and may have orders against it. Ask OptiKart to remove it, or pause it instead.',
       });
     }
 
@@ -54,8 +55,8 @@ router.post('/products/:id/withdraw', verifyManufacturerSeller, async (req, res)
 
     res.json({
       success: true,
-      message: 'Claim withdrawn. It is out of the brand\'s queue and nothing was ever visible to buyers.',
-      withdrew: { id: String(clone._id), previousState: clone.listing?.state || 'unknown' }
+      message: "Claim withdrawn. It is out of the brand's queue and nothing was ever visible to buyers.",
+      withdrew: { id: String(clone._id), previousState: clone.listing?.state || 'unknown' },
     });
   } catch (error) {
     console.error('Withdraw claim error:', error);
@@ -78,7 +79,7 @@ const listingSummary = (doc) => ({
   verificationStatus: doc.verificationStatus,
   isListed: !!doc.isListed,
   price: doc.price,
-  listing: doc.listing
+  listing: doc.listing,
 });
 
 /*
@@ -112,36 +113,36 @@ router.post('/login', async (req, res) => {
 
     if (seller.lockUntil && seller.lockUntil > new Date()) {
       const remainingTime = Math.ceil((seller.lockUntil - new Date()) / 1000 / 60);
-      return res.status(423).json({ 
-        success: false, 
+      return res.status(423).json({
+        success: false,
         message: `Account is locked. Please try again in ${remainingTime} minutes.`,
         locked: true,
-        lockUntil: seller.lockUntil
+        lockUntil: seller.lockUntil,
       });
     }
 
     const isMatch = await seller.comparePassword(password);
     if (!isMatch) {
       seller.failedLoginAttempts = (seller.failedLoginAttempts || 0) + 1;
-      
+
       if (seller.failedLoginAttempts >= 3) {
         seller.lockUntil = new Date(Date.now() + 3 * 60 * 1000);
         seller.failedLoginAttempts = 0;
         await seller.save();
-        
-        return res.status(423).json({ 
-          success: false, 
+
+        return res.status(423).json({
+          success: false,
           message: 'Too many failed attempts. Account locked for 3 minutes.',
           locked: true,
-          lockUntil: seller.lockUntil
+          lockUntil: seller.lockUntil,
         });
       }
-      
+
       await seller.save();
       const remainingAttempts = 3 - seller.failedLoginAttempts;
-      return res.status(401).json({ 
-        success: false, 
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`
+      return res.status(401).json({
+        success: false,
+        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
       });
     }
 
@@ -165,13 +166,13 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Login successful.',
         token,
-        seller: seller.toJSON()
+        seller: seller.toJSON(),
       });
     } else {
-      const loginOtp = otpGenerator.generate(6, { 
-        upperCaseAlphabets: false, 
-        specialChars: false, 
-        lowerCaseAlphabets: false 
+      const loginOtp = otpGenerator.generate(6, {
+        upperCaseAlphabets: false,
+        specialChars: false,
+        lowerCaseAlphabets: false,
       });
 
       seller.loginOtp = loginOtp;
@@ -184,7 +185,7 @@ router.post('/login', async (req, res) => {
         success: true,
         requiresOTP: true,
         message: 'Login OTP sent to your email.',
-        sellerId: seller._id
+        sellerId: seller._id,
       });
     }
   } catch (error) {
@@ -226,7 +227,7 @@ router.post('/verify-login-otp', async (req, res) => {
       success: true,
       message: 'Login successful.',
       token,
-      seller: seller.toJSON()
+      seller: seller.toJSON(),
     });
   } catch (error) {
     console.error('Verify manufacturer seller login OTP error:', error);
@@ -244,14 +245,14 @@ router.get('/me', verifyManufacturerSeller, async (req, res) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const seller = await ManufacturerSeller.findById(req.manufacturerSeller._id);
-    
+
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
     }
 
     res.json({
       success: true,
-      seller: seller.toJSON()
+      seller: seller.toJSON(),
     });
   } catch (error) {
     console.error('Get manufacturer seller profile error:', error);
@@ -262,20 +263,19 @@ router.get('/me', verifyManufacturerSeller, async (req, res) => {
 // Get Available Products from Manufacturer
 router.get('/available-products', verifyManufacturerSeller, async (req, res) => {
   try {
-    
     const seller = await ManufacturerSeller.findById(req.manufacturerSeller._id);
     if (!seller) {
       return res.status(404).json({ success: false, message: 'Seller not found.' });
     }
 
-    const products = await Product.find({ 
+    const products = await Product.find({
       manufacturer: seller.manufacturer,
-      isDiscontinued: false
+      isDiscontinued: false,
     }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      products
+      products,
     });
   } catch (error) {
     console.error('Get available products error:', error);
@@ -312,7 +312,7 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
 
     const existing = await Product.findOne({
       manufacturerProduct: brandProduct._id,
-      seller: retailer._id
+      seller: retailer._id,
     });
 
     if (existing) {
@@ -325,37 +325,41 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
           product: brandProduct,
           actorLabel: retailer.storeName || retailer.name || 'retailer',
           proof: { kind: req.body?.proofKind, reference: req.body?.proofReference, note: req.body?.proofNote },
-          brandLinked: true
+          brandLinked: true,
         });
-        if (!result.success) return res.status(400).json({ success: false, message: result.message, reason: result.reason });
+        if (!result.success)
+          return res.status(400).json({ success: false, message: result.message, reason: result.reason });
         return res.json({
           success: true,
           state: result.state,
-          message: 'Listing re-declared. It goes back through the brand and the platform before it sells again; your price, variants and stock are unchanged.',
-          product: listingSummary(existing)
+          message:
+            'Listing re-declared. It goes back through the brand and the platform before it sells again; your price, variants and stock are unchanged.',
+          product: listingSummary(existing),
         });
       }
       const paused = await pauseListing({
         listingKind: 'storefront',
         id: existing._id,
         actorLabel: retailer.storeName || retailer.name || 'retailer',
-        reason: req.body?.reason || ''
+        reason: req.body?.reason || '',
       });
-      return res.json(paused.success
-        ? { success: true, state: 'paused', message: paused.message, product: listingSummary(existing) }
-        : { success: false, message: paused.message });
+      return res.json(
+        paused.success
+          ? { success: true, state: 'paused', message: paused.message, product: listingSummary(existing) }
+          : { success: false, message: paused.message }
+      );
     }
 
     if (!brandProduct.manufacturer) {
       return res.status(400).json({
         success: false,
-        message: 'That product is not linked to a brand, so it cannot be stocked from here.'
+        message: 'That product is not linked to a brand, so it cannot be stocked from here.',
       });
     }
     if (String(brandProduct.manufacturer) !== String(retailer.manufacturer || '')) {
       return res.status(403).json({
         success: false,
-        message: "Only your own brand's catalogue can be stocked here."
+        message: "Only your own brand's catalogue can be stocked here.",
       });
     }
 
@@ -375,7 +379,7 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
       stock: req.body?.stock || 0,
       colors: req.body?.colors || brandProduct.colors,
       sizes: req.body?.sizes || brandProduct.sizes,
-      stockDetail: Array.isArray(req.body?.stockDetail) ? req.body.stockDetail : brandProduct.stockDetail
+      stockDetail: Array.isArray(req.body?.stockDetail) ? req.body.stockDetail : brandProduct.stockDetail,
     });
 
     const declared = await declareSupply({
@@ -384,7 +388,7 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
       product: brandProduct,
       actorLabel: retailer.storeName || retailer.name || 'retailer',
       proof: { kind: req.body?.proofKind, reference: req.body?.proofReference, note: req.body?.proofNote },
-      brandLinked: true
+      brandLinked: true,
     });
 
     if (!declared.success) {
@@ -394,7 +398,7 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
         reason: declared.reason,
         // The shop keeps what it typed, so a refused declaration does not
         // discard the pricing work behind the missing sentence.
-        draft: { price: sellerProduct.price, stock: sellerProduct.stock }
+        draft: { price: sellerProduct.price, stock: sellerProduct.stock },
       });
     }
 
@@ -405,7 +409,7 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
       success: true,
       state: declared.state,
       message: declared.message,
-      product: listingSummary(sellerProduct)
+      product: listingSummary(sellerProduct),
     });
   } catch (error) {
     console.error('Toggle product error:', error);
@@ -416,14 +420,13 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
 // Get Seller's Products
 router.get('/products', verifyManufacturerSeller, async (req, res) => {
   try {
-    
-    const products = await Product.find({ 
-      manufacturerSellerId: req.manufacturerSeller._id
+    const products = await Product.find({
+      manufacturerSellerId: req.manufacturerSeller._id,
     }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
-      products
+      products,
     });
   } catch (error) {
     console.error('Get products error:', error);

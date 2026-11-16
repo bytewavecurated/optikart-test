@@ -76,8 +76,8 @@ const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST'],
-    credentials: true
-  }
+    credentials: true,
+  },
 });
 
 // `trust proxy: true` tells Express to believe every X-Forwarded-For value a
@@ -101,18 +101,28 @@ const trustProxyHops = (() => {
 
 app.set('trust proxy', trustProxyHops);
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-const uploadDirs = ['uploads', 'uploads/products', 'uploads/prescriptions', 'uploads/store', 'uploads/avatars', 'uploads/blogs', 'uploads/banners'];
-uploadDirs.forEach(dir => {
+const uploadDirs = [
+  'uploads',
+  'uploads/products',
+  'uploads/prescriptions',
+  'uploads/store',
+  'uploads/avatars',
+  'uploads/blogs',
+  'uploads/banners',
+];
+uploadDirs.forEach((dir) => {
   const fullPath = path.join(__dirname, dir);
   if (!fs.existsSync(fullPath)) {
     fs.mkdirSync(fullPath, { recursive: true });
@@ -210,7 +220,7 @@ app.get('/api/health', async (req, res) => {
     requestId: req.id,
     timestamp: new Date().toISOString(),
     service: 'optikart-api',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
   });
 });
 
@@ -278,7 +288,9 @@ app.get('*', (req, res) => {
     return res
       .status(503)
       .type('html')
-      .send('<h1>Frontend not built</h1><p>Run <code>npm run build</code> in <code>client/</code>, then reload. The API is healthy.</p>');
+      .send(
+        '<h1>Frontend not built</h1><p>Run <code>npm run build</code> in <code>client/</code>, then reload. The API is healthy.</p>'
+      );
   }
   res.sendFile(clientIndex);
 });
@@ -303,13 +315,13 @@ app.use((err, req, res, next) => {
   }
 
   if (err.name === 'ValidationError') {
-    const messages = Object.values(err.errors).map(e => e.message);
+    const messages = Object.values(err.errors).map((e) => e.message);
     return res.status(400).json({ success: false, message: 'Validation error', errors: messages });
   }
 
   res.status(err.status || 500).json({
     success: false,
-    message: err.message || 'Internal server error'
+    message: err.message || 'Internal server error',
   });
 });
 
@@ -328,11 +340,15 @@ const PORT = process.env.PORT || 5000;
  * carries more authority than the demo logins it replaces.
  */
 const ensureBootstrapAdmin = async () => {
-  const email = String(process.env.BOOTSTRAP_ADMIN_EMAIL || '').trim().toLowerCase();
+  const email = String(process.env.BOOTSTRAP_ADMIN_EMAIL || '')
+    .trim()
+    .toLowerCase();
   const password = String(process.env.BOOTSTRAP_ADMIN_PASSWORD || '');
   if (!email) {
     if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
-      console.warn('BOOTSTRAP_ADMIN_EMAIL is not set: with demo logins removed and OTP required, nobody can sign in to create an administrator.');
+      console.warn(
+        'BOOTSTRAP_ADMIN_EMAIL is not set: with demo logins removed and OTP required, nobody can sign in to create an administrator.'
+      );
     }
     return null;
   }
@@ -343,7 +359,9 @@ const ensureBootstrapAdmin = async () => {
 
   const weak = ['change-me', 'admin123', 'password', 'bootstrap', '12345678'];
   if (password.length < 12 || weak.some((w) => password.toLowerCase().includes(w))) {
-    console.error(`BOOTSTRAP_ADMIN_PASSWORD is too weak (${password.length < 12 ? 'under 12 characters' : 'contains a common word'}); no administrator was created.`);
+    console.error(
+      `BOOTSTRAP_ADMIN_PASSWORD is too weak (${password.length < 12 ? 'under 12 characters' : 'contains a common word'}); no administrator was created.`
+    );
     return null;
   }
 
@@ -352,9 +370,11 @@ const ensureBootstrapAdmin = async () => {
       name: String(process.env.BOOTSTRAP_ADMIN_NAME || 'Administrator').trim(),
       email,
       password,
-      role: 'admin'
+      role: 'admin',
     });
-    console.log(`Bootstrap administrator created for ${created.email}. Remove BOOTSTRAP_ADMIN_PASSWORD from the environment once you have signed in.`);
+    console.log(
+      `Bootstrap administrator created for ${created.email}. Remove BOOTSTRAP_ADMIN_PASSWORD from the environment once you have signed in.`
+    );
     return created;
   } catch (error) {
     // A duplicate email or a half-finished run must not stop the API booting.
@@ -363,26 +383,25 @@ const ensureBootstrapAdmin = async () => {
   }
 };
 
-
 const startServer = async () => {
   try {
     const mongoUri = process.env.MONGODB_URI;
-    
+
     if (!mongoUri) {
       console.error('❌ ERROR: MONGODB_URI not found in .env file');
       console.error('\n🔧 Please add your MongoDB Atlas connection string to server/.env:');
       console.error('   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/eyewear-platform\n');
       process.exit(1);
     }
-    
+
     console.log('Connecting to MongoDB Atlas...');
-    
+
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 30000,
       connectTimeoutMS: 30000,
     });
     console.log('✅ Connected to MongoDB');
-    
+
     /*
      * A production process that can wipe real collections, issue sessions on a
      * placeholder secret, or demand an OTP it has no way to deliver is not secure
@@ -394,7 +413,7 @@ const startServer = async () => {
     const allowDemoSeed = ['true', '1'].includes(String(process.env.ALLOW_DEMO_SEED || '').toLowerCase());
     const bootErrors = productionBootErrors({
       seedForced: ['true', '1'].includes(seedFlag),
-      seedAcknowledged: allowDemoSeed
+      seedAcknowledged: allowDemoSeed,
     });
     if (bootErrors.length) {
       bootErrors.forEach((line) => console.error(`CONFIGURATION ERROR: ${line}`));
@@ -428,7 +447,7 @@ const startServer = async () => {
         flag,
         existing,
         production: isProduction(),
-        allowDemoSeed: ['true', '1'].includes(String(process.env.ALLOW_DEMO_SEED || '').toLowerCase())
+        allowDemoSeed: ['true', '1'].includes(String(process.env.ALLOW_DEMO_SEED || '').toLowerCase()),
       });
       /*
        * Every outcome announces itself.
@@ -444,14 +463,20 @@ const startServer = async () => {
        */
       if (decision.seed) {
         if (decision.destructive && isProduction()) {
-          console.warn('WARNING: demo seed running against a PRODUCTION-mode database; the seed deletes the collections it owns first (SEED_ON_BOOT=true + ALLOW_DEMO_SEED=true).');
+          console.warn(
+            'WARNING: demo seed running against a PRODUCTION-mode database; the seed deletes the collections it owns first (SEED_ON_BOOT=true + ALLOW_DEMO_SEED=true).'
+          );
         }
         await seedDatabase();
         console.log(`\u2705 Database seeded (${decision.reason})`);
       } else if (decision.reason === 'production-never-auto-seeds') {
-        console.log('Seed skipped: production never auto-seeds, not even against an empty database. Create the first real admin through the bootstrap path; on a staging database set SEED_ON_BOOT=true together with ALLOW_DEMO_SEED=true to load demo fixtures.');
+        console.log(
+          'Seed skipped: production never auto-seeds, not even against an empty database. Create the first real admin through the bootstrap path; on a staging database set SEED_ON_BOOT=true together with ALLOW_DEMO_SEED=true to load demo fixtures.'
+        );
       } else if (decision.reason === 'production-refuses-demo-seed') {
-        console.log('Seed skipped: SEED_ON_BOOT=true was set in production without ALLOW_DEMO_SEED, so nothing was written.');
+        console.log(
+          'Seed skipped: SEED_ON_BOOT=true was set in production without ALLOW_DEMO_SEED, so nothing was written.'
+        );
       } else if (decision.reason === 'disabled-by-flag') {
         console.log('Seed skipped (SEED_ON_BOOT=false).');
       } else {
@@ -463,11 +488,13 @@ const startServer = async () => {
         const { default: Product } = await import('./models/Product.js');
         const filled = await Product.fillMissingNames();
         if (filled) console.log(`Filled product names: ${filled}`);
-      } catch (bfErr) { console.log('Name backfill note:', bfErr.message); }
+      } catch (bfErr) {
+        console.log('Name backfill note:', bfErr.message);
+      }
     } catch (seedErr) {
       console.log('ℹ️  Seed note:', seedErr.message);
     }
-    
+
     /*
      * Listings that existed before brand supply approval became a rule.
      *
@@ -488,7 +515,11 @@ const startServer = async () => {
       const untagged = await SellerStock.countDocuments({ listing: { $exists: false } });
       if (untagged) {
         const { default: Product } = await import('./models/Product.js');
-        const brandIds = (await Product.find({ manufacturer: { $exists: true, $ne: null } }).select('_id').lean()).map((x) => x._id);
+        const brandIds = (
+          await Product.find({ manufacturer: { $exists: true, $ne: null } })
+            .select('_id')
+            .lean()
+        ).map((x) => x._id);
 
         const brandStock = await SellerStock.updateMany(
           { listing: { $exists: false }, product: { $in: brandIds } },
@@ -506,10 +537,14 @@ const startServer = async () => {
           { listing: { $exists: false } },
           { $set: { 'listing.brandLinked': false, 'listing.state': 'live' } }
         );
-        console.log(`Listing rules seeded: ${brandStock.modifiedCount} brand stock rows and ${brandCopies.modifiedCount} brand storefront copies marked live-but-never-confirmed; ${plainStock.modifiedCount + plainCopies.modifiedCount} unbranded rows left untouched.`);
+        console.log(
+          `Listing rules seeded: ${brandStock.modifiedCount} brand stock rows and ${brandCopies.modifiedCount} brand storefront copies marked live-but-never-confirmed; ${plainStock.modifiedCount + plainCopies.modifiedCount} unbranded rows left untouched.`
+        );
       }
     } catch (lgErr) {
-      console.error(JSON.stringify({ event: 'listing_migration_failed', message: String(lgErr.message).slice(0, 200) }));
+      console.error(
+        JSON.stringify({ event: 'listing_migration_failed', message: String(lgErr.message).slice(0, 200) })
+      );
     }
 
     /*
@@ -526,18 +561,23 @@ const startServer = async () => {
       const { default: Manufacturer } = await import('./models/Manufacturer.js');
       const orphans = await Product.find({
         manufacturerSellerId: { $exists: true, $ne: null },
-        manufacturerProduct: { $exists: false }
+        manufacturerProduct: { $exists: false },
       }).limit(500);
       let repaired = 0;
       let ambiguous = 0;
       for (const copy of orphans) {
         const parentBrand = await Manufacturer.findById(copy.manufacturer).select('_id').lean();
-        if (!parentBrand) { ambiguous += 1; continue; }
+        if (!parentBrand) {
+          ambiguous += 1;
+          continue;
+        }
         const matches = await Product.find({
           manufacturer: parentBrand._id,
           brand: copy.brand,
-          modelNumber: copy.modelNumber
-        }).limit(2).lean();
+          modelNumber: copy.modelNumber,
+        })
+          .limit(2)
+          .lean();
         if (matches.length === 1) {
           copy.manufacturerProduct = matches[0]._id;
           await copy.save();
@@ -547,7 +587,9 @@ const startServer = async () => {
         }
       }
       if (orphans.length) {
-        console.log(`Brand-catalogue links repaired on ${repaired} retailer copies${ambiguous ? `; ${ambiguous} left unlinked because the match was not unique` : ''}.`);
+        console.log(
+          `Brand-catalogue links repaired on ${repaired} retailer copies${ambiguous ? `; ${ambiguous} left unlinked because the match was not unique` : ''}.`
+        );
       }
     } catch (linkErr) {
       console.error(JSON.stringify({ event: 'listing_relink_failed', message: String(linkErr.message).slice(0, 200) }));
@@ -568,12 +610,17 @@ const startServer = async () => {
       // five have failed the order escalates to the admin queue.
       // Expire price proposals whose 7-working-day window has elapsed, so a
       // listing can never sit indefinitely in a half-applied state.
-      const priceSweep = setInterval(async () => {
-        try {
-          const r = await sweepExpiredPriceChanges();
-          if (r.expired) console.log(`Expired ${r.expired} unanswered price proposal(s)`);
-        } catch (e) { console.error('Price proposal sweep failed:', e.message); }
-      }, 60 * 60 * 1000);
+      const priceSweep = setInterval(
+        async () => {
+          try {
+            const r = await sweepExpiredPriceChanges();
+            if (r.expired) console.log(`Expired ${r.expired} unanswered price proposal(s)`);
+          } catch (e) {
+            console.error('Price proposal sweep failed:', e.message);
+          }
+        },
+        60 * 60 * 1000
+      );
       priceSweep.unref();
 
       const sweepTimer = setInterval(async () => {
@@ -593,7 +640,9 @@ const startServer = async () => {
         try {
           const closed = await sweepExpiredPartnerOffers(app.get('io'));
           if (closed) console.log(`Partner offers expired: ${closed}`);
-        } catch (e) { console.error('Partner offer sweep failed:', e.message); }
+        } catch (e) {
+          console.error('Partner offer sweep failed:', e.message);
+        }
       }, 60 * 1000);
       partnerSweep.unref();
     });

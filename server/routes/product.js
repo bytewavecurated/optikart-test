@@ -26,7 +26,7 @@ const CATEGORY_ALIASES = {
   'lens-solution': 'solution',
   solutions: 'solution',
   accessories: 'accessories',
-  accessory: 'accessories'
+  accessory: 'accessories',
 };
 
 const normalizeRegex = (value) => normalizedRegex(value) || value;
@@ -40,12 +40,15 @@ const normalizeCategory = (value) => {
   return CATEGORY_ALIASES[compact] || compact;
 };
 
-
 // The stored enums use inconsistent casing and spacing ('Cat Eye' vs 'cateye',
 // 'Full Rim' vs 'full-rim', 'Stainless Steel' vs 'stainless-steel'), so match
 // on a normalised pattern that accepts any of those spellings.
 
-const normalizeToken = (v) => String(v || '').toLowerCase().replace(/[\s]+/g, '').replace(/[-_]+/g, '');
+const normalizeToken = (v) =>
+  String(v || '')
+    .toLowerCase()
+    .replace(/[\s]+/g, '')
+    .replace(/[-_]+/g, '');
 const normalizeArray = (v) => {
   const token = normalizeToken(v);
   const FORMS = {
@@ -53,13 +56,15 @@ const normalizeArray = (v) => {
     photochromic: ['photochromic'],
     polarized: ['polarized'],
     nonpowered: ['nonpowered'],
-    powered: ['powered']
+    powered: ['powered'],
   };
   return FORMS[token] || [v];
 };
 
 const normalizedRegex = (value) => {
-  const clean = String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const clean = String(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
   if (!clean) return null;
   const flexible = clean.split('').join('[\\s_-]*');
   return new RegExp(`^${flexible}$`, 'i');
@@ -87,14 +92,46 @@ const sizeVariants = (v) => {
 
 router.get('/', optionalAuth, async (req, res) => {
   try {
-    const { 
-      page = 1, limit = 20, search, category, brand, minPrice, maxPrice, 
-      frameShape, frameType, material, frameColor, lensType, gender, frameSize,
-      modelNumber, color, sellerCode, sort, hasOffer, seller: isSeller,
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      frameShape,
+      frameType,
+      material,
+      frameColor,
+      lensType,
+      gender,
+      frameSize,
+      modelNumber,
+      color,
+      sellerCode,
+      sort,
+      hasOffer,
+      seller: isSeller,
       // Contact lens and powered-eyewear dimensions.
-      powered, powerType, withPower, colour, combo, lensesPerBox, replacementPeriod,
-      subGender, ageGroup, prescriptionLensTypes, suitableFor, volumeMl, accessoryType,
-      use, waterContent, diameter, minPriceGte, excludeCategory
+      powered,
+      powerType,
+      withPower,
+      colour,
+      combo,
+      lensesPerBox,
+      replacementPeriod,
+      subGender,
+      ageGroup,
+      prescriptionLensTypes,
+      suitableFor,
+      volumeMl,
+      accessoryType,
+      use,
+      waterContent,
+      diameter,
+      minPriceGte,
+      excludeCategory,
     } = req.query;
 
     // Only approved catalogue is publicly visible; sellers may list whatever
@@ -111,7 +148,11 @@ router.get('/', optionalAuth, async (req, res) => {
       const { default: Seller } = await import('../models/Seller.js');
       const target = await Seller.findOne({ sellerId: sellerCode });
       if (!target) {
-        return res.json({ success: true, products: [], pagination: { total: 0, page: 1, limit: parseInt(limit), pages: 0 } });
+        return res.json({
+          success: true,
+          products: [],
+          pagination: { total: 0, page: 1, limit: parseInt(limit), pages: 0 },
+        });
       }
       query.seller = target._id;
     }
@@ -166,7 +207,9 @@ router.get('/', optionalAuth, async (req, res) => {
     // *listed as selling with power*; both must hold.
     if (powered === 'true') {
       query.poweredOptionsAvailable = true;
-      query.category = query.category || { $in: ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'] };
+      query.category = query.category || {
+        $in: ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'],
+      };
     }
     if (use === 'computer') query.lensType = { $in: normalizeArray('blucut') };
 
@@ -175,7 +218,7 @@ router.get('/', optionalAuth, async (req, res) => {
         success: true,
         products: [],
         pagination: { total: 0, page: 1, limit: parseInt(limit), pages: 0 },
-        message: 'Contact lenses have no gender or frame attributes. Browse them from Contact Lenses.'
+        message: 'Contact lenses have no gender or frame attributes. Browse them from Contact Lenses.',
       });
     }
 
@@ -193,12 +236,10 @@ router.get('/', optionalAuth, async (req, res) => {
     if (gender) query.gender = gender;
     if (frameSize) query.frameSize = { $in: sizeVariants(frameSize) };
     if (modelNumber) query.modelNumber = new RegExp(String(modelNumber).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    if (color) query.colors = { $elemMatch: { name: new RegExp(String(color).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } };
+    if (color)
+      query.colors = { $elemMatch: { name: new RegExp(String(color).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } };
     if (hasOffer === 'true') {
-      query.$or = [
-        { 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } },
-        { isUnderSaleEvent: true }
-      ];
+      query.$or = [{ 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } }, { isUnderSaleEvent: true }];
     }
     if (isSeller === 'true' && req.user) {
       query.seller = req.user._id || req.user.sellerId;
@@ -207,7 +248,9 @@ router.get('/', optionalAuth, async (req, res) => {
     // Applied here so every lensFilter assignment above is included.
     // Dotted paths, not an object: a single nested subdocument compared as a
     // whole object matches only documents identical in every field.
-    Object.entries(lensFilter).forEach(([k, v]) => { query[`contactLens.${k}`] = v; });
+    Object.entries(lensFilter).forEach(([k, v]) => {
+      query[`contactLens.${k}`] = v;
+    });
 
     let sortOption = { createdAt: -1 };
     if (sort === 'price_asc') sortOption = { price: 1 };
@@ -242,15 +285,14 @@ router.get('/', optionalAuth, async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error('Get products error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
-
 
 // Brand-wise manufacturer catalogue for the home page.
 // Groups the products each manufacturer has added under the brand name,
@@ -262,16 +304,19 @@ router.get('/manufacturer-brands', async (req, res) => {
     const brandNames = await Product.distinct('brand', {
       ...VISIBLE_PRODUCTS,
       isManufacturerProduct: true,
-      manufacturer: { $ne: null }
+      manufacturer: { $ne: null },
     });
 
     const brands = [];
     for (const brandName of brandNames.filter(Boolean).sort()) {
       const filter = { ...VISIBLE_PRODUCTS, isManufacturerProduct: true, brand: brandName };
       const [products, productCount] = await Promise.all([
-        Product.find(filter).sort({ createdAt: -1 }).limit(limitPerBrand)
-          .populate('seller', 'storeName storeLogo rating').lean(),
-        Product.countDocuments(filter)
+        Product.find(filter)
+          .sort({ createdAt: -1 })
+          .limit(limitPerBrand)
+          .populate('seller', 'storeName storeLogo rating')
+          .lean(),
+        Product.countDocuments(filter),
       ]);
       if (products.length) brands.push({ brand: brandName, productCount, products });
     }
@@ -330,7 +375,7 @@ router.get('/categories', async (req, res) => {
     const categoryCounts = await Promise.all(
       categories.map(async (cat) => ({
         name: cat,
-        count: await Product.countDocuments({ category: cat, ...VISIBLE_PRODUCTS })
+        count: await Product.countDocuments({ category: cat, ...VISIBLE_PRODUCTS }),
       }))
     );
 
@@ -347,22 +392,16 @@ router.get('/offers', async (req, res) => {
 
     const products = await Product.find({
       ...VISIBLE_PRODUCTS,
-      $or: [
-        { 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } },
-        { isUnderSaleEvent: true }
-      ]
+      $or: [{ 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } }, { isUnderSaleEvent: true }],
     })
-    .populate('seller', 'storeName storeLogo rating')
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(parseInt(limit));
+      .populate('seller', 'storeName storeLogo rating')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
 
     const total = await Product.countDocuments({
       ...VISIBLE_PRODUCTS,
-      $or: [
-        { 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } },
-        { isUnderSaleEvent: true }
-      ]
+      $or: [{ 'sellerOffer.isActive': true, 'sellerOffer.type': { $ne: 'none' } }, { isUnderSaleEvent: true }],
     });
 
     res.json({ success: true, products, total, page: parseInt(page), totalPages: Math.ceil(total / limit) });
@@ -421,7 +460,7 @@ router.get('/filters', async (req, res) => {
       material: q.material ? String(q.material) : '',
       frameColor: q.frameColor ? String(q.frameColor) : '',
       lensType: q.lensType ? String(q.lensType) : '',
-      frameSize: q.frameSize ? String(q.frameSize) : ''
+      frameSize: q.frameSize ? String(q.frameSize) : '',
     };
 
     // The scope used to count one facet: every chosen filter except that facet's
@@ -445,17 +484,28 @@ router.get('/filters', async (req, res) => {
     };
 
     const FIELDS = [
-      ['brand', 'brands'], ['frameShape', 'frameShapes'], ['frameType', 'frameTypes'],
-      ['frameMaterial', 'materials'], ['frameColor', 'frameColors'], ['lensType', 'lensTypes'],
-      ['gender', 'genders'], ['frameSize', 'frameSizes'], ['category', 'categories']
+      ['brand', 'brands'],
+      ['frameShape', 'frameShapes'],
+      ['frameType', 'frameTypes'],
+      ['frameMaterial', 'materials'],
+      ['frameColor', 'frameColors'],
+      ['lensType', 'lensTypes'],
+      ['gender', 'genders'],
+      ['frameSize', 'frameSizes'],
+      ['category', 'categories'],
     ];
 
-    const pairs = await Promise.all(FIELDS.map(async ([field, key]) => {
-      const values = await Product.distinct(field, scopeFor(field));
-      return [key, values
-        .filter((v) => v !== null && v !== undefined && String(v).trim() !== '')
-        .sort((a, b) => String(a).localeCompare(String(b)))];
-    }));
+    const pairs = await Promise.all(
+      FIELDS.map(async ([field, key]) => {
+        const values = await Product.distinct(field, scopeFor(field));
+        return [
+          key,
+          values
+            .filter((v) => v !== null && v !== undefined && String(v).trim() !== '')
+            .sort((a, b) => String(a).localeCompare(String(b))),
+        ];
+      })
+    );
 
     const facets = Object.fromEntries(pairs);
 
@@ -479,7 +529,7 @@ router.get('/filters', async (req, res) => {
 
     const priced = await Product.aggregate([
       { $match: scopeFor('__none__') },
-      { $group: { _id: null, min: { $min: '$price' }, max: { $max: '$price' } } }
+      { $group: { _id: null, min: { $min: '$price' }, max: { $max: '$price' } } },
     ]);
 
     res.json({
@@ -488,8 +538,8 @@ router.get('/filters', async (req, res) => {
         ...facets,
         brandsByLetter,
         priceRange: { min: priced[0]?.min || 0, max: priced[0]?.max || 10000 },
-        applied: Object.fromEntries(Object.entries(wanted).filter(([, v]) => v))
-      }
+        applied: Object.fromEntries(Object.entries(wanted).filter(([, v]) => v)),
+      },
     });
   } catch (error) {
     console.error('Get filters error:', error);
@@ -505,31 +555,34 @@ router.get('/:id/related', async (req, res) => {
     const similarProducts = await Product.find({
       category: product.category,
       _id: { $ne: product._id },
-      isActive: true
+      isActive: true,
     })
-    .populate('seller', 'storeName storeLogo rating sellerId')
-    .limit(10);
+      .populate('seller', 'storeName storeLogo rating sellerId')
+      .limit(10);
 
     const shuffled = similarProducts.sort(() => 0.5 - Math.random());
 
     const otherBrandProducts = await Product.find({
       brand: { $ne: product.brand },
       _id: { $ne: product._id },
-      isActive: true
+      isActive: true,
     })
-    .populate('seller', 'storeName storeLogo rating sellerId')
-    .limit(10);
+      .populate('seller', 'storeName storeLogo rating sellerId')
+      .limit(10);
 
     const shuffledOther = otherBrandProducts.sort(() => 0.5 - Math.random());
 
     const allBrands = await Product.distinct('brand', { isActive: true, _id: { $ne: product._id } });
-    const shuffledBrands = allBrands.filter(Boolean).sort(() => 0.5 - Math.random()).slice(0, 8);
+    const shuffledBrands = allBrands
+      .filter(Boolean)
+      .sort(() => 0.5 - Math.random())
+      .slice(0, 8);
 
     res.json({
       success: true,
       similarProducts: shuffled.slice(0, 5),
       otherBrandProducts: shuffledOther.slice(0, 5),
-      brands: shuffledBrands
+      brands: shuffledBrands,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -560,20 +613,20 @@ router.post('/', verifySeller, productValidation, async (req, res) => {
   try {
     const productData = {
       ...req.body,
-      seller: req.seller._id
+      seller: req.seller._id,
     };
 
     const product = new Product(productData);
     await product.save();
 
     await Seller.findByIdAndUpdate(req.seller._id, {
-      $inc: { totalProducts: 1 }
+      $inc: { totalProducts: 1 },
     });
 
     res.status(201).json({
       success: true,
       message: 'Product created successfully.',
-      product
+      product,
     });
   } catch (error) {
     console.error('Create product error:', error);
@@ -585,7 +638,7 @@ router.put('/:id', verifySeller, async (req, res) => {
   try {
     const product = await Product.findOne({
       _id: req.params.id,
-      seller: req.seller._id
+      seller: req.seller._id,
     });
 
     if (!product) {
@@ -593,21 +646,44 @@ router.put('/:id', verifySeller, async (req, res) => {
     }
 
     const allowedUpdates = [
-      'title', 'description', 'price', 'discountedPrice', 'images', 'category',
-      'brand', 'colors', 'sizes', 'materials', 'frameType', 'frameShape',
-      'frameColor', 'lensType', 'hasLenses', 'poweredOptions', 'stock',
-      'isActive', 'tags', 'features', 'dimensions', 'weight', 'warranty', 'returnPolicy',
-      'gender', 'frameSize', 'isReturnable', 'isExchangeable'
+      'title',
+      'description',
+      'price',
+      'discountedPrice',
+      'images',
+      'category',
+      'brand',
+      'colors',
+      'sizes',
+      'materials',
+      'frameType',
+      'frameShape',
+      'frameColor',
+      'lensType',
+      'hasLenses',
+      'poweredOptions',
+      'stock',
+      'isActive',
+      'tags',
+      'features',
+      'dimensions',
+      'weight',
+      'warranty',
+      'returnPolicy',
+      'gender',
+      'frameSize',
+      'isReturnable',
+      'isExchangeable',
     ];
 
     const previous = {
       price: product.price,
       discountedPrice: product.discountedPrice,
-      stock: product.stock
+      stock: product.stock,
     };
 
     const changed = {};
-    allowedUpdates.forEach(field => {
+    allowedUpdates.forEach((field) => {
       if (req.body[field] !== undefined && String(req.body[field]) !== String(product[field])) {
         changed[field] = req.body[field];
       }
@@ -638,7 +714,8 @@ router.put('/:id', verifySeller, async (req, res) => {
 
       if (sellerEmail && priceMoved) {
         await sendPriceChangeNotification(
-          sellerEmail, product,
+          sellerEmail,
+          product,
           req.body.discountedPrice ?? req.body.price ?? previous.discountedPrice ?? previous.price,
           product.discountedPrice ?? product.price,
           'a listing edit'
@@ -650,7 +727,9 @@ router.put('/:id', verifySeller, async (req, res) => {
         await sendProductUpdateNotification(
           sellerEmail,
           product,
-          Object.fromEntries(summaryEntries.map(([k, v]) => [k, Array.isArray(v) ? v.length + ' entries' : String(v).slice(0, 90)])),
+          Object.fromEntries(
+            summaryEntries.map(([k, v]) => [k, Array.isArray(v) ? v.length + ' entries' : String(v).slice(0, 90)])
+          ),
           owner.storeName || owner.name || 'the seller'
         );
       }
@@ -661,7 +740,7 @@ router.put('/:id', verifySeller, async (req, res) => {
     res.json({
       success: true,
       message: 'Product updated successfully.',
-      product
+      product,
     });
   } catch (error) {
     console.error('Update product error:', error);
@@ -673,7 +752,7 @@ router.delete('/:id', verifySeller, async (req, res) => {
   try {
     const product = await Product.findOne({
       _id: req.params.id,
-      seller: req.seller._id
+      seller: req.seller._id,
     });
 
     if (!product) {
@@ -684,12 +763,12 @@ router.delete('/:id', verifySeller, async (req, res) => {
     await product.save();
 
     await Seller.findByIdAndUpdate(req.seller._id, {
-      $inc: { totalProducts: -1 }
+      $inc: { totalProducts: -1 },
     });
 
     res.json({
       success: true,
-      message: 'Product deleted successfully.'
+      message: 'Product deleted successfully.',
     });
   } catch (error) {
     console.error('Delete product error:', error);
@@ -701,7 +780,7 @@ router.post('/:id/images', verifySeller, uploadProductImages, async (req, res) =
   try {
     const product = await Product.findOne({
       _id: req.params.id,
-      seller: req.seller._id
+      seller: req.seller._id,
     });
 
     if (!product) {
@@ -712,14 +791,14 @@ router.post('/:id/images', verifySeller, uploadProductImages, async (req, res) =
       return res.status(400).json({ success: false, message: 'No images uploaded.' });
     }
 
-    const imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+    const imageUrls = req.files.map((file) => `/uploads/products/${file.filename}`);
     product.images.push(...imageUrls);
     await product.save();
 
     res.json({
       success: true,
       message: 'Images uploaded successfully.',
-      images: product.images
+      images: product.images,
     });
   } catch (error) {
     console.error('Upload images error:', error);

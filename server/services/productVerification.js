@@ -14,7 +14,7 @@ const VERIFICATION_DEADLINE_DAYS = 7;
 export const getPendingProducts = async (filters = {}) => {
   try {
     const query = { verificationStatus: 'pending' };
-    
+
     if (filters.manufacturer) {
       query.manufacturer = filters.manufacturer;
     }
@@ -32,13 +32,13 @@ export const getPendingProducts = async (filters = {}) => {
     return {
       success: true,
       count: products.length,
-      products
+      products,
     };
   } catch (error) {
     console.error('Error getting pending products:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -49,7 +49,7 @@ export const getPendingProducts = async (filters = {}) => {
 export const verifyProduct = async (productId, adminId, notes = '') => {
   try {
     const product = await Product.findById(productId).populate('manufacturer', 'brandName contactEmail');
-    
+
     if (!product) {
       return { success: false, error: 'Product not found' };
     }
@@ -59,7 +59,7 @@ export const verifyProduct = async (productId, adminId, notes = '') => {
     product.verifiedAt = new Date();
     product.verificationNotes = notes;
     product.isActive = true;
-    
+
     await product.save();
 
     // Send email notification to manufacturer
@@ -74,13 +74,13 @@ export const verifyProduct = async (productId, adminId, notes = '') => {
     return {
       success: true,
       message: 'Product verified successfully',
-      product
+      product,
     };
   } catch (error) {
     console.error('Error verifying product:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -91,7 +91,7 @@ export const verifyProduct = async (productId, adminId, notes = '') => {
 export const rejectProduct = async (productId, adminId, reason) => {
   try {
     const product = await Product.findById(productId).populate('manufacturer', 'brandName contactEmail');
-    
+
     if (!product) {
       return { success: false, error: 'Product not found' };
     }
@@ -100,7 +100,7 @@ export const rejectProduct = async (productId, adminId, reason) => {
     product.verifiedBy = adminId;
     product.verifiedAt = new Date();
     product.rejectionReason = reason;
-    
+
     await product.save();
 
     // Send email notification to manufacturer
@@ -115,13 +115,13 @@ export const rejectProduct = async (productId, adminId, reason) => {
     return {
       success: true,
       message: 'Product marked for correction',
-      product
+      product,
     };
   } catch (error) {
     console.error('Error rejecting product:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -135,9 +135,9 @@ export const getVerificationStats = async () => {
       {
         $group: {
           _id: '$verificationStatus',
-          count: { $sum: 1 }
-        }
-      }
+          count: { $sum: 1 },
+        },
+      },
     ]);
 
     const result = {
@@ -145,23 +145,23 @@ export const getVerificationStats = async () => {
       verified: 0,
       rejected: 0,
       data_incorrect: 0,
-      total: 0
+      total: 0,
     };
 
-    stats.forEach(stat => {
+    stats.forEach((stat) => {
       result[stat._id] = stat.count;
       result.total += stat.count;
     });
 
     return {
       success: true,
-      stats: result
+      stats: result,
     };
   } catch (error) {
     console.error('Error getting verification stats:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -170,5 +170,5 @@ export default {
   getPendingProducts,
   verifyProduct,
   rejectProduct,
-  getVerificationStats
+  getVerificationStats,
 };

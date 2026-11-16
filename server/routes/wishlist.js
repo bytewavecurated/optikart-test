@@ -7,15 +7,17 @@ const router = express.Router();
 
 router.get('/', verifyToken, async (req, res) => {
   try {
-    let wishlist = await Wishlist.findOne({ user: req.user._id })
-      .populate('products.product', 'title images price discountedPrice brand isActive');
+    let wishlist = await Wishlist.findOne({ user: req.user._id }).populate(
+      'products.product',
+      'title images price discountedPrice brand isActive'
+    );
 
     if (!wishlist) {
       wishlist = new Wishlist({ user: req.user._id, products: [] });
       await wishlist.save();
     }
 
-    const validProducts = wishlist.products.filter(p => p.product && p.product.isActive);
+    const validProducts = wishlist.products.filter((p) => p.product && p.product.isActive);
     if (validProducts.length !== wishlist.products.length) {
       wishlist.products = validProducts;
       await wishlist.save();
@@ -42,32 +44,34 @@ router.post('/add', verifyToken, async (req, res) => {
       wishlist = new Wishlist({ user: req.user._id, products: [] });
     }
 
-    const alreadyExists = wishlist.products.some(
-      p => p.product.toString() === productId
-    );
+    const alreadyExists = wishlist.products.some((p) => p.product.toString() === productId);
 
     if (alreadyExists) {
       return res.status(400).json({ success: false, message: 'Product already in wishlist.' });
     }
 
     if (wishlist.products.length >= MAX_WISHLIST_ITEMS) {
-      return res.status(400).json({ success: false, message: `Wishlist can have a maximum of ${MAX_WISHLIST_ITEMS} items.` });
+      return res
+        .status(400)
+        .json({ success: false, message: `Wishlist can have a maximum of ${MAX_WISHLIST_ITEMS} items.` });
     }
 
     wishlist.products.push({
       product: productId,
-      addedAt: new Date()
+      addedAt: new Date(),
     });
 
     await wishlist.save();
 
-    wishlist = await Wishlist.findById(wishlist._id)
-      .populate('products.product', 'title images price discountedPrice brand');
+    wishlist = await Wishlist.findById(wishlist._id).populate(
+      'products.product',
+      'title images price discountedPrice brand'
+    );
 
     res.json({
       success: true,
       message: 'Product added to wishlist.',
-      wishlist
+      wishlist,
     });
   } catch (error) {
     console.error('Add to wishlist error:', error);
@@ -84,19 +88,19 @@ router.delete('/remove/:productId', verifyToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Wishlist not found.' });
     }
 
-    wishlist.products = wishlist.products.filter(
-      p => p.product.toString() !== productId
-    );
+    wishlist.products = wishlist.products.filter((p) => p.product.toString() !== productId);
 
     await wishlist.save();
 
-    wishlist = await Wishlist.findById(wishlist._id)
-      .populate('products.product', 'title images price discountedPrice brand');
+    wishlist = await Wishlist.findById(wishlist._id).populate(
+      'products.product',
+      'title images price discountedPrice brand'
+    );
 
     res.json({
       success: true,
       message: 'Product removed from wishlist.',
-      wishlist
+      wishlist,
     });
   } catch (error) {
     console.error('Remove from wishlist error:', error);

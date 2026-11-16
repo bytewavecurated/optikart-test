@@ -53,9 +53,13 @@ export const lineNeedsPrescription = (line) => {
   const size = asSigned(v.size);
   if (size !== null && size !== 0) return true;
 
-  return ['single vision', 'singlevision', 'bifocal', 'progressive'].includes(
-    String(v.lensType || '').toLowerCase().replace(/[\s_-]/g, (m) => (m === ' ' ? ' ' : ''))
-  ) || ['single vision', 'bifocal', 'progressive'].includes(String(v.lensType || '').toLowerCase());
+  return (
+    ['single vision', 'singlevision', 'bifocal', 'progressive'].includes(
+      String(v.lensType || '')
+        .toLowerCase()
+        .replace(/[\s_-]/g, (m) => (m === ' ' ? ' ' : ''))
+    ) || ['single vision', 'bifocal', 'progressive'].includes(String(v.lensType || '').toLowerCase())
+  );
 };
 
 /**
@@ -71,21 +75,32 @@ export const assertPrescriptionVerified = async ({ userId, prescriptionId, lines
     return {
       ok: false,
       code: 'PRESCRIPTION_REQUIRED',
-      message: 'This order includes lenses ground to your prescription, so a verified prescription must be selected before checking out.'
+      message:
+        'This order includes lenses ground to your prescription, so a verified prescription must be selected before checking out.',
     };
   }
 
   const prescription = await Prescription.findById(prescriptionId).catch(() => null);
   if (!prescription) {
-    return { ok: false, code: 'PRESCRIPTION_NOT_FOUND', message: 'That prescription is not on file. Upload it and pick it at checkout.' };
+    return {
+      ok: false,
+      code: 'PRESCRIPTION_NOT_FOUND',
+      message: 'That prescription is not on file. Upload it and pick it at checkout.',
+    };
   }
   if (String(prescription.user) !== String(userId)) {
     // Not a detail to leak broadly, but the log matters when a customer calls.
     console.warn(`Prescription ${prescription._id} is not owned by user ${userId}`);
-    return { ok: false, code: 'PRESCRIPTION_NOT_FOUND', message: 'That prescription is not on file. Upload it and pick it at checkout.' };
+    return {
+      ok: false,
+      code: 'PRESCRIPTION_NOT_FOUND',
+      message: 'That prescription is not on file. Upload it and pick it at checkout.',
+    };
   }
 
-  const verification = await PrescriptionVerification.findOne({ prescription: prescription._id }).sort({ createdAt: -1 });
+  const verification = await PrescriptionVerification.findOne({ prescription: prescription._id }).sort({
+    createdAt: -1,
+  });
   const status = prescription.verificationStatus || verification?.status || 'pending';
 
   if (status === 'approved') return { ok: true, required: true, status };
@@ -96,12 +111,13 @@ export const assertPrescriptionVerified = async ({ userId, prescriptionId, lines
       message: verification?.rejectionReason
         ? `Your prescription was not accepted: ${verification.rejectionReason}`
         : 'Your prescription was not accepted. Upload a clearer copy and it will be checked again.',
-      reason: verification?.rejectionReason || ''
+      reason: verification?.rejectionReason || '',
     };
   }
   return {
     ok: false,
     code: 'PRESCRIPTION_PENDING',
-    message: 'Your prescription is still being checked by our opticians. Orders for ground lenses open as soon as it is approved - usually within a few hours.'
+    message:
+      'Your prescription is still being checked by our opticians. Orders for ground lenses open as soon as it is approved - usually within a few hours.',
   };
 };

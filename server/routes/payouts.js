@@ -5,7 +5,7 @@ import {
   processPendingPayouts,
   getSellerPayoutHistory,
   getAllPayouts,
-  getPayoutSummary
+  getPayoutSummary,
 } from '../services/sellerPayout.js';
 
 const router = express.Router();
@@ -22,7 +22,7 @@ router.post('/calculate', verifyAdmin, async (req, res) => {
     if (!sellerId || !startDate || !endDate) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide sellerId, startDate, and endDate'
+        message: 'Please provide sellerId, startDate, and endDate',
       });
     }
 
@@ -37,15 +37,15 @@ router.post('/calculate', verifyAdmin, async (req, res) => {
       message: 'Payout calculated successfully',
       data: {
         payout: result.payout,
-        orderCount: result.orderCount
-      }
+        orderCount: result.orderCount,
+      },
     });
   } catch (error) {
     console.error('Error calculating payout:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -62,14 +62,14 @@ router.post('/process', verifyAdmin, async (req, res) => {
     res.json({
       success: true,
       message: 'Payout processing completed',
-      data: result
+      data: result,
     });
   } catch (error) {
     console.error('Error processing payouts:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -86,14 +86,14 @@ router.get('/history', verifySeller, async (req, res) => {
 
     res.json({
       success: true,
-      data: payouts
+      data: payouts,
     });
   } catch (error) {
     console.error('Error getting payout history:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -107,7 +107,7 @@ router.get('/', verifyAdmin, async (req, res) => {
   try {
     const { status, limit } = req.query;
     const filters = {};
-    
+
     if (status) {
       filters.status = status;
     }
@@ -116,14 +116,14 @@ router.get('/', verifyAdmin, async (req, res) => {
 
     res.json({
       success: true,
-      data: payouts
+      data: payouts,
     });
   } catch (error) {
     console.error('Error getting payouts:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -139,14 +139,14 @@ router.get('/summary', verifyAdmin, async (req, res) => {
 
     res.json({
       success: true,
-      data: summary
+      data: summary,
     });
   } catch (error) {
     console.error('Error getting payout summary:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

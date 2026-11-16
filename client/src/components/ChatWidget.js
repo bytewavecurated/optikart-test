@@ -53,7 +53,7 @@ const styles = {
     flexDirection: 'column',
     overflow: 'hidden',
     zIndex: 1200,
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
     animation: 'chatSlideUp 0.3s ease',
   },
   chatHeader: {
@@ -191,9 +191,10 @@ export default function ChatWidget({ userRole = 'user' }) {
     {
       id: 1,
       type: 'bot',
-      text: userRole === 'seller'
-        ? 'Hi! Welcome to OptiKart Seller Support. How can I help you today?'
-        : 'Hi! Welcome to OptiKart Help Center. How can I assist you today?',
+      text:
+        userRole === 'seller'
+          ? 'Hi! Welcome to OptiKart Seller Support. How can I help you today?'
+          : 'Hi! Welcome to OptiKart Help Center. How can I assist you today?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -207,28 +208,28 @@ export default function ChatWidget({ userRole = 'user' }) {
 
   const addBotResponse = (question) => {
     setTyping(true);
-    const faq = faqs.find(f => f.q.toLowerCase() === question.toLowerCase());
+    const faq = faqs.find((f) => f.q.toLowerCase() === question.toLowerCase());
     const response = faq
       ? faq.a
       : "I'll connect you with a support agent shortly. In the meantime, you can browse our FAQ section for quick answers.";
 
     setTimeout(() => {
       setTyping(false);
-      setMessages(prev => [...prev, { id: Date.now(), type: 'bot', text: response }]);
+      setMessages((prev) => [...prev, { id: Date.now(), type: 'bot', text: response }]);
     }, 1200);
   };
 
   const handleSend = () => {
     if (!input.trim()) return;
     const userMsg = { id: Date.now(), type: 'user', text: input.trim() };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput('');
     addBotResponse(input.trim());
   };
 
   const handleQuickReply = (q) => {
     const userMsg = { id: Date.now(), type: 'user', text: q };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     addBotResponse(q);
   };
 
@@ -249,9 +250,7 @@ export default function ChatWidget({ userRole = 'user' }) {
         <div style={styles.window} className="chat-window">
           <div style={styles.chatHeader}>
             <div>
-              <div style={styles.chatTitle}>
-                {userRole === 'seller' ? 'Seller Support' : 'Help Center'}
-              </div>
+              <div style={styles.chatTitle}>{userRole === 'seller' ? 'Seller Support' : 'Help Center'}</div>
               <div style={styles.chatSubtitle}>We typically reply instantly</div>
             </div>
             <button style={styles.closeBtn} onClick={() => setOpen(false)}>
@@ -302,8 +301,8 @@ export default function ChatWidget({ userRole = 'user' }) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               style={styles.input}
-              onFocus={(e) => e.target.style.borderColor = 'var(--brand)'}
-              onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+              onFocus={(e) => (e.target.style.borderColor = 'var(--brand)')}
+              onBlur={(e) => (e.target.style.borderColor = 'var(--border)')}
             />
             <button
               style={{

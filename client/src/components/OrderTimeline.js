@@ -12,7 +12,7 @@ const STEPS = [
 
 const styles = {
   container: {
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
     background: 'var(--bg-white)',
     borderRadius: 'var(--radius-xs)',
     padding: '24px',
@@ -165,9 +165,7 @@ export default function OrderTimeline({ currentStep = 3, orderId = 'ORD-2026-452
     'Expected by Jul 5, 2026',
   ];
 
-  const progressHeight = currentStep >= STEPS.length - 1
-    ? '100%'
-    : `${(currentStep / (STEPS.length - 1)) * 100}%`;
+  const progressHeight = currentStep >= STEPS.length - 1 ? '100%' : `${(currentStep / (STEPS.length - 1)) * 100}%`;
 
   return (
     <div style={styles.container}>
@@ -215,9 +213,7 @@ export default function OrderTimeline({ currentStep = 3, orderId = 'ORD-2026-452
                   {step.label}
                 </div>
                 <div style={styles.stepDesc}>{step.desc}</div>
-                <div style={styles.stepDate}>
-                  {stepDates[index]}
-                </div>
+                <div style={styles.stepDate}>{stepDates[index]}</div>
               </div>
             </div>
           );

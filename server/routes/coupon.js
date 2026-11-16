@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     const coupons = await Coupon.find({
       isActive: true,
       validFrom: { $lte: new Date() },
-      validUntil: { $gte: new Date() }
+      validUntil: { $gte: new Date() },
     }).sort({ createdAt: -1 });
 
     res.json({ success: true, coupons });
@@ -36,7 +36,7 @@ router.post('/validate', verifyToken, async (req, res) => {
 
     const coupon = await Coupon.findOne({
       code: code.toUpperCase(),
-      isActive: true
+      isActive: true,
     });
 
     if (!coupon) {
@@ -56,9 +56,7 @@ router.post('/validate', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Coupon usage limit reached.' });
     }
 
-    const alreadyUsed = coupon.usedBy.some(
-      u => u.user.toString() === req.user._id.toString()
-    );
+    const alreadyUsed = coupon.usedBy.some((u) => u.user.toString() === req.user._id.toString());
     if (alreadyUsed) {
       return res.status(400).json({ success: false, message: 'Coupon already used by you.' });
     }
@@ -66,7 +64,7 @@ router.post('/validate', verifyToken, async (req, res) => {
     if (coupon.minOrderAmount > 0 && orderAmount < coupon.minOrderAmount) {
       return res.status(400).json({
         success: false,
-        message: `Minimum order amount of ₹${coupon.minOrderAmount} required.`
+        message: `Minimum order amount of ₹${coupon.minOrderAmount} required.`,
       });
     }
 
@@ -87,8 +85,8 @@ router.post('/validate', verifyToken, async (req, res) => {
         code: coupon.code,
         discountType: coupon.discountType,
         discountValue: coupon.discountValue,
-        discount: Math.round(discount)
-      }
+        discount: Math.round(discount),
+      },
     });
   } catch (error) {
     console.error('Validate coupon error:', error);
@@ -99,8 +97,16 @@ router.post('/validate', verifyToken, async (req, res) => {
 router.post('/', verifyToken, verifyAdmin, couponValidation, async (req, res) => {
   try {
     const {
-      code, description, discountType, discountValue, minOrderAmount,
-      maxDiscount, validFrom, validUntil, usageLimit, applicableCategories
+      code,
+      description,
+      discountType,
+      discountValue,
+      minOrderAmount,
+      maxDiscount,
+      validFrom,
+      validUntil,
+      usageLimit,
+      applicableCategories,
     } = req.body;
 
     const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
@@ -118,7 +124,7 @@ router.post('/', verifyToken, verifyAdmin, couponValidation, async (req, res) =>
       validFrom,
       validUntil,
       usageLimit: usageLimit || 0,
-      applicableCategories: applicableCategories || []
+      applicableCategories: applicableCategories || [],
     });
 
     await coupon.save();
@@ -126,7 +132,7 @@ router.post('/', verifyToken, verifyAdmin, couponValidation, async (req, res) =>
     res.status(201).json({
       success: true,
       message: 'Coupon created successfully.',
-      coupon
+      coupon,
     });
   } catch (error) {
     console.error('Create coupon error:', error);
@@ -152,8 +158,8 @@ router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error('Get all coupons error:', error);

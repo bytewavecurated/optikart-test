@@ -14,16 +14,19 @@ import mongoose from 'mongoose';
  * Icons are stored as names from a fixed registry rather than markup, because a
  * value that reaches the screen should never be something an attacker can type.
  */
-const entrySchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true, maxlength: 60 },
-  slug: { type: String, trim: true, maxlength: 80, default: '' },
-  link: { type: String, trim: true, maxlength: 120, default: '' },
-  icon: { type: String, trim: true, maxlength: 30, default: '' },
-  tint: { type: String, trim: true, maxlength: 20, default: '' },
-  fg: { type: String, trim: true, maxlength: 20, default: '' },
-  image: { type: String, trim: true, maxlength: 200, default: '' },
-  subtitle: { type: String, trim: true, maxlength: 90, default: '' }
-}, { _id: false });
+const entrySchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true, maxlength: 60 },
+    slug: { type: String, trim: true, maxlength: 80, default: '' },
+    link: { type: String, trim: true, maxlength: 120, default: '' },
+    icon: { type: String, trim: true, maxlength: 30, default: '' },
+    tint: { type: String, trim: true, maxlength: 20, default: '' },
+    fg: { type: String, trim: true, maxlength: 20, default: '' },
+    image: { type: String, trim: true, maxlength: 200, default: '' },
+    subtitle: { type: String, trim: true, maxlength: 90, default: '' },
+  },
+  { _id: false }
+);
 
 const homeSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, enum: ['home', 'footer'] },
@@ -39,7 +42,7 @@ const homeSchema = new mongoose.Schema({
     materialSub: { type: String, maxlength: 120, default: '' },
     offers: { type: String, maxlength: 80, default: '' },
     trending: { type: String, maxlength: 80, default: '' },
-    deals: { type: String, maxlength: 80, default: '' }
+    deals: { type: String, maxlength: 80, default: '' },
   },
 
   // Hidden blocks are removed from the page rather than emptied, which is how an
@@ -50,7 +53,7 @@ const homeSchema = new mongoose.Schema({
     frameTypeRail: { type: Boolean, default: true },
     materialRail: { type: Boolean, default: true },
     promoTiles: { type: Boolean, default: true },
-    gender: { type: Boolean, default: true }
+    gender: { type: Boolean, default: true },
   },
 
   categoryRail: { type: [entrySchema], default: [] },
@@ -73,19 +76,21 @@ const homeSchema = new mongoose.Schema({
   footerNote: { type: String, maxlength: 300, default: '' },
   support: {
     email: { type: String, maxlength: 120, default: '' },
-    phone: { type: String, maxlength: 40, default: '' }
+    phone: { type: String, maxlength: 40, default: '' },
   },
   footerGroups: {
-    type: [{
-      title: { type: String, required: true, trim: true, maxlength: 40 },
-      links: { type: [entrySchema], default: [] }
-    }],
-    default: []
+    type: [
+      {
+        title: { type: String, required: true, trim: true, maxlength: 40 },
+        links: { type: [entrySchema], default: [] },
+      },
+    ],
+    default: [],
   },
 
   notes: { type: String, maxlength: 400, default: '' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
 
 export default mongoose.models.SiteContent || mongoose.model('SiteContent', homeSchema);

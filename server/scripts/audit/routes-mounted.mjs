@@ -75,8 +75,8 @@ for (const [prefix, identifiers] of mounts) {
         const first = seen.get(verbKey);
         problems.push(
           `${route} @ ${prefix} is declared by BOTH ${first.file} (wins, registered first) and ${entry.file} ` +
-          `- the second is unreachable: Express answers the first match and never falls through to it, ` +
-          `so edits there change nothing in production.`
+            `- the second is unreachable: Express answers the first match and never falls through to it, ` +
+            `so edits there change nothing in production.`
         );
       } else {
         seen.set(verbKey, entry);

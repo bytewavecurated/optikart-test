@@ -49,10 +49,11 @@ const notifyShop = async ({ doc, kind, stage, title, reason, io = null }) => {
     const proof = listing.sellerProof || {};
     const payload = {
       title: `Supply claim ${stage}`,
-      message: `${title} - ${doc.title || doc.brand || 'your listing'}`
-        + `${proof.reference ? ` (${proof.reference})` : ''}${reason ? `. Reason: ${reason}` : ''}`,
+      message:
+        `${title} - ${doc.title || doc.brand || 'your listing'}` +
+        `${proof.reference ? ` (${proof.reference})` : ''}${reason ? `. Reason: ${reason}` : ''}`,
       type: 'listing',
-      data: { listingId: String(doc._id), listingKind: kind, stage }
+      data: { listingId: String(doc._id), listingKind: kind, stage },
     };
     if (kind === 'storefront' && doc.manufacturerSellerId) {
       await notifyRetailer({ retailerId: doc.manufacturerSellerId, io, ...payload });
@@ -83,11 +84,11 @@ export const loadListing = async ({ listingKind, id }) => {
 const describe = (doc, kind) => ({
   listingKind: kind,
   id: String(doc._id),
-  product: String(kind === 'storefront' ? (doc.manufacturerProduct || doc._id) : doc.product),
-  title: kind === 'storefront' ? doc.title : (doc.brand ? `${doc.brand} ${doc.modelNumber || ''}`.trim() : ''),
+  product: String(kind === 'storefront' ? doc.manufacturerProduct || doc._id : doc.product),
+  title: kind === 'storefront' ? doc.title : doc.brand ? `${doc.brand} ${doc.modelNumber || ''}`.trim() : '',
   brand: doc.brand || '',
   seller: String(doc.seller?._id || doc.seller || doc.manufacturerSellerId || ''),
-  listing: clone(doc.listing || {})
+  listing: clone(doc.listing || {}),
 });
 
 /**
@@ -98,15 +99,7 @@ const describe = (doc, kind) => ({
  * it. `other` is allowed: plenty of legitimate stock comes from a liquidation or
  * a secondary distributor. It simply has to be said out loud, to the brand.
  */
-export const declareSupply = async ({
-  doc,
-  kind,
-  product,
-  actorLabel,
-  proof,
-  brandLinked = true,
-  notify = true
-}) => {
+export const declareSupply = async ({ doc, kind, product, actorLabel, proof, brandLinked = true, notify = true }) => {
   if (!brandLinked) {
     doc.listing = { ...(doc.listing || {}), brandLinked: false, state: 'live' };
     return { success: true, state: 'live', message: 'Not a brand listing, so it is sellable as before.' };
@@ -117,20 +110,24 @@ export const declareSupply = async ({
   const note = String(proof?.note || '').trim();
 
   if (!kindOf) {
-    return { success: false, reason: 'proof_kind_required', message: 'Say where this stock came from before listing it.' };
+    return {
+      success: false,
+      reason: 'proof_kind_required',
+      message: 'Say where this stock came from before listing it.',
+    };
   }
   if (kindOf === 'manufacturer_purchase' && !reference) {
     return {
       success: false,
       reason: 'reference_required',
-      message: 'A purchase from the brand needs an invoice or PO number the brand can look up.'
+      message: 'A purchase from the brand needs an invoice or PO number the brand can look up.',
     };
   }
   if (kindOf === 'other' && note.length < 8) {
     return {
       success: false,
       reason: 'note_required',
-      message: 'Stock not bought from the brand has to say where it came from, in enough words to check.'
+      message: 'Stock not bought from the brand has to say where it came from, in enough words to check.',
     };
   }
 
@@ -146,14 +143,14 @@ export const declareSupply = async ({
       reference,
       note,
       declaredAt: new Date(),
-      declaredBy: String(actorLabel || '')
+      declaredBy: String(actorLabel || ''),
     },
     manufacturerReview: { status: 'pending', by: '', brand: String(product?.manufacturer || ''), at: null, reason: '' },
     adminReview: { status: 'none', by: '', at: null, reason: '' },
     pausedAt: null,
     reDeclaredAt: reDeclared ? new Date() : previous.reDeclaredAt || null,
     declarationCount: (previous.declarationCount || 0) + 1,
-    history: previous.history || []
+    history: previous.history || [],
   };
   pushListingEvent(doc.listing, reDeclared ? 're-declared' : 'declared', actorLabel, `${kindOf} ${reference || note}`);
 
@@ -175,7 +172,7 @@ export const declareSupply = async ({
         title: 'A shop wants to sell your brand',
         message: `${describe(doc, kind).title || 'A listing'} is being offered ${kindOf === 'other' ? 'from stock NOT bought from you' : `against purchase reference ${reference}`}. It stays invisible until you approve it and the platform verifies it.`,
         type: 'listing',
-        data: { listingKind: kind, listingId: String(doc._id), brandLinked: true }
+        data: { listingKind: kind, listingId: String(doc._id), brandLinked: true },
       });
     }
   }
@@ -184,7 +181,8 @@ export const declareSupply = async ({
     success: true,
     state: 'awaiting_manufacturer',
     listing: describe(doc, kind),
-    message: 'Sent to the brand for approval. Nothing is visible to customers until the brand approves and the platform verifies it.'
+    message:
+      'Sent to the brand for approval. Nothing is visible to customers until the brand approves and the platform verifies it.',
   };
 };
 
@@ -202,13 +200,17 @@ export const decideAsManufacturer = async ({ listingKind, id, decision, reason, 
   const listing = doc.listing || {};
 
   if (listing.brandLinked !== true) {
-    return { success: false, reason: 'not_brand_linked', message: 'This listing is not a brand claim and needs no approval from you.' };
+    return {
+      success: false,
+      reason: 'not_brand_linked',
+      message: 'This listing is not a brand claim and needs no approval from you.',
+    };
   }
   if (listing.state !== 'awaiting_manufacturer') {
     return {
       success: false,
       reason: 'wrong_state',
-      message: `This request is already ${listing.state}; only the brand's decision is awaited while it says awaiting_manufacturer.`
+      message: `This request is already ${listing.state}; only the brand's decision is awaited while it says awaiting_manufacturer.`,
     };
   }
 
@@ -223,23 +225,38 @@ export const decideAsManufacturer = async ({ listingKind, id, decision, reason, 
   // A brand may only answer for its own brand.
   const owner = doc.manufacturer || doc.brand;
   void owner;
-  const productDoc = kind === 'storefront'
-    ? await Product.findById(doc.manufacturerProduct || doc._id).select('manufacturer').lean()
-    : await Product.findById(doc.product).select('manufacturer').lean();
+  const productDoc =
+    kind === 'storefront'
+      ? await Product.findById(doc.manufacturerProduct || doc._id)
+          .select('manufacturer')
+          .lean()
+      : await Product.findById(doc.product).select('manufacturer').lean();
   if (brandId && productDoc?.manufacturer && String(productDoc.manufacturer) !== String(brandId)) {
     return { success: false, reason: 'not_your_brand', message: 'That product belongs to a different brand.' };
   }
 
   if (chosen === 'approve') {
     listing.state = 'awaiting_admin';
-    listing.manufacturerReview = { ...listing.manufacturerReview, status: 'approved', by: actorLabel, at: new Date(), reason: String(reason || '') };
+    listing.manufacturerReview = {
+      ...listing.manufacturerReview,
+      status: 'approved',
+      by: actorLabel,
+      at: new Date(),
+      reason: String(reason || ''),
+    };
     listing.adminReview = { status: 'pending', by: '', at: null, reason: '' };
     pushListingEvent(listing, 'brand-approved', actorLabel, reason);
     if (kind === 'storefront') doc.verificationStatus = 'pending';
     doc.isListed = false;
   } else {
     listing.state = 'rejected';
-    listing.manufacturerReview = { ...listing.manufacturerReview, status: 'rejected', by: actorLabel, at: new Date(), reason: String(reason || '') };
+    listing.manufacturerReview = {
+      ...listing.manufacturerReview,
+      status: 'rejected',
+      by: actorLabel,
+      at: new Date(),
+      reason: String(reason || ''),
+    };
     listing.adminReview = { status: 'none', by: '', at: null, reason: '' };
     pushListingEvent(listing, 'brand-rejected', actorLabel, reason);
     if (kind === 'storefront') doc.verificationStatus = 'rejected';
@@ -258,35 +275,38 @@ export const decideAsManufacturer = async ({ listingKind, id, decision, reason, 
     ...(kind === 'storefront' ? { verificationStatus: chosen === 'approve' ? 'pending' : 'rejected' } : {}),
     'listing.state': listing.state,
     'listing.manufacturerReview': listing.manufacturerReview,
-    'listing.adminReview': listing.adminReview
+    'listing.adminReview': listing.adminReview,
   });
 
   await notifyShop({
     doc,
     kind,
     stage: chosen === 'approve' ? 'approved by the brand' : 'refused by the brand',
-    title: chosen === 'approve'
-      ? 'The brand confirmed it supplied this stock; OptiKart verifies it next'
-      : 'The brand says it did not supply this stock',
-    reason: String(reason || '')
+    title:
+      chosen === 'approve'
+        ? 'The brand confirmed it supplied this stock; OptiKart verifies it next'
+        : 'The brand says it did not supply this stock',
+    reason: String(reason || ''),
   });
 
   await notifyAdmins({
     title: chosen === 'approve' ? `Brand approved a listing - needs verification` : `Brand refused a listing`,
-    message: chosen === 'approve'
-      ? `${describe(doc, kind).title || 'A listing'} was approved by the brand as genuinely supplied${reason ? ` (${reason})` : ''}. It is waiting on platform verification before it can sell.`
-      : `${describe(doc, kind).title || 'A listing'} was refused by the brand: ${reason}`,
+    message:
+      chosen === 'approve'
+        ? `${describe(doc, kind).title || 'A listing'} was approved by the brand as genuinely supplied${reason ? ` (${reason})` : ''}. It is waiting on platform verification before it can sell.`
+        : `${describe(doc, kind).title || 'A listing'} was refused by the brand: ${reason}`,
     type: 'listing',
-    data: { listingKind: kind, listingId: String(doc._id), decision: chosen }
+    data: { listingKind: kind, listingId: String(doc._id), decision: chosen },
   });
 
   return {
     success: true,
     state: listing.state,
     listing: describe(doc, kind),
-    message: chosen === 'approve'
-      ? 'Approved as supplied by you. The platform verifies it next; it is not sellable until that is done.'
-      : 'Refused. The shop is told why, and cannot list this again without a new declaration.'
+    message:
+      chosen === 'approve'
+        ? 'Approved as supplied by you. The platform verifies it next; it is not sellable until that is done.'
+        : 'Refused. The shop is told why, and cannot list this again without a new declaration.',
   };
 };
 
@@ -312,9 +332,10 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
     return {
       success: false,
       reason: listing.state === 'awaiting_manufacturer' ? 'brand_first' : 'wrong_state',
-      message: listing.state === 'awaiting_manufacturer'
-        ? 'The brand has not approved this supply claim yet. Verifying first would skip the one check that proves the shop was actually supplied.'
-        : `This listing is ${listing.state}, so there is nothing here to verify.`
+      message:
+        listing.state === 'awaiting_manufacturer'
+          ? 'The brand has not approved this supply claim yet. Verifying first would skip the one check that proves the shop was actually supplied.'
+          : `This listing is ${listing.state}, so there is nothing here to verify.`,
     };
   }
   if (chosen === 'reject' && String(reason || '').trim().length < 5) {
@@ -323,7 +344,13 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
 
   if (chosen === 'approve') {
     listing.state = 'live';
-    listing.adminReview = { ...listing.adminReview, status: 'approved', by: actorLabel, at: new Date(), reason: String(reason || '') };
+    listing.adminReview = {
+      ...listing.adminReview,
+      status: 'approved',
+      by: actorLabel,
+      at: new Date(),
+      reason: String(reason || ''),
+    };
     pushListingEvent(listing, 'verified', actorLabel, reason);
     doc.listing = clone(listing);
     doc.markModified('listing');
@@ -333,11 +360,17 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
       isListed: true,
       ...(kind === 'storefront' ? { verificationStatus: 'verified' } : {}),
       'listing.state': 'live',
-      'listing.adminReview': listing.adminReview
+      'listing.adminReview': listing.adminReview,
     };
   } else {
     listing.state = 'rejected';
-    listing.adminReview = { ...listing.adminReview, status: 'rejected', by: actorLabel, at: new Date(), reason: String(reason || '') };
+    listing.adminReview = {
+      ...listing.adminReview,
+      status: 'rejected',
+      by: actorLabel,
+      at: new Date(),
+      reason: String(reason || ''),
+    };
     pushListingEvent(listing, 'admin-rejected', actorLabel, reason);
     doc.listing = clone(listing);
     doc.markModified('listing');
@@ -347,7 +380,7 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
       isListed: false,
       ...(kind === 'storefront' ? { verificationStatus: 'rejected' } : {}),
       'listing.state': 'rejected',
-      'listing.adminReview': listing.adminReview
+      'listing.adminReview': listing.adminReview,
     };
   }
   await doc.save();
@@ -358,10 +391,11 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
     doc,
     kind,
     stage: chosen === 'approve' ? 'verified by OptiKart' : 'refused by OptiKart',
-    title: chosen === 'approve'
-      ? 'Verified - this listing is now visible to buyers'
-      : 'OptiKart did not verify this listing',
-    reason: String(reason || '')
+    title:
+      chosen === 'approve'
+        ? 'Verified - this listing is now visible to buyers'
+        : 'OptiKart did not verify this listing',
+    reason: String(reason || ''),
   });
   await doc.save();
   const stored = await persistTransition(kind, doc._id, doc.__transition || {});
@@ -375,7 +409,10 @@ export const decideAsAdmin = async ({ listingKind, id, decision, reason, actorLa
     storedState: stored?.listing?.state ?? null,
     storedVerification: kind === 'storefront' ? (stored?.verificationStatus ?? null) : undefined,
     listing: describe(doc, kind),
-    message: chosen === 'approve' ? 'Verified. The listing is live and routing may offer orders to it.' : 'Rejected. It stays invisible.'
+    message:
+      chosen === 'approve'
+        ? 'Verified. The listing is live and routing may offer orders to it.'
+        : 'Rejected. It stays invisible.',
   };
 };
 
@@ -409,14 +446,15 @@ export const pauseListing = async ({ listingKind, id, actorLabel, reason }) => {
   await persistTransition(kind, doc._id, {
     isListed: false,
     ...(kind === 'storefront' ? { verificationStatus: 'pending' } : {}),
-    'listing.state': 'paused'
+    'listing.state': 'paused',
   });
 
   return {
     success: true,
     state: 'paused',
     listing: describe(doc, kind),
-    message: 'Paused. Price, variants and stock are kept. Selling it again needs a new supply declaration, the brand\'s approval and a fresh verification.'
+    message:
+      "Paused. Price, variants and stock are kept. Selling it again needs a new supply declaration, the brand's approval and a fresh verification.",
   };
 };
 
@@ -439,10 +477,9 @@ export const brandQueue = async (brandId) => {
     .sort({ updatedAt: 1 })
     .lean();
 
-  return [
-    ...clones.map((d) => describe(d, 'storefront')),
-    ...stocks.map((d) => describe(d, 'stock'))
-  ].sort((a, b) => new Date(a.listing?.sellerProof?.declaredAt || 0) - new Date(b.listing?.sellerProof?.declaredAt || 0));
+  return [...clones.map((d) => describe(d, 'storefront')), ...stocks.map((d) => describe(d, 'stock'))].sort(
+    (a, b) => new Date(a.listing?.sellerProof?.declaredAt || 0) - new Date(b.listing?.sellerProof?.declaredAt || 0)
+  );
 };
 
 /** Everything waiting on the platform's verification. */
@@ -452,12 +489,9 @@ export const adminQueue = async () => {
   const grandfathered = await SellerStock.find({ 'listing.grandfathered': true, isListed: true }).limit(200).lean();
 
   return {
-    awaitingVerification: [
-      ...clones.map((d) => describe(d, 'storefront')),
-      ...stocks.map((d) => describe(d, 'stock'))
-    ],
+    awaitingVerification: [...clones.map((d) => describe(d, 'storefront')), ...stocks.map((d) => describe(d, 'stock'))],
     // Listing that were selling before this rule existed. Nobody has ever
     // confirmed the supply claim, because there was none to confirm.
-    grandfathered: grandfathered.map((d) => describe(d, 'stock'))
+    grandfathered: grandfathered.map((d) => describe(d, 'stock')),
   };
 };

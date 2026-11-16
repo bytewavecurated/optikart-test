@@ -51,24 +51,33 @@ router.get('/admin/partner-weekly-ranks', verifyToken, verifyAdmin, async (req, 
          * only render that difference if the API sends it. Dropping them here
          * is how a projection quietly turns an exclusion back into a rank.
          */
-        position: row.position, of: row.of,
+        position: row.position,
+        of: row.of,
         excludedFromLeaderboard: row.excludedFromLeaderboard === true,
         rankLabel: row.rankLabel || null,
-        partner: row.partner, partnerId: row.partnerId,
-        score: row.score, components: row.components, dataQuality: row.dataQuality,
-        notes: row.notes, isNewEntrant: row.isNewEntrant,
-        previousRank: row.previousRank, rankDelta: row.rankDelta,
+        partner: row.partner,
+        partnerId: row.partnerId,
+        score: row.score,
+        components: row.components,
+        dataQuality: row.dataQuality,
+        notes: row.notes,
+        isNewEntrant: row.isNewEntrant,
+        previousRank: row.previousRank,
+        rankDelta: row.rankDelta,
         measured: {
-          completedRuns: row.events.completed, rejections: row.events.rejections,
-          expiredOffers: row.events.expiries, unanswered: row.events.unanswered,
+          completedRuns: row.events.completed,
+          rejections: row.events.rejections,
+          expiredOffers: row.events.expiries,
+          unanswered: row.events.unanswered,
           cancellationsWhileAssigned: row.events.cancellationsWhileAssigned,
           cashDeliveries: row.events.codDeliveries,
           cashChecked: row.events.codChecked,
           cashDiscrepancies: row.events.codDiscrepancies,
-          cashUnrecorded: row.events.codUnrecorded
+          cashUnrecorded: row.events.codUnrecorded,
         },
-        weightsApplied: row.weightsApplied, missingComponents: row.missingComponents
-      }))
+        weightsApplied: row.weightsApplied,
+        missingComponents: row.missingComponents,
+      })),
     });
   } catch (error) {
     if (error instanceof RangeError) return res.status(400).json({ success: false, message: error.message });
@@ -86,11 +95,10 @@ router.get('/delivery-partner/rank/current', verifyDeliveryPartner, async (req, 
       week: data.window.label,
       previousWeek: data.previousWindow.label,
       weights: data.weights,
-      leaderboard: own.found && typeof own.rank === 'number'
-        ? { rank: own.rank, of: own.of, percentile: own.percentile }
-        : null,
+      leaderboard:
+        own.found && typeof own.rank === 'number' ? { rank: own.rank, of: own.of, percentile: own.percentile } : null,
       own,
-      message: own.found ? undefined : 'Your week starts counting from your first completed run.'
+      message: own.found ? undefined : 'Your week starts counting from your first completed run.',
     });
   } catch (error) {
     console.error('Partner self ranking error:', error.message.slice(0, 200));

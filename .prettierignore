@@ -1,0 +1,9 @@
+# Built output is generated, not authored. Formatting it would churn thousands of
+# lines, and the API serves server/build straight from disk.
+client/build/
+server/build/
+node_modules/
+.verify-logs/
+coverage/
+*.min.js
+package-lock.json

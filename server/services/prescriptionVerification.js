@@ -14,14 +14,14 @@ export const validatePrescription = (prescriptionData) => {
     cylinderRange: true,
     axisRange: true,
     pdRange: true,
-    flags: []
+    flags: [],
   };
 
   try {
     // Check right eye
     if (prescriptionData.rightEye) {
       results.hasRightEye = true;
-      
+
       // Validate sphere (-20 to +20)
       if (prescriptionData.rightEye.sphere) {
         const sphere = parseFloat(prescriptionData.rightEye.sphere);
@@ -30,7 +30,7 @@ export const validatePrescription = (prescriptionData) => {
           results.flags.push('Right eye sphere out of range (-20 to +20)');
         }
       }
-      
+
       // Validate cylinder (-10 to +10)
       if (prescriptionData.rightEye.cylinder) {
         const cylinder = parseFloat(prescriptionData.rightEye.cylinder);
@@ -39,7 +39,7 @@ export const validatePrescription = (prescriptionData) => {
           results.flags.push('Right eye cylinder out of range (-10 to +10)');
         }
       }
-      
+
       // Validate axis (0 to 180)
       if (prescriptionData.rightEye.axis) {
         const axis = parseInt(prescriptionData.rightEye.axis);
@@ -53,7 +53,7 @@ export const validatePrescription = (prescriptionData) => {
     // Check left eye
     if (prescriptionData.leftEye) {
       results.hasLeftEye = true;
-      
+
       // Validate sphere
       if (prescriptionData.leftEye.sphere) {
         const sphere = parseFloat(prescriptionData.leftEye.sphere);
@@ -62,7 +62,7 @@ export const validatePrescription = (prescriptionData) => {
           results.flags.push('Left eye sphere out of range (-20 to +20)');
         }
       }
-      
+
       // Validate cylinder
       if (prescriptionData.leftEye.cylinder) {
         const cylinder = parseFloat(prescriptionData.leftEye.cylinder);
@@ -71,7 +71,7 @@ export const validatePrescription = (prescriptionData) => {
           results.flags.push('Left eye cylinder out of range (-10 to +10)');
         }
       }
-      
+
       // Validate axis
       if (prescriptionData.leftEye.axis) {
         const axis = parseInt(prescriptionData.leftEye.axis);
@@ -118,7 +118,7 @@ export const validatePrescription = (prescriptionData) => {
 export const submitForVerification = async (prescriptionId, userId) => {
   try {
     const prescription = await Prescription.findById(prescriptionId);
-    
+
     if (!prescription) {
       throw new Error('Prescription not found');
     }
@@ -135,7 +135,7 @@ export const submitForVerification = async (prescriptionId, userId) => {
       prescription: prescriptionId,
       user: userId,
       status: validationResults.isValidFormat ? 'pending' : 'needs_review',
-      validationResults
+      validationResults,
     });
 
     // Update prescription status
@@ -145,13 +145,13 @@ export const submitForVerification = async (prescriptionId, userId) => {
     return {
       success: true,
       verification,
-      validationResults
+      validationResults,
     };
   } catch (error) {
     console.error('Error submitting prescription for verification:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -173,8 +173,8 @@ async function recordDecision(verification, status, note) {
       {
         $set: {
           'prescriptions.$.verificationStatus': status,
-          'prescriptions.$.verificationNote': note || ''
-        }
+          'prescriptions.$.verificationNote': note || '',
+        },
       }
     );
   } catch (error) {
@@ -186,8 +186,7 @@ async function recordDecision(verification, status, note) {
 
 export const approveVerification = async (verificationId, adminId, notes = '') => {
   try {
-    const verification = await PrescriptionVerification.findById(verificationId)
-      .populate('prescription');
+    const verification = await PrescriptionVerification.findById(verificationId).populate('prescription');
 
     if (!verification) {
       throw new Error('Verification not found');
@@ -207,13 +206,13 @@ export const approveVerification = async (verificationId, adminId, notes = '') =
 
     return {
       success: true,
-      verification
+      verification,
     };
   } catch (error) {
     console.error('Error approving verification:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -223,8 +222,7 @@ export const approveVerification = async (verificationId, adminId, notes = '') =
  */
 export const rejectVerification = async (verificationId, adminId, reason) => {
   try {
-    const verification = await PrescriptionVerification.findById(verificationId)
-      .populate('prescription');
+    const verification = await PrescriptionVerification.findById(verificationId).populate('prescription');
 
     if (!verification) {
       throw new Error('Verification not found');
@@ -243,13 +241,13 @@ export const rejectVerification = async (verificationId, adminId, reason) => {
 
     return {
       success: true,
-      verification
+      verification,
     };
   } catch (error) {
     console.error('Error rejecting verification:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -266,13 +264,13 @@ export const getUserVerifications = async (userId) => {
 
     return {
       success: true,
-      verifications
+      verifications,
     };
   } catch (error) {
     console.error('Error getting user verifications:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -282,8 +280,8 @@ export const getUserVerifications = async (userId) => {
  */
 export const getPendingVerifications = async () => {
   try {
-    const verifications = await PrescriptionVerification.find({ 
-      status: { $in: ['pending', 'needs_review'] } 
+    const verifications = await PrescriptionVerification.find({
+      status: { $in: ['pending', 'needs_review'] },
     })
       .populate('prescription')
       .populate('user', 'name email')
@@ -291,13 +289,13 @@ export const getPendingVerifications = async () => {
 
     return {
       success: true,
-      verifications
+      verifications,
     };
   } catch (error) {
     console.error('Error getting pending verifications:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -315,13 +313,13 @@ export const getAllVerifications = async (filters = {}) => {
 
     return {
       success: true,
-      verifications
+      verifications,
     };
   } catch (error) {
     console.error('Error getting all verifications:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -333,5 +331,5 @@ export default {
   rejectVerification,
   getUserVerifications,
   getPendingVerifications,
-  getAllVerifications
+  getAllVerifications,
 };

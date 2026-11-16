@@ -57,7 +57,9 @@ const BlogPost = () => {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header />
-        <main className="container page-wrapper" style={{ display: 'flex', justifyContent: 'center' }}><div className="spinner spinner-lg" /></main>
+        <main className="container page-wrapper" style={{ display: 'flex', justifyContent: 'center' }}>
+          <div className="spinner spinner-lg" />
+        </main>
         <Footer />
       </div>
     );
@@ -68,7 +70,12 @@ const BlogPost = () => {
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header />
         <main className="container page-wrapper">
-          <div className="empty-state"><h3>Post not found</h3><Link to="/blog" className="btn btn-primary">Back to Blog</Link></div>
+          <div className="empty-state">
+            <h3>Post not found</h3>
+            <Link to="/blog" className="btn btn-primary">
+              Back to Blog
+            </Link>
+          </div>
         </main>
         <Footer />
       </div>
@@ -80,42 +87,126 @@ const BlogPost = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <article style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 16px' }}>
-          <Link to="/blog" style={{ fontSize: '14px', color: 'var(--primary)', marginBottom: '16px', display: 'inline-block' }}>Back to Blog</Link>
-          <span className="badge badge-primary" style={{ marginBottom: '12px', display: 'inline-block' }}>{post.category}</span>
+          <Link
+            to="/blog"
+            style={{ fontSize: '14px', color: 'var(--primary)', marginBottom: '16px', display: 'inline-block' }}
+          >
+            Back to Blog
+          </Link>
+          <span className="badge badge-primary" style={{ marginBottom: '12px', display: 'inline-block' }}>
+            {post.category}
+          </span>
           <h1 style={{ fontSize: '28px', fontWeight: 700, lineHeight: 1.3, marginBottom: '12px' }}>{post.title}</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '13px', color: 'var(--text-light)', marginBottom: '24px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '13px',
+              color: 'var(--text-light)',
+              marginBottom: '24px',
+            }}
+          >
             <span>By {post.author?.name || 'OptiKart Team'}</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><FiClock size={12} /> {new Date(post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <FiClock size={12} />{' '}
+              {new Date(post.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
           </div>
-          <img src={post.coverImage || '/placeholder.svg'} alt={post.title} style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: 'var(--radius-md)', marginBottom: '24px' }} />
-          <div style={{ fontSize: '16px', lineHeight: 1.8, color: 'var(--text-secondary)' }} dangerouslySetInnerHTML={{ __html: post.content }} />
+          <img
+            src={post.coverImage || '/placeholder.svg'}
+            alt={post.title}
+            style={{
+              width: '100%',
+              height: '400px',
+              objectFit: 'cover',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '24px',
+            }}
+          />
+          <div
+            style={{ fontSize: '16px', lineHeight: 1.8, color: 'var(--text-secondary)' }}
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
 
-          <div style={{ display: 'flex', gap: '16px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
-            <button onClick={handleLike} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--primary)', cursor: 'pointer', background: 'none' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '16px',
+              marginTop: '24px',
+              paddingTop: '16px',
+              borderTop: '1px solid var(--border)',
+            }}
+          >
+            <button
+              onClick={handleLike}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                color: 'var(--primary)',
+                cursor: 'pointer',
+                background: 'none',
+              }}
+            >
               <FiHeart size={16} /> {post.likes || 0} Likes
             </button>
-            <button onClick={() => navigator.clipboard.writeText(window.location.href)} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', color: 'var(--text-secondary)', cursor: 'pointer', background: 'none' }}>
+            <button
+              onClick={() => navigator.clipboard.writeText(window.location.href)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '14px',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                background: 'none',
+              }}
+            >
               <FiShare2 size={16} /> Share
             </button>
           </div>
 
           <div style={{ marginTop: '32px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h3
+              style={{
+                fontSize: '18px',
+                fontWeight: 600,
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               <FiMessageSquare /> Comments ({post.comments?.length || 0})
             </h3>
             {isAuthenticated && (
               <form onSubmit={handleComment} style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                <input className="input" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Write a comment..." style={{ flex: 1 }} />
-                <button type="submit" className="btn btn-primary">Post</button>
+                <input
+                  className="input"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Write a comment..."
+                  style={{ flex: 1 }}
+                />
+                <button type="submit" className="btn btn-primary">
+                  Post
+                </button>
               </form>
             )}
             {post.comments?.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {post.comments.map((c, idx) => (
-                  <div key={idx} style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}>
+                  <div
+                    key={idx}
+                    style={{ padding: '12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)' }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <span style={{ fontSize: '14px', fontWeight: 500 }}>{c.userName || 'Anonymous'}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>{new Date(c.createdAt).toLocaleDateString()}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>
+                        {new Date(c.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{c.content}</p>
                   </div>

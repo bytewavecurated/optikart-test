@@ -1,43 +1,46 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
-const manufacturerSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  phone: { type: String, required: true },
-  companyName: { type: String, required: true },
-  manufacturerId: { type: String, unique: true },
-  gstNumber: { type: String },
-  panNumber: { type: String },
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: { type: String, default: 'India' }
+const manufacturerSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    phone: { type: String, required: true },
+    companyName: { type: String, required: true },
+    manufacturerId: { type: String, unique: true },
+    gstNumber: { type: String },
+    panNumber: { type: String },
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      pincode: String,
+      country: { type: String, default: 'India' },
+    },
+    website: { type: String, default: '' },
+    description: { type: String, default: '' },
+    brands: [{ type: String }], // Brands they manufacture
+    isActive: { type: Boolean, default: true },
+    isBanned: { type: Boolean, default: false },
+    banReason: { type: String, default: '' },
+    bannedAt: { type: Date },
+    bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    lastLoginAt: { type: Date },
+    loginOtp: { type: String },
+    loginOtpExpiry: { type: Date },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    staff: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ManufacturerStaff' }],
   },
-  website: { type: String, default: '' },
-  description: { type: String, default: '' },
-  brands: [{ type: String }], // Brands they manufacture
-  isActive: { type: Boolean, default: true },
-  isBanned: { type: Boolean, default: false },
-  banReason: { type: String, default: '' },
-  bannedAt: { type: Date },
-  bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  lastLoginAt: { type: Date },
-  loginOtp: { type: String },
-  loginOtpExpiry: { type: Date },
-  failedLoginAttempts: { type: Number, default: 0 },
-  lockUntil: { type: Date },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  staff: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ManufacturerStaff' }]
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Generate unique manufacturer ID
-manufacturerSchema.pre('save', async function(next) {
+manufacturerSchema.pre('save', async function (next) {
   if (!this.manufacturerId) {
     const count = await mongoose.model('Manufacturer').countDocuments();
     this.manufacturerId = `MFR${String(count + 1).padStart(5, '0')}`;
@@ -46,19 +49,19 @@ manufacturerSchema.pre('save', async function(next) {
 });
 
 // Hash password before saving
-manufacturerSchema.pre('save', async function(next) {
+manufacturerSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
 // Compare password method
-manufacturerSchema.methods.comparePassword = async function(candidatePassword) {
+manufacturerSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Remove sensitive data when converting to JSON
-manufacturerSchema.methods.toJSON = function() {
+manufacturerSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   delete obj.loginOtp;

@@ -20,7 +20,12 @@ import { emitInventoryAlert } from './websocket.js';
 const LOW_STOCK_THRESHOLD = 5;
 
 const sameToken = (a, b) =>
-  String(a ?? '').trim().toLowerCase() === String(b ?? '').trim().toLowerCase();
+  String(a ?? '')
+    .trim()
+    .toLowerCase() ===
+  String(b ?? '')
+    .trim()
+    .toLowerCase();
 
 /**
  * Find the variant a cart line refers to.
@@ -33,15 +38,19 @@ export const matchVariant = (product, selection = {}) => {
   const wanted = Object.entries({
     color: selection.color,
     size: selection.size,
-    gender: selection.gender
+    gender: selection.gender,
   }).filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== '');
 
   if (wanted.length === 0) return null;
 
-  return product.variants.find((v) => wanted.every(([key, value]) => {
-    if (key === 'gender') return sameToken(v.gender, value) || sameToken(product.gender, value);
-    return sameToken(v[key], value);
-  })) || null;
+  return (
+    product.variants.find((v) =>
+      wanted.every(([key, value]) => {
+        if (key === 'gender') return sameToken(v.gender, value) || sameToken(product.gender, value);
+        return sameToken(v[key], value);
+      })
+    ) || null
+  );
 };
 
 /** Re-derive the product-level pool from its active variants. */
@@ -103,7 +112,7 @@ export const deductStockForOrder = async (order, io = null) => {
       reason: 'sale',
       order: String(order._id),
       variant: variant ? String(variant._id) : null,
-      at: new Date()
+      at: new Date(),
     };
 
     let took = null;
@@ -118,16 +127,16 @@ export const deductStockForOrder = async (order, io = null) => {
           // guard would silently match nothing and every order would read as sold
           // out. product-level stock moves in the same write, and because it is
           // maintained as the sum of variant stock, it cannot disagree.
-          variants: { $elemMatch: { _id: variant._id, stock: { $gte: qty } } }
+          variants: { $elemMatch: { _id: variant._id, stock: { $gte: qty } } },
         },
         {
           $inc: {
             // product.stock is the sum of active variant stock, so it moves by
             // the same amount in the same atomic write.
             stock: -qty,
-            'variants.$[v].stock': -qty
+            'variants.$[v].stock': -qty,
           },
-          $push: { stockMovementLog: { $each: [movement], $slice: -200 } }
+          $push: { stockMovementLog: { $each: [movement], $slice: -200 } },
         },
         { arrayFilters: [{ 'v._id': variant._id }] }
       );
@@ -149,7 +158,7 @@ export const deductStockForOrder = async (order, io = null) => {
         product: product.title,
         variant: variant ? `${variant.color || ''} ${variant.size || ''}`.trim() : undefined,
         need: qty,
-        have
+        have,
       });
       continue;
     }
@@ -165,7 +174,7 @@ export const deductStockForOrder = async (order, io = null) => {
     report.deducted.push({
       product: String(product._id),
       variant: variant ? String(variant._id) : null,
-      qty
+      qty,
     });
   }
 
@@ -205,7 +214,7 @@ export const restoreStockForOrder = async (order, io = null, { reason = 'restore
       reason,
       order: String(order._id),
       variant: variant ? String(variant._id) : null,
-      at: new Date()
+      at: new Date(),
     };
 
     if (variant) {
@@ -215,11 +224,11 @@ export const restoreStockForOrder = async (order, io = null, { reason = 'restore
           // Same reasoning as the deduction: pair the variant identity and the
           // "not already reversed" guard in one $elemMatch-anchored match.
           variants: { $elemMatch: { _id: variant._id } },
-          stockMovementLog: { $not: { $elemMatch: { order: String(order._id), reason, type: 'in' } } }
+          stockMovementLog: { $not: { $elemMatch: { order: String(order._id), reason, type: 'in' } } },
         },
         {
           $inc: { stock: qty, 'variants.$[v].stock': qty },
-          $push: { stockMovementLog: { $each: [movement], $slice: -200 } }
+          $push: { stockMovementLog: { $each: [movement], $slice: -200 } },
         },
         { arrayFilters: [{ 'v._id': variant._id }] }
       );
@@ -227,7 +236,7 @@ export const restoreStockForOrder = async (order, io = null, { reason = 'restore
       await Product.updateOne(
         {
           _id: product._id,
-          'stockMovementLog': { $not: { $elemMatch: { order: String(order._id), reason, type: 'in' } } }
+          stockMovementLog: { $not: { $elemMatch: { order: String(order._id), reason, type: 'in' } } },
         },
         { $inc: { stock: qty }, $push: { stockMovementLog: { $each: [movement], $slice: -200 } } }
       );

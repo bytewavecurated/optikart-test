@@ -16,7 +16,7 @@ const STYLES = {
   wrapper: {
     position: 'relative',
     width: '100%',
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
   },
   form: {
     display: 'flex',
@@ -142,7 +142,9 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
   const [recentSearches, setRecentSearches] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('recentSearches') || '[]');
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   });
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -181,18 +183,20 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
         { text: `${query} men`, category: 'Men' },
         { text: `${query} women`, category: 'Women' },
         { text: `${query} blue cut`, category: 'Lenses' },
-      ].filter(s => s.text.toLowerCase().includes(query.toLowerCase()));
+      ].filter((s) => s.text.toLowerCase().includes(query.toLowerCase()));
       setSuggestions(mockSuggestions);
       setLoading(false);
     }, 300);
 
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [query]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (query.trim()) {
-      const updated = [query, ...recentSearches.filter(s => s !== query)].slice(0, 8);
+      const updated = [query, ...recentSearches.filter((s) => s !== query)].slice(0, 8);
       setRecentSearches(updated);
       localStorage.setItem('recentSearches', JSON.stringify(updated));
       navigate(`/search?q=${encodeURIComponent(query)}`);
@@ -202,7 +206,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
 
   const handleItemClick = (text) => {
     setQuery(text);
-    const updated = [text, ...recentSearches.filter(s => s !== text)].slice(0, 8);
+    const updated = [text, ...recentSearches.filter((s) => s !== text)].slice(0, 8);
     setRecentSearches(updated);
     localStorage.setItem('recentSearches', JSON.stringify(updated));
     navigate(`/search?q=${encodeURIComponent(text)}`);
@@ -211,8 +215,8 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
 
   const removeRecent = (e, term) => {
     e.stopPropagation();
-    setRecentSearches(recentSearches.filter(s => s !== term));
-    localStorage.setItem('recentSearches', JSON.stringify(recentSearches.filter(s => s !== term)));
+    setRecentSearches(recentSearches.filter((s) => s !== term));
+    localStorage.setItem('recentSearches', JSON.stringify(recentSearches.filter((s) => s !== term)));
   };
 
   const showDropdown = focused && (query || recentSearches.length > 0);
@@ -238,15 +242,15 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
     recognitionRef.current.onresult = async (event) => {
       const transcript = event.results[0][0].transcript;
       setIsListening(false);
-      
+
       // Try to process with backend speech recognition
       try {
         const response = await fetch('http://localhost:5000/api/speech/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: transcript })
+          body: JSON.stringify({ text: transcript }),
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data.searchQuery) {
@@ -258,7 +262,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
       } catch (error) {
         console.error('Speech API error:', error);
       }
-      
+
       // Fallback to direct search
       setQuery(transcript);
       navigate(`/search?q=${encodeURIComponent(transcript)}`);
@@ -287,10 +291,10 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
   // Camera search functionality
   const startCameraSearch = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 640, height: 480, facingMode: 'user' } 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' },
       });
-      
+
       streamRef.current = mediaStream;
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
@@ -306,42 +310,46 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const context = canvas.getContext('2d');
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      canvas.toBlob(async (blob) => {
-        try {
-          const formData = new FormData();
-          formData.append('image', blob);
 
-          const response = await fetch('http://localhost:5000/api/face-detection/detect', {
-            method: 'POST',
-            body: formData
-          });
+      canvas.toBlob(
+        async (blob) => {
+          try {
+            const formData = new FormData();
+            formData.append('image', blob);
 
-          const data = await response.json();
+            const response = await fetch('http://localhost:5000/api/face-detection/detect', {
+              method: 'POST',
+              body: formData,
+            });
 
-          if (data.success) {
-            stopCameraSearch();
-            navigate(`/face-shape-guide?result=${encodeURIComponent(JSON.stringify(data.data))}`);
-          } else {
-            toast.error(data.message || 'Failed to analyze face');
+            const data = await response.json();
+
+            if (data.success) {
+              stopCameraSearch();
+              navigate(`/face-shape-guide?result=${encodeURIComponent(JSON.stringify(data.data))}`);
+            } else {
+              toast.error(data.message || 'Failed to analyze face');
+            }
+          } catch (error) {
+            console.error('Face detection error:', error);
+            toast.error('Failed to analyze face. Please try again.');
           }
-        } catch (error) {
-          console.error('Face detection error:', error);
-          toast.error('Failed to analyze face. Please try again.');
-        }
-      }, 'image/jpeg', 0.9);
+        },
+        'image/jpeg',
+        0.9
+      );
     }
   };
 
   const stopCameraSearch = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     setIsCapturing(false);
@@ -354,7 +362,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
         recognitionRef.current.stop();
       }
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, []);
@@ -372,19 +380,22 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
           style={{
             ...STYLES.input,
             ...(focused ? STYLES.inputFocused : {}),
-            paddingRight: '100px' // Make room for buttons
+            paddingRight: '100px', // Make room for buttons
           }}
         />
         {query && (
           <button
             type="button"
-            style={{...STYLES.clearBtn, right: '70px'}}
-            onClick={() => { setQuery(''); setFocused(true); }}
+            style={{ ...STYLES.clearBtn, right: '70px' }}
+            onClick={() => {
+              setQuery('');
+              setFocused(true);
+            }}
           >
             <FiX />
           </button>
         )}
-        
+
         {/* Voice Search Button */}
         <button
           type="button"
@@ -401,13 +412,13 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
             padding: '8px',
             borderRadius: '50%',
             transition: 'all 0.2s',
-            opacity: isCapturing ? 0.5 : 1
+            opacity: isCapturing ? 0.5 : 1,
           }}
           title={isListening ? 'Stop listening' : 'Voice search'}
         >
           <FiMic />
         </button>
-        
+
         {/* Camera Search Button */}
         <button
           type="button"
@@ -424,7 +435,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
             padding: '8px',
             borderRadius: '50%',
             transition: 'all 0.2s',
-            opacity: isListening ? 0.5 : 1
+            opacity: isListening ? 0.5 : 1,
           }}
           title="Face shape analysis"
         >
@@ -434,20 +445,22 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
 
       {/* Camera Modal */}
       {isCapturing && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          gap: '20px'
-        }}>
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.8)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: '20px',
+          }}
+        >
           <div style={{ position: 'relative' }}>
             <video
               ref={videoRef}
@@ -457,7 +470,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 width: '640px',
                 maxWidth: '90vw',
                 borderRadius: 'var(--radius)',
-                transform: 'scaleX(-1)'
+                transform: 'scaleX(-1)',
               }}
             />
             <canvas ref={canvasRef} style={{ display: 'none' }} />
@@ -473,7 +486,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 fontSize: '16px',
-                fontWeight: 600
+                fontWeight: 600,
               }}
             >
               Capture & Analyze
@@ -488,7 +501,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 borderRadius: 'var(--radius-md)',
                 cursor: 'pointer',
                 fontSize: '16px',
-                fontWeight: 600
+                fontWeight: 600,
               }}
             >
               Cancel
@@ -505,16 +518,11 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 <FiTrendingUp /> Suggestions
               </div>
               {suggestions.map((s, i) => (
-                <div
-                  key={i}
-                  style={STYLES.item}
-                  className="search-item"
-                  onClick={() => handleItemClick(s.text)}
-                >
+                <div key={i} style={STYLES.item} className="search-item" onClick={() => handleItemClick(s.text)}>
                   <FiSearch style={STYLES.itemIcon} />
                   <span style={STYLES.itemText}>
-                    <span style={STYLES.itemHighlight}>{s.text.split(' ')[0]}</span>
-                    {' '}{s.text.split(' ').slice(1).join(' ')}
+                    <span style={STYLES.itemHighlight}>{s.text.split(' ')[0]}</span>{' '}
+                    {s.text.split(' ').slice(1).join(' ')}
                   </span>
                   <span style={STYLES.categoryTag}>{s.category}</span>
                 </div>
@@ -528,18 +536,10 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 <FiClock /> Recent Searches
               </div>
               {recentSearches.map((term, i) => (
-                <div
-                  key={i}
-                  style={STYLES.item}
-                  className="search-item"
-                  onClick={() => handleItemClick(term)}
-                >
+                <div key={i} style={STYLES.item} className="search-item" onClick={() => handleItemClick(term)}>
                   <FiClock style={STYLES.itemIcon} />
                   <span style={STYLES.itemText}>{term}</span>
-                  <button
-                    style={STYLES.removeBtn}
-                    onClick={(e) => removeRecent(e, term)}
-                  >
+                  <button style={STYLES.removeBtn} onClick={(e) => removeRecent(e, term)}>
                     <FiX />
                   </button>
                 </div>
@@ -553,12 +553,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
                 <FiTrendingUp /> Trending
               </div>
               {TRENDING.map((term, i) => (
-                <div
-                  key={i}
-                  style={STYLES.item}
-                  className="search-item"
-                  onClick={() => handleItemClick(term)}
-                >
+                <div key={i} style={STYLES.item} className="search-item" onClick={() => handleItemClick(term)}>
                   <FiTrendingUp style={STYLES.itemIcon} />
                   <span style={STYLES.itemText}>{term}</span>
                 </div>
@@ -567,10 +562,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
           )}
 
           {query && (
-            <div
-              style={STYLES.footer}
-              onClick={handleSubmit}
-            >
+            <div style={STYLES.footer} onClick={handleSubmit}>
               Search for "{query}" <FiChevronRight />
             </div>
           )}

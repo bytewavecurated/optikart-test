@@ -1,7 +1,13 @@
 import express from 'express';
 import { verifyToken, verifySeller, verifyAdmin } from '../middleware/auth.js';
 import OrderRouting from '../models/OrderRouting.js';
-import { acceptRouting, rejectRouting, adminAssign, sweepExpiredOffers, findCandidates } from '../services/orderProximity.js';
+import {
+  acceptRouting,
+  rejectRouting,
+  adminAssign,
+  sweepExpiredOffers,
+  findCandidates,
+} from '../services/orderProximity.js';
 import {
   routeOrder,
   sellerAcceptOrder,
@@ -9,7 +15,7 @@ import {
   adminAssignOrder,
   aiAutoAssignOrder,
   getOrderRouting,
-  getAllOrderRoutings
+  getAllOrderRoutings,
 } from '../services/orderRouting.js';
 
 const router = express.Router();
@@ -25,7 +31,7 @@ router.post('/route', verifyToken, async (req, res) => {
     if (!orderId || !customerLocation) {
       return res.status(400).json({
         success: false,
-        message: 'Order ID and customer location are required'
+        message: 'Order ID and customer location are required',
       });
     }
 
@@ -35,12 +41,12 @@ router.post('/route', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Order routed to nearby sellers',
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.message || result.error
+        message: result.message || result.error,
       });
     }
   } catch (error) {
@@ -48,7 +54,7 @@ router.post('/route', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -67,12 +73,12 @@ router.post('/:id/accept', verifySeller, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: 'Order accepted - it is now yours to prepare.'
+        message: 'Order accepted - it is now yours to prepare.',
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -80,7 +86,7 @@ router.post('/:id/accept', verifySeller, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -100,12 +106,12 @@ router.post('/:id/reject', verifySeller, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: result.message
+        message: result.message,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -113,7 +119,7 @@ router.post('/:id/reject', verifySeller, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -130,7 +136,7 @@ router.post('/:id/assign', verifyToken, verifyAdmin, async (req, res) => {
     if (!sellerId) {
       return res.status(400).json({
         success: false,
-        message: 'Seller ID is required'
+        message: 'Seller ID is required',
       });
     }
 
@@ -139,12 +145,12 @@ router.post('/:id/assign', verifyToken, verifyAdmin, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: result.message
+        message: result.message,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -152,7 +158,7 @@ router.post('/:id/assign', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -173,8 +179,8 @@ router.post('/:id/auto-assign', verifyToken, verifyAdmin, async (req, res) => {
         message: result.message,
         data: {
           assignedSeller: result.assignedSeller,
-          score: result.score
-        }
+          score: result.score,
+        },
       });
     } else {
       /*
@@ -185,7 +191,7 @@ router.post('/:id/auto-assign', verifyToken, verifyAdmin, async (req, res) => {
       res.status(result.status ? 200 : 400).json({
         success: false,
         message: result.message || result.error || 'The order could not be assigned automatically.',
-        ...(result.status ? { status: result.status } : {})
+        ...(result.status ? { status: result.status } : {}),
       });
     }
   } catch (error) {
@@ -193,7 +199,7 @@ router.post('/:id/auto-assign', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -228,8 +234,13 @@ router.get('/queue', verifyToken, verifyAdmin, async (req, res) => {
         orderStatus: r.order?.orderStatus,
         totalAmount: r.order?.totalAmount,
         placedAt: r.order?.createdAt,
-        destination: [r.order?.shippingAddress?.street, r.order?.shippingAddress?.city, r.order?.shippingAddress?.pincode]
-          .filter(Boolean).join(', '),
+        destination: [
+          r.order?.shippingAddress?.street,
+          r.order?.shippingAddress?.city,
+          r.order?.shippingAddress?.pincode,
+        ]
+          .filter(Boolean)
+          .join(', '),
         status: r.status,
         timeoutAt: r.timeoutAt,
         assignedBy: r.assignedBy,
@@ -253,9 +264,9 @@ router.get('/queue', verifyToken, verifyAdmin, async (req, res) => {
             measured: entry.measured || null,
             priceTotal: entry.priceTotal ?? null,
             coversWholeOrder: entry.coversWholeOrder ?? null,
-            rankedAt: entry.rankedAt || null
+            rankedAt: entry.rankedAt || null,
           }))
-          .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99))
+          .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99)),
       }));
 
     res.json({ success: true, queue, count: queue.length });
@@ -310,7 +321,7 @@ router.get('/:id', verifyToken, async (req, res) => {
       hasProduct: entry.hasProduct !== false,
       response: entry.response || 'pending',
       contactedAt: entry.contactedAt || null,
-      respondedAt: entry.respondedAt || null
+      respondedAt: entry.respondedAt || null,
     }));
 
     return res.json({
@@ -319,7 +330,11 @@ router.get('/:id', verifyToken, async (req, res) => {
       candidates,
       // True once all five sellers declined or timed out and the order is
       // waiting on an administrator.
-      awaitingAdmin: routing.status === 'admin_required' || candidates.every((c) => c.response !== 'pending') && routing.status !== 'seller_accepted' && routing.status !== 'admin_assigned'
+      awaitingAdmin:
+        routing.status === 'admin_required' ||
+        (candidates.every((c) => c.response !== 'pending') &&
+          routing.status !== 'seller_accepted' &&
+          routing.status !== 'admin_assigned'),
     });
   } catch (error) {
     console.error('Order routing lookup failed:', error);
@@ -340,12 +355,12 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.routings
+        data: result.routings,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -353,7 +368,7 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

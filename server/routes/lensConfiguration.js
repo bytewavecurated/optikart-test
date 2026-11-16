@@ -9,7 +9,7 @@ const router = express.Router();
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
 });
 
 /**
@@ -18,14 +18,7 @@ const upload = multer({
  */
 router.post('/', verifyToken, upload.single('prescription'), async (req, res) => {
   try {
-    const {
-      productId,
-      lensType,
-      lensMaterial,
-      lensCoating,
-      prescription,
-      additionalPrice
-    } = req.body;
+    const { productId, lensType, lensMaterial, lensCoating, prescription, additionalPrice } = req.body;
 
     const userId = req.user.id;
 
@@ -34,7 +27,7 @@ router.post('/', verifyToken, upload.single('prescription'), async (req, res) =>
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found'
+        message: 'Product not found',
       });
     }
 
@@ -42,7 +35,7 @@ router.post('/', verifyToken, upload.single('prescription'), async (req, res) =>
     if (product.category !== 'eyeglasses') {
       return res.status(400).json({
         success: false,
-        message: 'Lens configuration is only available for eyeglasses'
+        message: 'Lens configuration is only available for eyeglasses',
       });
     }
 
@@ -54,7 +47,7 @@ router.post('/', verifyToken, upload.single('prescription'), async (req, res) =>
       lensMaterial,
       lensCoating: lensCoating || 'standard',
       prescription: prescription ? JSON.parse(prescription) : undefined,
-      additionalPrice: additionalPrice || 0
+      additionalPrice: additionalPrice || 0,
     };
 
     // Handle prescription file upload
@@ -69,14 +62,14 @@ router.post('/', verifyToken, upload.single('prescription'), async (req, res) =>
     res.status(201).json({
       success: true,
       message: 'Lens configuration created',
-      data: lensConfig
+      data: lensConfig,
     });
   } catch (error) {
     console.error('Error creating lens configuration:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -92,26 +85,26 @@ router.get('/:productId', verifyToken, async (req, res) => {
 
     const lensConfig = await LensConfiguration.findOne({
       product: productId,
-      user: userId
+      user: userId,
     });
 
     if (!lensConfig) {
       return res.status(404).json({
         success: false,
-        message: 'Lens configuration not found'
+        message: 'Lens configuration not found',
       });
     }
 
     res.json({
       success: true,
-      data: lensConfig
+      data: lensConfig,
     });
   } catch (error) {
     console.error('Error getting lens configuration:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -127,24 +120,18 @@ router.put('/:id', verifyToken, upload.single('prescription'), async (req, res) 
 
     const lensConfig = await LensConfiguration.findOne({
       _id: id,
-      user: userId
+      user: userId,
     });
 
     if (!lensConfig) {
       return res.status(404).json({
         success: false,
-        message: 'Lens configuration not found'
+        message: 'Lens configuration not found',
       });
     }
 
     // Update fields
-    const {
-      lensType,
-      lensMaterial,
-      lensCoating,
-      prescription,
-      additionalPrice
-    } = req.body;
+    const { lensType, lensMaterial, lensCoating, prescription, additionalPrice } = req.body;
 
     if (lensType) lensConfig.lensType = lensType;
     if (lensMaterial) lensConfig.lensMaterial = lensMaterial;
@@ -164,14 +151,14 @@ router.put('/:id', verifyToken, upload.single('prescription'), async (req, res) 
     res.json({
       success: true,
       message: 'Lens configuration updated',
-      data: lensConfig
+      data: lensConfig,
     });
   } catch (error) {
     console.error('Error updating lens configuration:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -187,26 +174,26 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
     const lensConfig = await LensConfiguration.findOneAndDelete({
       _id: id,
-      user: userId
+      user: userId,
     });
 
     if (!lensConfig) {
       return res.status(404).json({
         success: false,
-        message: 'Lens configuration not found'
+        message: 'Lens configuration not found',
       });
     }
 
     res.json({
       success: true,
-      message: 'Lens configuration deleted'
+      message: 'Lens configuration deleted',
     });
   } catch (error) {
     console.error('Error deleting lens configuration:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -220,39 +207,39 @@ router.get('/pricing/info', async (req, res) => {
     const pricing = {
       lensType: {
         'single-vision': { base: 500, description: 'Single vision lenses for distance or near vision' },
-        'bifocal': { base: 1200, description: 'Bifocal lenses with two prescription zones' },
-        'progressive': { base: 2000, description: 'Progressive lenses with seamless transition' },
-        'reading': { base: 600, description: 'Reading glasses lenses' },
-        'computer': { base: 800, description: 'Computer glasses with blue light protection' }
+        bifocal: { base: 1200, description: 'Bifocal lenses with two prescription zones' },
+        progressive: { base: 2000, description: 'Progressive lenses with seamless transition' },
+        reading: { base: 600, description: 'Reading glasses lenses' },
+        computer: { base: 800, description: 'Computer glasses with blue light protection' },
       },
       lensMaterial: {
-        'cr39': { multiplier: 1.0, description: 'Standard plastic lenses' },
-        'polycarbonate': { multiplier: 1.3, description: 'Impact-resistant polycarbonate' },
+        cr39: { multiplier: 1.0, description: 'Standard plastic lenses' },
+        polycarbonate: { multiplier: 1.3, description: 'Impact-resistant polycarbonate' },
         'high-index-1.67': { multiplier: 1.6, description: 'Thin high-index lenses' },
         'high-index-1.74': { multiplier: 2.0, description: 'Ultra-thin high-index lenses' },
-        'trivex': { multiplier: 1.5, description: 'Lightweight and durable Trivex' },
-        'glass': { multiplier: 1.2, description: 'Traditional glass lenses' }
+        trivex: { multiplier: 1.5, description: 'Lightweight and durable Trivex' },
+        glass: { multiplier: 1.2, description: 'Traditional glass lenses' },
       },
       lensCoating: {
-        'standard': { additional: 0, description: 'No additional coating' },
+        standard: { additional: 0, description: 'No additional coating' },
         'anti-reflective': { additional: 300, description: 'Anti-reflective coating' },
         'blue-cut': { additional: 500, description: 'Blue light blocking coating' },
-        'photochromic': { additional: 800, description: 'Transitions lenses' },
-        'polarized': { additional: 600, description: 'Polarized coating' },
-        'uv-protection': { additional: 200, description: 'UV protection coating' }
-      }
+        photochromic: { additional: 800, description: 'Transitions lenses' },
+        polarized: { additional: 600, description: 'Polarized coating' },
+        'uv-protection': { additional: 200, description: 'UV protection coating' },
+      },
     };
 
     res.json({
       success: true,
-      data: pricing
+      data: pricing,
     });
   } catch (error) {
     console.error('Error getting lens pricing:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

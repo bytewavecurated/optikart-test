@@ -21,7 +21,7 @@ const BannerManagement = () => {
     maxPrice: '',
     startDate: '',
     endDate: '',
-    isActive: true
+    isActive: true,
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -36,7 +36,7 @@ const BannerManagement = () => {
       setBanners(res.data.banners || []);
     } catch (error) {
       console.error('Error fetching banners:', error);
-      toastError(error, "Failed to load banners");
+      toastError(error, 'Failed to load banners');
     } finally {
       setLoading(false);
     }
@@ -56,7 +56,7 @@ const BannerManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!imageFile && !editingBanner) {
       toast.error('Please select an image');
       return;
@@ -74,7 +74,7 @@ const BannerManagement = () => {
       formDataToSend.append('startDate', formData.startDate);
       formDataToSend.append('endDate', formData.endDate);
       formDataToSend.append('isActive', formData.isActive);
-      
+
       if (imageFile) {
         formDataToSend.append('image', imageFile);
       }
@@ -100,14 +100,14 @@ const BannerManagement = () => {
         maxPrice: '',
         startDate: '',
         endDate: '',
-        isActive: true
+        isActive: true,
       });
       setImageFile(null);
       setImagePreview(null);
       fetchBanners();
     } catch (error) {
       console.error('Error saving banner:', error);
-      toastError(error, "Failed to save banner");
+      toastError(error, 'Failed to save banner');
     }
   };
 
@@ -123,7 +123,7 @@ const BannerManagement = () => {
       maxPrice: banner.discount?.maxPrice || '',
       startDate: banner.discount?.startDate ? new Date(banner.discount.startDate).toISOString().split('T')[0] : '',
       endDate: banner.discount?.endDate ? new Date(banner.discount.endDate).toISOString().split('T')[0] : '',
-      isActive: banner.isActive !== false
+      isActive: banner.isActive !== false,
     });
     setImagePreview(banner.images?.desktop?.url || '');
     setShowForm(true);
@@ -140,7 +140,7 @@ const BannerManagement = () => {
       fetchBanners();
     } catch (error) {
       console.error('Error deleting banner:', error);
-      toastError(error, "Failed to delete banner");
+      toastError(error, 'Failed to delete banner');
     }
   };
 
@@ -183,17 +183,18 @@ const BannerManagement = () => {
                 <div>
                   <div className="input-group">
                     <label>Banner Image *</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="input"
-                    />
+                    <input type="file" accept="image/*" onChange={handleImageChange} className="input" />
                     {imagePreview && (
                       <img
                         src={imagePreview}
                         alt="Preview"
-                        style={{ marginTop: '12px', maxWidth: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
+                        style={{
+                          marginTop: '12px',
+                          maxWidth: '100%',
+                          maxHeight: '200px',
+                          objectFit: 'cover',
+                          borderRadius: 'var(--radius-md)',
+                        }}
                       />
                     )}
                   </div>
@@ -332,7 +333,7 @@ const BannerManagement = () => {
                       maxPrice: '',
                       startDate: '',
                       endDate: '',
-                      isActive: true
+                      isActive: true,
                     });
                     setImageFile(null);
                     setImagePreview(null);
@@ -363,7 +364,14 @@ const BannerManagement = () => {
                     style={{ width: '200px', height: '120px', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
                   />
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'start',
+                        marginBottom: '12px',
+                      }}
+                    >
                       <div>
                         <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '4px' }}>{banner.title}</h3>
                         {banner.subtitle && (
@@ -378,10 +386,9 @@ const BannerManagement = () => {
                     {banner.discountType !== 'none' && (
                       <div style={{ marginBottom: '12px' }}>
                         <span className="badge badge-warning">
-                          {banner.discountType === 'percentage' 
+                          {banner.discountType === 'percentage'
                             ? `${banner.discountValue}% OFF`
-                            : `₹${banner.discountValue} OFF`
-                          }
+                            : `₹${banner.discountValue} OFF`}
                         </span>
                         {(banner.minPrice || banner.maxPrice) && (
                           <span style={{ marginLeft: '12px', fontSize: '14px', color: 'var(--text-secondary)' }}>
@@ -395,7 +402,8 @@ const BannerManagement = () => {
 
                     {banner.startDate && banner.endDate && (
                       <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                        Valid: {new Date(banner.startDate).toLocaleDateString()} - {new Date(banner.endDate).toLocaleDateString()}
+                        Valid: {new Date(banner.startDate).toLocaleDateString()} -{' '}
+                        {new Date(banner.endDate).toLocaleDateString()}
                       </p>
                     )}
 

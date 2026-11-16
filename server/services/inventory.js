@@ -12,7 +12,7 @@ const RESERVATION_DURATION_MINUTES = 15; // 15 minutes reservation time
 export const reserveStock = async (productId, userId, quantity) => {
   try {
     const product = await Product.findById(productId);
-    
+
     if (!product) {
       throw new Error('Product not found');
     }
@@ -27,24 +27,24 @@ export const reserveStock = async (productId, userId, quantity) => {
 
     // Create reservation
     const expiresAt = new Date(Date.now() + RESERVATION_DURATION_MINUTES * 60 * 1000);
-    
+
     const reservation = await StockReservation.create({
       product: productId,
       user: userId,
       quantity,
-      expiresAt
+      expiresAt,
     });
 
     return {
       success: true,
       reservation,
-      availableStock: availableStock - quantity
+      availableStock: availableStock - quantity,
     };
   } catch (error) {
     console.error('Error reserving stock:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -56,7 +56,7 @@ export const getReservedStock = async (productId) => {
   const reservations = await StockReservation.find({
     product: productId,
     status: 'active',
-    expiresAt: { $gt: new Date() }
+    expiresAt: { $gt: new Date() },
   });
 
   return reservations.reduce((total, res) => total + res.quantity, 0);
@@ -68,7 +68,7 @@ export const getReservedStock = async (productId) => {
 export const completeReservation = async (reservationId, orderId, io = null) => {
   try {
     const reservation = await StockReservation.findById(reservationId);
-    
+
     if (!reservation) {
       throw new Error('Reservation not found');
     }
@@ -84,7 +84,7 @@ export const completeReservation = async (reservationId, orderId, io = null) => 
 
     // Deduct stock from product
     await Product.findByIdAndUpdate(reservation.product, {
-      $inc: { stock: -reservation.quantity }
+      $inc: { stock: -reservation.quantity },
     });
 
     // Check if stock is now low and send alert
@@ -103,13 +103,13 @@ export const completeReservation = async (reservationId, orderId, io = null) => 
 
     return {
       success: true,
-      reservation
+      reservation,
     };
   } catch (error) {
     console.error('Error completing reservation:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -120,7 +120,7 @@ export const completeReservation = async (reservationId, orderId, io = null) => 
 export const cancelReservation = async (reservationId) => {
   try {
     const reservation = await StockReservation.findById(reservationId);
-    
+
     if (!reservation) {
       throw new Error('Reservation not found');
     }
@@ -130,13 +130,13 @@ export const cancelReservation = async (reservationId) => {
 
     return {
       success: true,
-      reservation
+      reservation,
     };
   } catch (error) {
     console.error('Error cancelling reservation:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -149,18 +149,18 @@ export const getUserReservations = async (userId) => {
     const reservations = await StockReservation.find({
       user: userId,
       status: 'active',
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     }).populate('product');
 
     return {
       success: true,
-      reservations
+      reservations,
     };
   } catch (error) {
     console.error('Error getting user reservations:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -171,25 +171,21 @@ export const getUserReservations = async (userId) => {
 export const bulkUpdateStock = async (updates, io = null) => {
   try {
     const results = [];
-    
+
     for (const update of updates) {
       const { productId, newStock } = update;
-      
+
       // Get product before stock change
       const productBefore = await Product.findById(productId);
       const previousStock = productBefore ? productBefore.stock : 0;
-      
-      const product = await Product.findByIdAndUpdate(
-        productId,
-        { stock: newStock },
-        { new: true }
-      );
+
+      const product = await Product.findByIdAndUpdate(productId, { stock: newStock }, { new: true });
 
       if (product) {
         results.push({
           productId,
           success: true,
-          newStock: product.stock
+          newStock: product.stock,
         });
 
         // Check if stock is low and send alert
@@ -208,20 +204,20 @@ export const bulkUpdateStock = async (updates, io = null) => {
         results.push({
           productId,
           success: false,
-          error: 'Product not found'
+          error: 'Product not found',
         });
       }
     }
 
     return {
       success: true,
-      results
+      results,
     };
   } catch (error) {
     console.error('Error in bulk stock update:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -232,18 +228,18 @@ export const bulkUpdateStock = async (updates, io = null) => {
 export const checkAvailability = async (productId, quantity = 1) => {
   try {
     const product = await Product.findById(productId);
-    
+
     if (!product) {
       return {
         available: false,
-        message: 'Product not found'
+        message: 'Product not found',
       };
     }
 
     if (!product.isActive) {
       return {
         available: false,
-        message: 'Product is not active'
+        message: 'Product is not active',
       };
     }
 
@@ -254,20 +250,20 @@ export const checkAvailability = async (productId, quantity = 1) => {
       return {
         available: false,
         message: `Insufficient stock. Available: ${availableStock}, Requested: ${quantity}`,
-        availableStock
+        availableStock,
       };
     }
 
     return {
       available: true,
       availableStock,
-      product
+      product,
     };
   } catch (error) {
     console.error('Error checking availability:', error);
     return {
       available: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
@@ -277,12 +273,12 @@ export const checkAvailability = async (productId, quantity = 1) => {
  */
 export const getAvailableProducts = async (query = {}, options = {}) => {
   const { page = 1, limit = 20, sort = '-createdAt' } = options;
-  
+
   // Only show active products with stock > 0
   const filter = {
     ...query,
     isActive: true,
-    stock: { $gt: 0 }
+    stock: { $gt: 0 },
   };
 
   const products = await Product.find(filter)
@@ -297,7 +293,7 @@ export const getAvailableProducts = async (query = {}, options = {}) => {
     products,
     total,
     pages: Math.ceil(total / limit),
-    currentPage: page
+    currentPage: page,
   };
 };
 
@@ -309,5 +305,5 @@ export default {
   getUserReservations,
   bulkUpdateStock,
   checkAvailability,
-  getAvailableProducts
+  getAvailableProducts,
 };

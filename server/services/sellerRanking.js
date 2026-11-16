@@ -43,7 +43,7 @@ const WEIGHTS = {
   reliability: 0.22,
   price: 0.18,
   distance: 0.18,
-  rating: 0.15
+  rating: 0.15,
 };
 
 const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
@@ -77,21 +77,23 @@ export const metricsForSellers = async (sellerIds, { now = new Date() } = {}) =>
       returns: 0,
       reviewCount: 0,
       reviewSum: 0,
-      since
+      since,
     });
   }
 
   const orders = await Order.find({
     seller: { $in: ids },
-    createdAt: { $gte: since }
+    createdAt: { $gte: since },
   })
     .select('seller status deliveredAt orderDate createdAt')
     .lean();
 
   const returns = await ReturnRequest.find({
     seller: { $in: ids },
-    createdAt: { $gte: since }
-  }).select('seller').lean();
+    createdAt: { $gte: since },
+  })
+    .select('seller')
+    .lean();
 
   for (const o of orders) {
     const row = bySeller.get(String(o.seller?._id || o.seller));
@@ -126,8 +128,10 @@ export const metricsForSellers = async (sellerIds, { now = new Date() } = {}) =>
    */
   const ownedProducts = await Product.find({
     seller: { $in: ids },
-    'ratings.createdAt': { $gte: since }
-  }).select('seller ratings').lean();
+    'ratings.createdAt': { $gte: since },
+  })
+    .select('seller ratings')
+    .lean();
 
   for (const prod of ownedProducts) {
     const row = bySeller.get(String(prod.seller?._id || prod.seller));
@@ -213,43 +217,48 @@ export const rankCandidates = async (candidates, { radiusKm = 10, completeCovera
   const scored = candidates.map((c) => {
     const m = metrics.get(String(c.sellerId || c.seller?._id || c.seller)) || {};
     const price = Number(c.priceTotal) || 0;
-    const priceScore = dearest > cheapest
-      ? 100 * (1 - (price - cheapest) / (dearest - cheapest))
-      : 80;
+    const priceScore = dearest > cheapest ? 100 * (1 - (price - cheapest) / (dearest - cheapest)) : 80;
 
     const factors = {
       speed: speedScore(m.avgDeliveryDays),
       reliability: reliabilityScore(m.returnPct, m.cancellationPct),
       price: priceScore,
       distance: distanceScore(c.distance, radiusKm),
-      rating: ratingScore(m.avgRating)
+      rating: ratingScore(m.avgRating),
     };
 
-    const score = Object.entries(factors)
-      .reduce((sum, [key, value]) => sum + value * WEIGHTS[key], 0);
+    const score = Object.entries(factors).reduce((sum, [key, value]) => sum + value * WEIGHTS[key], 0);
 
     const reasons = [];
-    reasons.push(m.avgDeliveryDays === null
-      ? 'No delivery in the last 90 days, so speed is unknown'
-      : `Usually delivers in ${m.avgDeliveryDays.toFixed(1)} days (${m.delivered} orders)`);
-    reasons.push(m.returnPct === null
-      ? 'No returns recorded yet'
-      : `${m.returnPct.toFixed(1)}% of orders ended in a return`);
+    reasons.push(
+      m.avgDeliveryDays === null
+        ? 'No delivery in the last 90 days, so speed is unknown'
+        : `Usually delivers in ${m.avgDeliveryDays.toFixed(1)} days (${m.delivered} orders)`
+    );
+    reasons.push(
+      m.returnPct === null ? 'No returns recorded yet' : `${m.returnPct.toFixed(1)}% of orders ended in a return`
+    );
     if (m.cancellationPct > 0) {
       reasons.push(`${m.cancellationPct.toFixed(1)}% of orders were cancelled by this seller`);
     }
-    reasons.push(c.distance === null || c.distance === undefined
-      ? 'Distance to the buyer is not measured'
-      : `${c.distance.toFixed(1)} km from the buyer`);
+    reasons.push(
+      c.distance === null || c.distance === undefined
+        ? 'Distance to the buyer is not measured'
+        : `${c.distance.toFixed(1)} km from the buyer`
+    );
     const tiedCheapest = prices.filter((x) => x === cheapest).length > 1;
-    reasons.push(price === cheapest
-      ? (tiedCheapest
-        ? `Tied for cheapest at ${inr(price)}`
-        : `Cheapest of the candidates at ${inr(price)}`)
-      : `Quotes ${inr(price)}`);
-    reasons.push(m.avgRating === null
-      ? 'Not rated by customers in the last 90 days'
-      : `Rated ${m.avgRating.toFixed(1)} from ${m.reviewCount} review${m.reviewCount === 1 ? '' : 's'}`);
+    reasons.push(
+      price === cheapest
+        ? tiedCheapest
+          ? `Tied for cheapest at ${inr(price)}`
+          : `Cheapest of the candidates at ${inr(price)}`
+        : `Quotes ${inr(price)}`
+    );
+    reasons.push(
+      m.avgRating === null
+        ? 'Not rated by customers in the last 90 days'
+        : `Rated ${m.avgRating.toFixed(1)} from ${m.reviewCount} review${m.reviewCount === 1 ? '' : 's'}`
+    );
     if (completeCoverage && c.coverage && !c.coverage.complete) {
       reasons.push(`Covers ${c.coverage.have} of ${c.coverage.need} lines, so it is ranked below full-cover sellers`);
     }
@@ -257,9 +266,7 @@ export const rankCandidates = async (candidates, { radiusKm = 10, completeCovera
     return {
       ...c,
       score: Math.round(score * 10) / 10,
-      scoreFactors: Object.fromEntries(
-        Object.entries(factors).map(([k, v]) => [k, Math.round(v * 10) / 10])
-      ),
+      scoreFactors: Object.fromEntries(Object.entries(factors).map(([k, v]) => [k, Math.round(v * 10) / 10])),
       scoreReasons: reasons,
       measured: {
         orders: m.orders ?? 0,
@@ -268,9 +275,9 @@ export const rankCandidates = async (candidates, { radiusKm = 10, completeCovera
         returnPct: m.returnPct === null ? null : Math.round(m.returnPct * 10) / 10,
         avgRating: m.avgRating === null ? null : Math.round(m.avgRating * 10) / 10,
         reviewCount: m.reviewCount ?? 0,
-        windowDays: WINDOW_DAYS
+        windowDays: WINDOW_DAYS,
       },
-      _coveragePenalty: completeCoverage && c.coverage && !c.coverage.complete ? 1 : 0
+      _coveragePenalty: completeCoverage && c.coverage && !c.coverage.complete ? 1 : 0,
     };
   });
 
@@ -292,8 +299,7 @@ export const staleSellerFlags = async (sellerIds) => {
   const docs = await Seller.find({ _id: { $in: sellerIds } })
     .select('name storeName rating avgDeliveryTime returnRate')
     .lean();
-  return docs.filter((d) => (d.avgDeliveryTime || 0) === 0 && (d.returnRate || 0) === 0)
-    .map((d) => String(d._id));
+  return docs.filter((d) => (d.avgDeliveryTime || 0) === 0 && (d.returnRate || 0) === 0).map((d) => String(d._id));
 };
 
 export const RANKING_WEIGHTS = WEIGHTS;

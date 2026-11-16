@@ -34,8 +34,8 @@ router.get('/', async (req, res) => {
         total,
         page: parseInt(page),
         limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit))
-      }
+        pages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (error) {
     console.error('Get blogs error:', error);
@@ -93,7 +93,7 @@ router.post('/', verifyToken, async (req, res) => {
       author: req.user._id,
       category: category || 'general',
       tags: tags || [],
-      isPublished: isPublished || false
+      isPublished: isPublished || false,
     });
 
     await blog.save();
@@ -101,7 +101,7 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Blog created successfully.',
-      blog
+      blog,
     });
   } catch (error) {
     console.error('Create blog error:', error);
@@ -138,7 +138,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Blog updated successfully.',
-      blog
+      blog,
     });
   } catch (error) {
     console.error('Update blog error:', error);
@@ -161,7 +161,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Blog deleted successfully.'
+      message: 'Blog deleted successfully.',
     });
   } catch (error) {
     console.error('Delete blog error:', error);
@@ -185,18 +185,17 @@ router.post('/:id/comment', verifyToken, async (req, res) => {
     blog.comments.push({
       user: req.user._id,
       text,
-      createdAt: new Date()
+      createdAt: new Date(),
     });
 
     await blog.save();
 
-    const updatedBlog = await Blog.findById(req.params.id)
-      .populate('comments.user', 'name avatar');
+    const updatedBlog = await Blog.findById(req.params.id).populate('comments.user', 'name avatar');
 
     res.json({
       success: true,
       message: 'Comment added.',
-      comments: updatedBlog.comments
+      comments: updatedBlog.comments,
     });
   } catch (error) {
     console.error('Add comment error:', error);
@@ -217,7 +216,7 @@ router.post('/:id/like', verifyToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Blog liked.',
-      likes: blog.likes
+      likes: blog.likes,
     });
   } catch (error) {
     console.error('Like blog error:', error);

@@ -42,7 +42,7 @@ const PIN_REGION_CENTRES = {
   751: [20.2961, 85.8245, 'Bhubaneswar, Odisha'],
   800: [25.5941, 85.1376, 'Patna, Bihar'],
   834: [23.6007, 85.5409, 'Ranchi, Jharkhand'],
-  802: [25.6125, 85.1548, 'Patna, Bihar']
+  802: [25.6125, 85.1548, 'Patna, Bihar'],
 };
 
 /**
@@ -58,10 +58,10 @@ export const resolvePincode = (pincode) => {
     // instead of being treated as having no location at all.
     const n = Number(digits);
     return {
-      lat: 8.4 + ((n % 2400) / 100),     // 8.4N .. 32.4N
-      lng: 68.1 + ((n % 2500) / 100),    // 68.1E .. 93.1E
+      lat: 8.4 + (n % 2400) / 100, // 8.4N .. 32.4N
+      lng: 68.1 + (n % 2500) / 100, // 68.1E .. 93.1E
       city: '',
-      source: 'pincode-estimated'
+      source: 'pincode-estimated',
     };
   }
   const [lat, lng, city] = hit;
@@ -92,7 +92,6 @@ export const haversineKm = (a, b) => {
   const toRad = (d) => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
-  const s = Math.sin(dLat / 2) ** 2
-    + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return Math.round(2 * R * Math.asin(Math.sqrt(s)) * 100) / 100;
 };

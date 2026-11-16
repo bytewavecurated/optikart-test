@@ -20,7 +20,7 @@ const styles = {
     padding: '20px 24px',
     borderRadius: 'var(--radius-xs)',
     boxShadow: 'var(--shadow)',
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
   },
   header: {
     display: 'flex',
@@ -122,16 +122,8 @@ export default function CategorySection({ title, subtitle }) {
 
       <div style={styles.scrollContainer} ref={scrollRef}>
         {CATEGORIES.map((cat) => (
-          <Link
-            key={cat.name}
-            to={cat.link}
-            style={styles.card}
-            className="category-card"
-          >
-            <div
-              style={styles.imageWrap}
-              className="category-image-wrap"
-            >
+          <Link key={cat.name} to={cat.link} style={styles.card} className="category-card">
+            <div style={styles.imageWrap} className="category-image-wrap">
               <img src={cat.image} alt={cat.name} style={styles.image} />
             </div>
             <span style={styles.name}>{cat.name}</span>
@@ -139,7 +131,9 @@ export default function CategorySection({ title, subtitle }) {
         ))}
 
         <Link to="/categories" style={styles.viewMore} className="view-more-btn">
-          View<br />More
+          View
+          <br />
+          More
         </Link>
       </div>
 

@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiAlertTriangle, FiArrowLeft, FiCalendar, FiCheckCircle, FiDollarSign, FiEye, FiEyeOff, FiMail, FiMapPin, FiPackage, FiPhone, FiShield, FiShoppingBag, FiStar, FiTrash2, FiUser } from 'react-icons/fi';
+import {
+  FiAlertTriangle,
+  FiArrowLeft,
+  FiCalendar,
+  FiCheckCircle,
+  FiDollarSign,
+  FiEye,
+  FiEyeOff,
+  FiMail,
+  FiMapPin,
+  FiPackage,
+  FiPhone,
+  FiShield,
+  FiShoppingBag,
+  FiStar,
+  FiTrash2,
+  FiUser,
+} from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -25,14 +42,14 @@ const SellerDetailView = () => {
       const [sellerRes, productsRes, ordersRes] = await Promise.all([
         adminApi.getSellerById(id),
         adminApi.getSellerProducts(id),
-        adminApi.getSellerOrders(id)
+        adminApi.getSellerOrders(id),
       ]);
       setSeller(oneOf(sellerRes.data));
       setProducts(listOf(productsRes.data));
       setOrders(listOf(ordersRes.data));
     } catch (error) {
       console.error(error);
-      toastError(error, "Failed to load seller details");
+      toastError(error, 'Failed to load seller details');
     } finally {
       setLoading(false);
     }
@@ -45,35 +62,40 @@ const SellerDetailView = () => {
       toast.success('Seller verified successfully');
       fetchSellerDetails();
     } catch (error) {
-      toastError(error, "Failed to verify seller");
+      toastError(error, 'Failed to verify seller');
     }
   };
 
   const handleBan = async (banType) => {
     const action = banType === 'ban' ? 'ban' : banType === 'shadow' ? 'shadow ban' : 'unban';
     if (!window.confirm(`Are you sure you want to ${action} this seller?`)) return;
-    
+
     try {
-      await adminApi.banSeller(id, { 
+      await adminApi.banSeller(id, {
         isBanned: banType === 'ban',
         isShadowBanned: banType === 'shadow',
-        banReason: banType !== 'unban' ? 'Banned by admin' : ''
+        banReason: banType !== 'unban' ? 'Banned by admin' : '',
       });
       toast.success(`Seller ${action}ned successfully`);
       fetchSellerDetails();
     } catch (error) {
-      toastError(error, "Failed to update seller status");
+      toastError(error, 'Failed to update seller status');
     }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to permanently delete this seller and all their products? This cannot be undone.')) return;
+    if (
+      !window.confirm(
+        'Are you sure you want to permanently delete this seller and all their products? This cannot be undone.'
+      )
+    )
+      return;
     try {
       await adminApi.deleteSeller(id);
       toast.success('Seller deleted successfully');
       navigate('/admin/sellers');
     } catch (error) {
-      toastError(error, "Failed to delete seller");
+      toastError(error, 'Failed to delete seller');
     }
   };
 
@@ -96,7 +118,11 @@ const SellerDetailView = () => {
         <main style={{ flex: 1 }}>
           <div className="container page-wrapper" style={{ textAlign: 'center', padding: '60px 20px' }}>
             <h2>Seller not found</h2>
-            <button onClick={() => navigate('/admin/sellers')} className="btn btn-primary" style={{ marginTop: '20px' }}>
+            <button
+              onClick={() => navigate('/admin/sellers')}
+              className="btn btn-primary"
+              style={{ marginTop: '20px' }}
+            >
               Back to Sellers
             </button>
           </div>
@@ -107,7 +133,7 @@ const SellerDetailView = () => {
   }
 
   const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-  const completedOrders = orders.filter(o => o.orderStatus === 'delivered').length;
+  const completedOrders = orders.filter((o) => o.orderStatus === 'delivered').length;
   const avgRating = seller.rating || 0;
 
   return (
@@ -115,28 +141,89 @@ const SellerDetailView = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
-          <button onClick={() => navigate('/admin/sellers')} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', color: 'var(--primary)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '20px', padding: 0 }}>
+          <button
+            onClick={() => navigate('/admin/sellers')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'none',
+              border: 'none',
+              color: 'var(--primary)',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              marginBottom: '20px',
+              padding: 0,
+            }}
+          >
             <FiArrowLeft /> Back to Sellers
           </button>
 
           {/* Seller Info Card */}
           <div className="card" style={{ padding: '24px', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: '20px',
+              }}
+            >
               <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--secondary)', color: 'var(--text-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 700 }}>
+                <div
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    background: 'var(--secondary)',
+                    color: 'var(--text-white)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '24px',
+                    fontWeight: 700,
+                  }}
+                >
                   {(seller.storeName || 'S')[0].toUpperCase()}
                 </div>
                 <div>
                   <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>{seller.storeName}</h2>
-                  <p style={{ fontSize: '13px', color: 'var(--text-light)' }}>Seller ID: {seller.sellerId || seller._id}</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-light)' }}>
+                    Seller ID: {seller.sellerId || seller._id}
+                  </p>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                     {seller.isVerified && (
-                      <span style={{ padding: '2px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--success-light)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          background: 'var(--success-light)',
+                          color: 'var(--success)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
                         <FiCheckCircle size={12} /> Verified
                       </span>
                     )}
                     {avgRating > 0 && (
-                      <span style={{ padding: '2px 8px', borderRadius: 'var(--radius-xs)', fontSize: '11px', fontWeight: 600, background: 'var(--warning-light)', color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          background: 'var(--warning-light)',
+                          color: 'var(--warning)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
                         <FiStar size={12} /> {avgRating.toFixed(1)}
                       </span>
                     )}
@@ -151,16 +238,28 @@ const SellerDetailView = () => {
                 )}
                 {!seller.isBanned && !seller.isShadowBanned && (
                   <>
-                    <button onClick={() => handleBan('shadow')} className="btn btn-outline btn-sm" style={{ fontSize: '12px' }}>
+                    <button
+                      onClick={() => handleBan('shadow')}
+                      className="btn btn-outline btn-sm"
+                      style={{ fontSize: '12px' }}
+                    >
                       <FiEyeOff size={14} /> Shadow Ban
                     </button>
-                    <button onClick={() => handleBan('ban')} className="btn btn-danger btn-sm" style={{ fontSize: '12px' }}>
+                    <button
+                      onClick={() => handleBan('ban')}
+                      className="btn btn-danger btn-sm"
+                      style={{ fontSize: '12px' }}
+                    >
                       <FiShield size={14} /> Ban Seller
                     </button>
                   </>
                 )}
                 {(seller.isBanned || seller.isShadowBanned) && (
-                  <button onClick={() => handleBan('unban')} className="btn btn-primary btn-sm" style={{ fontSize: '12px' }}>
+                  <button
+                    onClick={() => handleBan('unban')}
+                    className="btn btn-primary btn-sm"
+                    style={{ fontSize: '12px' }}
+                  >
                     <FiEye size={14} /> Unban Seller
                   </button>
                 )}
@@ -171,17 +270,44 @@ const SellerDetailView = () => {
             </div>
 
             {seller.isBanned && (
-              <div style={{ background: 'var(--danger-light)', border: '1px solid #ef5350', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Banned</p>
-                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Reason: {seller.banReason || 'No reason provided'}</p>
-                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>Banned on: {new Date(seller.bannedAt).toLocaleDateString()}</p>
+              <div
+                style={{
+                  background: 'var(--danger-light)',
+                  border: '1px solid #ef5350',
+                  borderRadius: 'var(--radius-xs)',
+                  padding: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                <p style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                  <FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Banned
+                </p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>
+                  Reason: {seller.banReason || 'No reason provided'}
+                </p>
+                <p style={{ color: 'var(--danger)', fontSize: '12px' }}>
+                  Banned on: {new Date(seller.bannedAt).toLocaleDateString()}
+                </p>
               </div>
             )}
 
             {seller.isShadowBanned && !seller.isBanned && (
-              <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning)', borderRadius: 'var(--radius-xs)', padding: '12px', marginBottom: '16px' }}>
-                <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}><FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Shadow Banned</p>
-                <p style={{ color: 'var(--warning)', fontSize: '12px' }}>Seller can still access the platform but with limited visibility</p>
+              <div
+                style={{
+                  background: 'var(--warning-light)',
+                  border: '1px solid var(--warning)',
+                  borderRadius: 'var(--radius-xs)',
+                  padding: '12px',
+                  marginBottom: '16px',
+                }}
+              >
+                <p style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                  <FiAlertTriangle size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Seller is Shadow
+                  Banned
+                </p>
+                <p style={{ color: 'var(--warning)', fontSize: '12px' }}>
+                  Seller can still access the platform but with limited visibility
+                </p>
               </div>
             )}
 
@@ -226,7 +352,14 @@ const SellerDetailView = () => {
           </div>
 
           {/* Stats Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px',
+              marginBottom: '24px',
+            }}
+          >
             <div className="card" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -275,27 +408,42 @@ const SellerDetailView = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-                      {['Product', 'Category', 'Price', 'Stock', 'Status'].map(h => (
-                        <th key={h} style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>
+                      {['Product', 'Category', 'Price', 'Stock', 'Status'].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: '12px',
+                            textAlign: 'left',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {products.slice(0, 10).map(product => (
+                    {products.slice(0, 10).map((product) => (
                       <tr key={product._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
                         <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>{product.title}</td>
                         <td style={{ padding: '12px', fontSize: '13px' }}>{product.category}</td>
-                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>₹{product.price?.toLocaleString()}</td>
+                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>
+                          ₹{product.price?.toLocaleString()}
+                        </td>
                         <td style={{ padding: '12px', fontSize: '13px' }}>{product.stock || 0}</td>
                         <td style={{ padding: '12px' }}>
-                          <span style={{ 
-                            padding: '4px 8px', 
-                            borderRadius: 'var(--radius-xs)', 
-                            fontSize: '11px', 
-                            fontWeight: 600,
-                            background: product.isActive ? 'var(--success-light)' : 'var(--danger-light)',
-                            color: product.isActive ? 'var(--success)' : 'var(--danger)'
-                          }}>
+                          <span
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 'var(--radius-xs)',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              background: product.isActive ? 'var(--success-light)' : 'var(--danger-light)',
+                              color: product.isActive ? 'var(--success)' : 'var(--danger)',
+                            }}
+                          >
                             {product.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
@@ -322,28 +470,57 @@ const SellerDetailView = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-                      {['Order ID', 'Customer', 'Date', 'Items', 'Amount', 'Status'].map(h => (
-                        <th key={h} style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>{h}</th>
+                      {['Order ID', 'Customer', 'Date', 'Items', 'Amount', 'Status'].map((h) => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: '12px',
+                            textAlign: 'left',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.slice(0, 10).map(order => (
+                    {orders.slice(0, 10).map((order) => (
                       <tr key={order._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>#{order.orderNumber || order._id.slice(-6)}</td>
+                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 500 }}>
+                          #{order.orderNumber || order._id.slice(-6)}
+                        </td>
                         <td style={{ padding: '12px', fontSize: '13px' }}>{order.user?.name || 'N/A'}</td>
-                        <td style={{ padding: '12px', fontSize: '13px' }}>{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td style={{ padding: '12px', fontSize: '13px' }}>
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </td>
                         <td style={{ padding: '12px', fontSize: '13px' }}>{order.items?.length || 0} items</td>
-                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>₹{order.totalAmount?.toLocaleString()}</td>
+                        <td style={{ padding: '12px', fontSize: '13px', fontWeight: 600 }}>
+                          ₹{order.totalAmount?.toLocaleString()}
+                        </td>
                         <td style={{ padding: '12px' }}>
-                          <span style={{ 
-                            padding: '4px 8px', 
-                            borderRadius: 'var(--radius-xs)', 
-                            fontSize: '11px', 
-                            fontWeight: 600,
-                            background: order.orderStatus === 'delivered' ? 'var(--success-light)' : order.orderStatus === 'cancelled' ? 'var(--danger-light)' : 'var(--warning-light)',
-                            color: order.orderStatus === 'delivered' ? 'var(--success)' : order.orderStatus === 'cancelled' ? 'var(--danger)' : 'var(--warning)'
-                          }}>
+                          <span
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 'var(--radius-xs)',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              background:
+                                order.orderStatus === 'delivered'
+                                  ? 'var(--success-light)'
+                                  : order.orderStatus === 'cancelled'
+                                    ? 'var(--danger-light)'
+                                    : 'var(--warning-light)',
+                              color:
+                                order.orderStatus === 'delivered'
+                                  ? 'var(--success)'
+                                  : order.orderStatus === 'cancelled'
+                                    ? 'var(--danger)'
+                                    : 'var(--warning)',
+                            }}
+                          >
                             {order.orderStatus}
                           </span>
                         </td>

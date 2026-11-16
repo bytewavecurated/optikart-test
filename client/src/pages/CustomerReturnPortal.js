@@ -46,18 +46,16 @@ const CustomerReturnPortal = () => {
   };
 
   const handleItemSelect = (productId, quantity) => {
-    const existing = selectedItems.find(item => item.productId === productId);
+    const existing = selectedItems.find((item) => item.productId === productId);
     if (existing) {
-      setSelectedItems(selectedItems.filter(item => item.productId !== productId));
+      setSelectedItems(selectedItems.filter((item) => item.productId !== productId));
     } else {
       setSelectedItems([...selectedItems, { productId, quantity: 1 }]);
     }
   };
 
   const handleQuantityChange = (productId, quantity) => {
-    setSelectedItems(selectedItems.map(item =>
-      item.productId === productId ? { ...item, quantity } : item
-    ));
+    setSelectedItems(selectedItems.map((item) => (item.productId === productId ? { ...item, quantity } : item)));
   };
 
   const handleImageUpload = (e) => {
@@ -93,7 +91,7 @@ const CustomerReturnPortal = () => {
         items: selectedItems,
         reason,
         description,
-        type: requestType
+        type: requestType,
       };
 
       const res = await returnsApi.create(returnData);
@@ -104,7 +102,7 @@ const CustomerReturnPortal = () => {
         // Upload images if any
         if (images.length > 0) {
           const formData = new FormData();
-          images.forEach(img => formData.append('images', img));
+          images.forEach((img) => formData.append('images', img));
 
           await returnsApi.uploadImages(res.data.returnRequest._id, formData);
           toast.success('Images uploaded successfully');
@@ -159,15 +157,30 @@ const CustomerReturnPortal = () => {
                 Days since delivery: {eligibility.daysSinceDelivery} / {eligibility.returnWindowDays}
                 {Array.isArray(eligibility.lineWindows) && eligibility.lineWindows.length > 0 && (
                   <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
-                    {eligibility.lineWindows.filter((l) => l.returnable).map((l, i) => (
-                      <div key={l.product || i} style={{ fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.name}</span>
-                        <span style={{ whiteSpace: 'nowrap' }}>
-                          {l.returnWindowDays === 0 ? 'Final sale' : `${Math.max(0, l.returnWindowDays - (eligibility.daysSinceDelivery || 0))} day(s) left`}
-                          {l.exchangeable ? '' : ' - no exchange'}
-                        </span>
-                      </div>
-                    ))}
+                    {eligibility.lineWindows
+                      .filter((l) => l.returnable)
+                      .map((l, i) => (
+                        <div
+                          key={l.product || i}
+                          style={{
+                            fontSize: 12.5,
+                            color: 'var(--text-secondary)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            gap: 10,
+                          }}
+                        >
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {l.name}
+                          </span>
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            {l.returnWindowDays === 0
+                              ? 'Final sale'
+                              : `${Math.max(0, l.returnWindowDays - (eligibility.daysSinceDelivery || 0))} day(s) left`}
+                            {l.exchangeable ? '' : ' - no exchange'}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 )}
               </p>
@@ -209,10 +222,20 @@ const CustomerReturnPortal = () => {
           <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Select Items to Return</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {eligibility.items.map((item, index) => (
-              <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '2px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  padding: '16px',
+                  border: '2px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                }}
+              >
                 <input
                   type="checkbox"
-                  checked={selectedItems.some(si => si.productId === item.product._id)}
+                  checked={selectedItems.some((si) => si.productId === item.product._id)}
                   onChange={() => handleItemSelect(item.product._id, item.quantity)}
                   style={{ width: '20px', height: '20px' }}
                 />
@@ -227,14 +250,14 @@ const CustomerReturnPortal = () => {
                     Quantity: {item.quantity} · Price: ₹{item.price}
                   </div>
                 </div>
-                {selectedItems.some(si => si.productId === item.product._id) && (
+                {selectedItems.some((si) => si.productId === item.product._id) && (
                   <div>
                     <label style={{ fontSize: '14px', marginRight: '8px' }}>Return Qty:</label>
                     <input
                       type="number"
                       min="1"
                       max={item.quantity}
-                      value={selectedItems.find(si => si.productId === item.product._id)?.quantity || 1}
+                      value={selectedItems.find((si) => si.productId === item.product._id)?.quantity || 1}
                       onChange={(e) => handleQuantityChange(item.product._id, parseInt(e.target.value))}
                       className="input"
                       style={{ width: '80px' }}
@@ -255,40 +278,70 @@ const CustomerReturnPortal = () => {
             onChange={(e) => setReason(e.target.value)}
             style={{ marginBottom: '16px' }}
           >
-          <div style={{ marginTop: 14 }}>
-            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: .5, color: 'var(--text-secondary)', marginBottom: 8 }}>
-              What would you like to do?
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {[
-                { value: 'return', title: 'Return for refund', desc: 'Send the item back and be refunded to the original payment method.' },
-                { value: 'exchange', title: 'Exchange', desc: 'Swap for another size or colour of the same product.' }
-              ].map((opt) => {
-                const disabled = opt.value === 'exchange' && exchangeBlocked;
-                return (
-                  <label
-                    key={opt.value}
-                    title={disabled ? 'One or more selected items cannot be exchanged' : ''}
-                    style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, border: `1px solid ${requestType === opt.value ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 10, background: requestType === opt.value ? 'var(--brand-tint)' : 'var(--bg-white)', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1 }}
-                  >
-                    <input
-                      type="radio"
-                      name="requestType"
-                      value={opt.value}
-                      checked={requestType === opt.value}
-                      disabled={disabled}
-                      onChange={() => setRequestType(opt.value)}
-                      style={{ marginTop: 3, accentColor: 'var(--brand)' }}
-                    />
-                    <span>
-                      <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{opt.title}</span>
-                      <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{opt.desc}</span>
-                    </span>
-                  </label>
-                );
-              })}
+            <div style={{ marginTop: 14 }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5,
+                  color: 'var(--text-secondary)',
+                  marginBottom: 8,
+                }}
+              >
+                What would you like to do?
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[
+                  {
+                    value: 'return',
+                    title: 'Return for refund',
+                    desc: 'Send the item back and be refunded to the original payment method.',
+                  },
+                  {
+                    value: 'exchange',
+                    title: 'Exchange',
+                    desc: 'Swap for another size or colour of the same product.',
+                  },
+                ].map((opt) => {
+                  const disabled = opt.value === 'exchange' && exchangeBlocked;
+                  return (
+                    <label
+                      key={opt.value}
+                      title={disabled ? 'One or more selected items cannot be exchanged' : ''}
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        alignItems: 'flex-start',
+                        padding: 12,
+                        border: `1px solid ${requestType === opt.value ? 'var(--brand)' : 'var(--border)'}`,
+                        borderRadius: 10,
+                        background: requestType === opt.value ? 'var(--brand-tint)' : 'var(--bg-white)',
+                        cursor: disabled ? 'not-allowed' : 'pointer',
+                        opacity: disabled ? 0.5 : 1,
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="requestType"
+                        value={opt.value}
+                        checked={requestType === opt.value}
+                        disabled={disabled}
+                        onChange={() => setRequestType(opt.value)}
+                        style={{ marginTop: 3, accentColor: 'var(--brand)' }}
+                      />
+                      <span>
+                        <span style={{ display: 'block', fontSize: 13.5, fontWeight: 700 }}>{opt.title}</span>
+                        <span style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                          {opt.desc}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
-          </div>
             <option value="">Select a reason</option>
             <option value="Defective product">Defective product</option>
             <option value="Wrong item received">Wrong item received</option>
@@ -317,13 +370,7 @@ const CustomerReturnPortal = () => {
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
             Upload up to 5 images showing the product condition
           </p>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleImageUpload}
-            style={{ marginBottom: '16px' }}
-          />
+          <input type="file" accept="image/*" multiple onChange={handleImageUpload} style={{ marginBottom: '16px' }} />
           {images.length > 0 && (
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               {images.map((img, index) => (
@@ -345,7 +392,7 @@ const CustomerReturnPortal = () => {
                       borderRadius: '50%',
                       width: '24px',
                       height: '24px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
                     }}
                   >
                     ×
@@ -366,10 +413,7 @@ const CustomerReturnPortal = () => {
           >
             {submitting ? 'Submitting...' : 'Submit Return Request'}
           </button>
-          <button
-            onClick={() => navigate('/orders')}
-            className="btn btn-outline"
-          >
+          <button onClick={() => navigate('/orders')} className="btn btn-outline">
             Cancel
           </button>
         </div>

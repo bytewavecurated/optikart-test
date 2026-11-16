@@ -12,15 +12,25 @@ const LENS_TYPES = [
   { id: 'single-vision', name: 'Single Vision', price: 799, description: 'For distance or reading' },
   { id: 'bifocal', name: 'Bifocal', price: 1499, description: 'Two prescriptions in one lens' },
   { id: 'progressive', name: 'Progressive', price: 2499, description: 'Seamless multi-distance vision' },
-  { id: 'computer', name: 'Computer/Gaming', price: 1299, description: 'Reduced eye strain for screens' }
+  { id: 'computer', name: 'Computer/Gaming', price: 1299, description: 'Reduced eye strain for screens' },
 ];
 
 const LENS_MATERIALS = [
   { id: 'cr39', name: 'CR-39', price: 0, description: 'Standard plastic lens' },
   { id: 'polycarbonate', name: 'Polycarbonate', price: 500, description: 'Impact resistant, lightweight' },
-  { id: 'high-index-1.67', name: 'High Index 1.67', price: 1500, description: 'Thin and light for strong prescriptions' },
-  { id: 'high-index-1.74', name: 'High Index 1.74', price: 2500, description: 'Ultra-thin for very strong prescriptions' },
-  { id: 'trivex', name: 'Trivex', price: 2000, description: 'Lightweight, excellent optics' }
+  {
+    id: 'high-index-1.67',
+    name: 'High Index 1.67',
+    price: 1500,
+    description: 'Thin and light for strong prescriptions',
+  },
+  {
+    id: 'high-index-1.74',
+    name: 'High Index 1.74',
+    price: 2500,
+    description: 'Ultra-thin for very strong prescriptions',
+  },
+  { id: 'trivex', name: 'Trivex', price: 2000, description: 'Lightweight, excellent optics' },
 ];
 
 const LENS_COATINGS = [
@@ -28,18 +38,18 @@ const LENS_COATINGS = [
   { id: 'anti-reflective', name: 'Anti-Reflective', price: 800, description: 'Reduces glare and reflections' },
   { id: 'blue-cut', name: 'Blue Cut', price: 1200, description: 'Blocks harmful blue light' },
   { id: 'photochromic', name: 'Photochromic', price: 2000, description: 'Transitions from clear to dark' },
-  { id: 'polarized', name: 'Polarized', price: 1800, description: 'Reduces glare from surfaces' }
+  { id: 'polarized', name: 'Polarized', price: 1800, description: 'Reduces glare from surfaces' },
 ];
 
 const LensSelection = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  
+
   const [step, setStep] = useState(1);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [selectedLensType, setSelectedLensType] = useState(null);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [selectedCoating, setSelectedCoating] = useState(null);
@@ -47,7 +57,7 @@ const LensSelection = () => {
   const [prescription, setPrescription] = useState({
     rightEye: { sphere: '', cylinder: '', axis: '', addition: '' },
     leftEye: { sphere: '', cylinder: '', axis: '', addition: '' },
-    pd: ''
+    pd: '',
   });
   const [prescriptionFile, setPrescriptionFile] = useState(null);
 
@@ -109,8 +119,8 @@ const LensSelection = () => {
           material: selectedMaterial.id,
           coating: selectedCoating.id,
           prescription: prescriptionMethod === 'manual' ? prescription : null,
-          prescriptionFile: prescriptionMethod === 'upload' ? prescriptionFile : null
-        }
+          prescriptionFile: prescriptionMethod === 'upload' ? prescriptionFile : null,
+        },
       };
 
       await cartApi.addWithLens(cartData);
@@ -167,7 +177,15 @@ const LensSelection = () => {
             {/* Step Indicator */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
               {[1, 2, 3, 4].map((s) => (
-                <div key={s} style={{ flex: 1, height: '4px', background: step >= s ? 'var(--primary)' : 'var(--border)', borderRadius: 'var(--radius-2xs)' }} />
+                <div
+                  key={s}
+                  style={{
+                    flex: 1,
+                    height: '4px',
+                    background: step >= s ? 'var(--primary)' : 'var(--border)',
+                    borderRadius: 'var(--radius-2xs)',
+                  }}
+                />
               ))}
             </div>
 
@@ -185,17 +203,17 @@ const LensSelection = () => {
                         padding: '20px',
                         cursor: 'pointer',
                         border: selectedLensType?.id === lens.id ? '2px solid var(--primary)' : '2px solid transparent',
-                        transition: 'all 0.2s'
+                        transition: 'all 0.2s',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', marginBottom: '4px' }}>{lens.name}</h3>
+                          <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', marginBottom: '4px' }}>
+                            {lens.name}
+                          </h3>
                           <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{lens.description}</p>
                         </div>
-                        <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
-                          +₹{lens.price}
-                        </div>
+                        <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>+₹{lens.price}</div>
                       </div>
                     </div>
                   ))}
@@ -224,13 +242,16 @@ const LensSelection = () => {
                       style={{
                         padding: '20px',
                         cursor: 'pointer',
-                        border: selectedMaterial?.id === material.id ? '2px solid var(--primary)' : '2px solid transparent',
-                        transition: 'all 0.2s'
+                        border:
+                          selectedMaterial?.id === material.id ? '2px solid var(--primary)' : '2px solid transparent',
+                        transition: 'all 0.2s',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', marginBottom: '4px' }}>{material.name}</h3>
+                          <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', marginBottom: '4px' }}>
+                            {material.name}
+                          </h3>
                           <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{material.description}</p>
                         </div>
                         <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
@@ -269,13 +290,16 @@ const LensSelection = () => {
                       style={{
                         padding: '20px',
                         cursor: 'pointer',
-                        border: selectedCoating?.id === coating.id ? '2px solid var(--primary)' : '2px solid transparent',
-                        transition: 'all 0.2s'
+                        border:
+                          selectedCoating?.id === coating.id ? '2px solid var(--primary)' : '2px solid transparent',
+                        transition: 'all 0.2s',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', marginBottom: '4px' }}>{coating.name}</h3>
+                          <h3 style={{ fontSize: '18px', fontFamily: 'var(--font-heading)', marginBottom: '4px' }}>
+                            {coating.name}
+                          </h3>
                           <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{coating.description}</p>
                         </div>
                         <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--primary)' }}>
@@ -305,7 +329,7 @@ const LensSelection = () => {
             {step === 4 && (
               <div>
                 <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Enter Prescription</h2>
-                
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                   <div
                     onClick={() => setPrescriptionMethod('manual')}
@@ -314,10 +338,12 @@ const LensSelection = () => {
                       padding: '20px',
                       cursor: 'pointer',
                       border: prescriptionMethod === 'manual' ? '2px solid var(--primary)' : '2px solid transparent',
-                      textAlign: 'center'
+                      textAlign: 'center',
                     }}
                   >
-                    <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>Enter Manually</h3>
+                    <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
+                      Enter Manually
+                    </h3>
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Type your prescription values</p>
                   </div>
                   <div
@@ -327,11 +353,13 @@ const LensSelection = () => {
                       padding: '20px',
                       cursor: 'pointer',
                       border: prescriptionMethod === 'upload' ? '2px solid var(--primary)' : '2px solid transparent',
-                      textAlign: 'center'
+                      textAlign: 'center',
                     }}
                   >
                     <FiUpload size={32} style={{ marginBottom: '8px' }} />
-                    <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>Upload Prescription</h3>
+                    <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '8px' }}>
+                      Upload Prescription
+                    </h3>
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Upload image or PDF</p>
                   </div>
                 </div>
@@ -339,7 +367,9 @@ const LensSelection = () => {
                 {prescriptionMethod === 'manual' && (
                   <div style={{ display: 'grid', gap: '16px' }}>
                     <div className="card" style={{ padding: '20px' }}>
-                      <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Right Eye (OD)</h3>
+                      <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>
+                        Right Eye (OD)
+                      </h3>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <div className="input-group">
                           <label>Sphere (SPH)</label>
@@ -347,7 +377,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.rightEye.sphere}
-                            onChange={(e) => setPrescription({ ...prescription, rightEye: { ...prescription.rightEye, sphere: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                rightEye: { ...prescription.rightEye, sphere: e.target.value },
+                              })
+                            }
                             placeholder="e.g., -2.50"
                           />
                         </div>
@@ -357,7 +392,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.rightEye.cylinder}
-                            onChange={(e) => setPrescription({ ...prescription, rightEye: { ...prescription.rightEye, cylinder: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                rightEye: { ...prescription.rightEye, cylinder: e.target.value },
+                              })
+                            }
                             placeholder="e.g., -0.75"
                           />
                         </div>
@@ -367,7 +407,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.rightEye.axis}
-                            onChange={(e) => setPrescription({ ...prescription, rightEye: { ...prescription.rightEye, axis: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                rightEye: { ...prescription.rightEye, axis: e.target.value },
+                              })
+                            }
                             placeholder="e.g., 180"
                           />
                         </div>
@@ -377,7 +422,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.rightEye.addition}
-                            onChange={(e) => setPrescription({ ...prescription, rightEye: { ...prescription.rightEye, addition: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                rightEye: { ...prescription.rightEye, addition: e.target.value },
+                              })
+                            }
                             placeholder="e.g., +2.00"
                           />
                         </div>
@@ -385,7 +435,9 @@ const LensSelection = () => {
                     </div>
 
                     <div className="card" style={{ padding: '20px' }}>
-                      <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>Left Eye (OS)</h3>
+                      <h3 style={{ fontSize: '16px', fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>
+                        Left Eye (OS)
+                      </h3>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <div className="input-group">
                           <label>Sphere (SPH)</label>
@@ -393,7 +445,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.leftEye.sphere}
-                            onChange={(e) => setPrescription({ ...prescription, leftEye: { ...prescription.leftEye, sphere: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                leftEye: { ...prescription.leftEye, sphere: e.target.value },
+                              })
+                            }
                             placeholder="e.g., -2.25"
                           />
                         </div>
@@ -403,7 +460,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.leftEye.cylinder}
-                            onChange={(e) => setPrescription({ ...prescription, leftEye: { ...prescription.leftEye, cylinder: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                leftEye: { ...prescription.leftEye, cylinder: e.target.value },
+                              })
+                            }
                             placeholder="e.g., -0.50"
                           />
                         </div>
@@ -413,7 +475,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.leftEye.axis}
-                            onChange={(e) => setPrescription({ ...prescription, leftEye: { ...prescription.leftEye, axis: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                leftEye: { ...prescription.leftEye, axis: e.target.value },
+                              })
+                            }
                             placeholder="e.g., 175"
                           />
                         </div>
@@ -423,7 +490,12 @@ const LensSelection = () => {
                             type="text"
                             className="input"
                             value={prescription.leftEye.addition}
-                            onChange={(e) => setPrescription({ ...prescription, leftEye: { ...prescription.leftEye, addition: e.target.value } })}
+                            onChange={(e) =>
+                              setPrescription({
+                                ...prescription,
+                                leftEye: { ...prescription.leftEye, addition: e.target.value },
+                              })
+                            }
                             placeholder="e.g., +2.00"
                           />
                         </div>
@@ -463,11 +535,7 @@ const LensSelection = () => {
                   <button onClick={() => setStep(3)} className="btn btn-outline btn-lg">
                     <FiArrowLeft size={16} /> Back
                   </button>
-                  <button
-                    onClick={handleAddToCart}
-                    className="btn btn-primary btn-lg"
-                    style={{ flex: 1 }}
-                  >
+                  <button onClick={handleAddToCart} className="btn btn-primary btn-lg" style={{ flex: 1 }}>
                     <FiCheck size={16} /> Add to Cart
                   </button>
                 </div>
@@ -479,11 +547,17 @@ const LensSelection = () => {
           <div>
             <div className="card" style={{ padding: '24px', position: 'sticky', top: '100px' }}>
               <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '20px' }}>Order Summary</h3>
-              
+
               <img
                 src={product.images?.[0] || '/placeholder.svg'}
                 alt={product.title}
-                style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: 'var(--radius)', marginBottom: '16px' }}
+                style={{
+                  width: '100%',
+                  height: '200px',
+                  objectFit: 'cover',
+                  borderRadius: 'var(--radius)',
+                  marginBottom: '16px',
+                }}
               />
 
               <div style={{ marginBottom: '16px' }}>
@@ -494,21 +568,27 @@ const LensSelection = () => {
               {selectedLensType && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Lens Type</div>
-                  <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedLensType.name} (+₹{selectedLensType.price})</div>
+                  <div style={{ fontSize: '16px', fontWeight: 600 }}>
+                    {selectedLensType.name} (+₹{selectedLensType.price})
+                  </div>
                 </div>
               )}
 
               {selectedMaterial && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Material</div>
-                  <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedMaterial.name} {selectedMaterial.price > 0 && `(+₹${selectedMaterial.price})`}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 600 }}>
+                    {selectedMaterial.name} {selectedMaterial.price > 0 && `(+₹${selectedMaterial.price})`}
+                  </div>
                 </div>
               )}
 
               {selectedCoating && (
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Coating</div>
-                  <div style={{ fontSize: '16px', fontWeight: 600 }}>{selectedCoating.name} {selectedCoating.price > 0 && `(+₹${selectedCoating.price})`}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 600 }}>
+                    {selectedCoating.name} {selectedCoating.price > 0 && `(+₹${selectedCoating.price})`}
+                  </div>
                 </div>
               )}
 

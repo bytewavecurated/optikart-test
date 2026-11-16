@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { prescriptionVerification } from '../../services/api';
-import { FiCheckCircle, FiXCircle, FiExternalLink, FiFileText, FiClock, FiAlertTriangle, FiPaperclip } from 'react-icons/fi';
+import {
+  FiCheckCircle,
+  FiXCircle,
+  FiExternalLink,
+  FiFileText,
+  FiClock,
+  FiAlertTriangle,
+  FiPaperclip,
+} from 'react-icons/fi';
 import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
 import toast from 'react-hot-toast';
@@ -17,14 +25,24 @@ import toast from 'react-hot-toast';
  * their head to spot a transposed axis.
  */
 
-const th = { padding: '10px 12px', textAlign: 'left', fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-secondary)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
+const th = {
+  padding: '10px 12px',
+  textAlign: 'left',
+  fontSize: 11.5,
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: 0.4,
+  color: 'var(--text-secondary)',
+  borderBottom: '1px solid var(--border)',
+  whiteSpace: 'nowrap',
+};
 const td = { padding: '12px', fontSize: 13.5, borderBottom: '1px solid var(--border-light)', verticalAlign: 'top' };
 
 const STATUS_TONE = {
   pending: { color: 'var(--warning)', bg: 'var(--warning-light)' },
   needs_review: { color: 'var(--danger)', bg: 'var(--danger-light)' },
   approved: { color: 'var(--success)', bg: 'var(--success-light)' },
-  rejected: { color: 'var(--text-secondary)', bg: 'var(--bg-subtle)' }
+  rejected: { color: 'var(--text-secondary)', bg: 'var(--bg-subtle)' },
 };
 
 const signed = (n) => (n === undefined || n === null ? '' : `${n > 0 ? '+' : ''}${n}`);
@@ -75,7 +93,9 @@ export default function PrescriptionQueue() {
     }
   }, [showAll]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const approve = async (row) => {
     setBusy(row._id);
@@ -137,35 +157,72 @@ export default function PrescriptionQueue() {
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          gap: 12,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
         <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
           {showAll ? 'All prescription checks' : 'Waiting to be checked'}
         </h2>
         <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{rows.length} record(s)</span>
-        <button className="btn btn-outline" style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: 13 }} onClick={() => setShowAll((v) => !v)}>
+        <button
+          className="btn btn-outline"
+          style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: 13 }}
+          onClick={() => setShowAll((v) => !v)}
+        >
           {showAll ? 'Show pending only' : 'Show history'}
         </button>
       </div>
 
       {err && (
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-light)', color: 'var(--danger)', fontSize: 13.5 }}>
+        <div
+          style={{
+            padding: '14px 20px',
+            borderBottom: '1px solid var(--border-light)',
+            color: 'var(--danger)',
+            fontSize: 13.5,
+          }}
+        >
           {err}
         </div>
       )}
 
       {loading ? (
-        <div style={{ padding: 50, textAlign: 'center' }}><div className="spinner" /></div>
+        <div style={{ padding: 50, textAlign: 'center' }}>
+          <div className="spinner" />
+        </div>
       ) : rows.length === 0 ? (
         <div style={{ padding: 34, textAlign: 'center', color: 'var(--text-secondary)' }}>
           <FiCheckCircle size={30} color="var(--success)" />
-          <p style={{ margin: '10px 0 0' }}>{showAll ? 'No prescription records yet.' : 'Nothing waiting. Every upload has been checked.'}</p>
+          <p style={{ margin: '10px 0 0' }}>
+            {showAll ? 'No prescription records yet.' : 'Nothing waiting. Every upload has been checked.'}
+          </p>
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Patient', 'Right eye', 'Left eye', 'Lens / PD', 'Optometrist', 'Uploaded', 'Findings', 'Decision'].map((h) => <th key={h} style={th}>{h}</th>)}
+                {[
+                  'Patient',
+                  'Right eye',
+                  'Left eye',
+                  'Lens / PD',
+                  'Optometrist',
+                  'Uploaded',
+                  'Findings',
+                  'Decision',
+                ].map((h) => (
+                  <th key={h} style={th}>
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -180,24 +237,51 @@ export default function PrescriptionQueue() {
                       <div style={{ fontWeight: 700 }}>{p.patientName || row.user?.name || 'Customer'}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-light)' }}>{row.user?.email || '—'}</div>
                     </td>
-                    <td style={{ ...td, fontFamily: 'ui-monospace, monospace', fontSize: 12.5 }}>{eyeText(p.rightEye)}</td>
-                    <td style={{ ...td, fontFamily: 'ui-monospace, monospace', fontSize: 12.5 }}>{eyeText(p.leftEye)}</td>
+                    <td style={{ ...td, fontFamily: 'ui-monospace, monospace', fontSize: 12.5 }}>
+                      {eyeText(p.rightEye)}
+                    </td>
+                    <td style={{ ...td, fontFamily: 'ui-monospace, monospace', fontSize: 12.5 }}>
+                      {eyeText(p.leftEye)}
+                    </td>
                     <td style={{ ...td, fontSize: 12.5 }}>
                       <div>{p.type || '—'}</div>
-                      <div style={{ color: 'var(--text-light)' }}>{p.pd ? `PD ${p.pd}` : ''}{p.nearPd ? ` · near ${p.nearPd}` : ''}</div>
+                      <div style={{ color: 'var(--text-light)' }}>
+                        {p.pd ? `PD ${p.pd}` : ''}
+                        {p.nearPd ? ` · near ${p.nearPd}` : ''}
+                      </div>
                     </td>
                     <td style={td}>
                       {p.doctorName || '—'}
                       {p.dateOfExamination && (
                         <div style={{ fontSize: 12, color: 'var(--text-light)' }}>
-                          examined {new Date(p.dateOfExamination).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          examined{' '}
+                          {new Date(p.dateOfExamination).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
                         </div>
                       )}
                     </td>
                     <td style={{ ...td, whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>
-                      <div><FiClock size={11} /> {new Date(row.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
+                      <div>
+                        <FiClock size={11} />{' '}
+                        {new Date(row.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </div>
                       {p.fileUrl && (
-                        <a href={p.fileUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--brand)', fontSize: 12.5, display: 'inline-flex', gap: 4, alignItems: 'center', marginTop: 4 }}>
+                        <a
+                          href={p.fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            color: 'var(--brand)',
+                            fontSize: 12.5,
+                            display: 'inline-flex',
+                            gap: 4,
+                            alignItems: 'center',
+                            marginTop: 4,
+                          }}
+                        >
                           <FiFileText size={12} /> open file <FiExternalLink size={11} />
                         </a>
                       )}
@@ -213,8 +297,11 @@ export default function PrescriptionQueue() {
                               onChange={(e) => attachDocument(row, e.target.files?.[0])}
                             />
                           ) : (
-                            <button className="btn btn-outline" style={{ padding: '2px 8px', fontSize: 12 }}
-                              onClick={() => setAttaching(row._id)}>
+                            <button
+                              className="btn btn-outline"
+                              style={{ padding: '2px 8px', fontSize: 12 }}
+                              onClick={() => setAttaching(row._id)}
+                            >
                               attach clearer copy
                             </button>
                           )}
@@ -222,14 +309,33 @@ export default function PrescriptionQueue() {
                       )}
                       {(p.previousFiles || []).length > 0 && (
                         <div style={{ marginTop: 4 }}>
-                          <button style={{ background: 'none', border: 'none', padding: 0, color: 'var(--brand)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}
-                            onClick={() => setHistoryFor(historyFor === row._id ? '' : row._id)}>
+                          <button
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              color: 'var(--brand)',
+                              fontSize: 12,
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                            }}
+                            onClick={() => setHistoryFor(historyFor === row._id ? '' : row._id)}
+                          >
                             {p.previousFiles.length} earlier cop{p.previousFiles.length === 1 ? 'y' : 'ies'}
                           </button>
                           {historyFor === row._id && (
                             <ul style={{ margin: '4px 0 0', paddingLeft: 16, fontSize: 12 }}>
                               {p.previousFiles.map((u, i) => (
-                                <li key={i}><a href={u} target="_blank" rel="noreferrer" style={{ color: 'var(--text-secondary)' }}>{u.split('/').pop()}</a></li>
+                                <li key={i}>
+                                  <a
+                                    href={u}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ color: 'var(--text-secondary)' }}
+                                  >
+                                    {u.split('/').pop()}
+                                  </a>
+                                </li>
                               ))}
                             </ul>
                           )}
@@ -241,11 +347,23 @@ export default function PrescriptionQueue() {
                         <span style={{ fontSize: 12.5, color: 'var(--success)' }}>values look plausible</span>
                       ) : (
                         <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12.5, color: 'var(--danger)' }}>
-                          {flags.map((x, i) => <li key={i}>{x}</li>)}
+                          {flags.map((x, i) => (
+                            <li key={i}>{x}</li>
+                          ))}
                         </ul>
                       )}
                       <div style={{ marginTop: 6 }}>
-                        <span style={{ fontSize: 11.5, fontWeight: 700, color: tone.color, background: tone.bg, padding: '2px 8px', borderRadius: 4, textTransform: 'capitalize' }}>
+                        <span
+                          style={{
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            color: tone.color,
+                            background: tone.bg,
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            textTransform: 'capitalize',
+                          }}
+                        >
                           {String(row.status).replace(/_/g, ' ')}
                         </span>
                       </div>
@@ -264,7 +382,11 @@ export default function PrescriptionQueue() {
                       )}
                       {(row.status === 'pending' || row.status === 'needs_review') && (
                         <>
-                          {row.verifiedBy ? <div style={{ fontSize: 12.5, color: 'var(--text-light)', marginBottom: 6 }}>checked by {row.verifiedBy}</div> : null}
+                          {row.verifiedBy ? (
+                            <div style={{ fontSize: 12.5, color: 'var(--text-light)', marginBottom: 6 }}>
+                              checked by {row.verifiedBy}
+                            </div>
+                          ) : null}
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button
                               className="btn btn-primary"
@@ -276,8 +398,16 @@ export default function PrescriptionQueue() {
                             </button>
                             <button
                               className="btn btn-outline"
-                              style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                              onClick={() => { setRejecting(open ? '' : row._id); setReason(''); }}
+                              style={{
+                                padding: '5px 10px',
+                                fontSize: 12.5,
+                                color: 'var(--danger)',
+                                borderColor: 'var(--danger)',
+                              }}
+                              onClick={() => {
+                                setRejecting(open ? '' : row._id);
+                                setReason('');
+                              }}
                             >
                               <FiXCircle size={12} /> Reject
                             </button>
@@ -291,7 +421,15 @@ export default function PrescriptionQueue() {
                           />
                           {open && (
                             <div style={{ marginTop: 8 }}>
-                              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                              <label
+                                style={{
+                                  display: 'block',
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  color: 'var(--text-secondary)',
+                                  marginBottom: 4,
+                                }}
+                              >
                                 <FiAlertTriangle size={11} /> Reason the customer will see
                               </label>
                               <textarea
@@ -303,10 +441,26 @@ export default function PrescriptionQueue() {
                                 style={{ width: '100%', fontSize: 12.5, fontFamily: 'inherit' }}
                               />
                               <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                                <button className="btn btn-outline" style={{ padding: '5px 10px', fontSize: 12.5, color: 'var(--danger)', borderColor: 'var(--danger)' }} disabled={busy === row._id} onClick={() => reject(row)}>
+                                <button
+                                  className="btn btn-outline"
+                                  style={{
+                                    padding: '5px 10px',
+                                    fontSize: 12.5,
+                                    color: 'var(--danger)',
+                                    borderColor: 'var(--danger)',
+                                  }}
+                                  disabled={busy === row._id}
+                                  onClick={() => reject(row)}
+                                >
                                   {busy === row._id ? 'Saving…' : 'Confirm rejection'}
                                 </button>
-                                <button className="btn btn-outline" style={{ padding: '5px 10px', fontSize: 12.5 }} onClick={() => setRejecting('')}>Cancel</button>
+                                <button
+                                  className="btn btn-outline"
+                                  style={{ padding: '5px 10px', fontSize: 12.5 }}
+                                  onClick={() => setRejecting('')}
+                                >
+                                  Cancel
+                                </button>
                               </div>
                             </div>
                           )}

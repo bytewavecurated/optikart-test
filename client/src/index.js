@@ -14,38 +14,38 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <ErrorBoundary>
-      <AuthProvider>
-        <UserBehaviorProvider>
-          <CartProvider>
-            <App />
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: 'var(--bg-white)',
-                  color: 'var(--text-primary)',
-                  boxShadow: 'var(--shadow-lg)',
-                  borderRadius: 'var(--radius-xs)',
-                  fontSize: '14px',
-                },
-                success: {
-                  iconTheme: {
-                    primary: 'var(--success)',
-                    secondary: 'var(--bg-white)',
+        <AuthProvider>
+          <UserBehaviorProvider>
+            <CartProvider>
+              <App />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: 'var(--bg-white)',
+                    color: 'var(--text-primary)',
+                    boxShadow: 'var(--shadow-lg)',
+                    borderRadius: 'var(--radius-xs)',
+                    fontSize: '14px',
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: 'var(--danger)',
-                    secondary: 'var(--bg-white)',
+                  success: {
+                    iconTheme: {
+                      primary: 'var(--success)',
+                      secondary: 'var(--bg-white)',
+                    },
                   },
-                },
-              }}
-            />
-          </CartProvider>
-        </UserBehaviorProvider>
-      </AuthProvider>
+                  error: {
+                    iconTheme: {
+                      primary: 'var(--danger)',
+                      secondary: 'var(--bg-white)',
+                    },
+                  },
+                }}
+              />
+            </CartProvider>
+          </UserBehaviorProvider>
+        </AuthProvider>
       </ErrorBoundary>
     </BrowserRouter>
   </React.StrictMode>

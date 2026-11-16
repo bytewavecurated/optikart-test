@@ -1,13 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiPackage, FiShoppingBag, FiDollarSign, FiTrendingUp, FiPlus, FiBell, FiCreditCard, FiBox, FiRefreshCw, FiBarChart2, FiTag } from 'react-icons/fi';
+import {
+  FiPackage,
+  FiShoppingBag,
+  FiDollarSign,
+  FiTrendingUp,
+  FiPlus,
+  FiBell,
+  FiCreditCard,
+  FiBox,
+  FiRefreshCw,
+  FiBarChart2,
+  FiTag,
+} from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import { seller as sellerApi, notifications } from '../../services/api';
 import { onNewOrder, offNewOrder } from '../../services/socket';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
-import { listOf, oneOf } from '../../services/apiResponse.js';;
+import { listOf, oneOf } from '../../services/apiResponse.js';
 
 const SellerDashboard = () => {
   const { seller: sellerData } = useAuth();
@@ -44,10 +56,38 @@ const SellerDashboard = () => {
   }, []);
 
   const statCards = [
-    { label: 'Total Orders', value: stats.totalOrders, icon: <FiShoppingBag />, color: 'var(--brand)', bg: 'var(--brand-tint)', link: '/seller/orders' },
-    { label: 'Revenue', value: `₹${(stats.totalRevenue || 0).toLocaleString()}`, icon: <FiDollarSign />, color: 'var(--success)', bg: 'var(--success-light)', link: '/seller/analytics' },
-    { label: 'Products', value: stats.totalProducts, icon: <FiPackage />, color: 'var(--warning)', bg: 'var(--warning-light)', link: '/seller/products' },
-    { label: 'Pending Orders', value: stats.pendingOrders, icon: <FiTrendingUp />, color: 'var(--danger)', bg: 'var(--brand-tint)', link: '/seller/orders' },
+    {
+      label: 'Total Orders',
+      value: stats.totalOrders,
+      icon: <FiShoppingBag />,
+      color: 'var(--brand)',
+      bg: 'var(--brand-tint)',
+      link: '/seller/orders',
+    },
+    {
+      label: 'Revenue',
+      value: `₹${(stats.totalRevenue || 0).toLocaleString()}`,
+      icon: <FiDollarSign />,
+      color: 'var(--success)',
+      bg: 'var(--success-light)',
+      link: '/seller/analytics',
+    },
+    {
+      label: 'Products',
+      value: stats.totalProducts,
+      icon: <FiPackage />,
+      color: 'var(--warning)',
+      bg: 'var(--warning-light)',
+      link: '/seller/products',
+    },
+    {
+      label: 'Pending Orders',
+      value: stats.pendingOrders,
+      icon: <FiTrendingUp />,
+      color: 'var(--danger)',
+      bg: 'var(--brand-tint)',
+      link: '/seller/orders',
+    },
   ];
 
   return (
@@ -61,53 +101,132 @@ const SellerDashboard = () => {
               <p style={{ fontSize: '14px', color: 'var(--text-light)' }}>Here's what's happening with your store</p>
             </div>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              <Link to="/seller/stock" className="btn btn-outline"><FiTag /> My Listings</Link>
-              <Link to="/seller/brand-stock" className="btn btn-outline"><FiTag /> Brand Listings</Link>
-              <Link to="/seller/inventory" className="btn btn-outline"><FiBox /> Inventory</Link>
-              <Link to="/seller/returns" className="btn btn-outline"><FiRefreshCw /> Returns</Link>
-              <Link to="/seller/inventory-analytics" className="btn btn-outline"><FiBarChart2 /> Inventory Analytics</Link>
-              <Link to="/seller/return-analytics" className="btn btn-outline"><FiBarChart2 /> Return Analytics</Link>
-              <Link to="/seller/payouts" className="btn btn-outline"><FiCreditCard /> Payouts</Link>
-              <Link to="/seller/products" className="btn btn-primary"><FiPlus /> Add Product</Link>
+              <Link to="/seller/stock" className="btn btn-outline">
+                <FiTag /> My Listings
+              </Link>
+              <Link to="/seller/brand-stock" className="btn btn-outline">
+                <FiTag /> Brand Listings
+              </Link>
+              <Link to="/seller/inventory" className="btn btn-outline">
+                <FiBox /> Inventory
+              </Link>
+              <Link to="/seller/returns" className="btn btn-outline">
+                <FiRefreshCw /> Returns
+              </Link>
+              <Link to="/seller/inventory-analytics" className="btn btn-outline">
+                <FiBarChart2 /> Inventory Analytics
+              </Link>
+              <Link to="/seller/return-analytics" className="btn btn-outline">
+                <FiBarChart2 /> Return Analytics
+              </Link>
+              <Link to="/seller/payouts" className="btn btn-outline">
+                <FiCreditCard /> Payouts
+              </Link>
+              <Link to="/seller/products" className="btn btn-primary">
+                <FiPlus /> Add Product
+              </Link>
             </div>
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><div className="spinner spinner-lg" /></div>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+              <div className="spinner spinner-lg" />
+            </div>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '16px',
+                  marginBottom: '24px',
+                }}
+              >
                 {statCards.map((card) => (
-                  <Link key={card.label} to={card.link} className="card" style={{ padding: '20px', transition: 'box-shadow 0.2s' }}>
+                  <Link
+                    key={card.label}
+                    to={card.link}
+                    className="card"
+                    style={{ padding: '20px', transition: 'box-shadow 0.2s' }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>{card.label}</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '4px' }}>
+                          {card.label}
+                        </p>
                         <h3 style={{ fontSize: '24px', fontWeight: 700 }}>{card.value}</h3>
                       </div>
-                      <div style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-md)', background: card.bg, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>{card.icon}</div>
+                      <div
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: 'var(--radius-md)',
+                          background: card.bg,
+                          color: card.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '18px',
+                        }}
+                      >
+                        {card.icon}
+                      </div>
                     </div>
                   </Link>
                 ))}
               </div>
 
               <div className="card" style={{ marginBottom: '24px' }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Recent Orders</h2>
-                  <Link to="/seller/orders" style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 500 }}>View All</Link>
+                  <Link to="/seller/orders" style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 500 }}>
+                    View All
+                  </Link>
                 </div>
                 {recentOrders.length === 0 ? (
                   <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>No orders yet</div>
                 ) : (
                   <div>
                     {recentOrders.map((order) => (
-                      <div key={order._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderBottom: '1px solid var(--border-light)' }}>
+                      <div
+                        key={order._id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 20px',
+                          borderBottom: '1px solid var(--border-light)',
+                        }}
+                      >
                         <div>
-                          <span style={{ fontSize: '14px', fontWeight: 500 }}>#{order._id.slice(-8).toUpperCase()}</span>
-                          <span style={{ fontSize: '13px', color: 'var(--text-light)', marginLeft: '12px' }}>{new Date(order.createdAt).toLocaleDateString()}</span>
+                          <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                            #{order._id.slice(-8).toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '13px', color: 'var(--text-light)', marginLeft: '12px' }}>
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <span style={{ fontSize: '14px', fontWeight: 600 }}>₹{order.total}</span>
-                          <span className="badge" style={{ background: order.status === 'delivered' ? 'var(--success-light)' : 'var(--warning-light)', color: order.status === 'delivered' ? 'var(--success)' : 'var(--warning)', textTransform: 'capitalize' }}>{order.status}</span>
+                          <span
+                            className="badge"
+                            style={{
+                              background:
+                                order.status === 'delivered' ? 'var(--success-light)' : 'var(--warning-light)',
+                              color: order.status === 'delivered' ? 'var(--success)' : 'var(--warning)',
+                              textTransform: 'capitalize',
+                            }}
+                          >
+                            {order.status}
+                          </span>
                         </div>
                       </div>
                     ))}

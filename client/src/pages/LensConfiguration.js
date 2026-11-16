@@ -8,29 +8,109 @@ import Footer from '../components/Footer';
 import { oneOf } from '../services/apiResponse.js';
 
 const LENS_TYPES = [
-  { value: 'single-vision', label: 'Single Vision', description: 'One prescription power across the entire lens. Best for basic nearsightedness or farsightedness.', basePrice: 499 },
-  { value: 'bifocal', label: 'Bifocal', description: 'Two distinct zones for near and far vision. Ideal if you need both reading and distance correction.', basePrice: 1299 },
-  { value: 'progressive', label: 'Progressive', description: 'Seamless transition from distance to near vision with no visible lines. Premium all-in-one solution.', basePrice: 2499 },
-  { value: 'reading', label: 'Reading', description: 'Dedicated near-vision lenses for close-up tasks like reading, sewing, or screen work.', basePrice: 399 },
-  { value: 'computer', label: 'Computer / Digital', description: 'Optimized for intermediate screen distance. Reduces eye strain from prolonged digital device use.', basePrice: 899 },
+  {
+    value: 'single-vision',
+    label: 'Single Vision',
+    description: 'One prescription power across the entire lens. Best for basic nearsightedness or farsightedness.',
+    basePrice: 499,
+  },
+  {
+    value: 'bifocal',
+    label: 'Bifocal',
+    description: 'Two distinct zones for near and far vision. Ideal if you need both reading and distance correction.',
+    basePrice: 1299,
+  },
+  {
+    value: 'progressive',
+    label: 'Progressive',
+    description: 'Seamless transition from distance to near vision with no visible lines. Premium all-in-one solution.',
+    basePrice: 2499,
+  },
+  {
+    value: 'reading',
+    label: 'Reading',
+    description: 'Dedicated near-vision lenses for close-up tasks like reading, sewing, or screen work.',
+    basePrice: 399,
+  },
+  {
+    value: 'computer',
+    label: 'Computer / Digital',
+    description: 'Optimized for intermediate screen distance. Reduces eye strain from prolonged digital device use.',
+    basePrice: 899,
+  },
 ];
 
 const LENS_MATERIALS = [
-  { value: 'cr39', label: 'CR-39', description: 'Standard plastic lens. Affordable with good optical clarity.', multiplier: 1 },
-  { value: 'polycarbonate', label: 'Polycarbonate', description: 'Impact-resistant and lightweight. Great for active lifestyles and safety.', multiplier: 1.3 },
-  { value: 'high-index-1.67', label: 'High Index 1.67', description: 'Thinner and lighter than standard lenses. Ideal for moderate prescriptions.', multiplier: 1.6 },
-  { value: 'high-index-1.74', label: 'High Index 1.74', description: 'The thinnest option available. Best for strong prescriptions.', multiplier: 2 },
-  { value: 'trivex', label: 'Trivex', description: 'Ultra-lightweight with superior impact resistance. Excellent optical quality.', multiplier: 1.5 },
-  { value: 'glass', label: 'Glass', description: 'Scratch-resistant with excellent optical clarity. Heavier than plastic options.', multiplier: 1.2 },
+  {
+    value: 'cr39',
+    label: 'CR-39',
+    description: 'Standard plastic lens. Affordable with good optical clarity.',
+    multiplier: 1,
+  },
+  {
+    value: 'polycarbonate',
+    label: 'Polycarbonate',
+    description: 'Impact-resistant and lightweight. Great for active lifestyles and safety.',
+    multiplier: 1.3,
+  },
+  {
+    value: 'high-index-1.67',
+    label: 'High Index 1.67',
+    description: 'Thinner and lighter than standard lenses. Ideal for moderate prescriptions.',
+    multiplier: 1.6,
+  },
+  {
+    value: 'high-index-1.74',
+    label: 'High Index 1.74',
+    description: 'The thinnest option available. Best for strong prescriptions.',
+    multiplier: 2,
+  },
+  {
+    value: 'trivex',
+    label: 'Trivex',
+    description: 'Ultra-lightweight with superior impact resistance. Excellent optical quality.',
+    multiplier: 1.5,
+  },
+  {
+    value: 'glass',
+    label: 'Glass',
+    description: 'Scratch-resistant with excellent optical clarity. Heavier than plastic options.',
+    multiplier: 1.2,
+  },
 ];
 
 const LENS_COATINGS = [
   { value: 'standard', label: 'Standard', description: 'Basic lens coating with essential protection.', price: 0 },
-  { value: 'anti-reflective', label: 'Anti-Reflective', description: 'Reduces glare and reflections. Improves clarity and reduces eye strain.', price: 599 },
-  { value: 'blue-cut', label: 'Blue Cut', description: 'Filters harmful blue light from screens and digital devices.', price: 799 },
-  { value: 'photochromic', label: 'Photochromic', description: 'Automatically darkens in sunlight. Works as both regular and sunglasses.', price: 1499 },
-  { value: 'polarized', label: 'Polarized', description: 'Eliminates glare from reflective surfaces. Perfect for driving and outdoor activities.', price: 1199 },
-  { value: 'uv-protection', label: 'UV Protection', description: 'Blocks 100% of harmful UVA and UVB rays.', price: 399 },
+  {
+    value: 'anti-reflective',
+    label: 'Anti-Reflective',
+    description: 'Reduces glare and reflections. Improves clarity and reduces eye strain.',
+    price: 599,
+  },
+  {
+    value: 'blue-cut',
+    label: 'Blue Cut',
+    description: 'Filters harmful blue light from screens and digital devices.',
+    price: 799,
+  },
+  {
+    value: 'photochromic',
+    label: 'Photochromic',
+    description: 'Automatically darkens in sunlight. Works as both regular and sunglasses.',
+    price: 1499,
+  },
+  {
+    value: 'polarized',
+    label: 'Polarized',
+    description: 'Eliminates glare from reflective surfaces. Perfect for driving and outdoor activities.',
+    price: 1199,
+  },
+  {
+    value: 'uv-protection',
+    label: 'UV Protection',
+    description: 'Blocks 100% of harmful UVA and UVB rays.',
+    price: 399,
+  },
 ];
 
 const STEPS = [
@@ -56,8 +136,14 @@ const LensConfiguration = () => {
   const [selectedCoating, setSelectedCoating] = useState('');
 
   const [prescription, setPrescription] = useState({
-    rightSphere: '', rightCylinder: '', rightAxis: '', rightAddition: '',
-    leftSphere: '', leftCylinder: '', leftAxis: '', leftAddition: '',
+    rightSphere: '',
+    rightCylinder: '',
+    rightAxis: '',
+    rightAddition: '',
+    leftSphere: '',
+    leftCylinder: '',
+    leftAxis: '',
+    leftAddition: '',
     pd: '',
   });
   const [prescriptionFile, setPrescriptionFile] = useState(null);
@@ -67,17 +153,14 @@ const LensConfiguration = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [productRes, pricingRes] = await Promise.all([
-          productsApi.getById(id),
-          lensApi.getPricing(),
-        ]);
+        const [productRes, pricingRes] = await Promise.all([productsApi.getById(id), lensApi.getPricing()]);
         setProduct(oneOf(productRes.data));
         setPricing(oneOf(pricingRes.data));
 
         try {
           const existingRes = await lensApi.getByProduct(id);
           const existing = oneOf(existingRes.data);
-        if (existing) {
+          if (existing) {
             const config = existing;
             setExistingConfigId(config._id);
             if (config.lensType) setSelectedType(config.lensType);
@@ -115,16 +198,19 @@ const LensConfiguration = () => {
 
   const isStepValid = (step) => {
     switch (step) {
-      case 1: return !!selectedType;
-      case 2: return !!selectedMaterial;
-      case 3: return !!selectedCoating;
+      case 1:
+        return !!selectedType;
+      case 2:
+        return !!selectedMaterial;
+      case 3:
+        return !!selectedCoating;
       case 4:
         if (useFileUpload) return !!prescriptionFile;
-        return !!prescription.pd && (
-          !!prescription.rightSphere || !!prescription.leftSphere
-        );
-      case 5: return true;
-      default: return false;
+        return !!prescription.pd && (!!prescription.rightSphere || !!prescription.leftSphere);
+      case 5:
+        return true;
+      default:
+        return false;
     }
   };
 
@@ -221,17 +307,39 @@ const LensConfiguration = () => {
         <div className="container page-wrapper">
           <button
             onClick={() => navigate(`/product/${id}`)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', background: 'none', border: 'none', marginBottom: '16px', padding: 0 }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: 'var(--text-secondary)',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              background: 'none',
+              border: 'none',
+              marginBottom: '16px',
+              padding: 0,
+            }}
           >
             <FiArrowLeft size={16} /> Back to Product
           </button>
 
           <div className="card" style={{ marginBottom: '20px', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', gap: '16px', padding: '20px', alignItems: 'center' }} className="product-info-row">
+            <div
+              style={{ display: 'flex', gap: '16px', padding: '20px', alignItems: 'center' }}
+              className="product-info-row"
+            >
               <img
                 src={product.images?.[0] || '/placeholder.svg'}
                 alt={product.name}
-                style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', flexShrink: 0 }}
+                style={{
+                  width: '80px',
+                  height: '80px',
+                  objectFit: 'contain',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-light)',
+                  flexShrink: 0,
+                }}
               />
               <div style={{ flex: 1 }}>
                 <h1 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>{product.name}</h1>
@@ -239,12 +347,18 @@ const LensConfiguration = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
                   <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--primary)' }}>₹{product.price}</span>
                   {product.originalPrice && (
-                    <span style={{ fontSize: '13px', color: 'var(--text-light)', textDecoration: 'line-through' }}>₹{product.originalPrice}</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-light)', textDecoration: 'line-through' }}>
+                      ₹{product.originalPrice}
+                    </span>
                   )}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600 }}>Total</div>
+                <div
+                  style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600 }}
+                >
+                  Total
+                </div>
                 <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--primary)' }}>₹{total}</div>
               </div>
             </div>
@@ -265,8 +379,18 @@ const LensConfiguration = () => {
                   textAlign: 'center',
                   borderRadius: 'var(--radius-md)',
                   cursor: step.number <= currentStep ? 'pointer' : 'default',
-                  background: step.number === currentStep ? 'var(--primary)' : step.number < currentStep ? 'var(--primary-light, rgba(99,102,241,0.1))' : 'var(--bg-primary)',
-                  color: step.number === currentStep ? 'var(--text-white)' : step.number < currentStep ? 'var(--primary)' : 'var(--text-light)',
+                  background:
+                    step.number === currentStep
+                      ? 'var(--primary)'
+                      : step.number < currentStep
+                        ? 'var(--primary-light, rgba(99,102,241,0.1))'
+                        : 'var(--bg-primary)',
+                  color:
+                    step.number === currentStep
+                      ? 'var(--text-white)'
+                      : step.number < currentStep
+                        ? 'var(--primary)'
+                        : 'var(--text-light)',
                   transition: 'all 0.2s ease',
                   border: step.number === currentStep ? 'none' : '1px solid var(--border-light)',
                 }}
@@ -308,7 +432,9 @@ const LensConfiguration = () => {
                         <span style={{ fontSize: '15px', fontWeight: 600 }}>{type.label}</span>
                         {selectedType === type.value && <FiCheck size={16} style={{ color: 'var(--primary)' }} />}
                       </div>
-                      <p style={{ fontSize: '13px', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>{type.description}</p>
+                      <p style={{ fontSize: '13px', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>
+                        {type.description}
+                      </p>
                     </div>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary)', whiteSpace: 'nowrap' }}>
                       ₹{type.basePrice}
@@ -346,11 +472,25 @@ const LensConfiguration = () => {
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <span style={{ fontSize: '15px', fontWeight: 600 }}>{material.label}</span>
-                        {selectedMaterial === material.value && <FiCheck size={16} style={{ color: 'var(--primary)' }} />}
+                        {selectedMaterial === material.value && (
+                          <FiCheck size={16} style={{ color: 'var(--primary)' }} />
+                        )}
                       </div>
-                      <p style={{ fontSize: '13px', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>{material.description}</p>
+                      <p style={{ fontSize: '13px', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>
+                        {material.description}
+                      </p>
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: material.multiplier > 1 ? 'var(--text-secondary)' : 'var(--success)', whiteSpace: 'nowrap', background: 'var(--bg-primary)', padding: '4px 10px', borderRadius: 'var(--radius-xl)' }}>
+                    <div
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: material.multiplier > 1 ? 'var(--text-secondary)' : 'var(--success)',
+                        whiteSpace: 'nowrap',
+                        background: 'var(--bg-primary)',
+                        padding: '4px 10px',
+                        borderRadius: 'var(--radius-xl)',
+                      }}
+                    >
                       {material.multiplier === 1 ? 'Included' : `×${material.multiplier}`}
                     </div>
                   </div>
@@ -388,9 +528,18 @@ const LensConfiguration = () => {
                         <span style={{ fontSize: '15px', fontWeight: 600 }}>{coating.label}</span>
                         {selectedCoating === coating.value && <FiCheck size={16} style={{ color: 'var(--primary)' }} />}
                       </div>
-                      <p style={{ fontSize: '13px', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>{coating.description}</p>
+                      <p style={{ fontSize: '13px', color: 'var(--text-light)', margin: 0, lineHeight: 1.5 }}>
+                        {coating.description}
+                      </p>
                     </div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: coating.price === 0 ? 'var(--success)' : 'var(--primary)', whiteSpace: 'nowrap' }}>
+                    <div
+                      style={{
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        color: coating.price === 0 ? 'var(--success)' : 'var(--primary)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {coating.price === 0 ? 'Free' : `₹${coating.price}`}
                     </div>
                   </div>
@@ -444,8 +593,22 @@ const LensConfiguration = () => {
               {!useFileUpload ? (
                 <div>
                   <div style={{ marginBottom: '20px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Right Eye (OD)</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }} className="rx-grid">
+                    <h3
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        marginBottom: '12px',
+                        color: 'var(--text-secondary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      Right Eye (OD)
+                    </h3>
+                    <div
+                      style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}
+                      className="rx-grid"
+                    >
                       {[
                         { field: 'rightSphere', label: 'Sphere (SPH)' },
                         { field: 'rightCylinder', label: 'Cylinder (CYL)' },
@@ -453,7 +616,17 @@ const LensConfiguration = () => {
                         { field: 'rightAddition', label: 'Addition (ADD)' },
                       ].map(({ field, label }) => (
                         <div key={field}>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-light)', marginBottom: '4px' }}>{label}</label>
+                          <label
+                            style={{
+                              display: 'block',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              color: 'var(--text-light)',
+                              marginBottom: '4px',
+                            }}
+                          >
+                            {label}
+                          </label>
                           <input
                             type="text"
                             value={prescription[field]}
@@ -475,8 +648,22 @@ const LensConfiguration = () => {
                   </div>
 
                   <div style={{ marginBottom: '20px' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Left Eye (OS)</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }} className="rx-grid">
+                    <h3
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        marginBottom: '12px',
+                        color: 'var(--text-secondary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                      }}
+                    >
+                      Left Eye (OS)
+                    </h3>
+                    <div
+                      style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}
+                      className="rx-grid"
+                    >
                       {[
                         { field: 'leftSphere', label: 'Sphere (SPH)' },
                         { field: 'leftCylinder', label: 'Cylinder (CYL)' },
@@ -484,7 +671,17 @@ const LensConfiguration = () => {
                         { field: 'leftAddition', label: 'Addition (ADD)' },
                       ].map(({ field, label }) => (
                         <div key={field}>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-light)', marginBottom: '4px' }}>{label}</label>
+                          <label
+                            style={{
+                              display: 'block',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              color: 'var(--text-light)',
+                              marginBottom: '4px',
+                            }}
+                          >
+                            {label}
+                          </label>
                           <input
                             type="text"
                             value={prescription[field]}
@@ -506,7 +703,17 @@ const LensConfiguration = () => {
                   </div>
 
                   <div style={{ maxWidth: '200px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-light)', marginBottom: '4px' }}>Pupillary Distance (PD) <span style={{ color: 'red' }}>*</span></label>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: 'var(--text-light)',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Pupillary Distance (PD) <span style={{ color: 'red' }}>*</span>
+                    </label>
                     <input
                       type="text"
                       value={prescription.pd}
@@ -522,7 +729,9 @@ const LensConfiguration = () => {
                         boxSizing: 'border-box',
                       }}
                     />
-                    <p style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>Usually between 54-74mm. Check your previous prescription.</p>
+                    <p style={{ fontSize: '11px', color: 'var(--text-light)', marginTop: '4px' }}>
+                      Usually between 54-74mm. Check your previous prescription.
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -539,16 +748,23 @@ const LensConfiguration = () => {
                     }}
                     onClick={() => document.getElementById('rx-file-input').click()}
                   >
-                    <FiUpload size={32} style={{ color: prescriptionFile ? 'var(--primary)' : 'var(--text-light)', marginBottom: '12px' }} />
+                    <FiUpload
+                      size={32}
+                      style={{ color: prescriptionFile ? 'var(--primary)' : 'var(--text-light)', marginBottom: '12px' }}
+                    />
                     {prescriptionFile ? (
                       <div>
-                        <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', margin: '0 0 4px' }}>{prescriptionFile.name}</p>
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--primary)', margin: '0 0 4px' }}>
+                          {prescriptionFile.name}
+                        </p>
                         <p style={{ fontSize: '12px', color: 'var(--text-light)', margin: 0 }}>Click to change file</p>
                       </div>
                     ) : (
                       <div>
                         <p style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px' }}>Upload your prescription</p>
-                        <p style={{ fontSize: '12px', color: 'var(--text-light)', margin: 0 }}>JPG, PNG, or PDF up to 5MB</p>
+                        <p style={{ fontSize: '12px', color: 'var(--text-light)', margin: 0 }}>
+                          JPG, PNG, or PDF up to 5MB
+                        </p>
                       </div>
                     )}
                     <input
@@ -573,63 +789,216 @@ const LensConfiguration = () => {
 
               <div style={{ display: 'grid', gap: '16px' }} className="summary-grid">
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Frame</div>
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-light)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-light)',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Frame
+                    </div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{product.name}</div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>₹{product.price}</div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>
+                      ₹{product.price}
+                    </div>
                   </div>
-                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Lens Type</div>
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-light)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-light)',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Lens Type
+                    </div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{typeObj?.label || '-'}</div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>₹{typeObj?.basePrice || 0}</div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--primary)', marginTop: '4px' }}>
+                      ₹{typeObj?.basePrice || 0}
+                    </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Material</div>
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-light)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-light)',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Material
+                    </div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{materialObj?.label || '-'}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-light)', marginTop: '4px' }}>
                       {materialObj?.multiplier === 1 ? 'No additional cost' : `${materialObj?.multiplier}× multiplier`}
                     </div>
                   </div>
-                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Coating</div>
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-light)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-light)',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Coating
+                    </div>
                     <div style={{ fontSize: '15px', fontWeight: 600 }}>{coatingObj?.label || '-'}</div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: coatingObj?.price === 0 ? 'var(--success)' : 'var(--primary)', marginTop: '4px' }}>
+                    <div
+                      style={{
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        color: coatingObj?.price === 0 ? 'var(--success)' : 'var(--primary)',
+                        marginTop: '4px',
+                      }}
+                    >
                       {coatingObj?.price === 0 ? 'Free' : `₹${coatingObj?.price || 0}`}
                     </div>
                   </div>
                 </div>
 
                 {!useFileUpload && (prescription.rightSphere || prescription.leftSphere || prescription.pd) && (
-                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '10px' }}>Prescription Details</div>
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-light)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-light)',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        marginBottom: '10px',
+                      }}
+                    >
+                      Prescription Details
+                    </div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
-                            <th style={{ textAlign: 'left', padding: '6px 8px', fontWeight: 600, color: 'var(--text-secondary)' }}>Eye</th>
-                            <th style={{ textAlign: 'center', padding: '6px 8px', fontWeight: 600, color: 'var(--text-secondary)' }}>SPH</th>
-                            <th style={{ textAlign: 'center', padding: '6px 8px', fontWeight: 600, color: 'var(--text-secondary)' }}>CYL</th>
-                            <th style={{ textAlign: 'center', padding: '6px 8px', fontWeight: 600, color: 'var(--text-secondary)' }}>Axis</th>
-                            <th style={{ textAlign: 'center', padding: '6px 8px', fontWeight: 600, color: 'var(--text-secondary)' }}>ADD</th>
+                            <th
+                              style={{
+                                textAlign: 'left',
+                                padding: '6px 8px',
+                                fontWeight: 600,
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              Eye
+                            </th>
+                            <th
+                              style={{
+                                textAlign: 'center',
+                                padding: '6px 8px',
+                                fontWeight: 600,
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              SPH
+                            </th>
+                            <th
+                              style={{
+                                textAlign: 'center',
+                                padding: '6px 8px',
+                                fontWeight: 600,
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              CYL
+                            </th>
+                            <th
+                              style={{
+                                textAlign: 'center',
+                                padding: '6px 8px',
+                                fontWeight: 600,
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              Axis
+                            </th>
+                            <th
+                              style={{
+                                textAlign: 'center',
+                                padding: '6px 8px',
+                                fontWeight: 600,
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              ADD
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr style={{ borderBottom: '1px solid var(--border-light)' }}>
                             <td style={{ padding: '6px 8px', fontWeight: 600 }}>Right (OD)</td>
-                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.rightSphere || '-'}</td>
-                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.rightCylinder || '-'}</td>
+                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                              {prescription.rightSphere || '-'}
+                            </td>
+                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                              {prescription.rightCylinder || '-'}
+                            </td>
                             <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.rightAxis || '-'}</td>
-                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.rightAddition || '-'}</td>
+                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                              {prescription.rightAddition || '-'}
+                            </td>
                           </tr>
                           <tr>
                             <td style={{ padding: '6px 8px', fontWeight: 600 }}>Left (OS)</td>
-                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.leftSphere || '-'}</td>
-                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.leftCylinder || '-'}</td>
+                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                              {prescription.leftSphere || '-'}
+                            </td>
+                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                              {prescription.leftCylinder || '-'}
+                            </td>
                             <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.leftAxis || '-'}</td>
-                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>{prescription.leftAddition || '-'}</td>
+                            <td style={{ textAlign: 'center', padding: '6px 8px' }}>
+                              {prescription.leftAddition || '-'}
+                            </td>
                           </tr>
                         </tbody>
                       </table>
@@ -642,14 +1011,48 @@ const LensConfiguration = () => {
                 )}
 
                 {useFileUpload && prescriptionFile && (
-                  <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-primary)', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-light)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '6px' }}>Prescription File</div>
+                  <div
+                    style={{
+                      padding: '16px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--bg-primary)',
+                      border: '1px solid var(--border-light)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: 'var(--text-light)',
+                        textTransform: 'uppercase',
+                        fontWeight: 600,
+                        marginBottom: '6px',
+                      }}
+                    >
+                      Prescription File
+                    </div>
                     <div style={{ fontSize: '14px', fontWeight: 500 }}>{prescriptionFile.name}</div>
                   </div>
                 )}
 
-                <div style={{ padding: '20px', borderRadius: 'var(--radius-md)', background: 'var(--bg-dark)', color: 'var(--text-white)' }}>
-                  <div style={{ fontSize: '12px', textTransform: 'uppercase', fontWeight: 600, marginBottom: '12px', opacity: 0.7 }}>Price Breakdown</div>
+                <div
+                  style={{
+                    padding: '20px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-dark)',
+                    color: 'var(--text-white)',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      marginBottom: '12px',
+                      opacity: 0.7,
+                    }}
+                  >
+                    Price Breakdown
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                       <span style={{ opacity: 0.8 }}>Frame Price</span>
@@ -661,7 +1064,9 @@ const LensConfiguration = () => {
                     </div>
                     {materialObj && materialObj.multiplier > 1 && (
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                        <span style={{ opacity: 0.8 }}>Material Upgrade ({materialObj.label} ×{materialObj.multiplier})</span>
+                        <span style={{ opacity: 0.8 }}>
+                          Material Upgrade ({materialObj.label} ×{materialObj.multiplier})
+                        </span>
                         <span>₹{lensCost - (typeObj?.basePrice || 0)}</span>
                       </div>
                     )}
@@ -671,7 +1076,17 @@ const LensConfiguration = () => {
                         <span>₹{coatingObj.price}</span>
                       </div>
                     )}
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '8px', marginTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 700 }}>
+                    <div
+                      style={{
+                        borderTop: '1px solid rgba(255,255,255,0.2)',
+                        paddingTop: '8px',
+                        marginTop: '4px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '18px',
+                        fontWeight: 700,
+                      }}
+                    >
                       <span>Total</span>
                       <span>₹{total}</span>
                     </div>
@@ -681,7 +1096,15 @@ const LensConfiguration = () => {
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', gap: '12px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '20px',
+              gap: '12px',
+            }}
+          >
             <button
               onClick={currentStep === 1 ? () => navigate(`/product/${id}`) : handleBack}
               style={{

@@ -7,7 +7,7 @@ import {
   getUserReservations,
   bulkUpdateStock,
   checkAvailability,
-  getAvailableProducts
+  getAvailableProducts,
 } from '../services/inventory.js';
 import { verifySeller } from '../middleware/auth.js';
 
@@ -25,7 +25,7 @@ router.post('/reserve', verifyToken, async (req, res) => {
     if (!productId || !quantity) {
       return res.status(400).json({
         success: false,
-        message: 'Product ID and quantity are required'
+        message: 'Product ID and quantity are required',
       });
     }
 
@@ -35,12 +35,12 @@ router.post('/reserve', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Stock reserved successfully',
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -48,7 +48,7 @@ router.post('/reserve', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -65,7 +65,7 @@ router.post('/complete/:reservationId', verifyToken, async (req, res) => {
     if (!orderId) {
       return res.status(400).json({
         success: false,
-        message: 'Order ID is required'
+        message: 'Order ID is required',
       });
     }
 
@@ -76,12 +76,12 @@ router.post('/complete/:reservationId', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Reservation completed successfully',
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -89,7 +89,7 @@ router.post('/complete/:reservationId', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -108,12 +108,12 @@ router.post('/cancel/:reservationId', verifyToken, async (req, res) => {
       res.json({
         success: true,
         message: 'Reservation cancelled successfully',
-        data: result
+        data: result,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -121,7 +121,7 @@ router.post('/cancel/:reservationId', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -139,12 +139,12 @@ router.get('/reservations', verifyToken, async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        data: result.reservations
+        data: result.reservations,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -152,7 +152,7 @@ router.get('/reservations', verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -168,26 +168,26 @@ router.post('/bulk-update', verifySeller, async (req, res) => {
     if (!updates || !Array.isArray(updates)) {
       return res.status(400).json({
         success: false,
-        message: 'Updates array is required'
+        message: 'Updates array is required',
       });
     }
 
     // Verify that all products belong to this seller
     const sellerId = req.user.id;
     const Product = (await import('../models/Product.js')).default;
-    
+
     for (const update of updates) {
       const product = await Product.findById(update.productId);
       if (!product) {
         return res.status(404).json({
           success: false,
-          message: `Product ${update.productId} not found`
+          message: `Product ${update.productId} not found`,
         });
       }
       if (product.seller.toString() !== sellerId) {
         return res.status(403).json({
           success: false,
-          message: `Not authorized to update product ${update.productId}`
+          message: `Not authorized to update product ${update.productId}`,
         });
       }
     }
@@ -199,12 +199,12 @@ router.post('/bulk-update', verifySeller, async (req, res) => {
       res.json({
         success: true,
         message: 'Stock updated successfully',
-        data: result.results
+        data: result.results,
       });
     } else {
       res.status(400).json({
         success: false,
-        message: result.error
+        message: result.error,
       });
     }
   } catch (error) {
@@ -212,7 +212,7 @@ router.post('/bulk-update', verifySeller, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -230,14 +230,14 @@ router.get('/check/:productId', async (req, res) => {
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     console.error('Error in check availability route:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -253,19 +253,19 @@ router.get('/available', async (req, res) => {
     const result = await getAvailableProducts(query, {
       page: parseInt(page),
       limit: parseInt(limit),
-      sort
+      sort,
     });
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   } catch (error) {
     console.error('Error in get available products route:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
     });
   }
 });

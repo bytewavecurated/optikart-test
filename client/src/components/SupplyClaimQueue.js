@@ -19,7 +19,7 @@ const SupplyClaimQueue = ({
   decideUrl,
   stage,
   emptyTitle = 'Nothing waiting',
-  emptyText = 'No shop has asked to list your brand for approval right now.'
+  emptyText = 'No shop has asked to list your brand for approval right now.',
 }) => {
   const [rows, setRows] = useState([]);
   const [grandfathered, setGrandfathered] = useState([]);
@@ -42,7 +42,9 @@ const SupplyClaimQueue = ({
     }
   }, [fetchUrl]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const decide = async (row, decision) => {
     const reason = String(reasons[row.id] || '').trim();
@@ -56,7 +58,7 @@ const SupplyClaimQueue = ({
         listingKind: row.listingKind,
         listingId: row.id,
         decision,
-        reason
+        reason,
       });
       toast.success(res.data?.message || (decision === 'approve' ? 'Approved.' : 'Refused.'));
       await load();
@@ -70,17 +72,20 @@ const SupplyClaimQueue = ({
   const proofLabel = {
     manufacturer_purchase: 'bought from the brand',
     brand_distribution: 'supplied as a stockist',
-    other: 'NOT sourced from the brand'
+    other: 'NOT sourced from the brand',
   };
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}
+      >
         <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
           {rows.length} claim{rows.length === 1 ? '' : 's'} waiting on {stage}
         </div>
         <button className="btn btn-quiet" onClick={load} disabled={loading}>
-          <FiRefreshCw style={{ marginRight: 6 }} />{loading ? 'Loading' : 'Refresh'}
+          <FiRefreshCw style={{ marginRight: 6 }} />
+          {loading ? 'Loading' : 'Refresh'}
         </button>
       </div>
 
@@ -98,8 +103,20 @@ const SupplyClaimQueue = ({
           const proof = listing.sellerProof || {};
           const history = (listing.history || []).slice(-3);
           return (
-            <div key={row.id} className="card" style={{ padding: 14, border: '1px solid var(--border-light)', borderRadius: 'var(--radius)' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <div
+              key={row.id}
+              className="card"
+              style={{ padding: 14, border: '1px solid var(--border-light)', borderRadius: 'var(--radius)' }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  alignItems: 'baseline',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{row.title || row.brand || 'A listing'}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -108,19 +125,31 @@ const SupplyClaimQueue = ({
                     {listing.declarationCount > 1 ? ` · declared ${listing.declarationCount} times` : ''}
                   </div>
                 </div>
-                <span style={{
-                  fontSize: 11.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
-                  background: proof.kind === 'other' ? 'rgba(217, 119, 6, .14)' : 'rgba(22, 163, 74, .12)',
-                  color: proof.kind === 'other' ? 'var(--warning-dark, #8a6d3b)' : 'var(--success)'
-                }}>
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    padding: '3px 9px',
+                    borderRadius: 999,
+                    background: proof.kind === 'other' ? 'rgba(217, 119, 6, .14)' : 'rgba(22, 163, 74, .12)',
+                    color: proof.kind === 'other' ? 'var(--warning-dark, #8a6d3b)' : 'var(--success)',
+                  }}
+                >
                   {proofLabel[proof.kind] || 'source not stated'}
                 </span>
               </div>
 
               <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.55 }}>
-                {proof.kind === 'other'
-                  ? <>Stated source: <em>&ldquo;{proof.note}&rdquo;</em></>
-                  : <>Reference given: <strong>{proof.reference}</strong>{proof.note ? ` — ${proof.note}` : ''}</>}
+                {proof.kind === 'other' ? (
+                  <>
+                    Stated source: <em>&ldquo;{proof.note}&rdquo;</em>
+                  </>
+                ) : (
+                  <>
+                    Reference given: <strong>{proof.reference}</strong>
+                    {proof.note ? ` — ${proof.note}` : ''}
+                  </>
+                )}
                 {proof.declaredAt ? ` · ${new Date(proof.declaredAt).toLocaleString('en-IN')}` : ''}
                 {proof.declaredBy ? ` · by ${proof.declaredBy}` : ''}
               </div>
@@ -128,7 +157,11 @@ const SupplyClaimQueue = ({
               {history.length > 0 && (
                 <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 6 }}>
                   {history.map((h, i) => (
-                    <div key={i}>{new Date(h.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {h.action}{h.by ? ` (${h.by})` : ''}{h.detail ? ` — ${h.detail}` : ''}</div>
+                    <div key={i}>
+                      {new Date(h.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · {h.action}
+                      {h.by ? ` (${h.by})` : ''}
+                      {h.detail ? ` — ${h.detail}` : ''}
+                    </div>
                   ))}
                 </div>
               )}
@@ -137,15 +170,26 @@ const SupplyClaimQueue = ({
                 <input
                   className="input"
                   style={{ flex: '1 1 220px' }}
-                  placeholder={stage === 'the brand' ? 'Reason, if you did not supply them' : 'Why this is verified, or what is wrong with it'}
+                  placeholder={
+                    stage === 'the brand'
+                      ? 'Reason, if you did not supply them'
+                      : 'Why this is verified, or what is wrong with it'
+                  }
                   value={reasons[row.id] || ''}
                   onChange={(e) => setReasons({ ...reasons, [row.id]: e.target.value })}
                 />
                 <button className="btn btn-primary" disabled={busyId === row.id} onClick={() => decide(row, 'approve')}>
-                  <FiCheck style={{ marginRight: 6 }} />{stage === 'the brand' ? 'We supplied them' : 'Verify listing'}
+                  <FiCheck style={{ marginRight: 6 }} />
+                  {stage === 'the brand' ? 'We supplied them' : 'Verify listing'}
                 </button>
-                <button className="btn btn-quiet" style={{ color: 'var(--danger)' }} disabled={busyId === row.id} onClick={() => decide(row, 'reject')}>
-                  <FiX style={{ marginRight: 6 }} />Refuse
+                <button
+                  className="btn btn-quiet"
+                  style={{ color: 'var(--danger)' }}
+                  disabled={busyId === row.id}
+                  onClick={() => decide(row, 'reject')}
+                >
+                  <FiX style={{ marginRight: 6 }} />
+                  Refuse
                 </button>
               </div>
             </div>
@@ -154,15 +198,23 @@ const SupplyClaimQueue = ({
       </div>
 
       {grandfathered.length > 0 && (
-        <div style={{ marginTop: 18, padding: 14, border: '1px dashed var(--border)', borderRadius: 'var(--radius)', background: 'var(--bg-soft, #fafafa)' }}>
+        <div
+          style={{
+            marginTop: 18,
+            padding: 14,
+            border: '1px dashed var(--border)',
+            borderRadius: 'var(--radius)',
+            background: 'var(--bg-soft, #fafafa)',
+          }}
+        >
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13, fontWeight: 700 }}>
             <FiAlertTriangle style={{ color: 'var(--warning-dark, #8a6d3b)' }} />
             {grandfathered.length} listings were selling before supply claims became a rule
           </div>
           <p style={{ margin: '8px 0 0', fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             They keep selling: hiding a catalogue that existed under the old rules would break the storefront for
-            reasons nobody caused. But no brand ever confirmed these, and that is recorded rather than implied.
-            Work through them by asking the shop for its invoice, or pause the listing.
+            reasons nobody caused. But no brand ever confirmed these, and that is recorded rather than implied. Work
+            through them by asking the shop for its invoice, or pause the listing.
           </p>
         </div>
       )}

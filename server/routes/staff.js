@@ -20,44 +20,34 @@ router.get('/overview', verifyToken, verifyStaff, async (req, res) => {
   try {
     const role = req.staff ? req.staff.role : req.user.staffRole;
 
-    const [
-      pendingOrders, inTransit, openReturns, pendingProducts,
-      publishedBlogs, draftBlogs, pendingReviews
-    ] = await Promise.all([
-      Order.countDocuments({ orderStatus: 'pending' }),
-      Order.countDocuments({ orderStatus: { $in: ['packed', 'picked_up', 'in_transit'] } }),
-      ReturnRequest.countDocuments({ status: { $in: ['requested', 'approved', 'picked_up'] } }),
-      Product.countDocuments({ verificationStatus: 'pending' }),
-      Blog.countDocuments({ isPublished: true }),
-      Blog.countDocuments({ isPublished: false }),
-      Review.countDocuments({ isApproved: false })
-    ]);
+    const [pendingOrders, inTransit, openReturns, pendingProducts, publishedBlogs, draftBlogs, pendingReviews] =
+      await Promise.all([
+        Order.countDocuments({ orderStatus: 'pending' }),
+        Order.countDocuments({ orderStatus: { $in: ['packed', 'picked_up', 'in_transit'] } }),
+        ReturnRequest.countDocuments({ status: { $in: ['requested', 'approved', 'picked_up'] } }),
+        Product.countDocuments({ verificationStatus: 'pending' }),
+        Blog.countDocuments({ isPublished: true }),
+        Blog.countDocuments({ isPublished: false }),
+        Review.countDocuments({ isApproved: false }),
+      ]);
 
     const queues = {
       blog_manager: [
         { key: 'draftBlogs', label: 'Draft posts', value: draftBlogs },
-        { key: 'publishedBlogs', label: 'Published posts', value: publishedBlogs }
+        { key: 'publishedBlogs', label: 'Published posts', value: publishedBlogs },
       ],
       delivery_manager: [
         { key: 'pendingOrders', label: 'Orders awaiting dispatch', value: pendingOrders },
-        { key: 'inTransit', label: 'In transit', value: inTransit }
+        { key: 'inTransit', label: 'In transit', value: inTransit },
       ],
       pickup_manager: [
         { key: 'inTransit', label: 'Awaiting pickup', value: inTransit },
-        { key: 'pendingOrders', label: 'Not yet confirmed', value: pendingOrders }
+        { key: 'pendingOrders', label: 'Not yet confirmed', value: pendingOrders },
       ],
-      seller_manager: [
-        { key: 'pendingProducts', label: 'Products awaiting verification', value: pendingProducts }
-      ],
-      doc_verifier: [
-        { key: 'pendingProducts', label: 'Documents to verify', value: pendingProducts }
-      ],
-      user_manager: [
-        { key: 'pendingReviews', label: 'Reviews to moderate', value: pendingReviews }
-      ],
-      finance_manager: [
-        { key: 'openReturns', label: 'Open returns', value: openReturns }
-      ]
+      seller_manager: [{ key: 'pendingProducts', label: 'Products awaiting verification', value: pendingProducts }],
+      doc_verifier: [{ key: 'pendingProducts', label: 'Documents to verify', value: pendingProducts }],
+      user_manager: [{ key: 'pendingReviews', label: 'Reviews to moderate', value: pendingReviews }],
+      finance_manager: [{ key: 'openReturns', label: 'Open returns', value: openReturns }],
     };
 
     res.json({
@@ -65,7 +55,7 @@ router.get('/overview', verifyToken, verifyStaff, async (req, res) => {
       role,
       permissions: (req.staff && req.staff.permissions) || req.user.permissions || [],
       queues: queues[role] || queues.seller_manager,
-      totals: { pendingOrders, inTransit, openReturns, pendingProducts, publishedBlogs, draftBlogs, pendingReviews }
+      totals: { pendingOrders, inTransit, openReturns, pendingProducts, publishedBlogs, draftBlogs, pendingReviews },
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -81,7 +71,7 @@ router.get('/orders', verifyToken, verifyStaff, async (req, res) => {
     if (search) {
       query.$or = [
         { orderId: { $regex: String(search), $options: 'i' } },
-        { 'shippingAddress.city': { $regex: String(search), $options: 'i' } }
+        { 'shippingAddress.city': { $regex: String(search), $options: 'i' } },
       ];
     }
 
@@ -93,7 +83,7 @@ router.get('/orders', verifyToken, verifyStaff, async (req, res) => {
         .populate('user', 'name email phone')
         .populate('seller', 'storeName')
         .lean(),
-      Order.countDocuments(query)
+      Order.countDocuments(query),
     ]);
 
     res.json({ success: true, orders, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
@@ -113,7 +103,7 @@ router.get('/products', verifyToken, verifyStaff, async (req, res) => {
       query.$or = [
         { title: { $regex: String(search), $options: 'i' } },
         { brand: { $regex: String(search), $options: 'i' } },
-        { modelNumber: { $regex: String(search), $options: 'i' } }
+        { modelNumber: { $regex: String(search), $options: 'i' } },
       ];
     }
 
@@ -124,7 +114,7 @@ router.get('/products', verifyToken, verifyStaff, async (req, res) => {
         .limit(parseInt(limit))
         .populate('seller', 'storeName')
         .lean(),
-      Product.countDocuments(query)
+      Product.countDocuments(query),
     ]);
 
     res.json({ success: true, products, total, page: parseInt(page), pages: Math.ceil(total / parseInt(limit)) });
@@ -141,7 +131,7 @@ router.get('/blogs', verifyToken, verifyStaff, async (req, res) => {
     if (search) {
       query.$or = [
         { title: { $regex: String(search), $options: 'i' } },
-        { category: { $regex: String(search), $options: 'i' } }
+        { category: { $regex: String(search), $options: 'i' } },
       ];
     }
     const blogs = await Blog.find(query).sort({ createdAt: -1 }).limit(100).lean();
@@ -168,7 +158,9 @@ router.get('/returns', verifyToken, verifyStaff, async (req, res) => {
       const q = String(search).toLowerCase();
       list = rows.filter((r) =>
         [r.order?.orderId, r.order?.user?.name, r.reason, r.status]
-          .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q))
+      );
     }
 
     res.json({ success: true, returns: list });

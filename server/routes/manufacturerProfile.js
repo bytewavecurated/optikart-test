@@ -65,7 +65,6 @@ const applyProfileEdit = (manufacturer, body = {}) => {
     return false;
   };
 
-
   if (body.companyName !== undefined) {
     const v = text(body.companyName);
     if (v.length < 2) errors.push({ field: 'companyName', message: 'Company name is required.' });
@@ -92,19 +91,21 @@ const applyProfileEdit = (manufacturer, body = {}) => {
   if (body.email !== undefined && text(body.email).toLowerCase() !== String(manufacturer.email || '').toLowerCase()) {
     errors.push({
       field: 'email',
-      message: 'The sign-in email cannot be changed here. Ask OptiKart support to move the account.'
+      message: 'The sign-in email cannot be changed here. Ask OptiKart support to move the account.',
     });
   }
 
   if (body.gstNumber !== undefined) {
     const v = text(body.gstNumber).toUpperCase().replace(/\s/g, '');
-    if (v && !GST.test(v)) errors.push({ field: 'gstNumber', message: 'GST must be the 15-character GSTIN, e.g. 27ABCDE1234F1Z5.' });
+    if (v && !GST.test(v))
+      errors.push({ field: 'gstNumber', message: 'GST must be the 15-character GSTIN, e.g. 27ABCDE1234F1Z5.' });
     else setScalar('gstNumber', v);
   }
 
   if (body.panNumber !== undefined) {
     const v = text(body.panNumber).toUpperCase().replace(/\s/g, '');
-    if (v && !PAN.test(v)) errors.push({ field: 'panNumber', message: 'PAN must be the 10-character form, e.g. ABCDE1234F.' });
+    if (v && !PAN.test(v))
+      errors.push({ field: 'panNumber', message: 'PAN must be the 10-character form, e.g. ABCDE1234F.' });
     else setScalar('panNumber', v);
   }
 
@@ -114,20 +115,23 @@ const applyProfileEdit = (manufacturer, body = {}) => {
     const city = text(a.city);
     const state = text(a.state);
     const pincode = text(a.pincode);
-    if (street && street.length < 6) errors.push({ field: 'address.street', message: 'Street address looks too short to be deliverable.' });
-    if (pincode && !PINCODE.test(pincode)) errors.push({ field: 'address.pincode', message: 'PIN code must be 6 digits.' });
+    if (street && street.length < 6)
+      errors.push({ field: 'address.street', message: 'Street address looks too short to be deliverable.' });
+    if (pincode && !PINCODE.test(pincode))
+      errors.push({ field: 'address.pincode', message: 'PIN code must be 6 digits.' });
     const addressNow = manufacturer.address || {};
-    const sameAddress = (addressNow.street || '') === (street || addressNow.street || '')
-      && (addressNow.city || '') === (city || addressNow.city || '')
-      && (addressNow.state || '') === (state || addressNow.state || '')
-      && String(addressNow.pincode || '') === String(pincode || addressNow.pincode || '');
+    const sameAddress =
+      (addressNow.street || '') === (street || addressNow.street || '') &&
+      (addressNow.city || '') === (city || addressNow.city || '') &&
+      (addressNow.state || '') === (state || addressNow.state || '') &&
+      String(addressNow.pincode || '') === String(pincode || addressNow.pincode || '');
     manufacturer.address = {
-      ...manufacturer.address?.toObject?.() || manufacturer.address || {},
+      ...(manufacturer.address?.toObject?.() || manufacturer.address || {}),
       street: street || manufacturer.address?.street || '',
       city: city || manufacturer.address?.city || '',
       state: state || manufacturer.address?.state || '',
       pincode: pincode || manufacturer.address?.pincode || '',
-      country: text(a.country) || manufacturer.address?.country || 'India'
+      country: text(a.country) || manufacturer.address?.country || 'India',
     };
     if (!sameAddress) changed.push('address');
   }
@@ -174,24 +178,31 @@ const applyProfileEdit = (manufacturer, body = {}) => {
       for (const name of clean) {
         const f = name.toLowerCase();
         if (folded.has(f)) {
-          errors.push({ field: 'brands', message: `"${name}" repeats "${folded.get(f)}" - a brand is one name whatever the capitalisation.` });
+          errors.push({
+            field: 'brands',
+            message: `"${name}" repeats "${folded.get(f)}" - a brand is one name whatever the capitalisation.`,
+          });
         } else folded.set(f, name);
       }
-      const dropping = (manufacturer.brands || [])
-        .filter((b) => !clean.some((c) => c.toLowerCase() === String(b).toLowerCase()));
-      const sameBrands = clean.length === (manufacturer.brands || []).length
-        && clean.every((b, i) => String((manufacturer.brands || [])[i] || '') === b);
+      const dropping = (manufacturer.brands || []).filter(
+        (b) => !clean.some((c) => c.toLowerCase() === String(b).toLowerCase())
+      );
+      const sameBrands =
+        clean.length === (manufacturer.brands || []).length &&
+        clean.every((b, i) => String((manufacturer.brands || [])[i] || '') === b);
       manufacturer.brands = clean;
       if (!sameBrands) changed.push('brands');
       if (dropping.length) {
         // Not refused outright, because renaming a brand legitimately retires a
         // name - but it must never be silent.
-        console.log(JSON.stringify({
-          event: 'brand_retired',
-          manufacturer: String(manufacturer._id),
-          brands: dropping,
-          note: 'products may still carry these brand names until reassigned'
-        }));
+        console.log(
+          JSON.stringify({
+            event: 'brand_retired',
+            manufacturer: String(manufacturer._id),
+            brands: dropping,
+            note: 'products may still carry these brand names until reassigned',
+          })
+        );
       }
     }
   }
@@ -209,9 +220,9 @@ export const registerProfileRoutes = (router) => {
         Product.countDocuments({ manufacturer: manufacturer._id }),
         Product.aggregate([
           { $match: { manufacturer: manufacturer._id } },
-          { $group: { _id: '$brand', count: { $sum: 1 } } }
+          { $group: { _id: '$brand', count: { $sum: 1 } } },
         ]),
-        ManufacturerSeller.countDocuments({ manufacturer: manufacturer._id })
+        ManufacturerSeller.countDocuments({ manufacturer: manufacturer._id }),
       ]);
 
       res.json({
@@ -225,8 +236,8 @@ export const registerProfileRoutes = (router) => {
           brandsInUse: brandCounts
             .filter((b) => b._id)
             .map((b) => ({ brand: b._id, count: b.count }))
-            .sort((a, b) => String(a.brand).localeCompare(String(b.brand)))
-        }
+            .sort((a, b) => String(a.brand).localeCompare(String(b.brand))),
+        },
       });
     } catch (error) {
       console.error('Manufacturer profile read error:', error);
@@ -258,10 +269,11 @@ export const registerProfileRoutes = (router) => {
           manufacturer.brands = brandsBefore;
           return res.status(400).json({
             success: false,
-            message: clash.clashes.length === 1
-              ? 'That brand belongs to another manufacturer.'
-              : `${clash.clashes.length} brands belong to other manufacturers.`,
-            errors: clash.clashes.map((c) => ({ field: 'brands', message: clashMessage(c) }))
+            message:
+              clash.clashes.length === 1
+                ? 'That brand belongs to another manufacturer.'
+                : `${clash.clashes.length} brands belong to other manufacturers.`,
+            errors: clash.clashes.map((c) => ({ field: 'brands', message: clashMessage(c) })),
           });
         }
       }
@@ -270,7 +282,7 @@ export const registerProfileRoutes = (router) => {
         return res.status(400).json({
           success: false,
           message: errors.length === 1 ? errors[0].message : `${errors.length} fields need attention.`,
-          errors
+          errors,
         });
       }
       if (!changed.length) {
@@ -285,7 +297,7 @@ export const registerProfileRoutes = (router) => {
         message: `${manufacturer.companyName} updated ${changed.join(', ')}${changed.includes('gstNumber') || changed.includes('panNumber') ? ' - these appear on invoices' : ''}.`,
         type: 'account',
         data: { manufacturerId: String(manufacturer._id), changed },
-        io: req.app.get('io')
+        io: req.app.get('io'),
       });
 
       res.json({ success: true, message: 'Profile saved.', changed, profile: manufacturer.toJSON() });

@@ -5,7 +5,13 @@ const BRANDS = [
   { name: 'Ray-Ban', slug: 'ray-ban', startPrice: 2999, color: 'var(--bg-dark)', tagline: 'Iconic Style' },
   { name: 'Fastrack', slug: 'fastrack', startPrice: 999, color: 'var(--danger)', tagline: 'Youth Vibe' },
   { name: 'Lenskart Air', slug: 'lenskart-air', startPrice: 1499, color: 'var(--brand)', tagline: 'Featherlight' },
-  { name: 'John Jacobs', slug: 'john-jacobs', startPrice: 2499, color: 'var(--text-primary)', tagline: 'Premium Craft' },
+  {
+    name: 'John Jacobs',
+    slug: 'john-jacobs',
+    startPrice: 2499,
+    color: 'var(--text-primary)',
+    tagline: 'Premium Craft',
+  },
   { name: 'Vogue', slug: 'vogue', startPrice: 3499, color: 'var(--brand-dark)', tagline: 'Fashion Forward' },
   { name: 'Oakley', slug: 'oakley', startPrice: 4999, color: 'var(--warning)', tagline: 'Performance' },
 ];
@@ -17,7 +23,7 @@ const styles = {
     padding: '20px 24px',
     borderRadius: 'var(--radius-xs)',
     boxShadow: 'var(--shadow)',
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
   },
   header: {
     display: 'flex',
@@ -102,12 +108,7 @@ export default function BrandSection() {
 
       <div style={styles.grid} className="brand-grid">
         {BRANDS.map((brand) => (
-          <a
-            key={brand.slug}
-            href={`/brands/${brand.slug}`}
-            style={styles.card}
-            className="brand-card"
-          >
+          <a key={brand.slug} href={`/brands/${brand.slug}`} style={styles.card} className="brand-card">
             <div style={{ ...styles.logoCircle, background: brand.color }}>
               {brand.name.substring(0, 2).toUpperCase()}
             </div>

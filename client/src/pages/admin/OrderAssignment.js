@@ -12,12 +12,17 @@ const shapeRow = (r) => ({
   _id: r.orderId || r._id,
   orderNumber: r.orderNumber,
   orderStatus: r.orderStatus,
-  assignmentStatus: r.status === 'admin_required' ? 'admin_required' : (r.status === 'seller_accepted' || r.status === 'admin_assigned' ? 'accepted' : 'pending_acceptance'),
+  assignmentStatus:
+    r.status === 'admin_required'
+      ? 'admin_required'
+      : r.status === 'seller_accepted' || r.status === 'admin_assigned'
+        ? 'accepted'
+        : 'pending_acceptance',
   assignmentDeadline: r.timeoutAt,
   totalAmount: r.totalAmount,
   createdAt: r.placedAt,
   shippingAddress: r.destination,
-  candidates: r.candidates || []
+  candidates: r.candidates || [],
 });
 
 const LABELS = {
@@ -25,7 +30,7 @@ const LABELS = {
   seller_contacted: 'Awaiting answer',
   admin_required: 'Needs admin',
   accepted: 'Assigned',
-  all: 'All'
+  all: 'All',
 };
 
 const OrderAssignment = () => {
@@ -47,7 +52,7 @@ const OrderAssignment = () => {
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      toastError(error, "Failed to load orders");
+      toastError(error, 'Failed to load orders');
     } finally {
       setLoading(false);
     }
@@ -69,7 +74,9 @@ const OrderAssignment = () => {
     const q = search.toLowerCase();
     return allOrders.filter((o) =>
       [o.orderNumber, o.destination, ...(o.candidates || []).map((c) => `${c.storeName} ${c.phone}`)]
-        .filter(Boolean).some((v) => String(v).toLowerCase().includes(q)));
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q))
+    );
   }, [allOrders, search]);
 
   const getStatusColor = (status) => {
@@ -79,7 +86,7 @@ const OrderAssignment = () => {
       accepted: 'var(--success)',
       rejected: 'var(--danger)',
       admin_required: 'var(--danger)',
-      assigned: 'var(--primary)'
+      assigned: 'var(--primary)',
     };
     return colors[status] || 'var(--text-secondary)';
   };
@@ -89,12 +96,12 @@ const OrderAssignment = () => {
     const now = new Date();
     const deadlineDate = new Date(deadline);
     const diff = deadlineDate - now;
-    
+
     if (diff <= 0) return 'Expired';
-    
+
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(minutes / 60);
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes % 60}m remaining`;
     }
@@ -119,7 +126,7 @@ const OrderAssignment = () => {
         .resp.r-accepted { background: var(--success-light); color: var(--success); }
         .resp.r-rejected, .resp.r-timeout { background: var(--danger-light); color: var(--danger); }
       `}</style>
-      <Footer />
+        <Footer />
       </>
     );
   }
@@ -165,7 +172,14 @@ const OrderAssignment = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {orders.map((order) => (
               <div key={order._id} className="card" style={{ padding: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'start',
+                    marginBottom: '16px',
+                  }}
+                >
                   <div>
                     <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>
                       Order #{order.orderNumber}
@@ -178,16 +192,16 @@ const OrderAssignment = () => {
                     <div style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>
                       ₹{order.totalAmount?.toLocaleString()}
                     </div>
-                    <span 
-                      className="badge" 
-                      style={{ 
+                    <span
+                      className="badge"
+                      style={{
                         background: getStatusColor(order.assignmentStatus),
                         color: 'white',
                         padding: '4px 12px',
                         borderRadius: 'var(--radius)',
                         fontSize: '12px',
                         fontWeight: 600,
-                        textTransform: 'capitalize'
+                        textTransform: 'capitalize',
                       }}
                     >
                       {order.assignmentStatus?.replace('_', ' ')}
@@ -196,14 +210,25 @@ const OrderAssignment = () => {
                 </div>
 
                 {/* Order Details */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '16px',
+                    marginBottom: '16px',
+                  }}
+                >
                   <div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Customer</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      Customer
+                    </div>
                     <div style={{ fontWeight: 600 }}>{order.user?.name || 'N/A'}</div>
                     <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{order.user?.email}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Assigned Seller</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      Assigned Seller
+                    </div>
                     <div style={{ fontWeight: 600 }}>{order.seller?.storeName || 'Not assigned'}</div>
                     {order.seller && (
                       <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{order.seller.email}</div>
@@ -222,43 +247,73 @@ const OrderAssignment = () => {
                           <div key={c.sellerId} className="candidate">
                             <div>
                               <div style={{ fontSize: 13.5, fontWeight: 700 }}>
-                                {c.rank ? <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>#{c.rank}  </span> : null}
+                                {c.rank ? (
+                                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>#{c.rank} </span>
+                                ) : null}
                                 {c.storeName}
                                 {c.distanceKm !== null && c.distanceKm !== undefined ? ` - ${c.distanceKm} km` : ''}
                                 {c.score ? (
                                   <span
                                     title="Weighted from delivery speed, return rate, price, distance and customer rating"
-                                    style={{ marginLeft: 8, fontSize: 11.5, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: 'var(--primary-light, rgba(37, 99, 235, .10))', color: 'var(--primary-dark, #1d4ed8)' }}
+                                    style={{
+                                      marginLeft: 8,
+                                      fontSize: 11.5,
+                                      fontWeight: 700,
+                                      padding: '2px 8px',
+                                      borderRadius: 999,
+                                      background: 'var(--primary-light, rgba(37, 99, 235, .10))',
+                                      color: 'var(--primary-dark, #1d4ed8)',
+                                    }}
                                   >
                                     score {typeof c.score === 'number' ? c.score.toFixed(1) : c.score}
                                   </span>
                                 ) : null}
                               </div>
                               <div style={{ fontSize: 12.5, color: 'var(--text-secondary)' }}>
-                                {[c.phone && `Call ${c.phone}`, c.rating ? `Rated ${c.rating}` : null, c.city].filter(Boolean).join(' / ')}
+                                {[c.phone && `Call ${c.phone}`, c.rating ? `Rated ${c.rating}` : null, c.city]
+                                  .filter(Boolean)
+                                  .join(' / ')}
                               </div>
                               {c.measured && (
                                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 3 }}>
                                   {c.measured.delivered ?? 0} delivered
-                                  {c.measured.avgDeliveryDays ? ` · ${c.measured.avgDeliveryDays} days average` : ' · no delivery on record yet'}
-                                  {c.measured.returnPct !== null && c.measured.returnPct !== undefined ? ` · ${c.measured.returnPct}% returned` : ''}
-                                  {c.measured.avgRating ? ` · ${c.measured.avgRating}/5 from ${c.measured.reviewCount} reviews` : ''}
+                                  {c.measured.avgDeliveryDays
+                                    ? ` · ${c.measured.avgDeliveryDays} days average`
+                                    : ' · no delivery on record yet'}
+                                  {c.measured.returnPct !== null && c.measured.returnPct !== undefined
+                                    ? ` · ${c.measured.returnPct}% returned`
+                                    : ''}
+                                  {c.measured.avgRating
+                                    ? ` · ${c.measured.avgRating}/5 from ${c.measured.reviewCount} reviews`
+                                    : ''}
                                   {c.priceTotal ? ` · quoted ₹${Number(c.priceTotal).toLocaleString('en-IN')}` : ''}
                                   {c.coversWholeOrder === false ? ' · cannot cover every line' : ''}
                                 </div>
                               )}
                               {(c.scoreReasons || []).length > 0 && (
-                                <ul style={{ margin: '4px 0 0', paddingLeft: 16, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                                <ul
+                                  style={{
+                                    margin: '4px 0 0',
+                                    paddingLeft: 16,
+                                    fontSize: 11.5,
+                                    color: 'var(--text-secondary)',
+                                  }}
+                                >
                                   {c.scoreReasons.slice(0, 3).map((reason, ri) => (
                                     <li key={ri}>{reason}</li>
                                   ))}
                                 </ul>
                               )}
                             </div>
-                            <span className={`resp r-${c.response}`}>{(c.response || 'pending').replace('_', ' ')}</span>
+                            <span className={`resp r-${c.response}`}>
+                              {(c.response || 'pending').replace('_', ' ')}
+                            </span>
                             {c.response !== 'accepted' && (
-                              <button className="btn btn-quiet" style={{ padding: '6px 12px', fontSize: 12.5 }}
-                                onClick={() => assign(order._id, c.sellerId, c.storeName)}>
+                              <button
+                                className="btn btn-quiet"
+                                style={{ padding: '6px 12px', fontSize: 12.5 }}
+                                onClick={() => assign(order._id, c.sellerId, c.storeName)}
+                              >
                                 Assign
                               </button>
                             )}
@@ -267,14 +322,17 @@ const OrderAssignment = () => {
                       </div>
                       {order.status === 'admin_required' && (
                         <p style={{ fontSize: 12.5, color: 'var(--danger)', margin: '8px 0 0' }}>
-                          No seller accepted within their window. Assign one directly, or call them using the contacts above.
+                          No seller accepted within their window. Assign one directly, or call them using the contacts
+                          above.
                         </p>
                       )}
                     </div>
                   )}
                   {order.assignmentDistance && (
                     <div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Distance</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        Distance
+                      </div>
                       <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <FiMapPin size={14} />
                         {order.assignmentDistance} km
@@ -283,8 +341,18 @@ const OrderAssignment = () => {
                   )}
                   {order.assignmentDeadline && (
                     <div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Deadline</div>
-                      <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', color: getStatusColor(order.assignmentStatus) }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        Deadline
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          color: getStatusColor(order.assignmentStatus),
+                        }}
+                      >
                         <FiClock size={14} />
                         {getTimeRemaining(order.assignmentDeadline)}
                       </div>
@@ -294,15 +362,32 @@ const OrderAssignment = () => {
 
                 {/* Items */}
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Items ({order.items?.length || 0})</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    Items ({order.items?.length || 0})
+                  </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {order.items?.slice(0, 3).map((item, index) => (
-                      <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                      <div
+                        key={index}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px',
+                          background: 'var(--bg-secondary)',
+                          borderRadius: 'var(--radius-md)',
+                        }}
+                      >
                         {item.product?.images?.[0] && (
-                          <img 
-                            src={item.product.images[0]} 
+                          <img
+                            src={item.product.images[0]}
                             alt={item.product?.title}
-                            style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: 'var(--radius-xs)' }}
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              objectFit: 'cover',
+                              borderRadius: 'var(--radius-xs)',
+                            }}
                           />
                         )}
                         <div>
@@ -312,7 +397,14 @@ const OrderAssignment = () => {
                       </div>
                     ))}
                     {order.items?.length > 3 && (
-                      <div style={{ display: 'flex', alignItems: 'center', padding: '8px', color: 'var(--text-secondary)' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '8px',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
                         +{order.items.length - 3} more
                       </div>
                     )}
@@ -321,7 +413,15 @@ const OrderAssignment = () => {
 
                 {/* Notes */}
                 {order.assignmentNotes && (
-                  <div style={{ marginTop: '16px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--warning)' }}>
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      padding: '12px',
+                      background: 'var(--bg-secondary)',
+                      borderRadius: 'var(--radius-md)',
+                      borderLeft: '3px solid var(--warning)',
+                    }}
+                  >
                     <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Notes</div>
                     <div style={{ fontSize: '13px' }}>{order.assignmentNotes}</div>
                   </div>

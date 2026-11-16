@@ -19,11 +19,11 @@ const DEFAULT_WINDOW_DAYS = 7;
 export const checkReturnEligibility = async (orderId, userId) => {
   try {
     const order = await Order.findById(orderId).populate('items.product');
-    
+
     if (!order) {
       return {
         success: false,
-        message: 'Order not found'
+        message: 'Order not found',
       };
     }
 
@@ -31,7 +31,7 @@ export const checkReturnEligibility = async (orderId, userId) => {
     if (order.user.toString() !== userId) {
       return {
         success: false,
-        message: 'Unauthorized to return this order'
+        message: 'Unauthorized to return this order',
       };
     }
 
@@ -40,7 +40,7 @@ export const checkReturnEligibility = async (orderId, userId) => {
       return {
         success: false,
         message: 'Order must be delivered to initiate return',
-        eligible: false
+        eligible: false,
       };
     }
 
@@ -70,7 +70,7 @@ export const checkReturnEligibility = async (orderId, userId) => {
         returnWindowDays: days,
         returnable: item.product?.isReturnable !== false,
         exchangeable: item.product?.isExchangeable !== false,
-        withinWindow: days > 0 ? daysSinceDelivery <= days : false
+        withinWindow: days > 0 ? daysSinceDelivery <= days : false,
       };
     });
 
@@ -83,17 +83,17 @@ export const checkReturnEligibility = async (orderId, userId) => {
         daysSinceDelivery,
         returnWindowDays: widest,
         lineWindows,
-        message: daysSinceDelivery > widest
-          ? `The return window has closed for every item in this order (shortest was ${Math.min(...lineWindows.map((l) => l.returnWindowDays))} day(s), longest ${widest} day(s); ${daysSinceDelivery} day(s) since delivery).`
-          : 'None of the items in this order can be returned.'
+        message:
+          daysSinceDelivery > widest
+            ? `The return window has closed for every item in this order (shortest was ${Math.min(...lineWindows.map((l) => l.returnWindowDays))} day(s), longest ${widest} day(s); ${daysSinceDelivery} day(s) since delivery).`
+            : 'None of the items in this order can be returned.',
       };
     }
-
 
     // Check if return already requested
     const existingReturn = await ReturnRequest.findOne({
       order: orderId,
-      status: { $nin: ['rejected', 'cancelled'] }
+      status: { $nin: ['rejected', 'cancelled'] },
     });
 
     if (existingReturn) {
@@ -101,7 +101,7 @@ export const checkReturnEligibility = async (orderId, userId) => {
         success: false,
         message: 'Return already requested for this order',
         eligible: false,
-        existingReturn
+        existingReturn,
       };
     }
 
@@ -117,10 +117,13 @@ export const checkReturnEligibility = async (orderId, userId) => {
       // Longest window present on the order, plus the per-line detail so the
       // customer sees which item is expiring when.
       returnWindowDays: Math.max(...lineWindows.map((l) => l.returnWindowDays)),
-      daysRemaining: Math.max(...lineWindows.filter((l) => l.returnable).map((l) => l.returnWindowDays - daysSinceDelivery)),
+      daysRemaining: Math.max(
+        ...lineWindows.filter((l) => l.returnable).map((l) => l.returnWindowDays - daysSinceDelivery)
+      ),
       lineWindows,
       items: selectable.map((line) => {
-        const source = (order.items || []).find((i) => String(i.product?._id || i.product) === String(line.product)) || {};
+        const source =
+          (order.items || []).find((i) => String(i.product?._id || i.product) === String(line.product)) || {};
         return {
           product: source.product,
           quantity: source.quantity,
@@ -129,16 +132,15 @@ export const checkReturnEligibility = async (orderId, userId) => {
           isReturnable: true,
           isExchangeable: line.exchangeable,
           returnWindowDays: line.returnWindowDays,
-          daysRemaining: line.returnWindowDays - daysSinceDelivery
+          daysRemaining: line.returnWindowDays - daysSinceDelivery,
         };
-      })
+      }),
     };
-
   } catch (error) {
     console.error('Error checking return eligibility:', error);
     return {
       success: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
@@ -146,15 +148,23 @@ export const checkReturnEligibility = async (orderId, userId) => {
 /**
  * Create return request with photo upload
  */
-export const createCustomerReturnRequest = async (orderId, userId, items, reason, description, images = [], type = 'return') => {
+export const createCustomerReturnRequest = async (
+  orderId,
+  userId,
+  items,
+  reason,
+  description,
+  images = [],
+  type = 'return'
+) => {
   try {
     // Check eligibility first
     const eligibility = await checkReturnEligibility(orderId, userId);
-    
+
     if (!eligibility.success || !eligibility.eligible) {
       return {
         success: false,
-        message: eligibility.message
+        message: eligibility.message,
       };
     }
 
@@ -165,12 +175,12 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
     const returnItems = [];
 
     for (const item of items) {
-      const orderItem = order.items.find(i => i.product._id.toString() === item.productId);
-      
+      const orderItem = order.items.find((i) => i.product._id.toString() === item.productId);
+
       if (!orderItem) {
         return {
           success: false,
-          message: `Product ${item.productId} not found in order`
+          message: `Product ${item.productId} not found in order`,
         };
       }
 
@@ -178,7 +188,7 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
       if (orderItem.product.isReturnable === false) {
         return {
           success: false,
-          message: `Product "${orderItem.product.title}" is not eligible for return`
+          message: `Product "${orderItem.product.title}" is not eligible for return`,
         };
       }
 
@@ -197,7 +207,7 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
       if (daysSince > lineWindow) {
         return {
           success: false,
-          message: `The return window for "${orderItem.product.title}" closed after ${lineWindow} day(s); ${daysSince} day(s) have passed since delivery`
+          message: `The return window for "${orderItem.product.title}" closed after ${lineWindow} day(s); ${daysSince} day(s) have passed since delivery`,
         };
       }
       if (lineWindow === 0) {
@@ -207,7 +217,7 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
       if (item.quantity > orderItem.quantity) {
         return {
           success: false,
-          message: `Return quantity exceeds ordered quantity for product ${item.productId}`
+          message: `Return quantity exceeds ordered quantity for product ${item.productId}`,
         };
       }
 
@@ -219,7 +229,7 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
         quantity: item.quantity,
         reason: reason || item.reason || 'Customer request',
         description: description || item.description || '',
-        images: item.images || images || []
+        images: item.images || images || [],
       });
     }
 
@@ -235,7 +245,7 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
      * dispute, and it costs one line here.
      */
     const chargedTotal = Number(order.totalAmount) || 0;
-    const codFeeHeld = order.paymentMethod === 'cod' ? (Number(order.codFee) || 0) : 0;
+    const codFeeHeld = order.paymentMethod === 'cod' ? Number(order.codFee) || 0 : 0;
 
     // Create return request
     const returnRequest = await ReturnRequest.create({
@@ -249,31 +259,31 @@ export const createCustomerReturnRequest = async (orderId, userId, items, reason
       nonRefundableCodFee: codFeeHeld,
       orderChargedTotal: chargedTotal,
       requestType: type,
-      status: 'requested'
+      status: 'requested',
     });
 
     // Send confirmation email
     const User = (await import('../models/User.js')).default;
     const user = await User.findById(userId);
-    
+
     await sendReturnConfirmation(user.email, {
       returnId: returnRequest.returnId,
       orderNumber: order.orderNumber,
       reason: reason || 'Customer request',
       status: returnRequest.status,
-      refundAmount
+      refundAmount,
     });
 
     return {
       success: true,
       returnRequest,
-      message: 'Return request created successfully'
+      message: 'Return request created successfully',
     };
   } catch (error) {
     console.error('Error creating return request:', error);
     return {
       success: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
@@ -286,7 +296,7 @@ export const uploadReturnImages = async (files, returnId) => {
     if (!files || files.length === 0) {
       return {
         success: false,
-        message: 'No files uploaded'
+        message: 'No files uploaded',
       };
     }
 
@@ -294,13 +304,13 @@ export const uploadReturnImages = async (files, returnId) => {
     if (!returnRequest) {
       return {
         success: false,
-        message: 'Return request not found'
+        message: 'Return request not found',
       };
     }
 
     const imageUrls = [];
     const uploadDir = path.join(process.cwd(), 'uploads', 'returns');
-    
+
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
@@ -309,32 +319,32 @@ export const uploadReturnImages = async (files, returnId) => {
     for (const file of files) {
       const filename = `${returnId}_${Date.now()}_${file.originalname}`;
       const filepath = path.join(uploadDir, filename);
-      
+
       // Move file to uploads directory
       fs.writeFileSync(filepath, file.buffer);
-      
+
       const imageUrl = `/uploads/returns/${filename}`;
       imageUrls.push(imageUrl);
     }
 
     // Update return request with image URLs
-    returnRequest.items.forEach(item => {
+    returnRequest.items.forEach((item) => {
       if (!item.images) item.images = [];
       item.images.push(...imageUrls);
     });
-    
+
     await returnRequest.save();
 
     return {
       success: true,
       imageUrls,
-      message: 'Images uploaded successfully'
+      message: 'Images uploaded successfully',
     };
   } catch (error) {
     console.error('Error uploading return images:', error);
     return {
       success: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
@@ -356,13 +366,13 @@ export const getUserReturnRequests = async (userId, status = null) => {
 
     return {
       success: true,
-      returns
+      returns,
     };
   } catch (error) {
     console.error('Error getting user return requests:', error);
     return {
       success: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
@@ -373,25 +383,25 @@ export const getUserReturnRequests = async (userId, status = null) => {
 export const cancelReturnRequest = async (returnId, userId) => {
   try {
     const returnRequest = await ReturnRequest.findById(returnId);
-    
+
     if (!returnRequest) {
       return {
         success: false,
-        message: 'Return request not found'
+        message: 'Return request not found',
       };
     }
 
     if (returnRequest.user.toString() !== userId) {
       return {
         success: false,
-        message: 'Unauthorized to cancel this return'
+        message: 'Unauthorized to cancel this return',
       };
     }
 
     if (returnRequest.status !== 'requested') {
       return {
         success: false,
-        message: 'Can only cancel return requests that are still pending approval'
+        message: 'Can only cancel return requests that are still pending approval',
       };
     }
 
@@ -400,13 +410,13 @@ export const cancelReturnRequest = async (returnId, userId) => {
 
     return {
       success: true,
-      message: 'Return request cancelled successfully'
+      message: 'Return request cancelled successfully',
     };
   } catch (error) {
     console.error('Error cancelling return request:', error);
     return {
       success: false,
-      message: error.message
+      message: error.message,
     };
   }
 };
@@ -416,5 +426,5 @@ export default {
   createCustomerReturnRequest,
   uploadReturnImages,
   getUserReturnRequests,
-  cancelReturnRequest
+  cancelReturnRequest,
 };

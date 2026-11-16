@@ -14,18 +14,22 @@ const SORT_OPTIONS = [
   { value: 'price_asc', label: 'Price: Low to High' },
   { value: 'price_desc', label: 'Price: High to Low' },
   { value: 'rating', label: 'Customer Rating' },
-  { value: 'discount', label: 'Discount' }
+  { value: 'discount', label: 'Discount' },
 ];
 
 const PRICE_BANDS = PRICE_RANGES;
 
-
 const chipStyle = (active) => ({
-  display: 'block', padding: '9px 14px', borderRadius: '999px', fontSize: '13px',
-  fontWeight: 600, textDecoration: 'none', border: '1px solid',
+  display: 'block',
+  padding: '9px 14px',
+  borderRadius: '999px',
+  fontSize: '13px',
+  fontWeight: 600,
+  textDecoration: 'none',
+  border: '1px solid',
   borderColor: active ? 'var(--primary)' : 'var(--border)',
   background: active ? 'var(--primary-light)' : 'var(--bg-white)',
-  color: active ? 'var(--primary-dark)' : 'var(--text-primary)'
+  color: active ? 'var(--primary-dark)' : 'var(--text-primary)',
 });
 
 export default function ProductsBrowse() {
@@ -35,7 +39,15 @@ export default function ProductsBrowse() {
   // A facet call that fails must not leave last visit's options on screen
   // looking current; the panel says what happened instead.
   const [facetError, setFacetError] = useState(false);
-  const [facets, setFacets] = useState({ brands: [], frameShapes: [], frameTypes: [], materials: [], genders: [], frameSizes: [], frameColors: [] });
+  const [facets, setFacets] = useState({
+    brands: [],
+    frameShapes: [],
+    frameTypes: [],
+    materials: [],
+    genders: [],
+    frameSizes: [],
+    frameColors: [],
+  });
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -50,13 +62,18 @@ export default function ProductsBrowse() {
   // Every facet in the URL is read generically so links from the home page work.
   // One descriptor drives the headline, the filters and the fixed constraints,
   // so a powered-sunglasses list can never show rim-type facets meant for frames.
-  const descriptor = useMemo(() => resolveCategory(categorySlug || searchParams.get('category') || ''), [categorySlug, searchParams]);
+  const descriptor = useMemo(
+    () => resolveCategory(categorySlug || searchParams.get('category') || ''),
+    [categorySlug, searchParams]
+  );
   const facetGroups = useMemo(() => facetsForCategory(descriptor), [descriptor]);
   const fixedFilters = useMemo(() => fixedFiltersFor(descriptor), [descriptor]);
 
   const facetValues = useMemo(() => {
     const out = {};
-    facetGroups.forEach((f) => { out[f.key] = searchParams.get(f.key) || ''; });
+    facetGroups.forEach((f) => {
+      out[f.key] = searchParams.get(f.key) || '';
+    });
     return out;
   }, [searchParams, facetGroups]);
 
@@ -81,7 +98,7 @@ export default function ProductsBrowse() {
           ...Object.fromEntries(Object.entries(facetValues).filter(([k, v]) => v && k !== 'brand')),
           ...(priceBand && priceBand.includes('-')
             ? { minPrice: priceBand.split('-')[0], maxPrice: priceBand.split('-')[1] }
-            : {})
+            : {}),
         });
         if (!cancelled && res.data?.filters) {
           setFacets((prev) => ({ ...prev, ...res.data.filters }));
@@ -93,7 +110,9 @@ export default function ProductsBrowse() {
       }
     };
     fetchFacets();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [category, brand, facetValues, priceBand]);
 
   useEffect(() => {
@@ -105,7 +124,9 @@ export default function ProductsBrowse() {
       if (sellerCode) params.sellerCode = sellerCode;
       if (category && !descriptor?.category) params.category = category;
       if (descriptor?.category) params.category = descriptor.category;
-      Object.entries(fixedFilters).forEach(([k, v]) => { params[k] = v; });
+      Object.entries(fixedFilters).forEach(([k, v]) => {
+        params[k] = v;
+      });
       if (searchParams.get('powered') === 'true') params.powered = 'true';
       facetGroups.forEach((f) => {
         if (facetValues[f.key]) params[f.key] = facetValues[f.key];
@@ -124,14 +145,19 @@ export default function ProductsBrowse() {
         setTotal(res.data.pagination?.total || 0);
       } catch (err) {
         console.error('Products fetch error:', err);
-        if (!cancelled) { setItems([]); setTotal(0); }
+        if (!cancelled) {
+          setItems([]);
+          setTotal(0);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
     fetchProducts();
     setPage(1);
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [brand, category, sort, priceBand, facetValues, sellerCode, descriptor, fixedFilters, facetGroups, searchParams]);
 
   const updateParam = (key, value) => {
@@ -166,19 +192,39 @@ export default function ProductsBrowse() {
     <div style={{ display: 'grid', gap: 22 }}>
       {brand && (
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.4 }}>Brand</div>
-          <button onClick={() => updateParam('brand', '')} className="btn btn-outline" style={{ padding: '6px 12px', fontSize: 13 }}>
+          <div
+            style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.4 }}
+          >
+            Brand
+          </div>
+          <button
+            onClick={() => updateParam('brand', '')}
+            className="btn btn-outline"
+            style={{ padding: '6px 12px', fontSize: 13 }}
+          >
             {brand} <FiX size={14} style={{ verticalAlign: 'middle', marginLeft: 6 }} />
           </button>
         </div>
       )}
 
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.4 }}>Price</div>
+        <div
+          style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.4 }}
+        >
+          Price
+        </div>
         <div style={{ display: 'grid', gap: 6 }}>
           {PRICE_BANDS.map((b) => (
-            <label key={b.label} style={{ fontSize: 14, cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input type="radio" name="priceband" checked={priceBand === b.label} onChange={() => updateParam('price', priceBand === b.label ? '' : b.label)} />
+            <label
+              key={b.label}
+              style={{ fontSize: 14, cursor: 'pointer', display: 'flex', gap: 8, alignItems: 'center' }}
+            >
+              <input
+                type="radio"
+                name="priceband"
+                checked={priceBand === b.label}
+                onChange={() => updateParam('price', priceBand === b.label ? '' : b.label)}
+              />
               {b.label}
             </label>
           ))}
@@ -188,7 +234,9 @@ export default function ProductsBrowse() {
       {facetGroups.map((group) => {
         // Dynamic facets read their values from the live facet response;
         // fixed facets (correction type, age band, bottle size) are declared.
-        const options = group.optionsKey ? (facets[group.optionsKey] || []) : (group.values || []).map((o) => (typeof o === 'string' ? o : o.v));
+        const options = group.optionsKey
+          ? facets[group.optionsKey] || []
+          : (group.values || []).map((o) => (typeof o === 'string' ? o : o.v));
         /*
          * A brand list is the one facet long enough to need structure: 20+ names
          * in a wrapping row is a hunt, and grouped under their initial letter it
@@ -200,9 +248,10 @@ export default function ProductsBrowse() {
         // wrapping row is a hunt, grouped under their initial it is a scan. The
         // grouping comes from the server's scoped list, so a letter only appears
         // when a brand under it can actually be bought with the filters applied.
-        const letters = group.optionsKey === 'brands'
-          ? Object.entries(facets.brandsByLetter || {}).filter(([, list]) => list && list.length)
-          : null;
+        const letters =
+          group.optionsKey === 'brands'
+            ? Object.entries(facets.brandsByLetter || {}).filter(([, list]) => list && list.length)
+            : null;
         if (!options.length) return null;
 
         const chip = (opt) => (
@@ -221,19 +270,36 @@ export default function ProductsBrowse() {
 
         return (
           <div key={group.key}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.4 }}>{group.label}</div>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                marginBottom: 10,
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+              }}
+            >
+              {group.label}
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {(letters
+              {letters
                 ? letters.flatMap(([letter, list]) => [
                     <span
                       key={`letter-${letter}`}
-                      style={{ alignSelf: 'center', fontSize: 11, fontWeight: 700, color: 'var(--text-light)', letterSpacing: '.5px', minWidth: 10 }}
+                      style={{
+                        alignSelf: 'center',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: 'var(--text-light)',
+                        letterSpacing: '.5px',
+                        minWidth: 10,
+                      }}
                     >
                       {letter}
                     </span>,
-                    ...list.map((opt) => chip(opt))
+                    ...list.map((opt) => chip(opt)),
                   ])
-                : options.map(chip))}
+                : options.map(chip)}
             </div>
           </div>
         );
@@ -251,14 +317,25 @@ export default function ProductsBrowse() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
       <Header />
-      <main style={{ flex: 1 }} className="container" >
+      <main style={{ flex: 1 }} className="container">
         <div style={{ padding: '18px 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-          <Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Home</Link>
+          <Link to="/" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>
+            Home
+          </Link>
           {' / '}
           <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{heading}</span>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12,
+            flexWrap: 'wrap',
+            marginBottom: 16,
+          }}
+        >
           <div>
             <h1 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>{heading}</h1>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -266,7 +343,11 @@ export default function ProductsBrowse() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => setShowFilters((v) => !v)} className="btn btn-outline browse-filter-toggle" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className="btn btn-outline browse-filter-toggle"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+            >
               <FiFilter size={16} /> Filters {activeCount > 0 ? `(${activeCount})` : ''}
             </button>
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
@@ -277,42 +358,78 @@ export default function ProductsBrowse() {
                 className="input"
                 style={{ width: 'auto', padding: '8px 12px', fontSize: 14 }}
               >
-                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
               </select>
             </label>
           </div>
         </div>
 
-        <div className="browse-layout" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24, alignItems: 'start' }}>
+        <div
+          className="browse-layout"
+          style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24, alignItems: 'start' }}
+        >
           <aside className="browse-filters card card-pad" style={{ position: 'sticky', top: 90 }}>
             {filterPanel}
           </aside>
 
           <section>
             {showFilters && (
-              <div className="card browse-filters-mobile" style={{ padding: 20, marginBottom: 18 }}>{filterPanel}</div>
+              <div className="card browse-filters-mobile" style={{ padding: 20, marginBottom: 18 }}>
+                {filterPanel}
+              </div>
             )}
             {loading ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} style={{ height: 320, borderRadius: 'var(--radius)', background: 'var(--border-light)' }} />
+                  <div
+                    key={i}
+                    style={{ height: 320, borderRadius: 'var(--radius)', background: 'var(--border-light)' }}
+                  />
                 ))}
               </div>
             ) : items.length === 0 ? (
               <div className="card" style={{ padding: '60px 24px', textAlign: 'center' }}>
                 <h3 style={{ marginBottom: 8 }}>No products match these filters</h3>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 18 }}>Try removing a filter or two to widen the results.</p>
-                <button onClick={clearAll} className="btn btn-primary">Clear Filters</button>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 18 }}>
+                  Try removing a filter or two to widen the results.
+                </p>
+                <button onClick={clearAll} className="btn btn-primary">
+                  Clear Filters
+                </button>
               </div>
             ) : (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-                  {items.map((product) => <ProductCard key={product._id} product={product} />)}
+                  {items.map((product) => (
+                    <ProductCard key={product._id} product={product} />
+                  ))}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 32 }}>
-                  <button className="btn btn-outline" disabled={page <= 1} onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo(0, 0); }}>Previous</button>
+                  <button
+                    className="btn btn-outline"
+                    disabled={page <= 1}
+                    onClick={() => {
+                      setPage((p) => Math.max(1, p - 1));
+                      window.scrollTo(0, 0);
+                    }}
+                  >
+                    Previous
+                  </button>
                   <span style={{ padding: '10px 14px', fontSize: 14 }}>Page {page}</span>
-                  <button className="btn btn-outline" disabled={items.length < 24} onClick={() => { setPage((p) => p + 1); window.scrollTo(0, 0); }}>Next</button>
+                  <button
+                    className="btn btn-outline"
+                    disabled={items.length < 24}
+                    onClick={() => {
+                      setPage((p) => p + 1);
+                      window.scrollTo(0, 0);
+                    }}
+                  >
+                    Next
+                  </button>
                 </div>
               </>
             )}

@@ -7,36 +7,36 @@ Sign-in works without an email OTP in development because the seeded accounts ar
 on each endpoint's bypass list. Set `NODE_ENV=production` (or `AUTH_OTP_BYPASS=false`)
 and every login requires the emailed code again.
 
-| Role | Sign-in page | Email | Password |
-| --- | --- | --- | --- |
-| Customer | http://localhost:3000/login | `demo@optikart.com` | `Demo123@` |
-| Customer (2nd) | http://localhost:3000/login | `testuser@optikart.com` | `Test123@` |
-| Admin | http://localhost:3000/admin/login | `samedayopticians@gmail.com` | `Sameday123@` |
-| Staff (seller manager) | http://localhost:3000/staff/login | `priya.staff@optikart.com` | `Staff123@` |
-| Staff (prescription checks) | http://localhost:3000/staff/login | `meera.staff@optikart.com` | `Staff123@` |
-| Seller | http://localhost:3000/seller/login | `opticalworld@gmail.com` | `Seller123@` |
-| Seller (has catalogue) | http://localhost:3000/seller/login | `visioncare@gmail.com` | `Seller123@` |
-| Seller | http://localhost:3000/seller/login | `lensstudio@gmail.com` | `Seller123@` |
-| Seller | http://localhost:3000/seller/login | `eyefashion@gmail.com` | `Seller123@` |
-| Executive (delivery) | http://localhost:3000/executive/login | `executive.delivery@optikart.com` | `Executive123@` |
-| Manufacturer | http://localhost:3000/manufacturer/login | `rayban.manufacturer@optikart.com` | `Manufacturer123@` |
-| Manufacturer's retailer | http://localhost:3000/manufacturer-seller/login | `rayban.retailer1@optikart.com` | `Retailer123@` |
-| Delivery partner (Bandra) | http://localhost:3000/delivery-partner/login | `suresh.partner@optikart.com` | `Partner123@` |
-| Delivery partner (Andheri) | http://localhost:3000/delivery-partner/login | `anjali.partner@optikart.com` | `Partner123@` |
-| Delivery partner (Thane, outside the 4.5 km pickup radius of the Bandra stores) | http://localhost:3000/delivery-partner/login | `ramesh.partner@optikart.com` | `Partner123@` |
+| Role                                                                            | Sign-in page                                    | Email                              | Password           |
+| ------------------------------------------------------------------------------- | ----------------------------------------------- | ---------------------------------- | ------------------ |
+| Customer                                                                        | http://localhost:3000/login                     | `demo@optikart.com`                | `Demo123@`         |
+| Customer (2nd)                                                                  | http://localhost:3000/login                     | `testuser@optikart.com`            | `Test123@`         |
+| Admin                                                                           | http://localhost:3000/admin/login               | `samedayopticians@gmail.com`       | `Sameday123@`      |
+| Staff (seller manager)                                                          | http://localhost:3000/staff/login               | `priya.staff@optikart.com`         | `Staff123@`        |
+| Staff (prescription checks)                                                     | http://localhost:3000/staff/login               | `meera.staff@optikart.com`         | `Staff123@`        |
+| Seller                                                                          | http://localhost:3000/seller/login              | `opticalworld@gmail.com`           | `Seller123@`       |
+| Seller (has catalogue)                                                          | http://localhost:3000/seller/login              | `visioncare@gmail.com`             | `Seller123@`       |
+| Seller                                                                          | http://localhost:3000/seller/login              | `lensstudio@gmail.com`             | `Seller123@`       |
+| Seller                                                                          | http://localhost:3000/seller/login              | `eyefashion@gmail.com`             | `Seller123@`       |
+| Executive (delivery)                                                            | http://localhost:3000/executive/login           | `executive.delivery@optikart.com`  | `Executive123@`    |
+| Manufacturer                                                                    | http://localhost:3000/manufacturer/login        | `rayban.manufacturer@optikart.com` | `Manufacturer123@` |
+| Manufacturer's retailer                                                         | http://localhost:3000/manufacturer-seller/login | `rayban.retailer1@optikart.com`    | `Retailer123@`     |
+| Delivery partner (Bandra)                                                       | http://localhost:3000/delivery-partner/login    | `suresh.partner@optikart.com`      | `Partner123@`      |
+| Delivery partner (Andheri)                                                      | http://localhost:3000/delivery-partner/login    | `anjali.partner@optikart.com`      | `Partner123@`      |
+| Delivery partner (Thane, outside the 4.5 km pickup radius of the Bandra stores) | http://localhost:3000/delivery-partner/login    | `ramesh.partner@optikart.com`      | `Partner123@`      |
 
 ## Where each one lands
 
-| Role | After sign-in | Worth checking |
-| --- | --- | --- |
-| Customer | `/` | Cart with 25-item cap and per-line selection; order tracking on `/orders/:id` |
-| Admin | `/admin` | Orders, Product Verification, Order Assignment, Delivery Partners, Return Analytics |
-| Staff (products) | `/staff` | Queue scoped to `seller_manager`: products awaiting verification |
-| Seller | `/seller/dashboard` | Inventory shows colour/size stock and price; payouts; commission |
-| Executive | `/executive/dashboard` | Deliveries with customer and seller detail, reports, delivery journey |
-| Manufacturer | `/manufacturer/dashboard` | Company and brand editing, seller block/reinstate/edit, pending products |
-| Manufacturer's retailer | `/manufacturer-seller/dashboard` | Only the parent brand's catalogue is offered to stock |
-| Delivery partner | `/delivery-partner/dashboard` | Assigned orders, earnings, one withdrawal per day |
+| Role                    | After sign-in                    | Worth checking                                                                      |
+| ----------------------- | -------------------------------- | ----------------------------------------------------------------------------------- |
+| Customer                | `/`                              | Cart with 25-item cap and per-line selection; order tracking on `/orders/:id`       |
+| Admin                   | `/admin`                         | Orders, Product Verification, Order Assignment, Delivery Partners, Return Analytics |
+| Staff (products)        | `/staff`                         | Queue scoped to `seller_manager`: products awaiting verification                    |
+| Seller                  | `/seller/dashboard`              | Inventory shows colour/size stock and price; payouts; commission                    |
+| Executive               | `/executive/dashboard`           | Deliveries with customer and seller detail, reports, delivery journey               |
+| Manufacturer            | `/manufacturer/dashboard`        | Company and brand editing, seller block/reinstate/edit, pending products            |
+| Manufacturer's retailer | `/manufacturer-seller/dashboard` | Only the parent brand's catalogue is offered to stock                               |
+| Delivery partner        | `/delivery-partner/dashboard`    | Assigned orders, earnings, one withdrawal per day                                   |
 
 ## Seeded data you can act on
 
@@ -63,8 +63,8 @@ and every login requires the emailed code again.
 
 ## If a login is rejected
 
-| Message | Cause |
-| --- | --- |
+| Message                     | Cause                                                              |
+| --------------------------- | ------------------------------------------------------------------ |
 | `Invalid email or password` | The database was wiped or repointed; restart the server to reseed. |
-| OTP step appears | You are running with `NODE_ENV=production`, which is intended. |
-| `Account locked` | Three wrong passwords in a row; the lock clears after 3 minutes. |
+| OTP step appears            | You are running with `NODE_ENV=production`, which is intended.     |
+| `Account locked`            | Three wrong passwords in a row; the lock clears after 3 minutes.   |

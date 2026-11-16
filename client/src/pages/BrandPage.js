@@ -35,15 +35,42 @@ const BrandPage = () => {
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <nav style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>
-            <Link to="/" style={{ color: 'var(--primary)' }}>Home</Link> / <Link to="/brands" style={{ color: 'var(--primary)' }}>Brands</Link> / <span>{brandName}</span>
+            <Link to="/" style={{ color: 'var(--primary)' }}>
+              Home
+            </Link>{' '}
+            /{' '}
+            <Link to="/brands" style={{ color: 'var(--primary)' }}>
+              Brands
+            </Link>{' '}
+            / <span>{brandName}</span>
           </nav>
 
-          <div style={{ background: 'var(--bg-white)', borderRadius: 'var(--radius-md)', padding: '24px', marginBottom: '24px', boxShadow: 'var(--shadow)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div
+            style={{
+              background: 'var(--bg-white)',
+              borderRadius: 'var(--radius-md)',
+              padding: '24px',
+              marginBottom: '24px',
+              boxShadow: 'var(--shadow)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px',
+            }}
+          >
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: 700 }}>{brandName}</h1>
-              <p style={{ fontSize: '14px', color: 'var(--text-light)', marginTop: '4px' }}>{productsList.length} products available</p>
+              <p style={{ fontSize: '14px', color: 'var(--text-light)', marginTop: '4px' }}>
+                {productsList.length} products available
+              </p>
             </div>
-            <select value={sort} onChange={(e) => setSort(e.target.value)} className="input" style={{ width: 'auto', padding: '8px 12px', fontSize: '13px' }}>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="input"
+              style={{ width: 'auto', padding: '8px 12px', fontSize: '13px' }}
+            >
               <option value="popularity">Popularity</option>
               <option value="priceLow">Price: Low to High</option>
               <option value="priceHigh">Price: High to Low</option>
@@ -55,11 +82,20 @@ const BrandPage = () => {
           {loading ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="card" style={{ height: '280px' }}><div className="skeleton" style={{ height: '200px' }} /><div style={{ padding: '12px' }}><div className="skeleton" style={{ height: '14px', width: '80%', marginBottom: '8px' }} /><div className="skeleton" style={{ height: '14px', width: '50%' }} /></div></div>
+                <div key={i} className="card" style={{ height: '280px' }}>
+                  <div className="skeleton" style={{ height: '200px' }} />
+                  <div style={{ padding: '12px' }}>
+                    <div className="skeleton" style={{ height: '14px', width: '80%', marginBottom: '8px' }} />
+                    <div className="skeleton" style={{ height: '14px', width: '50%' }} />
+                  </div>
+                </div>
               ))}
             </div>
           ) : productsList.length === 0 ? (
-            <div className="empty-state"><h3>No products from {brandName}</h3><p>Check back later</p></div>
+            <div className="empty-state">
+              <h3>No products from {brandName}</h3>
+              <p>Check back later</p>
+            </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
               {productsList.map((product) => (

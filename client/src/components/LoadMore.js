@@ -7,7 +7,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     padding: '32px 16px',
-    fontFamily: "var(--font-body)",
+    fontFamily: 'var(--font-body)',
   },
   button: {
     background: 'var(--bg-white)',
@@ -63,10 +63,7 @@ export default function LoadMore({
   if (!hasMore && !loading) {
     return (
       <div style={styles.container}>
-        <button
-          style={{ ...styles.button, ...styles.buttonDisabled }}
-          disabled
-        >
+        <button style={{ ...styles.button, ...styles.buttonDisabled }} disabled>
           {loadedLabel}
         </button>
       </div>
@@ -98,9 +95,7 @@ export default function LoadMore({
           </>
         )}
       </button>
-      {!hasMore && !loading && (
-        <span style={styles.text}>You've reached the end</span>
-      )}
+      {!hasMore && !loading && <span style={styles.text}>You've reached the end</span>}
 
       <style>{`
         @keyframes spin {

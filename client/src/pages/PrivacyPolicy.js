@@ -87,7 +87,8 @@ const sections = [
   {
     icon: <FiMail size={20} />,
     title: '7. Contact for Privacy Concerns',
-    content: 'If you have any questions, concerns, or requests regarding your personal data or this Privacy Policy, please contact our Data Protection Officer:',
+    content:
+      'If you have any questions, concerns, or requests regarding your personal data or this Privacy Policy, please contact our Data Protection Officer:',
     items: [
       'Email: privacy@optikart.com',
       'Phone: 1800-123-4567 (Mon-Sat, 9am-9pm)',
@@ -104,9 +105,12 @@ const PrivacyPolicy = () => {
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '8px' }}>Privacy Policy</h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-light)', marginBottom: '8px' }}>Last updated: June 1, 2026</p>
+          <p style={{ fontSize: '14px', color: 'var(--text-light)', marginBottom: '8px' }}>
+            Last updated: June 1, 2026
+          </p>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: 1.7 }}>
-            At OptiKart, we respect your privacy and are committed to protecting your personal data. This Privacy Policy explains how we collect, use, store, and protect your information when you use our platform.
+            At OptiKart, we respect your privacy and are committed to protecting your personal data. This Privacy Policy
+            explains how we collect, use, store, and protect your information when you use our platform.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
@@ -116,7 +120,16 @@ const PrivacyPolicy = () => {
                   <div style={{ color: 'var(--primary)' }}>{section.icon}</div>
                   <h2 style={{ fontSize: '17px', fontWeight: 600 }}>{section.title}</h2>
                 </div>
-                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: section.items ? '12px' : 0 }}>{section.content}</p>
+                <p
+                  style={{
+                    fontSize: '14px',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.8,
+                    marginBottom: section.items ? '12px' : 0,
+                  }}
+                >
+                  {section.content}
+                </p>
                 {section.items && (
                   <ul className="list-clean">
                     {section.items.map((item, i) => (

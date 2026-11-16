@@ -41,10 +41,10 @@ const VirtualTryOn = () => {
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
-          facingMode: 'user'
-        }
+          facingMode: 'user',
+        },
       });
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsStreaming(true);
@@ -58,7 +58,7 @@ const VirtualTryOn = () => {
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = videoRef.current.srcObject.getTracks();
-      tracks.forEach(track => track.stop());
+      tracks.forEach((track) => track.stop());
       videoRef.current.srcObject = null;
       setIsStreaming(false);
     }
@@ -68,23 +68,23 @@ const VirtualTryOn = () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
-      
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
+
       const context = canvas.getContext('2d');
-      
+
       // Draw video frame
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
+
       // Draw product overlay (AR simulation)
       if (selectedProduct) {
         drawProductOverlay(context, canvas.width, canvas.height);
       }
-      
+
       const imageData = canvas.toDataURL('image/png');
       setCapturedImage(imageData);
-      
+
       toast.success('Photo captured!');
     }
   };
@@ -117,9 +117,9 @@ const VirtualTryOn = () => {
         image: capturedImage,
         product: selectedProduct,
         angle: currentAngle,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       setSavedPhotos([...savedPhotos, photo]);
       setCapturedImage(null);
       toast.success('Photo saved!');
@@ -127,7 +127,7 @@ const VirtualTryOn = () => {
   };
 
   const deletePhoto = (photoId) => {
-    setSavedPhotos(savedPhotos.filter(p => p.id !== photoId));
+    setSavedPhotos(savedPhotos.filter((p) => p.id !== photoId));
     toast.success('Photo deleted');
   };
 
@@ -151,41 +151,45 @@ const VirtualTryOn = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
             {/* Camera View */}
             <div>
-              <div style={{ 
-                background: '#000', 
-                borderRadius: 'var(--radius)', 
-                overflow: 'hidden', 
-                position: 'relative',
-                aspectRatio: '16/9',
-                marginBottom: '16px'
-              }}>
+              <div
+                style={{
+                  background: '#000',
+                  borderRadius: 'var(--radius)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  aspectRatio: '16/9',
+                  marginBottom: '16px',
+                }}
+              >
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  style={{ 
-                    width: '100%', 
-                    height: '100%', 
+                  style={{
+                    width: '100%',
+                    height: '100%',
                     objectFit: 'cover',
-                    transform: 'scaleX(-1)' // Mirror effect
+                    transform: 'scaleX(-1)', // Mirror effect
                   }}
                 />
                 <canvas ref={canvasRef} style={{ display: 'none' }} />
-                
+
                 {!isStreaming && (
-                  <div style={{ 
-                    position: 'absolute', 
-                    top: 0, 
-                    left: 0, 
-                    right: 0, 
-                    bottom: 0, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    background: 'rgba(0,0,0,0.7)',
-                    color: 'var(--text-white)'
-                  }}>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: 'var(--text-white)',
+                    }}
+                  >
                     <button
                       onClick={startCamera}
                       style={{
@@ -199,7 +203,7 @@ const VirtualTryOn = () => {
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '8px',
                       }}
                     >
                       <FiCamera size={20} />
@@ -209,16 +213,18 @@ const VirtualTryOn = () => {
                 )}
 
                 {isStreaming && selectedProduct && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '16px',
-                    left: '16px',
-                    background: 'rgba(0,0,0,0.7)',
-                    color: 'var(--text-white)',
-                    padding: '8px 16px',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '14px'
-                  }}>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '16px',
+                      left: '16px',
+                      background: 'rgba(0,0,0,0.7)',
+                      color: 'var(--text-white)',
+                      padding: '8px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '14px',
+                    }}
+                  >
                     Trying: {selectedProduct.title}
                   </div>
                 )}
@@ -242,7 +248,7 @@ const VirtualTryOn = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '8px'
+                      gap: '8px',
                     }}
                   >
                     <FiCamera size={18} />
@@ -261,7 +267,7 @@ const VirtualTryOn = () => {
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: '8px',
                     }}
                   >
                     <FiX size={18} />
@@ -273,7 +279,7 @@ const VirtualTryOn = () => {
               {/* Angle Selection */}
               {isStreaming && (
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-                  {['front', 'left', 'right'].map(angle => (
+                  {['front', 'left', 'right'].map((angle) => (
                     <button
                       key={angle}
                       onClick={() => rotateView(angle)}
@@ -287,7 +293,7 @@ const VirtualTryOn = () => {
                         fontSize: '13px',
                         fontWeight: 600,
                         cursor: 'pointer',
-                        textTransform: 'capitalize'
+                        textTransform: 'capitalize',
                       }}
                     >
                       {angle} View
@@ -298,22 +304,22 @@ const VirtualTryOn = () => {
 
               {/* Captured Image Preview */}
               {capturedImage && (
-                <div style={{ 
-                  background: 'var(--bg-white)', 
-                  borderRadius: 'var(--radius)', 
-                  padding: '16px',
-                  marginBottom: '16px'
-                }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
-                    Captured Photo
-                  </h3>
-                  <img 
-                    src={capturedImage} 
-                    alt="Captured" 
-                    style={{ 
-                      width: '100%', 
+                <div
+                  style={{
+                    background: 'var(--bg-white)',
+                    borderRadius: 'var(--radius)',
+                    padding: '16px',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Captured Photo</h3>
+                  <img
+                    src={capturedImage}
+                    alt="Captured"
+                    style={{
+                      width: '100%',
                       borderRadius: 'var(--radius-md)',
-                      marginBottom: '12px'
+                      marginBottom: '12px',
                     }}
                   />
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -332,7 +338,7 @@ const VirtualTryOn = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '8px'
+                        gap: '8px',
                       }}
                     >
                       <FiCheck size={18} />
@@ -348,7 +354,7 @@ const VirtualTryOn = () => {
                         borderRadius: 'var(--radius-md)',
                         fontSize: '14px',
                         fontWeight: 600,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
                       }}
                     >
                       Retake
@@ -359,25 +365,33 @@ const VirtualTryOn = () => {
 
               {/* Saved Photos */}
               {savedPhotos.length > 0 && (
-                <div style={{ 
-                  background: 'var(--bg-white)', 
-                  borderRadius: 'var(--radius)', 
-                  padding: '16px'
-                }}>
+                <div
+                  style={{
+                    background: 'var(--bg-white)',
+                    borderRadius: 'var(--radius)',
+                    padding: '16px',
+                  }}
+                >
                   <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>
                     Saved Photos ({savedPhotos.length})
                   </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
-                    {savedPhotos.map(photo => (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                      gap: '12px',
+                    }}
+                  >
+                    {savedPhotos.map((photo) => (
                       <div key={photo.id} style={{ position: 'relative' }}>
-                        <img 
-                          src={photo.image} 
-                          alt="Saved" 
-                          style={{ 
-                            width: '100%', 
+                        <img
+                          src={photo.image}
+                          alt="Saved"
+                          style={{
+                            width: '100%',
                             aspectRatio: '16/9',
                             objectFit: 'cover',
-                            borderRadius: 'var(--radius-md)'
+                            borderRadius: 'var(--radius-md)',
                           }}
                         />
                         <button
@@ -395,22 +409,24 @@ const VirtualTryOn = () => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            cursor: 'pointer'
+                            cursor: 'pointer',
                           }}
                         >
                           <FiX size={16} />
                         </button>
-                        <div style={{
-                          position: 'absolute',
-                          bottom: '8px',
-                          left: '8px',
-                          background: 'rgba(0,0,0,0.7)',
-                          color: 'var(--text-white)',
-                          padding: '4px 8px',
-                          borderRadius: 'var(--radius-xs)',
-                          fontSize: '11px',
-                          textTransform: 'capitalize'
-                        }}>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: '8px',
+                            left: '8px',
+                            background: 'rgba(0,0,0,0.7)',
+                            color: 'var(--text-white)',
+                            padding: '4px 8px',
+                            borderRadius: 'var(--radius-xs)',
+                            fontSize: '11px',
+                            textTransform: 'capitalize',
+                          }}
+                        >
                           {photo.angle}
                         </div>
                       </div>
@@ -422,30 +438,32 @@ const VirtualTryOn = () => {
 
             {/* Product Selection */}
             <div>
-              <div style={{ 
-                background: 'var(--bg-white)', 
-                borderRadius: 'var(--radius)', 
-                padding: '16px',
-                position: 'sticky',
-                top: '20px'
-              }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>
-                  Select Product
-                </h3>
-                
+              <div
+                style={{
+                  background: 'var(--bg-white)',
+                  borderRadius: 'var(--radius)',
+                  padding: '16px',
+                  position: 'sticky',
+                  top: '20px',
+                }}
+              >
+                <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Select Product</h3>
+
                 {loading ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     <div className="spinner" />
                   </div>
                 ) : (
-                  <div style={{ 
-                    maxHeight: '600px', 
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '12px'
-                  }}>
-                    {products.map(product => (
+                  <div
+                    style={{
+                      maxHeight: '600px',
+                      overflowY: 'auto',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                    }}
+                  >
+                    {products.map((product) => (
                       <div
                         key={product._id}
                         onClick={() => setSelectedProduct(product)}
@@ -454,31 +472,27 @@ const VirtualTryOn = () => {
                           border: `2px solid ${selectedProduct?._id === product._id ? 'var(--action)' : 'var(--border)'}`,
                           borderRadius: 'var(--radius-md)',
                           cursor: 'pointer',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
                         }}
                       >
                         {product.images && product.images.length > 0 && (
-                          <img 
-                            src={product.images[0]} 
+                          <img
+                            src={product.images[0]}
                             alt={product.title}
                             style={{
                               width: '100%',
                               height: '120px',
                               objectFit: 'cover',
                               borderRadius: 'var(--radius-sm)',
-                              marginBottom: '8px'
+                              marginBottom: '8px',
                             }}
                           />
                         )}
-                        <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
-                          {product.title}
-                        </h4>
+                        <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{product.title}</h4>
                         <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>
                           {product.brand}
                         </p>
-                        <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--action)' }}>
-                          ₹{product.price}
-                        </p>
+                        <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--action)' }}>₹{product.price}</p>
                       </div>
                     ))}
                   </div>
