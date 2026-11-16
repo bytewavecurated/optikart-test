@@ -1,6 +1,7 @@
 import { otpBypassAllowed } from '../config/authMode.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import { brandOwnersByFoldedName, foldBrand } from '../services/brandOwnership.js';
+import { missingProductFields, describeRequired, sheetTextFor } from '../services/productRequirements.js';
 import { brandQueue, decideAsManufacturer } from '../services/listingApproval.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
@@ -474,8 +475,52 @@ router.get('/me', verifyManufacturer, async (req, res) => {
 });
 
 // Add Product (Manufacturer)
+/*
+ * The rule book, published.
+ *
+ * The upload form and the sheet both say what they will demand; until now each
+ * said it from its own copy of the list, which is how a manufacturer could read
+ * one set of requirements, satisfy it, and be refused by the other door. This
+ * returns the same object both doors compute their messages from, so the client
+ * renders the actual rules rather than a paraphrase of them.
+ *
+ * It is behind the manufacturer guard on purpose: nothing here is secret, but a
+ * competitor enumerating required columns is a different matter from a shop
+ * reading the rules it must satisfy, and every other upload surface is private.
+ */
+router.get('/upload-spec', verifyManufacturer, async (req, res) => {
+  res.json({ success: true, spec: describeRequired() });
+});
+
 router.post('/products', verifyManufacturer, async (req, res) => {
   try {
+    /*
+     * The single-product form used to validate nothing of its own: whatever came
+     * in went to Mongoose, and a missing description or model number surfaced as
+     * "Path `description` is required" - a sentence about an object nobody filled
+     * in, and the reason the bulk sheet appeared to demand more than the form.
+     * Both doors now consult the same rule set in services/productRequirements.js,
+     * so a requirement cannot exist on one side without the other, and the answer
+     * names every missing field at once instead of whichever one the schema
+     * happened to check first.
+     */
+    const requiredProblems = missingProductFields(req.body || {});
+    if (requiredProblems.length) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'This product is missing ' +
+          requiredProblems.length +
+          ' required ' +
+          (requiredProblems.length === 1 ? 'field' : 'fields') +
+          ': ' +
+          requiredProblems.map((item) => item.label).join(', ') +
+          '.',
+        missing: requiredProblems.map(({ field, label, message }) => ({ field, label, message })),
+        hint: 'The same fields are required on the bulk upload sheet - see the specification at the bottom of this page.',
+      });
+    }
+
     // The measured size ("54-16-135") is normalised into the schema's bucket, and
     // the numbers themselves are kept where the product page reads them.
     const incoming = { ...req.body };
@@ -507,8 +552,95 @@ router.post('/products', verifyManufacturer, async (req, res) => {
       product,
     });
   } catch (error) {
+    /*
+     * A rejected product is the caller's problem, not ours. Until now every
+     * failure on this door - a lens with no base curve, a width of "140mm" that
+     * Mongoose cannot cast to a Number, a missing seller on a seller listing -
+     * arrived as HTTP 500 "Server error" carrying our own error text. That is
+     * wrong twice: it tells a manufacturer their perfectly described data is
+     * something WE broke (so they wait instead of fixing it), and it forwards
+     * `error.message`, which for a validation failure recites schema paths and
+     * cast internals that belong in a log, not in a response body.
+     *
+     * So ValidationError becomes 400 with a per-field list in the same shape as
+     * the upload-rule problems above - one vocabulary for the whole door - and
+     * everything else stays 500 while the detail goes to the log only.
+     */
+    if (error?.name === 'ValidationError') {
+      const problems = Object.entries(error.errors || {}).map(([field, e]) => {
+        /*
+         * Mongoose's own text is written for engineers: "Cast to Number failed
+         * for value \"140mm\" (type string) at path \"frameWidth\"" names schema
+         * paths, internal type words and the library's grammar. A manufacturer
+         * reading that cannot tell whether they typed a unit, and the sentence
+         * exposes our schema layout in an HTTP body.
+         *
+         * So the *kind* of problem is mapped to the words the rest of this door
+         * already uses, with the field left intact for the client to highlight.
+         * Unknown kinds keep the message (nothing is invented) but drop the
+         * library's phrasing.
+         */
+        /*
+         * Verified against the installed Mongoose rather than assumed: a cast
+         * failure arrives as a CastError whose `kind` is the *target type*
+         * ("Number"), not the word "Cast", and required paths arrive with
+         * `kind: 'required'` and a message written as "Path `seller` is
+         * required." An earlier version of this mapper tested kind === 'Cast' and
+         * therefore printed the useless "is not in a form we can save" for every
+         * bad number.
+         */
+        const leaf = field.split('.').pop();
+        const label = leaf.charAt(0).toUpperCase() + leaf.slice(1).replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+        const kind = e?.kind || '';
+        const isCast = e?.name === 'CastError';
+        let message;
+        if (isCast) {
+          if (kind === 'Number')
+            message = `${label} must be a number (a value like "140mm" cannot be stored as a measurement)`;
+          else if (kind === 'Date') message = `${label} must be a date`;
+          else if (kind === 'Boolean') message = `${label} must be yes or no`;
+          else if (kind === 'ObjectIds' || kind === 'ObjectId') message = `${label} must name an existing record`;
+          else if (kind === 'Array') message = `${label} must be a list`;
+          else message = `${label} cannot be saved as written`;
+        } else if (kind === 'required') {
+          message = `${label} is required`;
+        } else if (kind === 'enum') {
+          const allowed = Product.schema.path(field)?.enumValues || [];
+          message = allowed.length
+            ? `${label} must be one of: ${allowed.join(', ')}`
+            : `${label} is not a value we accept`;
+        } else if (kind === 'min' || kind === 'max') {
+          message = `${label} is outside the range we accept`;
+        } else {
+          // The model's own pre-validate hook writes the good sentences for
+          // category attributes; keep them, strip only the library's grammar.
+          message = String(e?.message || `${label} needs attention`)
+            .replace(/^Path `[^`]*` is required\.?/, `${label} is required`)
+            .replace(/^Cast to .* at path `[^`]*`.*$/, `${label} cannot be saved as written`)
+            .replace(
+              /^`[^`]*` is not a valid enum value for path `[^`]*`\.?/,
+              `${label} is not one of the values we accept`
+            );
+          if (/^(Cast to|ObjectExpected|Path `)/.test(message)) message = `${label} cannot be saved as written`;
+        }
+        /*
+         * This `return` had been dropped by an earlier edit of mine, and a map
+         * callback that runs off the end yields undefined for every entry: the
+         * door then threw "Cannot read properties of undefined (reading 'field')"
+         * on the manufacturer's own validation error - a 500 in the code that
+         * exists to turn a 500 into a message. `node --check` cannot see it; the
+         * suite did.
+         */
+        return { field, label, message };
+      });
+      return res.status(400).json({
+        success: false,
+        message: `This product could not be saved: ${problems.map((p) => p.field).join(', ')} need attention.`,
+        missing: problems,
+      });
+    }
     console.error('Add product error:', error);
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+    res.status(500).json({ success: false, message: 'The product could not be saved. The details were recorded.' });
   }
 });
 
@@ -722,6 +854,22 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       };
       const optText = (...keys) => text(...keys) || undefined;
 
+      /*
+       * The whole row, keyed the way `get()` keys it (lowercase, no spaces,
+       * underscores or hyphens), so the shared rule book can read any column a
+       * manufacturer titled sensibly rather than this parser naming 20 of them by
+       * hand. A hand-typed list is how the two doors lost sync in the first place:
+       * every field the sheet checked that the API did not, and every field the
+       * single form invented for itself.
+       */
+      const normRow = {};
+      for (const [key, value] of Object.entries(row)) {
+        const norm = String(key)
+          .toLowerCase()
+          .replace(/[\s_-]/g, '');
+        if (norm) normRow[norm] = value;
+      }
+
       const title = String(get('title', 'name', 'productname') ?? '').trim();
       const price = Number(get('price', 'sellingprice'));
       const categoryRaw = String(get('category') ?? '').trim();
@@ -770,32 +918,47 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         );
         continue;
       }
-      if (!String(get('description') ?? '').trim()) missing.push('description');
-      if (!String(get('modelnumber', 'modelno', 'model') ?? '').trim()) missing.push('modelNumber');
-      if (!String(get('productcode', 'productid', 'sku') ?? '').trim()) missing.push('productCode');
-
-      // Category-specific required columns, checked here so the message names
-      // the spreadsheet row and the column, rather than surfacing later as a
-      // model error about an object the uploader never sees.
-      const catPre = String(categoryRaw)
-        .toLowerCase()
-        .replace(/[\s_-]/g, '');
-      if (catPre === 'solution') {
-        if (!Number(get('volumeml', 'volume'))) missing.push('volumeMl');
-        if (!String(get('packpricing', 'packs') ?? '').trim()) missing.push('packPricing (for example 2:1499|3:2099)');
+      /*
+       * One rule book for both upload doors.
+       *
+       * These checks used to be written out here, column by column, while the
+       * single-product form checked none of them on the server and Mongoose
+       * complained afterwards about an object nobody recognised. The lists could
+       * and did drift, and the storefront inherited the difference: a sheet row
+       * demanded frame geometry that a form-created product could ship without.
+       *
+       * They now come from services/productRequirements.js. What stays local is
+       * only the sheet's own wording (SHEET_MISSING_TEXT), because 12 assertions
+       * and several release notes quote those strings - and the images and price
+       * messages, which this parser has always delivered in its own voice with the
+       * spreadsheet vocabulary ("the images column", "got X"). Re-emitting them
+       * from the shared list would print the same row error twice for one cause.
+       */
+      const sharedProblemFields = missingProductFields({}, { flat: normRow });
+      /*
+       * Two kinds of complaint, and the sheet used to have words for only one of
+       * them. A missing cell becomes "missing required frameWidth"; a cell that is
+       * present but not a measurement is a different fact, and printing it as
+       * "missing" told the manufacturer to fill in a column they had filled in -
+       * while the single-product door, reading the same rule, said it had to be a
+       * number greater than 0. The two doors now carry the same distinction:
+       * absence goes in the row's missing list, invalid values get their own
+       * sentence, in the sheet's per-row voice.
+       *
+       * images, price and category are excluded because this parser already
+       * answers those three in its own wording (the images column and the parsed
+       * price), and duplicating them would print one row error twice.
+       */
+      const sheetProblems = sharedProblemFields.filter(
+        (problem) => problem.field !== 'images' && problem.field !== 'price' && problem.field !== 'category'
+      );
+      const absent = [];
+      for (const problem of sheetProblems) {
+        const isAbsence = /is required/.test(problem.message);
+        if (isAbsence) absent.push(sheetTextFor(problem));
+        else errors.push(`Row ${line}${title ? ` (${title})` : ''}: ${problem.message}`);
       }
-      if (catPre === 'accessories' && !String(get('accessorytype') ?? '').trim()) {
-        missing.push('accessoryType (case, twezers, applicator, suction-cup, travel-pouch, cleaning-kit)');
-      }
-      if (catPre === 'contactlenses') {
-        const pt = String(get('powertype') ?? 'distance').toLowerCase();
-        if (pt === 'toric' && !(Number(get('cylindermax')) < 0 && get('axismax') !== undefined)) {
-          missing.push('cylinderMax and axisMax (toric lenses need a cylinder and axis range)');
-        }
-        if (pt === 'multifocal' && !(Number(get('additionmax')) > Number(get('additionmin')))) {
-          missing.push('additionMin and additionMax (multi-focal lenses need an ADD range)');
-        }
-      }
+      missing.push(...absent);
 
       const category = String(categoryRaw)
         .toLowerCase()
@@ -807,36 +970,13 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
         );
         continue;
       }
-      if (EYEWEAR.includes(category)) {
-        categoriesSeen.add(category);
-        if (!genderRaw) missing.push('gender');
-        if (!String(get('frameshape', 'faceshape') ?? '').trim()) missing.push('frameShape');
-        if (!String(get('frametype') ?? '').trim()) missing.push('frameType');
-        if (!String(get('framematerial', 'material') ?? '').trim()) missing.push('frameMaterial');
-        if (!String(get('framesize', 'size') ?? '').trim()) missing.push('frameSize');
-        if (!String(get('framewidth') ?? '').trim()) missing.push('frameWidth');
-        if (!String(get('frameweight') ?? '').trim()) missing.push('frameWeight');
-        const sizeParts = measureFromSize(get('framesize', 'size'));
-        const dimGiven =
-          String(get('framedimensions', 'dimensions') ?? '').trim() ||
-          (sizeParts.lens && sizeParts.temple) ||
-          ['width', 'height', 'bridge', 'temple'].every((k) => Number(String(get('dim' + k) ?? '')) > 0);
-        if (!dimGiven)
-          missing.push(
-            'dimensions (one string like 54 x 52 x 16 x 145, or the four dimWidth/dimHeight/dimBridge/dimTemple columns)'
-          );
-        if (!String(get('framecolor', 'framecolour', 'color', 'colour', 'colours') ?? '').trim())
-          missing.push('frameColor');
-        if (/^kids$/.test(category) || String(genderRaw).toLowerCase() === 'kids') {
-          if (!String(get('subgender', 'boygirl') ?? '').trim()) missing.push('subGender (boys or girls)');
-          if (!String(get('agegroup', 'age') ?? '').trim()) missing.push('ageGroup');
-        }
-      } else if (category === 'contactlenses') {
-        ['powertype', 'lensesperbox', 'replacementperiod', 'diameter', 'basecurve', 'watercontent'].forEach((k) => {
-          if (!String(get(k) ?? '').trim()) missing.push(k);
-        });
-      }
-
+      if (EYEWEAR.includes(category)) categoriesSeen.add(category);
+      /*
+       * The frame-geometry and lens-optics requirements moved into
+       * CATEGORY_REQUIREMENTS (services/productRequirements.js) so both upload
+       * doors read the same list. The block that used to sit here demanded them
+       * from sheets only, and repeated three columns with their own phrasing.
+       */
       if (missing.length) {
         errors.push(`Row ${line} (${title || 'untitled'}): missing required ${missing.join(', ')}`);
         continue;
@@ -1120,6 +1260,22 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
      * error" after the whole batch was already lost - and how `name` used to be
      * left empty for imported rows.
      */
+    /** Enum members for a schema path, so a refusal names the allowed words. */
+    const enumValuesOf = (path) => {
+      try {
+        const found = path.split('.').reduce((schema, key) => {
+          if (!schema) return null;
+          const direct = schema.path?.(key);
+          if (direct) return direct;
+          const nested = schema.schema?.path?.(key);
+          return nested || null;
+        }, Product.schema);
+        return found?.enumValues || [];
+      } catch {
+        return [];
+      }
+    };
+
     const rowProblems = [];
     for (const [index, p] of products.entries()) {
       for (const field of Object.keys(ENUM_ALIASES)) {
@@ -1135,13 +1291,49 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       }
       if (p.title && !p.name) p.name = p.title;
 
-      const invalid = new Product(p).validateSync();
+      /*
+       * NOT validateSync. models/Product.js states its per-category rules in an
+       * async pre('validate') hook, and Mongoose does not run async middleware
+       * under validateSync - so this line checked *less* than the save it was
+       * protecting, for exactly the rules it claims to name. A solution row with
+       * no pack pricing passed here, then `insertMany` (which does run the full
+       * validate) threw one ValidationError over the whole batch, and the
+       * manufacturer received HTTP 500 "Server error" with our error text
+       * instead of the row number. Measured directly: validateSync said NO
+       * ERRORS, insertMany said "solution.packPricing".
+       *
+       * The comment above this loop already promised rows are "checked against
+       * the schema before anything is written". Now it is true.
+       */
+      let invalid = null;
+      try {
+        await new Product(p).validate();
+      } catch (validationError) {
+        invalid = validationError;
+      }
       if (invalid) {
-        rowProblems.push(
-          `${p.title || `row ${index + 1}`}: ${Object.entries(invalid.errors)
-            .map(([k, v]) => `${k} - ${v.message.replace(/^Path \`.*?\` is invalid: /, '')}`)
-            .join('; ')}`
-        );
+        /*
+         * Schema problems are reported like the sheet's own column problems:
+         * which line, which column, in plain words. The first version of this
+         * loop printed `${title}: ${path} - ${message}`, so a manufacturer
+         * reading "No Pack Solution: solution.packPricing - Solution needs at
+         * least one pack price" had a product name and a Mongoose path but no
+         * row number in a 78-line file, and the assertion that the row must be
+         * named by number was failing honestly.
+         */
+        const detail = Object.entries(invalid.errors)
+          .map(([path, err]) => {
+            const column = path.split('.').pop();
+            const words = String(err.message || '')
+              .replace(/^Path `.*?` is invalid: /, '')
+              .replace(
+                /^`.*?` is not a valid enum value for path `[\S]*`\.?/,
+                `${column} must be one of: ${(enumValuesOf(path) || []).join(', ')}`
+              );
+            return `${column} - ${words}`;
+          })
+          .join('; ');
+        rowProblems.push(`Row ${index + 2}${p.title ? ` (${p.title})` : ''}: ${detail}`);
       }
     }
     if (rowProblems.length) {

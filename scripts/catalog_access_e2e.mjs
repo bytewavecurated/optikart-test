@@ -170,9 +170,16 @@ async function main() {
       gender: 'unisex',
       frameShape: 'Round',
       frameType: 'Full Rim',
+      frameWidth: '52',
+      frameWeight: '18',
+      frameColor: 'black',
+      dimensions: '52 x 40 x 17 x 140',
       frameMaterial: 'metal',
       frameSize: '52-17-140',
-      images: up.json?.urls || [],
+      // A real image link: the door now insists on one, exactly as the sheet page
+      // always has, so a suite that means to test something else cannot post an
+      // empty image list and call the refusal a bug in the thing under test.
+      images: (up.json?.urls || []).length ? up.json.urls : ['https://example.com/probe-a.png'],
     },
   });
   const made = created.json?.product || {};
@@ -210,9 +217,13 @@ async function main() {
       gender: 'unisex',
       frameShape: 'Round',
       frameType: 'Full Rim',
+      frameWidth: '52',
+      frameWeight: '18',
+      frameColor: 'black',
+      dimensions: '52 x 40 x 17 x 140',
       frameMaterial: 'metal',
       frameSize: '56-18-145',
-      images: [(up.json?.urls || [])[0]].filter(Boolean),
+      images: (up.json?.urls || [])[0] ? [(up.json.urls || [])[0]] : ['https://example.com/probe-b.png'],
     },
   });
   const madeTwo = second.json?.product || {};

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiPackage, FiUsers, FiPlus, FiUpload, FiLogOut, FiEdit, FiTrash2, FiEye, FiCamera, FiX } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/api';
+import { missingUploadFields, missingUploadMessage } from '../../utils/productUploadRules';
 import toast from 'react-hot-toast';
 import { toastError } from '../../services/errors.js';
 
@@ -49,6 +50,28 @@ const ManufacturerDashboard = () => {
     prescriptionLensTypes: [],
     returnWindowDays: 7,
   });
+  // Required-fields rules come from the API (see GET /manufacturer/upload-spec),
+  // so this page cannot claim a list the server does not enforce.
+  const [uploadSpec, setUploadSpec] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    api
+      .get('/manufacturer/upload-spec')
+      .then((res) => {
+        if (alive) setUploadSpec(res.data?.spec || null);
+      })
+      .catch(() => {
+        /*
+         * The form still works without it: the server answers the same rules on
+         * save, so a failed spec read costs the hint text, not the validation.
+         */
+        if (alive) setUploadSpec(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const [newSeller, setNewSeller] = useState({
     name: '',
     email: '',
@@ -355,45 +378,22 @@ const ManufacturerDashboard = () => {
 
   const EYEWEAR_CATS = ['sunglasses', 'eyeglasses', 'readingglasses', 'sportseyewear', 'kids'];
 
-  /**
-   * Mirrors what the API and the schema require so the maker sees the whole
-   * list in one go instead of one error per save.
-   */
-  const validateProductForm = () => {
-    const isEyewear = EYEWEAR_CATS.includes(newProduct.category);
-    const missing = [];
-    if (!newProduct.title.trim()) missing.push('title');
-    if (!newProduct.description.trim()) missing.push('description');
-    if (!newProduct.price || Number(newProduct.price) <= 0) missing.push('price');
-    if (!newProduct.brand.trim()) missing.push('brand name');
-    if (!newProduct.modelNumber.trim()) missing.push('model number');
-    if (!newProduct.productCode.trim()) missing.push('product id / SKU code');
-    if (!(newProduct.images || []).some((i) => i.trim())) missing.push('at least one image (link or upload)');
-    if (isEyewear) {
-      if (!newProduct.frameShape) missing.push('frame shape / face shape');
-      if (!newProduct.frameType) missing.push('frame type');
-      if (!newProduct.frameMaterial) missing.push('frame material');
-      if (!newProduct.gender && newProduct.category !== 'kids') missing.push('gender');
-      if (!String(newProduct.frameSize).trim()) missing.push('frame size (type it, e.g. 54-16-135)');
-      if (!newProduct.frameWidth) missing.push('frame width (mm)');
-      if (!newProduct.frameWeight) missing.push('frame weight (g)');
-      if (!newProduct.dimensions.trim()) missing.push('frame dimensions (W x H x bridge x temple)');
-      if (!newProduct.frameColor) missing.push('frame colour');
-      if (newProduct.category === 'kids' || newProduct.gender === 'kids') {
-        if (!newProduct.subGender) missing.push('boys / girls');
-        if (!newProduct.ageGroup) missing.push('age group');
-      }
-    }
-    if (newProduct.poweredOptionsAvailable && newProduct.prescriptionLensTypes.length === 0) {
-      missing.push('prescription lens types offered');
-    }
-    return missing;
-  };
+  const validateProductForm = () =>
+    /*
+     * One source of truth (see utils/productUploadRules). The list this replaced
+     * was the third copy of the same rules in the product - the sheet parser, the
+     * schema, and here - which is precisely why the bulk page asked for fields the
+     * form never mentioned. If the specification cannot be read, nothing is
+     * validated client-side and the server's answer is the message: a page that
+     * enforces its own list while the API enforces another is the bug, not the
+     * safety net.
+     */
+    missingUploadFields(uploadSpec, newProduct);
 
   const handleAddProduct = async () => {
     const missing = validateProductForm();
     if (missing.length) {
-      toast.error(`Add the required details first: ${missing.join(', ')}`, { duration: 9000 });
+      toast.error(missingUploadMessage(missing), { duration: 9000 });
       return;
     }
     try {
@@ -406,8 +406,17 @@ const ManufacturerDashboard = () => {
         frameType: newProduct.frameType,
         frameMaterial: newProduct.frameMaterial,
         frameColor: newProduct.frameColor,
-        frameWidth: Number(newProduct.frameWidth) || undefined,
-        frameWeight: Number(newProduct.frameWeight) || undefined,
+        /*
+         * These used to be `Number(newProduct.frameWidth) || undefined`, which
+         * silently DELETES a bad measurement: "140mm" becomes NaN and then
+         * undefined, so the product saved without a width and nobody was told.
+         * The raw string now travels to the door, where the shared rules refuse a
+         * value that is not a positive number (and the schema answers for anything
+         * the rules did not catch) - a refusal the maker can act on instead of a
+         * catalogue entry missing a dimension.
+         */
+        frameWidth: newProduct.frameWidth,
+        frameWeight: newProduct.frameWeight,
         dimensions: (() => {
           const parts = String(newProduct.dimensions)
             .split(/\s*[x\u00D7,]\s*/)

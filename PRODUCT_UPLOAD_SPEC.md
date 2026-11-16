@@ -259,3 +259,36 @@ brand record to attach one to, so no upload message mentions a logo. When the Br
 model lands, the storefront rail will show a manufacturer's logo per brand and the
 upload requirement will grow accordingly — that will be a separate documented
 change, not an implication hidden inside an error string.
+
+## What is required, and where that rule lives
+
+Both upload doors (the single-product form and this sheet) consult
+`server/services/productRequirements.js`. The page that explains the rules asks the
+same module, through `GET /api/manufacturer/upload-spec`, so a hint cannot outlive
+the rule it describes.
+
+**Required on every row:** title, brand, category, price (a number greater than 0),
+description, model number, product code, and at least one usable image.
+
+**Required for frame categories** (sunglasses, eyeglasses, readingglasses,
+sportseyewear, kids): gender, frame shape, frame type, frame material, frame size,
+frame width, frame weight, frame colour and dimensions. Width and weight must be
+positive numbers: `140mm` and `wide` are refused as bad values, not as empty cells,
+and no longer get silently dropped on their way to the database.
+
+**Dimensions count in any of three shapes** — one string (`52 x 40 x 18 x 140`),
+the four `dimWidth/dimHeight/dimBridge/dimTemple` columns, or a measured frame size
+from which lens, bridge and temple are readable. A sheet may use the column header
+`frame dimensions` or `dimensions`.
+
+**Images** may be absolute URLs or same-origin `/uploads/...` links, because the
+single-product form uploads files first and posts the paths it is given back.
+`undefined`, blank cells and bare filenames are refused.
+
+**Not required, deliberately:** stock (it defaults to 0, and 0 means out of stock —
+a real state, not a missing one) and MRP (the manufacturer catalogue has no MRP
+field; price-against-MRP is checked where seller stock is set).
+
+**Per-category attributes** — contact-lens optics, solution volume and pack pricing,
+accessory type — are enforced by `models/Product.js` itself, in both doors, and each
+refusal is reported as its own column with the allowed values listed.
