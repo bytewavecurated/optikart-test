@@ -60,6 +60,7 @@ import siteContentRoutes from './routes/siteContent.js';
 import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { requestContext, snapshot as metricSnapshot, recordError } from './middleware/requestContext.js';
+import partnerRankingRoutes from './routes/partnerRanking.js';
 import sessionGuard from './middleware/sessionGuard.js';
 import { logSessionIdlePolicy } from './services/sessionActivity.js';
 
@@ -167,6 +168,16 @@ app.use('/api/prescription-verification', prescriptionVerificationRoutes);
 app.use('/api/order-routing', orderRoutingRoutes);
 app.use('/api/lens-configuration', lensConfigurationRoutes);
 app.use('/api/delivery-partner', deliveryPartnerRoutes);
+
+/*
+ * Weekly partner leaderboard endpoints live in their own router and are mounted
+ * on the api root, so the admin and partner paths can differ without either
+ * router having to know about the other. Express only hands a request to the
+ * next matching mount when the first has no match, so this adds paths rather
+ * than re-ordering anything - and it is mounted late deliberately: the auth
+ * middleware inside the router is what decides access, not the mount order.
+ */
+app.use('/api', partnerRankingRoutes);
 app.use('/api/product-verification', productVerificationRoutes);
 app.use('/api/inventory-analytics', inventoryAnalyticsRoutes);
 app.use('/api/return-analytics', returnAnalyticsRoutes);

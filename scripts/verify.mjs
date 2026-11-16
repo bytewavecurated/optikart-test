@@ -54,7 +54,8 @@ const SUITES = [
   ['partner payout settlement queue', 'scripts/payout_console_e2e.mjs'],
   ['notification fan-out', 'scripts/notifications_fanout_e2e.mjs'],
   ['delivery distance ceilings', 'scripts/delivery_radii_e2e.mjs'],
-  ['manufacturer profile rules', 'scripts/manufacturer_profile_e2e.mjs']
+  ['manufacturer profile rules', 'scripts/manufacturer_profile_e2e.mjs'],
+  ['weekly partner ranking', 'scripts/partner_ranking_e2e.mjs']
 ];
 
 // Static checks: no server needed, but they gate the same push.
@@ -66,6 +67,7 @@ const AUDITS = [
    * function test, so it costs a second and needs no database.
    */
   ['production seed guard', 'scripts/seed_guard_unit.mjs'],
+  ['weekly partner ranking (frozen clock)', 'scripts/partner_ranking_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],
   ['controls that only announce success', 'scripts/audit/fake-actions.mjs']
