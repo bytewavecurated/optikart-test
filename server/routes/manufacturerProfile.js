@@ -4,6 +4,7 @@ import Product from '../models/Product.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 import { verifyManufacturer } from '../middleware/auth.js';
 import { notifyAdmins } from '../services/notifications.js';
+import { validateBrandListOwnership, clashMessage } from '../services/brandOwnership.js';
 
 /*
  * A manufacturer's own profile: who they are, how they are registered, and which
@@ -238,7 +239,33 @@ export const registerProfileRoutes = (router) => {
       const manufacturer = await Manufacturer.findById(req.manufacturer._id);
       if (!manufacturer) return res.status(404).json({ success: false, message: 'Account not found.' });
 
+      const brandsBefore = [...(manufacturer.brands || [])];
       const { errors, changed } = applyProfileEdit(manufacturer, req.body || {});
+
+      /*
+       * Brand ownership is an async lookup, so it runs in the route rather than
+       * inside the merge helper: that helper deliberately stays synchronous so
+       * the two write paths (this profile save and the admin edit) share exactly
+       * the same field rules without an await chain appearing in a pure function.
+       *
+       * On a clash the brand list is put back as it was and nothing is saved. A
+       * half-applied profile - correct phone, someone else's brand - is the worst
+       * outcome, because the shop then sees their own claim recorded.
+       */
+      if (!errors.length && changed.includes('brands')) {
+        const clash = await validateBrandListOwnership(manufacturer.brands, manufacturer._id);
+        if (clash.clashes.length) {
+          manufacturer.brands = brandsBefore;
+          return res.status(400).json({
+            success: false,
+            message: clash.clashes.length === 1
+              ? 'That brand belongs to another manufacturer.'
+              : `${clash.clashes.length} brands belong to other manufacturers.`,
+            errors: clash.clashes.map((c) => ({ field: 'brands', message: clashMessage(c) }))
+          });
+        }
+      }
+
       if (errors.length) {
         return res.status(400).json({
           success: false,

@@ -215,9 +215,28 @@ one file are refused rather than merged. Response shape on a mixed sheet:
   "message": "One brand per file. …", "errors": [ "Row 2: …", "Row 3: …" ] }
 ```
 
-To fix a rejected sheet: put one brand in one file, and if a brand is missing
-from the list, add it first at **Manufacturer → Company & brand profile →
-Brands manufactured**, where the screen also warns which brand names still carry
-products. The same rule applies to brand logos: a brand with no logo falls back
-to text treatment, so declaring a brand here is what makes the storefront able to
-show it properly.
+**One brand name belongs to one manufacturer.** A sheet that names a brand some
+other manufacturer declared is refused per row, naming that owner:
+
+```
+Row 2: brand "Zephyr Optics" belongs to Bulk Clash Manufacturing (declared there as
+"Zephyr Optics"). One brand name can only have one manufacturer. Upload it under the
+brand you own, or ask OptiKart to reassign the brand.
+```
+
+The same rule blocks the profile list and the admin's manufacturer create/edit, so
+the clash cannot be introduced from any door. Ownership is checked **before** the
+"brand is not on your profile" message, because the advice differs: a name that is
+missing gets "add it under Brands manufactured" (the comma list at
+**Manufacturer → Company & brand profile**), while a name that is *taken* must never
+be told to add it, since that is precisely the claim being refused.
+
+To fix a rejected sheet: put one brand in one file, and if a brand is missing from
+the list, add it first at **Manufacturer → Company & brand profile → Brands
+manufactured**, where the screen also warns which brand names still carry products.
+
+Brand *logos* are **not** part of this rule set yet: there is no logo upload or
+brand record to attach one to, so no upload message mentions a logo. When the Brand
+model lands, the storefront rail will show a manufacturer's logo per brand and the
+upload requirement will grow accordingly — that will be a separate documented
+change, not an implication hidden inside an error string.

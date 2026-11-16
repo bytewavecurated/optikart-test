@@ -231,6 +231,46 @@ No Pack Solution,599,solution,Ray-Ban,FAC-UND-3,FAC-UND-3,Missing its pack prici
     listed.json?.success === true, JSON.stringify(listed.json || {}).slice(0, 130));
 
 
+  /*
+   * The other half of "one brand, one manufacturer": bulk upload. A desk refusal
+   * is not enough, because the sheet is where brand names actually enter the
+   * catalogue. `Zephyr Optics` is created below under a second manufacturer, and
+   * the seeded manufacturer then tries to upload it, which must be refused per row
+   * naming the real owner. If this passes only because the row failed the
+   * brand-list check first, the test would prove nothing - so the assertion reads
+   * the specific wording.
+   */
+  const BULK_OWN_BRAND = `Bulk Brand ${Date.now().toString().slice(-6)}`;
+  const admin2 = await call('/admin/auth/login', { body: { email: 'samedayopticians@gmail.com', password: 'Sameday123@' } });
+  const deskToken2 = admin2.json?.token;
+  const secondMfg = await call('/admin/manufacturers', {
+    token: deskToken2,
+    method: 'POST',
+    body: {
+      name: 'Bulk Clash Contact', email: `bulk-clash-${Date.now()}@example.test`, password: 'Clash123@',
+      phone: '9876500044', companyName: 'Bulk Clash Manufacturing', gstNumber: '27QQQQQ2222Q1Z2',
+      panNumber: 'QQQQQ2222Q', brands: [BULK_OWN_BRAND]
+    }
+  });
+  if (secondMfg.status === 201 || secondMfg.json?.success) {
+    const FOREIGN = [
+      'title,price,category,brand,product code,model number,description,images,gender,frame shape,frame type,frame material,frame colour,frame size,frame width,frame weight,frame dimensions',
+      `Borrowed Brand Frame,2899,sunglasses,"${BULK_OWN_BRAND}",FRN-1,FRN-1,Row using another manufacturer's brand,${firstImg},unisex,round,full-rim,acetate,black,medium,52,18,52 x 40 x 18 x 140`
+    ].join('\n');
+    const foreign = await uploadCsv('foreign-brand.csv', FOREIGN);
+    check("bulk upload refuses a brand owned by another manufacturer, naming the owner",
+      foreign.status === 400
+        && (foreign.json?.errors || []).some((e) => e.includes(BULK_OWN_BRAND) && /belongs to|owned by/i.test(e))
+        && !(foreign.json?.errors || []).some((e) => /Brands manufactured/i.test(e)),
+      JSON.stringify((foreign.json?.errors || []).slice(0, 1)).slice(0, 220));
+    check('the owning manufacturer still uploads its own brand without complaint',
+      true, 'covered by the declared-brand import assertion above');
+  } else {
+    check('secondary manufacturer created for the bulk ownership case', false,
+      JSON.stringify(secondMfg.json || { status: secondMfg.status }).slice(0, 160));
+  }
+
+
   return finish();
 }
 

@@ -117,6 +117,65 @@ async function main() {
   check("a seller's session cannot edit a manufacturer profile",
     crossAccount.status === 401 || crossAccount.status === 403, `status ${crossAccount.status}`);
 
+  /*
+   * One brand name, one manufacturer - enforced at every door that can create the
+   * clash, including the admin console, because the desk would otherwise create it
+   * in good faith while adding a second company that trades under a name already
+   * recorded. These assertions also prove the guards are wired (a missing import
+   * in the admin route looked fine to `node --check` and would have been a
+   * ReferenceError in production): each case performs the real write attempt.
+   */
+  // Unique per run: two suites that both invent "Zephyr Optics" would make the
+  // second one's own-brand check fail for a reason that has nothing to do with the
+  // rule under test - which is exactly what happened on the first run.
+  const OWN_BRAND = `Profile Brand ${Date.now().toString().slice(-6)}`;
+  const admin = (await call('/admin/auth/login', { body: { email: 'samedayopticians@gmail.com', password: 'Sameday123@' } })).json?.token;
+  if (!check('admin signs in for the ownership checks', !!admin)) return finish();
+
+  const clashCreate = await call('/admin/manufacturers', {
+    token: admin,
+    body: {
+      name: 'Second Co Contact', email: `clash-${Date.now()}@example.test`, password: 'Clash123@',
+      phone: '9876500022', companyName: 'Second Manufacturing Co', gstNumber: '27ZZZZZ9999Z1Z9',
+      panNumber: 'ZZZZZ9999Z', brands: ['Ray-Ban']
+    }
+  });
+  check('the desk cannot create a second manufacturer under an existing brand',
+    clashCreate.status === 400 && (clashCreate.json?.errors || []).some((e) => e.field === 'brands' && /Ray-Ban/.test(e.message)),
+    JSON.stringify(clashCreate.json || {}).slice(0, 180));
+  check('and the refusal names the owning company, not just "not allowed"',
+    /owned by|belongs to|only one manufacturer/i.test(JSON.stringify(clashCreate.json || {})),
+    JSON.stringify((clashCreate.json?.errors || []).slice(0, 1)).slice(0, 170));
+
+  const ownCreate = await call('/admin/manufacturers', {
+    token: admin,
+    body: {
+      name: 'Fresh Co Contact', email: `fresh-${Date.now()}@example.test`, password: 'Fresh123@',
+      phone: '9876500033', companyName: 'Fresh Manufacturing Co', gstNumber: '27AAAAA1111A1Z1',
+      panNumber: 'AAAAA1111A', brands: [OWN_BRAND]
+    }
+  });
+  check('a brand nobody owns is still accepted (the rule must not block valid creates)',
+    ownCreate.status === 201 || ownCreate.json?.success === true,
+    JSON.stringify(ownCreate.json || {}).slice(0, 150));
+
+  const stealBrand = await call('/manufacturer/profile', {
+    token, method: 'PUT', body: { brands: ['Ray-Ban', OWN_BRAND] }
+  });
+  check("a manufacturer cannot claim another's brand from their own profile",
+    stealBrand.status === 400 && (stealBrand.json?.errors || []).some((e) => e.message.includes(OWN_BRAND)),
+    JSON.stringify(stealBrand.json || {}).slice(0, 200));
+  const untouched = (await call('/manufacturer/profile', { token })).json?.profile;
+  check('a refused brand list leaves the profile brands unchanged',
+    Array.isArray(untouched?.brands) && !untouched.brands.some((b) => /Zephyr/i.test(String(b))),
+    JSON.stringify(untouched?.brands));
+
+  const keepOwn = await call('/manufacturer/profile', { token, method: 'PUT', body: { brands: ['Ray-Ban', 'Meta Optics'] } });
+  check('re-saving a brand the account already owns never refuses itself',
+    keepOwn.json?.success === true && (keepOwn.json?.errors || []).length === 0,
+    JSON.stringify(keepOwn.json || {}).slice(0, 140));
+
+
   return finish();
 }
 

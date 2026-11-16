@@ -1,5 +1,6 @@
 import { otpBypassAllowed } from '../config/authMode.js';
 import { signSession, logoutHandler } from '../services/session.js';
+import { brandOwnersByFoldedName, foldBrand } from '../services/brandOwnership.js';
 import { brandQueue, decideAsManufacturer } from '../services/listingApproval.js';
 import express from 'express';
 import jwt from 'jsonwebtoken';
@@ -605,16 +606,24 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
      *    brand carrying frames it never listed. Each offending row gets its own
      *    error naming the brand on that row, so the fix is a locate-and-split and
      *    not a hunt through a spreadsheet.
-     *  - a brand must exist on this manufacturer's profile (`brands`). A brand
-     *    nobody declared cannot own a catalogue entry: it would show a new name
-     *    on the storefront that no approval queue, retailer page or brand logo
-     *    was ever set up for. Naming allowed brands in the error tells the
-     *    manufacturer where to add it rather than leaving them guessing.
+     *  - a brand must exist on this manufacturer's profile (`brands`), and must
+     *    not be another manufacturer's brand. A brand nobody declared cannot own
+     *    a catalogue row: the storefront would show a name with no approval queue
+     *    and no retailer access behind it, and a brand owned by a *different*
+     *    manufacturer would attribute one company's frames to another on a page
+     *    grouped purely by brand name. Only the brand-list rule is enforced here
+     *    for now: brand logos are a separate model that does not exist yet, so
+     *    nothing in these messages mentions a logo, and a message that pointed at
+     *    a non-existent upload box would be the worst kind of advice - correct in
+     *    spirit, impossible to follow.
      */
     const allowedBrands = new Set(((req.manufacturer?.brands) || [])
       .map((b) => String(b).trim().toLowerCase())
       .filter(Boolean));
     const brandFirstRow = new Map();   // case-folded brand -> sheet row numbers
+    // One query for the sheet, not one per row: the owners of every *other*
+    // manufacturer's brand names, case-folded, so row checks stay Map.get().
+    const foreignBrands = await brandOwnersByFoldedName(req.manufacturer?._id);
     const brandLabels = new Map();     // case-folded brand -> display value
     /*
      * A `|`-separated cell becomes a list of real values.
@@ -691,7 +700,15 @@ router.post('/products/bulk-upload', verifyManufacturer, upload.single('file'), 
       if (!Number.isFinite(price) || price <= 0) missing.push('price');
       if (!categoryRaw) missing.push('category');
       if (!brand) missing.push('brand');
-      else if (allowedBrands.size && !allowedBrands.has(brand.toLowerCase())) {
+      else if (foreignBrands.has(foldBrand(brand))) {
+        // Checked before the profile-list rule on purpose: a name another
+        // company owns is not missing, it is taken, and telling someone to add
+        // it to their profile would be a direct invitation to make the mistake
+        // this rule prevents.
+        const taken = foreignBrands.get(foldBrand(brand));
+        errors.push(`Row ${line}: brand "${brand}" belongs to ${taken.owner} (declared there as "${taken.ownerBrand}"). One brand name can only have one manufacturer. Upload it under the brand you own, or ask OptiKart to reassign the brand.`);
+        continue;
+      } else if (allowedBrands.size && !allowedBrands.has(brand.toLowerCase())) {
         // Per-row and named: a generic reject would make the manufacturer hunt
         // for which row invented which brand, on a sheet of 60 rows.
         errors.push(`Row ${line}: brand "${brand}" is not on this manufacturer's profile. Add it under "Brands manufactured" first (currently: ${[...allowedBrands].join(', ') || 'none declared'}); a brand nobody declared cannot own catalogue rows.`);

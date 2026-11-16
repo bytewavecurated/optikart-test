@@ -1,4 +1,5 @@
 import express from 'express';
+import { validateBrandListOwnership, clashMessage } from '../services/brandOwnership.js';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Seller from '../models/Seller.js';
@@ -930,6 +931,28 @@ router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
     if (existingManufacturer) {
       return res.status(400).json({ success: false, message: 'Email already registered.' });
     }
+  /*
+   * A brand name may belong to one manufacturer only, so the desk cannot create
+   * that clash either - and the admin path is exactly where it would be created
+   * in good faith, when adding a second company that happens to trade under a
+   * name already recorded. Catching it at the write is what makes the storefront
+   * rails safe to group by brand name at all.
+   */
+  try {
+    const list = Array.isArray(brands) ? brands : [];
+    const clash = await validateBrandListOwnership(list, null);
+    if (clash.clashes.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'One brand name can belong to only one manufacturer.',
+        errors: clash.clashes.map((c) => ({ field: 'brands', message: clashMessage(c) }))
+      });
+    }
+  } catch (brandCheckErr) {
+    console.error('Brand ownership check failed on manufacturer create:', brandCheckErr);
+    return res.status(500).json({ success: false, message: 'Brand ownership could not be verified. Nothing was created.' });
+  }
+
 
     const manufacturer = new Manufacturer({
       name,
