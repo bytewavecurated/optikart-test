@@ -1,8 +1,6 @@
+import '../config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import AWS from 'aws-sdk';
 import axios from 'axios';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 // Initialize AWS Rekognition if credentials are available
 const rekognition =

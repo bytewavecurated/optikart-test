@@ -1,8 +1,6 @@
+import '../config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 /*
  * Constructed on first use, never at import.

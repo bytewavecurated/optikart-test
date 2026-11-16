@@ -648,3 +648,30 @@ Stated plainly so nothing is mistaken for done.
   the order and SellerPayout records.
 - The manufacturer product form validates its mandatory attributes in the browser and
   again in the schema, but the two lists are maintained separately and can drift.
+
+## Upload storage: Cloudinary, and when the app refuses to start
+
+`server/services/storage.js` is the only thing that writes a user file. Routes hand it
+bytes; they never learn where the bytes go.
+
+| Variable                                                                                         | Meaning                                                                                       |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `CLOUDINARY_URL` **or** `CLOUDINARY_CLOUD_NAME` + `CLOUDINARY_API_KEY` + `CLOUDINARY_API_SECRET` | The account. All three, or the URL; a partial set counts as _no_ credentials.                 |
+| `STORAGE_BACKEND`                                                                                | `auto` (default), `cloudinary` (required), `local` (explicit), anything else refuses to boot. |
+| `CLOUDINARY_FOLDER`                                                                              | Prefix for every asset, default `optikart`.                                                   |
+| `ALLOW_LOCAL_STORED_UPLOADS=true`                                                                | The only way to keep `STORAGE_BACKEND=local` in production.                                   |
+
+Rules, with the reason each exists:
+
+- **Production with no Cloudinary credentials will not boot.** Uploads must not land on
+  the container's own disk: they vanish on the next deploy, and locally-written SVGs are
+  served from the application origin, which makes a logo upload a same-origin script
+  execution (that is why SVG is accepted only with Cloudinary and refused on local disk).
+- **`STORAGE_BACKEND=cloudinary` without credentials is an error, not a fallback.** An
+  explicitly requested provider is never silently swapped for another.
+- **CI runs the local fallback.** `scripts/verify.mjs` starts the API with
+  `STORAGE_BACKEND=local` and `ENV_FILE` pointing at an empty file, so a developer's
+  `.env` cannot reach the harness. Tests assert URL _shape_
+  (`/uploads/...` or `https://...`), not one backend's spelling.
+- Storage in use is visible without reading config: `GET /api/admin/brand-queue` returns
+  `storage`, and `GET /api/storage/status`.

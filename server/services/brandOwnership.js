@@ -9,13 +9,48 @@ import Manufacturer from '../models/Manufacturer.js';
  * page attributes one manufacturer's frames to another. That is the kind of error
  * customers see and support cannot explain away.
  *
- * Matching is case-insensitive on trimmed values: "Ray-Ban" and "ray-ban" are one
- * brand to a shopper, so they must be one brand to the check as well.
+ * Matching is case- AND punctuation-insensitive, because a shopper reads the
+ * mark, not the bytes: "Ray-Ban", "ray ban", "RAY_BAN" and "RayBan" are one
+ * brand to them, so they are one brand here. Trimming alone (the previous rule)
+ * let "Acme Optics" and "acme-optics" through as two separate brands - which is
+ * precisely the split this check exists to prevent, since rails, approval queues
+ * and retailer catalogues all group by the brand string alone.
+ *
+ * `models/Brand.js` uses this same function for its unique `slug`. There must be
+ * one definition: a looser API fold with a stricter index (or the reverse) means
+ * routes attribute a brand to one manufacturer while the database accepts a
+ * second row a shopper cannot tell apart from the first.
  */
-export const foldBrand = (name) =>
-  String(name ?? '')
-    .trim()
-    .toLowerCase();
+export const foldBrand = (name) => {
+  const raw = String(name ?? '').trim();
+  if (!raw) return '';
+  /*
+   * Accent marks are removed, not stripped out with the letter. An earlier
+   * version did `.replace(/[^a-z0-9]+/g, '')` directly, which silently deleted
+   * characters outside ASCII: "Nuàn" folded to "nun", so it *failed* to collide
+   * with "Nuan" (two brands a shopper reads as one) and *did* collide with
+   * "Nùn" (two genuinely different brands landing on one slug). Both directions
+   * wrong, and invisible until tested with a non-ASCII name.
+   *
+   * NFKD splits a precomposed letter into base + combining marks; dropping the
+   * marks leaves "nuan", which is the comparison we actually want.
+   */
+  const folded = raw
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '')
+    .slice(0, 80);
+  /*
+   * Scripts with no Latin decomposition (Devanagari, Japanese, Korean, Greek
+   * brands) fold to an empty string under the rule above. A blank slug would put
+   * every one of them in conflict on the Brand unique index, so those names fall
+   * back to their own case-folded spelling: still compared consistently, and no
+   * two different marks are ever told they are the same brand.
+   */
+  if (folded) return folded;
+  return raw.toLowerCase().replace(/\s+/g, ' ').slice(0, 80);
+};
 
 /**
  * Map of every *other* manufacturer's brand name -> who owns it.

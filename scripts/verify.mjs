@@ -19,6 +19,7 @@
  */
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,7 +27,12 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LOG_DIR = path.join(ROOT, '.verify-logs');
 
 const PORT = Number(process.env.VERIFY_PORT || 3111);
+
 const BASE = `http://127.0.0.1:${PORT}`;
+const REPORT = () =>
+  console.log(
+    `harness environment: storage=${HERMETIC.env.STORAGE_BACKEND} | ${HERMETIC.stripped.length} provider credentials stripped from child processes`
+  );
 
 const SUITES = [
   ['session lifetime', 'scripts/session_e2e.mjs'],
@@ -56,6 +62,7 @@ const SUITES = [
   ['delivery distance ceilings', 'scripts/delivery_radii_e2e.mjs'],
   ['manufacturer profile rules', 'scripts/manufacturer_profile_e2e.mjs'],
   ['weekly partner ranking', 'scripts/partner_ranking_e2e.mjs'],
+  ['brand registration and logos', 'scripts/brand_logo_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.
@@ -72,7 +79,69 @@ const AUDITS = [
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],
   ['controls that only announce success', 'scripts/audit/fake-actions.mjs'],
   ['source formatting', 'scripts/format_check.mjs'],
+  ['brand logos and storage policy', 'scripts/brand_logo_unit.mjs'],
+  ['brand model invariants', 'server/scripts/audit/brand_invariants.mjs'],
 ];
+
+/*
+ * Everything the harness spawns gets this environment, and the point of the
+ * deletion pass is not tidiness. A developer's `server/.env` carries live-ish
+ * CLOUDINARY_* and SMTP_* credentials; with them inherited, a test run uploads
+ * real files to a real CDN and attempts real Gmail auth (the `535 BadCredentials`
+ * lines in our own server logs were a *test* emailing Google). Provider behaviour
+ * then depends on which laptop ran CI, and the CI claim "no external services"
+ * becomes false. So: pin the storage backend to the deterministic fallback and
+ * strip every third-party credential. JWT_SECRET and MONGODB_URI survive; the
+ * development OTP bypass survives because SMTP_* is gone.
+ */
+const PROVIDER_ENV_PREFIXES = [
+  'CLOUDINARY',
+  'SMTP',
+  'OPENAI',
+  'AZURE_',
+  'GOOGLE_',
+  'RAZORPAY',
+  'SHIPROCKET',
+  'AWS_',
+  'SENTRY',
+  'VIRTUAL_TRYON',
+  'CHATBOT',
+  'FACE_DETECTION',
+  'SPEECH_RECOGNITION',
+  'ADMIN_EMAIL',
+];
+
+const EMPTY_ENV = path.join(os.tmpdir(), `optikart-verify-empty-${process.pid}.env`);
+// dotenv reads `path`, not `contents` - an absent file is equivalent to an empty
+// one, so the file only has to exist long enough for the child to load it.
+fs.writeFileSync(EMPTY_ENV, '# deliberately empty: see the comment above\n');
+
+const hermeticEnv = () => {
+  const env = {
+    ...process.env,
+    STORAGE_BACKEND: 'local',
+    ENV_FILE: EMPTY_ENV,
+    /*
+     * The harness supplies its own signing secret instead of inheriting one.
+     * Not cosmetic: with `.env` no longer reachable from a test run, boot
+     * legitimately refuses without a secret, and a developer whose shell has
+     * none would see the harness die for a reason that looks like a code fault.
+     * CI already passes this variable; now the local path is exactly as strict
+     * as CI, so neither can drift into "works only because someone's .env did".
+     */
+    JWT_SECRET: 'optikart-harness-only-secret-not-for-deployment-0123456789',
+  };
+  const stripped = [];
+  for (const key of Object.keys(env)) {
+    if (PROVIDER_ENV_PREFIXES.some((p) => key.startsWith(p))) {
+      delete env[key];
+      stripped.push(key);
+    }
+  }
+  return { env, stripped };
+};
+
+const HERMETIC = hermeticEnv();
 
 const logStream = (name) => {
   fs.mkdirSync(LOG_DIR, { recursive: true });
@@ -92,7 +161,7 @@ const run = (cmd, args, opts = {}) =>
      */
     const child = spawn(cmd, args, {
       cwd: ROOT,
-      env: { ...process.env, MONGODB_URI: mongoUriForSuites || '', VERIFY_PORT: String(PORT) },
+      env: { ...HERMETIC.env, MONGODB_URI: mongoUriForSuites || '', VERIFY_PORT: String(PORT) },
       ...opts,
     });
     let tail = '';
@@ -193,12 +262,13 @@ if (!mongoUri) {
 }
 
 /* -------------------------------------------------------------------- server */
+REPORT();
 process.stdout.write(`starting the API on ${BASE}... `);
 const srvOut = logStream('server');
 const server = spawn('node', ['server.js'], {
   cwd: path.join(ROOT, 'server'),
   env: {
-    ...process.env,
+    ...HERMETIC.env,
     PORT: String(PORT),
     MONGODB_URI: mongoUri,
     // Seeding here is the point: the suites assert against known accounts.

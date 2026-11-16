@@ -1,7 +1,5 @@
+import '../config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import axios from 'axios';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const SHIPROCKET_BASE_URL = 'https://apiv2.shiprocket.in/v1/external';
 

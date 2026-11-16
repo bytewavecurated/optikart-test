@@ -1,17 +1,55 @@
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
 
-dotenv.config();
+/*
+ * Three bugs lived in the seven lines above, and all three were silent:
+ *
+ *  1. `host: SMTP_HOST || 'smtp.gmail.com'` with `user: undefined` meant that on
+ *     any machine without SMTP configured - every CI box, every fresh checkout -
+ *     the app attempted real authentication against Gmail using whatever
+ *     `SMTP_USER`/`SMTP_PASS` happened to be in the environment, and Gmail
+ *     answered 535 BadCredentials. That is our own server log talking.
+ *  2. The failure was swallowed into `{ success: false }`, which every one of the
+ *     12 call sites ignored, so the API answered "OTP sent to your email" while
+ *     no email existed. A non-seeded manufacturer therefore cannot sign in on
+ *     such a machine: they are told a code is coming, and it never does.
+ *  3. A module-level `dotenv.config()` re-read `.env` regardless of `ENV_FILE`,
+ *     so a harness that pinned an empty env file still inherited live provider
+ *     credentials through the back door.
+ *
+ * The transport is only built when SMTP is actually configured, and delivery
+ * status is now something the caller can act on.
+ */
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+/** True only when a working SMTP account has been supplied. */
+export const isSmtpConfigured = () => Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+
+let transporter;
+const mailTransport = () => {
+  if (!isSmtpConfigured()) return null;
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: String(process.env.SMTP_SECURE).toLowerCase() === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+  }
+  return transporter;
+};
+
+/**
+ * What a login route should do with the outcome. In development, where there is
+ * deliberately no mail account, the code is handed back so the caller can be
+ * honest about it instead of shipping a "check your inbox" dead end.
+ */
+const undeliverable = (otp, email) => {
+  if (process.env.NODE_ENV === 'production') {
+    console.error(`OTP delivery is impossible: SMTP is not configured in production (subject account ${email}).`);
+    return { success: false, delivered: false, reason: 'smtp-unconfigured' };
+  }
+  console.warn(`[dev mail] no SMTP configured; sign-in code for ${email} is ${otp}`);
+  return { success: true, delivered: false, devCode: String(otp), reason: 'dev-no-smtp' };
+};
 
 export const sendOTP = async (email, otp, type = 'login') => {
   const subjectMap = {
@@ -42,12 +80,24 @@ export const sendOTP = async (email, otp, type = 'login') => {
     `,
   };
 
+  const transport = mailTransport();
+  if (!transport) return undeliverable(otp, email);
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId };
+    const info = await transport.sendMail(mailOptions);
+    return { success: true, delivered: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending OTP email:', error);
-    return { success: false, error: error.message };
+    /*
+     * Reported, not hidden. A route that ignores this return value is the bug
+     * described above; the fix at the call sites is tracked separately, but the
+     * service can no longer pretend a failed send succeeded.
+     */
+    console.error('OTP email failed:', String(error?.message || error).slice(0, 160));
+    return {
+      success: false,
+      delivered: false,
+      reason: 'send-failed',
+      error: String(error?.message || error).slice(0, 200),
+    };
   }
 };
 

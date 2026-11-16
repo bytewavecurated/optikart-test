@@ -1,8 +1,6 @@
+import '../config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import axios from 'axios';
 import AWS from 'aws-sdk';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 // Initialize AWS Transcribe if credentials are available
 if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_aws_access_key_here') {

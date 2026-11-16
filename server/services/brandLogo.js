@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * A brand mark is identity, not decoration: on the home-page rails it is the
  * thing a shopper recognises before they read a single product name. It is also
@@ -142,11 +140,3 @@ export const assessLogo = (buf, { mimetype } = {}) => {
   }
   return null;
 };
-
-export const brandLogoPath = (name, hash, ext) =>
-  `uploads/brands/${String(name)
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')}-${String(hash).slice(0, 12)}.${ext}`;
-
-export const EXT_BY_KIND = { png: '.png', jpeg: '.jpg', svg: '.svg' };

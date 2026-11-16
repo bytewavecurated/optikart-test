@@ -1,8 +1,8 @@
+import './config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import dns from 'node:dns';
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import User from './models/User.js';
 import Seller from './models/Seller.js';
 import Product from './models/Product.js';
@@ -15,8 +15,6 @@ import Blog from './models/Blog.js';
 import DeliveryPartner from './models/DeliveryPartner.js';
 import StaffRole from './models/StaffRole.js';
 import SellerStock from './models/SellerStock.js';
-
-dotenv.config();
 
 const seedDatabase = async () => {
   try {

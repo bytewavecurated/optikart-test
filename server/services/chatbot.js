@@ -1,7 +1,5 @@
+import '../config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import OpenAI from 'openai';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 // Initialize OpenAI client
 const openai =

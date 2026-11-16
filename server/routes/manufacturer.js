@@ -371,13 +371,31 @@ router.post('/login', async (req, res) => {
       manufacturer.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await manufacturer.save();
 
-      await sendOTP(email, loginOtp, 'login');
-
+      const delivery = await sendOTP(email, loginOtp, 'login');
+      if (!delivery.success) {
+        /*
+         * The honest answer. Before this, an unconfigured mail account still
+         * produced "Login OTP sent to your email" - the code existed only in the
+         * server log, so the manufacturer was locked out while being told to
+         * check their inbox. A 503 here names the actual missing piece: SMTP.
+         */
+        return res.status(503).json({
+          success: false,
+          message:
+            'Sign-in cannot be completed: the verification code could not be delivered because email is not configured on this server.',
+          reason: delivery.reason,
+        });
+      }
       res.json({
         success: true,
         requiresOTP: true,
-        message: 'Login OTP sent to your email.',
+        message: delivery.delivered
+          ? 'Login OTP sent to your email.'
+          : 'Email is not configured on this server; the code is returned below for development use only.',
         manufacturerId: manufacturer._id,
+        // Present only outside production and only when the code could not be
+        // mailed. A deployed system never sees this field.
+        devCode: delivery.devCode,
       });
     }
   } catch (error) {

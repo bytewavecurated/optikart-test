@@ -1,3 +1,4 @@
+import './config/loadEnv.js'; // must precede every env-reading import (see that file)
 import { verifyToken, verifyAdmin } from './middleware/auth.js';
 import dns from 'node:dns';
 dns.setServers(['8.8.8.8', '1.1.1.1']);
@@ -5,7 +6,7 @@ dns.setServers(['8.8.8.8', '1.1.1.1']);
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import { assertRuntimeSecrets } from './config/loadEnv.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
@@ -61,10 +62,12 @@ import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { requestContext, snapshot as metricSnapshot, recordError } from './middleware/requestContext.js';
 import partnerRankingRoutes from './routes/partnerRanking.js';
+import brandLogoRoutes from './routes/brandLogos.js';
 import sessionGuard from './middleware/sessionGuard.js';
 import { logSessionIdlePolicy } from './services/sessionActivity.js';
 
-dotenv.config();
+/* dotenv is loaded by the first import above; validated here so a weak secret is a refuse-to-boot. */
+const secretPolicy = assertRuntimeSecrets();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -188,6 +191,9 @@ app.use('/api/delivery-partner', deliveryPartnerRoutes);
  * middleware inside the router is what decides access, not the mount order.
  */
 app.use('/api', partnerRankingRoutes);
+
+// Brand registration + logos (see routes/brandLogos.js).
+app.use('/api', brandLogoRoutes);
 app.use('/api/product-verification', productVerificationRoutes);
 app.use('/api/inventory-analytics', inventoryAnalyticsRoutes);
 app.use('/api/return-analytics', returnAnalyticsRoutes);
