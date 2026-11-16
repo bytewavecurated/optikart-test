@@ -32,12 +32,57 @@ export const otpBypassAllowed = (allowedEmails = [], email = '') => {
 export const smtpConfigured = () =>
   Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
+/*
+ * The seed gate, in one decision.
+ *
+ * `SEED_ON_BOOT` defaults to `auto`, meaning seed-when-the-database-looks-empty.
+ * Outside development and CI that is not a convenience but a hazard: a real
+ * production database created this morning is empty, so an ordinary first boot
+ * would wipe-or-fill it with demo sellers, demo shoppers and demo partners with
+ * fixed passwords listed in LOGINS.md - and the seed deletes the collections it
+ * owns before writing, so a later "empty-looking" state on a staging box can
+ * destroy data that was only half-migrated.
+ *
+ * The rule is now one pure function instead of an `if/else` ladder buried in
+ * startup, so it can be asserted without booting a server against a database:
+ *
+ *   - development / CI: `auto` seeds an empty database (the suites sign in as
+ *     seeded accounts), `true` forces, `false` never.
+ *   - production: `auto` NEVER seeds, empty database or not. Seeding happens
+ *     only with the two explicit staging flags together - a deliberate action by
+ *     someone who knows what it deletes.
+ */
+export const seedDecision = ({ flag = 'auto', existing = 0, production = false, allowDemoSeed = false } = {}) => {
+  const normalized = String(flag || 'auto').toLowerCase();
+
+  if (normalized === 'false' || normalized === '0') {
+    return { seed: false, reason: 'disabled-by-flag' };
+  }
+
+  const forced = normalized === 'true' || normalized === '1';
+  if (forced) {
+    if (production && !allowDemoSeed) {
+      return { seed: false, reason: 'production-refuses-demo-seed' };
+    }
+    return {
+      seed: true,
+      reason: production ? 'production-staging-acknowledged' : 'forced-flag',
+      destructive: true
+    };
+  }
+
+  // auto
+  if (production) return { seed: false, reason: 'production-never-auto-seeds' };
+  if (Number(existing) === 0) return { seed: true, reason: 'empty-database-development' };
+  return { seed: false, reason: 'database-not-empty' };
+};
+
 /** Fail-fast conditions that must stop a production process from starting. */
-export const productionBootErrors = ({ seedForced }) => {
+export const productionBootErrors = ({ seedForced, seedAcknowledged = false }) => {
   if (!isProduction()) return [];
   const errors = [];
-  if (seedForced) {
-    errors.push('SEED_ON_BOOT=true is refused in production: the seed deletes the collections it owns before writing demo fixtures.');
+  if (seedForced && !seedAcknowledged) {
+    errors.push('SEED_ON_BOOT=true is refused in production: the seed deletes the collections it owns before writing demo fixtures. On a staging database, set BOTH SEED_ON_BOOT=true and ALLOW_DEMO_SEED=true to say so deliberately.');
   }
   const secret = String(process.env.JWT_SECRET || '');
   if (!secret || secret.length < 32 || /^(change-me|your[-_]|\s*$)/i.test(secret)) {

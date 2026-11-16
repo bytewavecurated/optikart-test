@@ -59,6 +59,13 @@ const SUITES = [
 
 // Static checks: no server needed, but they gate the same push.
 const AUDITS = [
+  /*
+   * Registration note for whoever reads a "19 groups" number somewhere in the
+   * project history: the seed guard is asserted here because a boot-time hazard
+   * that nobody executes in CI is a hazard that silently rots. It is a pure
+   * function test, so it costs a second and needs no database.
+   */
+  ['production seed guard', 'scripts/seed_guard_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],
   ['controls that only announce success', 'scripts/audit/fake-actions.mjs']

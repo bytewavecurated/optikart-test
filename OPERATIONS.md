@@ -2,6 +2,38 @@
 
 Deploy, diagnose, and what is knowingly left undone.
 
+## Demo seed, staging, and production
+
+`SEED_ON_BOOT` defaults to `auto`. Outside production, `auto` seeds an empty
+database and `true` forces it - the verification suites sign in as seeded
+accounts, so the seed stays as the dev/CI fixture.
+
+**In production nothing is auto-seeded, not even against a completely empty
+database**, which is exactly what a fresh production database looks like on its
+first boot. Left as it was, an ordinary first boot would have deleted whatever
+collections the seed owns and rewritten demo sellers, shoppers, manufacturers
+and partners whose fixed passwords are published in `LOGINS.md` - a live site
+with working demo logins and a "degraded but healthy" look.
+
+To load demo data in production mode deliberately (a staging box), set BOTH:
+
+```bash
+SEED_ON_BOOT=true
+ALLOW_DEMO_SEED=true
+```
+
+Anything less refuses, and the boot log names the reason it refused, because a
+silent production log is how a misconfiguration gets read as a healthy server.
+The first real admin comes from the bootstrap path, not from the seed.
+`scripts/seed_guard_unit.mjs` (14 checks, in CI) pins the decision function; a
+real production-mode boot against an empty database is verified to leave zero
+users while still printing why.
+
+Removing `server/seed.js` entirely is a later change, not this one: it is the
+only source of the accounts 20 harness groups authenticate against, so deleting
+it before those suites carry their own fixtures would leave production
+unverifiable rather than clean.
+
 ## Configuration
 
 All runtime configuration is `server/.env`.

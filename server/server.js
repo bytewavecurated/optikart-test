@@ -378,9 +378,13 @@ const startServer = async () => {
      * - it is broken in a way nobody notices until data is gone. These conditions
      * stop the boot rather than log a warning beside a running server.
      */
-    const { productionBootErrors } = await import('./config/authMode.js');
+    const { productionBootErrors, seedDecision, isProduction } = await import('./config/authMode.js');
     const seedFlag = String(process.env.SEED_ON_BOOT || 'auto').toLowerCase();
-    const bootErrors = productionBootErrors({ seedForced: ['true', '1'].includes(seedFlag) });
+    const allowDemoSeed = ['true', '1'].includes(String(process.env.ALLOW_DEMO_SEED || '').toLowerCase());
+    const bootErrors = productionBootErrors({
+      seedForced: ['true', '1'].includes(seedFlag),
+      seedAcknowledged: allowDemoSeed
+    });
     if (bootErrors.length) {
       bootErrors.forEach((line) => console.error(`CONFIGURATION ERROR: ${line}`));
       console.error('Refusing to start. Fix the environment, then start again.');
@@ -403,16 +407,44 @@ const startServer = async () => {
       const { default: User } = await import('./models/User.js');
       const flag = String(process.env.SEED_ON_BOOT || 'auto').toLowerCase();
       const existing = await User.estimatedDocumentCount();
-      if (flag === 'false' || flag === '0') {
+      /*
+       * One function decides, and the reason is logged. The ladder it replaces
+       * treated an empty database as a licence to seed wherever the process
+       * happened to run - which is precisely what a fresh production database
+       * looks like on its first boot.
+       */
+      const decision = seedDecision({
+        flag,
+        existing,
+        production: isProduction(),
+        allowDemoSeed: ['true', '1'].includes(String(process.env.ALLOW_DEMO_SEED || '').toLowerCase())
+      });
+      /*
+       * Every outcome announces itself.
+       *
+       * The first version of this block left the old else-branch's log line
+       * inside `if (decision.seed)`, which was brace-balanced and compiled: a
+       * seeded boot printed "Database seeded" and "Seed skipped ... already
+       * exist" in the same breath, while a production boot that had correctly
+       * refused to seed printed nothing at all. Silence in a production log is
+       * how a refused configuration gets read as a healthy one, so each reason
+       * now has its own line, including what a staging operator must set if
+       * demo data is genuinely wanted.
+       */
+      if (decision.seed) {
+        if (decision.destructive && isProduction()) {
+          console.warn('WARNING: demo seed running against a PRODUCTION-mode database; the seed deletes the collections it owns first (SEED_ON_BOOT=true + ALLOW_DEMO_SEED=true).');
+        }
+        await seedDatabase();
+        console.log(`\u2705 Database seeded (${decision.reason})`);
+      } else if (decision.reason === 'production-never-auto-seeds') {
+        console.log('Seed skipped: production never auto-seeds, not even against an empty database. Create the first real admin through the bootstrap path; on a staging database set SEED_ON_BOOT=true together with ALLOW_DEMO_SEED=true to load demo fixtures.');
+      } else if (decision.reason === 'production-refuses-demo-seed') {
+        console.log('Seed skipped: SEED_ON_BOOT=true was set in production without ALLOW_DEMO_SEED, so nothing was written.');
+      } else if (decision.reason === 'disabled-by-flag') {
         console.log('Seed skipped (SEED_ON_BOOT=false).');
-      } else if (flag === 'true' || flag === '1') {
-        await seedDatabase();
-        console.log('✅ Database seeded (forced by SEED_ON_BOOT=true)');
-      } else if (existing === 0) {
-        await seedDatabase();
-        console.log('✅ Database seeded (empty database detected)');
       } else {
-        console.log('Seed skipped: ' + existing + ' user record(s) already exist. Set SEED_ON_BOOT=true to reseed, which deletes the seeded collections first.');
+        console.log(`Seed skipped (${decision.reason}); ${existing} user record(s) already present.`);
       }
       // Catalogue rows created before products carried a `name` are filled from
       // their title; idempotent, so it costs one query per restart.
