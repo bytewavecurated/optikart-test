@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { installCodes } from '../services/entityIds.js';
 import bcrypt from 'bcryptjs';
 
 const deliveryPartnerSchema = new mongoose.Schema(
@@ -102,14 +103,6 @@ const deliveryPartnerSchema = new mongoose.Schema(
 );
 
 // Generate unique delivery partner ID
-deliveryPartnerSchema.pre('save', async function (next) {
-  if (!this.deliveryPartnerId) {
-    const count = await mongoose.model('DeliveryPartner').countDocuments();
-    this.deliveryPartnerId = `DP${String(count + 1).padStart(5, '0')}`;
-  }
-  next();
-});
-
 // Hash password before saving
 deliveryPartnerSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -130,6 +123,7 @@ deliveryPartnerSchema.methods.toJSON = function () {
   delete obj.loginOtpExpiry;
   return obj;
 };
+installCodes(deliveryPartnerSchema, 'partner', 'DeliveryPartner');
 
 const DeliveryPartner = mongoose.model('DeliveryPartner', deliveryPartnerSchema);
 

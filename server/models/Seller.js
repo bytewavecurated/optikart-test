@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { installCodes } from '../services/entityIds.js';
 import bcrypt from 'bcryptjs';
 
 const bankAccountSchema = new mongoose.Schema({
@@ -130,14 +131,6 @@ sellerSchema.pre('save', function (next) {
   next();
 });
 
-sellerSchema.pre('save', function (next) {
-  if (!this.sellerId) {
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    this.sellerId = `OPT-${random}`;
-  }
-  next();
-});
-
 sellerSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
@@ -158,6 +151,8 @@ sellerSchema.methods.toJSON = function () {
   delete obj.phoneOtpExpiry;
   return obj;
 };
+installCodes(sellerSchema, 'seller', 'Seller');
 
 const Seller = mongoose.model('Seller', sellerSchema);
+
 export default Seller;

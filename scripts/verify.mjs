@@ -64,6 +64,7 @@ const SUITES = [
   ['weekly partner ranking', 'scripts/partner_ranking_e2e.mjs'],
   ['brand registration and logos', 'scripts/brand_logo_e2e.mjs'],
   ['product upload parity', 'scripts/product_upload_parity_e2e.mjs'],
+  ['entity codes over http', 'scripts/entity_ids_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.
@@ -77,6 +78,7 @@ const AUDITS = [
   ['production seed guard', 'scripts/seed_guard_unit.mjs'],
   ['weekly partner ranking (frozen clock)', 'scripts/partner_ranking_unit.mjs'],
   ['product upload requirements', 'scripts/product_requirements_unit.mjs'],
+  ['entity code generation', 'server/scripts/entity_ids_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],
   ['controls that only announce success', 'scripts/audit/fake-actions.mjs'],

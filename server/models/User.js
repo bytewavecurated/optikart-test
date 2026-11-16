@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { installCodes } from '../services/entityIds.js';
 import bcrypt from 'bcryptjs';
 
 const addressSchema = new mongoose.Schema({
@@ -95,14 +96,6 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-userSchema.pre('save', function (next) {
-  if (!this.userId) {
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    this.userId = `USR-${random}`;
-  }
-  next();
-});
-
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
@@ -115,6 +108,8 @@ userSchema.methods.toJSON = function () {
   delete obj.loginTokenExpiry;
   return obj;
 };
+installCodes(userSchema, 'user', 'User');
 
 const User = mongoose.model('User', userSchema);
+
 export default User;

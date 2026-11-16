@@ -364,7 +364,22 @@ router.post('/products/:id/toggle', verifyManufacturerSeller, async (req, res) =
     }
 
     const sellerProduct = new Product({
-      ...brandProduct.toObject(),
+      /*
+       * A copy is a new listing, so it must not inherit the identity fields of
+       * the product it was copied from. `itemCode` is issued per listing by the
+       * system, and spreading the source document carried its code straight
+       * into the copy, which the unique index then rejected as
+       * `E11000 dup key { itemCode: "ITM-..." }` - a retailer's shop copy failed
+       * to be created for a reason that looked like a database fault. `_id` is
+       * dropped for the same reason (mongoose ignores it, but the intent belongs
+       * in the code, not in an assumption about the driver).
+       */
+      ...(() => {
+        const source = brandProduct.toObject();
+        delete source._id;
+        delete source.itemCode;
+        return source;
+      })(),
       _id: undefined,
       manufacturerProduct: brandProduct._id,
       manufacturerSellerId: retailer._id,

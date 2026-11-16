@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { installCodes } from '../services/entityIds.js';
 import bcrypt from 'bcryptjs';
 
 const manufacturerSellerSchema = new mongoose.Schema(
@@ -45,14 +46,6 @@ const manufacturerSellerSchema = new mongoose.Schema(
 );
 
 // Generate unique manufacturer seller ID
-manufacturerSellerSchema.pre('save', async function (next) {
-  if (!this.manufacturerSellerId) {
-    const count = await mongoose.model('ManufacturerSeller').countDocuments();
-    this.manufacturerSellerId = `MFRS${String(count + 1).padStart(5, '0')}`;
-  }
-  next();
-});
-
 // Hash password before saving
 manufacturerSellerSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -73,5 +66,6 @@ manufacturerSellerSchema.methods.toJSON = function () {
   delete obj.loginOtpExpiry;
   return obj;
 };
+installCodes(manufacturerSellerSchema, 'retailer', 'ManufacturerSeller');
 
 export default mongoose.model('ManufacturerSeller', manufacturerSellerSchema);

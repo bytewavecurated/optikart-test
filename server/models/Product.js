@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { installCodes } from '../services/entityIds.js';
 import { listingApprovalSchema, pushListingEvent } from './listingApproval.js';
 
 const colorSchema = new mongoose.Schema({
@@ -212,6 +213,27 @@ const productSchema = new mongoose.Schema(
     frameWidth: { type: Number }, // in mm
     modelNumber: { type: String },
     productCode: { type: String },
+    /*
+     * The catalogue's own code for this listing, minted by the system (see
+     * services/entityIds.js). It is NOT the manufacturer's `productCode` / `sku`:
+     * those are typed on a sheet, are free-form and routinely repeat across
+     * companies - two manufacturers both calling a frame "AV-01" is normal. A
+     * shopper quoting a problem, or support searching for a listing, needs the one
+     * identifier no second party ever types.
+     *
+     * Declared with the other fields rather than in one of the later
+     * `productSchema.add()` calls: a path that appears after
+     * `mongoose.model('Product', ...)` compiles is a path the minting hook writes
+     * into nothing, and the live door silently produced products with no code
+     * while a unit test that imported the file in a different order passed.
+     */
+    itemCode: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      index: { unique: true, sparse: true },
+    },
+
     lensType: {
       type: String,
       enum: ['nonpowered', 'powered', 'photochromic', 'polarized', 'bluCut'],
@@ -479,8 +501,10 @@ productSchema.pre('save', function (next) {
   }
   next();
 });
+installCodes(productSchema, 'product', 'Product');
 
 const Product = mongoose.model('Product', productSchema);
+
 export default Product;
 
 // Add verification fields

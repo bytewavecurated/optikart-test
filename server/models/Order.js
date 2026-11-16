@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { mintCode, orderCode } from '../services/entityIds.js';
 
 const orderItemSchema = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
@@ -217,25 +218,32 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
-// Human-readable, time-ordered reference. The random suffix keeps it unique
-// when two orders land in the same millisecond.
-const generateOrderNumber = () => {
-  const d = new Date();
-  const stamp = [
-    String(d.getFullYear()).slice(2),
-    String(d.getMonth() + 1).padStart(2, '0'),
-    String(d.getDate()).padStart(2, '0'),
-  ].join('');
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no look-alike glyphs
-  let suffix = '';
-  for (let i = 0; i < 5; i++) suffix += chars.charAt(Math.floor(Math.random() * chars.length));
-  return `OK${stamp}${suffix}`;
-};
+/*
+ * Kept as an export because other modules build references outside the schema
+ * (invoices, tests, support tooling), but it no longer owns an alphabet: it
+ * delegates to services/entityIds.js so a code generated here and a code minted
+ * by the hook cannot drift into two different formats. The old body used
+ * Math.random and a second character set, which is exactly the drift the shared
+ * module exists to stop.
+ */
+const generateOrderNumber = () => orderCode();
 
-// Set the reference before validation runs, so `required` can never trip on it.
-orderSchema.pre('validate', function (next) {
+/*
+ * The reference is minted before validation (so `required` can never trip on it)
+ * but no longer by a single unverified guess at randomness. The old version
+ * produced `OK` + date + 5 characters and simply hoped - the comment said the
+ * random suffix "keeps it unique", while nothing checked the database and nothing
+ * retried: a collision (2 characters over from the same alphabet, same day) was a
+ * failed order at the checkout, since `orderNumber` carries a unique index.
+ * mintCode() checks existence, retries, and reports when it cannot.
+ */
+orderSchema.pre('validate', async function (next) {
   if (!this.orderNumber) {
-    this.orderNumber = generateOrderNumber();
+    try {
+      await mintCode(Order, this, 'order');
+    } catch (error) {
+      return next(error);
+    }
   }
   next();
 });
@@ -243,4 +251,5 @@ orderSchema.pre('validate', function (next) {
 export { generateOrderNumber };
 
 const Order = mongoose.model('Order', orderSchema);
+
 export default Order;

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { installCodes } from '../services/entityIds.js';
 
 const returnRequestSchema = new mongoose.Schema(
   {
@@ -106,14 +107,7 @@ const returnRequestSchema = new mongoose.Schema(
 );
 
 // Generate unique return ID
-returnRequestSchema.pre('save', async function (next) {
-  if (!this.returnId) {
-    const count = await mongoose.model('ReturnRequest').countDocuments();
-    this.returnId = `RET${String(count + 1).padStart(6, '0')}`;
-  }
-  next();
-});
-
+installCodes(returnRequestSchema, 'returns', 'ReturnRequest');
 const ReturnRequest = mongoose.model('ReturnRequest', returnRequestSchema);
 
 export default ReturnRequest;

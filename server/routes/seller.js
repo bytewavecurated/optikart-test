@@ -86,7 +86,22 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
         country: addr.country || 'India',
       },
       pincode: addr.pincode || '',
-      location,
+      /*
+       * Only when it actually resolved. `buildLocation` returns null when the
+       * PIN code is unknown and no browser coordinates were sent - that is its
+       * documented contract - and assigning null to `location` made Mongoose
+       * validate `location.type` against the 'Point' enum, which rejected the
+       * document and answered the shop with HTTP 500 "Server error during
+       * registration". Reproduced exactly: an unregistrable shop was created by
+       * any signup whose PIN our table does not know, i.e. most of India.
+       *
+       * The field is left absent instead. `locationResolved` stays false,
+       * delivery quoting already treats an unset store position as "measure it
+       * later" (and refuses to hand a run to a partner when there is no usable
+       * position), and the shop can fix it in their profile rather than having
+       * been told their credentials were wrong.
+       */
+      ...(location ? { location } : {}),
       phoneOtp,
       phoneOtpExpiry: new Date(Date.now() + 10 * 60 * 1000),
     });
@@ -98,6 +113,18 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
     res.status(201).json({
       success: true,
       message: 'Registration successful. Please verify your phone with the OTP sent.',
+      /*
+       * `sellerId` has always been the Mongo _id in this API's responses, and a
+       * lot of screens depend on that. The readable shop code is the document
+       * field of the same name, which is genuinely confusing - so the code is
+       * added here under its own honest key rather than redefining an existing
+       * one and quietly breaking every caller that reads sellerId as an id.
+       *
+       * Renaming the collision properly (document field -> `storeCode`) is a
+       * separate, deliberate change across screens and is not smuggled into a
+       * registration response.
+       */
+      sellerCode: seller.sellerId,
       sellerId: seller._id,
     });
   } catch (error) {

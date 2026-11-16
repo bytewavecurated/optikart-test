@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { installCodes } from '../services/entityIds.js';
 import bcrypt from 'bcryptjs';
 
 const executiveSchema = new mongoose.Schema(
@@ -37,14 +38,6 @@ const executiveSchema = new mongoose.Schema(
 );
 
 // Generate unique executive ID
-executiveSchema.pre('save', async function (next) {
-  if (!this.executiveId) {
-    const count = await mongoose.model('Executive').countDocuments();
-    this.executiveId = `EXEC${String(count + 1).padStart(5, '0')}`;
-  }
-  next();
-});
-
 // Hash password before saving
 executiveSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
@@ -65,5 +58,6 @@ executiveSchema.methods.toJSON = function () {
   delete obj.loginOtpExpiry;
   return obj;
 };
+installCodes(executiveSchema, 'executive', 'Executive');
 
 export default mongoose.model('Executive', executiveSchema);
