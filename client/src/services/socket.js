@@ -8,9 +8,26 @@ const SOCKET_URL =
   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000');
 
 let socket = null;
+let socketToken = null;
 
 export const connectSocket = (token) => {
-  if (socket?.connected) return socket;
+  /*
+   * Reconnecting with a DIFFERENT token must tear down the old socket and open
+   * a new one. The guard used to be just "already connected? reuse it", which
+   * was harmless while the server ignored the handshake token and is fatal now
+   * that it authenticates: a seller signing in on a page that had earlier held
+   * a customer (or a previous seller's) socket would keep that socket, so their
+   * `seller_<id>` room never joined and new-order alerts silently never
+   * arrived - the exact "endpoint answers, feature is dead" failure this codebase
+   * keeps meeting. Same token, same connection: reuse it.
+   */
+  if (socket?.connected && socketToken === token) return socket;
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+  }
+  socketToken = token;
 
   socket = io(SOCKET_URL, {
     auth: { token },
@@ -42,8 +59,10 @@ export const connectSocket = (token) => {
 
 export const disconnectSocket = () => {
   if (socket) {
+    socket.removeAllListeners();
     socket.disconnect();
     socket = null;
+    socketToken = null;
   }
 };
 
