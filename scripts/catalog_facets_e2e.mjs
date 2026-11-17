@@ -353,11 +353,15 @@ No Pack Solution,599,solution,Ray-Ban,FAC-UND-3,FAC-UND-3,Missing its pack prici
         !(foreign.json?.errors || []).some((e) => /Brands manufactured/i.test(e)),
       JSON.stringify((foreign.json?.errors || []).slice(0, 1)).slice(0, 220)
     );
-    check(
-      'the owning manufacturer still uploads its own brand without complaint',
-      true,
-      'covered by the declared-brand import assertion above'
-    );
+    /*
+     * Removed rather than fixed. It read
+     * `check('the owning manufacturer still uploads its own brand without
+     * complaint', true, 'covered by the declared-brand import assertion above')`:
+     * the detail admitted the real assertion already ran earlier, so this printed a
+     * second PASS for work nothing had re-checked and nothing could fail. A claim
+     * that is genuinely covered elsewhere belongs to that assertion alone; a
+     * duplicate that cannot fail only inflates the count someone reads as coverage.
+     */
   } else {
     check(
       'secondary manufacturer created for the bulk ownership case',

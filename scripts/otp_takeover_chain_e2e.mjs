@@ -40,6 +40,27 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` :: ${String(detail).slice(0, 190)}` : ''}`);
 };
 
+/*
+ * Two narrow predicates for the "mail worked" branch. Kept as functions rather
+ * than inlined so the earlier `check(...)` uses the same words the assertions
+ * name, and so a future edit cannot leave one of them comparing to a literal.
+ */
+const deliveryClaimed = (json) =>
+  /on its way|has been sent|is on its way|check your (email|inbox)/i.test(String(json?.message || ''));
+const credentialFields = (json) => {
+  const flat = flatten(json);
+  return flat.some(([p, v]) => {
+    const leaf = p
+      .split('.')
+      .pop()
+      .replace(/\[\d+\]$/, '')
+      .toLowerCase();
+    return (
+      leaf !== 'devcode' && FORBIDDEN_CREDENTIAL_FIELDS.includes(leaf) && v !== null && v !== undefined && v !== ''
+    );
+  });
+};
+
 const post = async (path, body) => {
   const res = await fetch(API + path, {
     method: 'POST',
@@ -116,7 +137,18 @@ async function main() {
     );
     check('the undocumented `otp` spelling is gone', !('otp' in (send.json || {})), Object.keys(send.json).join(','));
   } else {
-    check('with mail configured, no code reaches the response body at all', true, 'no devCode present');
+    /*
+     * No code came back - which is the case worth asserting rather than papering
+     * over with `true` (my first version did exactly that, printing a PASS line
+     * that verified nothing, in the very file written to stop this bug class).
+     * Assert the two things that must be true instead: the answer claims
+     * delivery, and no field in it carries a credential.
+     */
+    check(
+      'when mail is configured the response claims delivery and carries no code',
+      send.status === 200 && deliveryClaimed(send.json) && !credentialFields(send.json),
+      JSON.stringify(send.json).slice(0, 150)
+    );
   }
 
   /* ── step 2: a blind guess must not produce a session ────────────────────── */

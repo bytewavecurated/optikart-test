@@ -29,6 +29,15 @@ const deliveryPartnerSchema = new mongoose.Schema(
       longitude: Number,
       updatedAt: Date,
     },
+    /*
+     * The partner's own switch on the dashboard's "Location sharing" card.
+     * services/deliveryPartner.js has always reported `locationSharing` and the
+     * client renders a card from it, but no such path existed on this schema, so
+     * mongoose dropped it on read and on write: the card could never show
+     * "Enabled", and pressing Enable re-showed "Enable" on the next load. Declared
+     * here so the UI reflects a real stored choice.
+     */
+    locationSharing: { type: Boolean, default: false },
     isAvailable: {
       type: Boolean,
       default: true,

@@ -450,8 +450,25 @@ export const getPartnerDashboard = async (partnerId) => {
       weeklyEarnings: Math.round((weekAgg[0]?.total || 0) * 100) / 100,
       monthlyEarnings: Math.round((monthAgg[0]?.total || 0) * 100) / 100,
       canWithdrawToday: !partner.lastWithdrawalAt || new Date(partner.lastWithdrawalAt) < startOfDay,
-      isOnline: partner.status === 'online',
-      locationSharing: !!partner.locationSharing,
+      /*
+       * Derived from the fields that exist.
+       *
+       * This read `partner.status === 'online'` and `partner.locationSharing`.
+       * Neither is a path on the DeliveryPartner schema (its top-level fields are
+       * isAvailable, isActive, isBanned, currentLocation, ...), and mongoose drops
+       * unknown paths on read and write alike, so `isOnline` was hard-wired to
+       * false by construction: a partner marked available, positioned and in good
+       * standing was still reported offline on their own dashboard, forever, with
+       * no error anywhere. The dispatch cascade selects on isAvailable, so work
+       * still flowed - which is the only reason this survived.
+       *
+       * `online` therefore means what the desk would act on: available, account
+       * enabled, not barred, and a position on record (without one, no run can be
+       * measured to them).
+       */
+      isOnline: Boolean(
+        partner.isAvailable && partner.isActive !== false && !partner.isBanned && partner.currentLocation?.latitude
+      ),
       rating: partner.rating || 0,
     };
   } catch (error) {

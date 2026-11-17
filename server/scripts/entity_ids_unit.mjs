@@ -333,7 +333,14 @@ try {
    * through the real checkout in scripts/entity_ids_e2e.mjs, where two orders
    * created the same way must produce two different OK-prefixed references.
    */
-  check('order references are left to the live checkout suite', true, 'see scripts/entity_ids_e2e.mjs');
+  /*
+   * No assertion here at all, deliberately. Order minting is proven in
+   * scripts/entity_ids_e2e.mjs through the real checkout. My first draft of this
+   * line was `check('order references are left to the live checkout suite', true)`
+   * - a PLACEHOLDER THAT PRINTED PASS. A comment cannot be satisfied, so it should
+   * not be counted; a suite that needs a green line to feel complete is measuring
+   * lines, not behaviour.
+   */
 
   /* ------------------------------------------------ the old bug, explicitly */
   const legacySchema = new mongoose.Schema({ tag: String, legacyId: { type: String, unique: true, sparse: true } });

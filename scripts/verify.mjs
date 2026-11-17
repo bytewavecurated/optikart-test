@@ -85,6 +85,7 @@ const AUDITS = [
   ['harness disk guard', 'scripts/disk_headroom_unit.mjs'],
   ['fixture destruction guard', 'server/scripts/fixtures_destruction_guard_unit.mjs'],
   ['security audit gate', 'server/scripts/audit/security.mjs'],
+  ['vacuous-assertion and orphan-file gate', 'server/scripts/audit/vacuous.mjs'],
   ['otp delivery gate', 'server/scripts/otp_delivery_gate_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],

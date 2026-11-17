@@ -154,7 +154,26 @@ async function main() {
     const wd = await call('/delivery-partner/withdraw', { t: partner, b: { amount: 50 } });
     if (wd.json?.data?.status === 'awaiting_settlement') {
       queuedAmount = 50;
-      check('a fresh withdrawal is queued rather than marked paid', true);
+      /*
+       * Was a literal `check('...', true)`. The claim in the label is about the
+       * stored row, so what is asserted is the stored row: pending in the desk
+       * queue, and NOT counted as paid out on the partner's own balance. That
+       * second half is the whole contract of this console - a withdrawal that
+       * looks settled before money moved.
+       */
+      const meAfter = (await call('/delivery-partner/me', { t: partner })).json?.data || {};
+      const rowAfter = (meAfter.partner?.withdrawals || meAfter.withdrawals || []).slice(-1)[0] || {};
+      check(
+        'a fresh withdrawal is queued rather than marked paid',
+        rowAfter.status === 'awaiting_settlement' &&
+          Number(meAfter.totalWithdrawn ?? 0) === withdrawnBefore &&
+          Number(meAfter.awaitingSettlement ?? 50) >= 50,
+        JSON.stringify({
+          status: rowAfter.status,
+          totalWithdrawn: meAfter.totalWithdrawn,
+          before: withdrawnBefore,
+        }).slice(0, 160)
+      );
     } else {
       console.log('NOTE  daily withdrawal limit already used - settling the row partner_flow queued');
     }

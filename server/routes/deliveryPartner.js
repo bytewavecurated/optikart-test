@@ -525,10 +525,53 @@ router.put('/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
 router.put('/availability', verifyDeliveryPartner, async (req, res) => {
   try {
     const isAvailable = !!req.body.isAvailable;
-    await DeliveryPartner.findByIdAndUpdate(req.partner._id, { isAvailable });
+    /*
+     * Availability is what puts a partner into the ranking pool at all, and it is a
+     * single stored flag. The dashboard's `isOnline` used to be computed from a
+     * schema path that does not exist (see services/deliveryPartner.js), so a
+     * partner who tapped the switch, read "You are now online for deliveries", was
+     * still reported offline by anything trusting that field - and the route's own
+     * old comment admitted the switch "only repainted itself". Dispatch selects on
+     * isAvailable, so runs still flowed: the money path was right and the
+     * human-facing summary was wrong, which is why this sat unnoticed.
+     *
+     * A barred account cannot go online by toggling, so that is refused rather than
+     * stored and contradicted downstream.
+     */
+    const banned = Boolean(req.partner.isBanned);
+    if (banned && isAvailable) {
+      return res.status(409).json({
+        success: false,
+        message: 'This account is barred from deliveries, so it cannot go online. Contact the operations desk.',
+      });
+    }
+    /*
+     * `isAvailable` is the only stored availability flag on this schema. A draft of
+     * this handler also wrote a `status` string, but DeliveryPartner has no such
+     * path, so mongoose discarded it silently and the write was decoration - the
+     * same shape of mistake as the dashboard's `partner.status === 'online'`, which
+     * is why that line could sit there reading false forever.
+     *
+     * One field is written; the derived `isOnline` the client renders is computed
+     * from real paths in services/deliveryPartner.js, and returned here so the
+     * switch and the summary cannot disagree within one response.
+     */
+    const updated = await DeliveryPartner.findOneAndUpdate(
+      { _id: req.partner._id },
+      { isAvailable },
+      { new: true }
+    ).select('isAvailable isActive isBanned');
+    if (!updated) {
+      return res
+        .status(409)
+        .json({ success: false, message: 'The account changed under this request; nothing was set.' });
+    }
+
     res.json({
       success: true,
-      isAvailable,
+      isAvailable: updated.isAvailable,
+      // the same derivation the dashboard uses, so this response agrees with /me
+      isOnline: Boolean(updated.isAvailable && updated.isActive !== false && !updated.isBanned),
       message: isAvailable ? 'You are now online for deliveries.' : 'You are offline.',
     });
   } catch (error) {

@@ -53,9 +53,65 @@ async function main() {
 
   // A partner only enters the ranking pool while marked available, and their
   // position decides who is "nearby".
-  await call('/delivery-partner/location', { token: partner, body: { latitude: 19.076, longitude: 72.88 } });
+  const locSet = await call('/delivery-partner/location', {
+    token: partner,
+    body: { latitude: 19.076, longitude: 72.88 },
+  });
+  const availSet = await call('/delivery-partner/availability', {
+    token: partner,
+    body: { isAvailable: true },
+    method: 'PUT',
+  });
+  /*
+   * This used to be `check('partner can set availability', true)` - a literal that
+   * printed PASS whatever the two calls did, in the file where every later
+   * assertion quietly depends on availability being set. If the PUT were rejected
+   * (a validation change, a role fix), the suite would have gone red further down
+   * pointing at routing instead of here, at the cause.
+   *
+   * Reading the state back is the point: an endpoint can answer 200 without the
+   * field having changed, which is the failure this suite exists to catch.
+   */
+  const meNow = (await call('/delivery-partner/me', { token: partner })).json?.data || {};
+  check(
+    'partner can set availability, and it is readable afterwards',
+    locSet.status === 200 &&
+      availSet.status === 200 &&
+      availSet.json?.isAvailable === true &&
+      meNow.partner?.isAvailable === true &&
+      // isOnline is the desk-facing derivation; it used to read a schema path that
+      // does not exist, which kept this false no matter what a partner did.
+      meNow.isOnline === true,
+    // Read through the path this API actually publishes: `data.partner.isAvailable`
+    // is the stored flag and `data.isOnline` the derived desk view. My first version
+    // of this line read `data.isAvailable`, which is not a field - so a correct
+    // server failed a new test. That is the inverse error and just as expensive: it
+    // trains the reader to distrust the suite.
+    `loc=${locSet.status} avail=${availSet.status} body=${JSON.stringify({ isAvailable: availSet.json?.isAvailable })} read-back=${JSON.stringify({ stored: meNow.partner?.isAvailable, online: meNow.isOnline })}`.slice(
+      0,
+      220
+    )
+  );
+
+  /*
+   * Reversible, stated because a flag that could only be set ON would satisfy the
+   * assertion above while leaving every partner permanently online in the shared
+   * test database - which is the raw material for "why did that suite take my
+   * delivery" debugging sessions three groups later.
+   */
+  const off = await call('/delivery-partner/availability', {
+    token: partner,
+    body: { isAvailable: false },
+    method: 'PUT',
+  });
+  const meOff = (await call('/delivery-partner/me', { token: partner })).json?.data || {};
+  check(
+    'availability can be turned back off',
+    off.status === 200 && meOff.partner?.isAvailable === false,
+    JSON.stringify({ status: off.status, stored: meOff.partner?.isAvailable })
+  );
+  // restored for every later assertion in this file
   await call('/delivery-partner/availability', { token: partner, body: { isAvailable: true }, method: 'PUT' });
-  check('partner can set availability', true);
 
   const products = (await call('/products?category=sunglasses&limit=1', { token: seller })).json?.products || [];
   if (!check('catalogue returns a product to order', products.length > 0)) return finish();
