@@ -359,6 +359,64 @@ check(
   )
 );
 
+/* ------------------------------------------------------------------------- */
+/* 9. Body spreading: the escalation found and fixed today                    */
+/* ------------------------------------------------------------------------- */
+
+/*
+ * `{ ...req.body }` into a Mongoose document, or `Object.assign(doc, req.body)`,
+ * hands the caller every field the schema knows. On the listing doors that meant a
+ * manufacturer could post `verificationStatus: 'verified'` and appear in the public
+ * catalogue with no review, or `isSponsored: true` to take a placement the desk
+ * sells. Both doors now take an allow-list; this rule stops a third door being
+ * written the same way by someone who never saw the incident.
+ */
+const spreadDoors = [];
+for (const [f, code] of allServerFiles.map((x) => [rel(x), codeOnly(read(x))])) {
+  if (
+    /Object\.assign\(\s*(product|seller|order|user|manufacturer|partner|brand)\w*\s*,\s*(req\.)?body\s*\)/i.test(code)
+  ) {
+    spreadDoors.push(`${f}: Object.assign(<model>, body)`);
+  }
+  for (const m of code.matchAll(/new\s+([A-Z]\w+)\(\s*\{([^]{0,160}?\.\.\.(?:req\.)?body)/g)) {
+    spreadDoors.push(`${f}: new ${m[1]}({ ...body })`);
+  }
+}
+check('no document is built by spreading a request body', spreadDoors.length === 0, spreadDoors.join(' | ') || 'none');
+check(
+  'the listing doors take the shared allow-list',
+  /pickUploadableFields/.test(read(path.join(SERVER, 'routes', 'manufacturer.js'))) &&
+    /pickUploadableFields/.test(read(path.join(SERVER, 'routes', 'product.js')))
+);
+
+/* ------------------------------------------------------------------------- */
+/* 10. Baseline security headers                                              */
+/* ------------------------------------------------------------------------- */
+
+/*
+ * There was no helmet and no setHeader call anywhere in the app: the API served
+ * responses with no X-Content-Type-Options, no frame policy, no referrer policy and
+ * no HSTS, while the browser keeps a bearer token in localStorage. Absent headers do
+ * not cause an incident by themselves; they remove the cheap friction that turns a
+ * content-injection bug into a session theft. Asserted so they cannot silently fall
+ * away again.
+ */
+const surfaceText = fs.existsSync(path.join(SERVER, 'middleware', 'errorSurface.js'))
+  ? read(path.join(SERVER, 'middleware', 'errorSurface.js'))
+  : '';
+const headerSite = boot + surfaceText;
+const REQUIRED_HEADERS = ['X-Content-Type-Options', 'X-Frame-Options', 'Referrer-Policy', 'Permissions-Policy'];
+const missingHeaders = REQUIRED_HEADERS.filter((h) => !headerSite.includes(h));
+check(
+  'responses set the baseline security headers',
+  missingHeaders.length === 0,
+  `missing: ${missingHeaders.join(', ') || 'none'}`
+);
+check(
+  'HSTS is advertised in production only (a dev host over http cannot use it)',
+  /Strict-Transport-Security/.test(headerSite)
+);
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} security gate checks passed`);
 if (failed.length) {

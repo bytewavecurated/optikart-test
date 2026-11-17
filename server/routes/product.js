@@ -1,6 +1,7 @@
 import express from 'express';
 import { persistMulterFile } from '../services/storage.js';
 import { foldBrand } from '../services/brandOwnership.js';
+import { pickUploadableFields } from '../services/productRequirements.js';
 
 /*
  * Brand filtering by the shared fold - see services/brandOwnership.js.
@@ -634,9 +635,26 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', verifySeller, productValidation, async (req, res) => {
   try {
+    /*
+     * Allow-listed, for the same reason as the manufacturer door: a seller who can
+     * name any schema field can post `verificationStatus: 'verified'` and appear in
+     * the storefront without review, or set `isSponsored`, `commissionPercentage`,
+     * or `blockedByAdmin: false` to override a desk decision. `seller` comes from the
+     * session, so a body cannot aim a listing at somebody else's shop either.
+     */
+    const { values: sellerWritable, dropped: droppedSellerFields } = pickUploadableFields(
+      req.body,
+      Object.keys(Product.schema.paths)
+    );
+    if (droppedSellerFields.length) {
+      console.warn(
+        `POST /products from shop ${req.seller.email}: ignored server-owned field(s) ${droppedSellerFields.join(', ')}`
+      );
+    }
     const productData = {
-      ...req.body,
+      ...sellerWritable,
       seller: req.seller._id,
+      verificationStatus: 'pending',
     };
 
     const product = new Product(productData);

@@ -430,3 +430,92 @@ export function describeRequired() {
 export function formatMissingForSheet(missing, line, title) {
   return `Row ${line}${title ? ` (${title})` : ''}: missing required ${missing.map(sheetTextFor).join(', ')}`;
 }
+
+/*
+ * Which fields an upload caller may actually set.
+ *
+ * The single-product door built its document with `{ ...req.body, manufacturer,
+ * isManufacturerProduct: true }`. Everything else came from the request, and that
+ * is a privilege escalation, verified against the running API rather than
+ * reasoned about: posting `verificationStatus: "verified"` produced a listing that
+ * was stored as verified and appeared in the public catalogue immediately, with no
+ * review, defeating the whole approval workflow. `isSponsored: true` - a placement
+ * the desk sells and controls - was equally self-serviceable.
+ *
+ * So the door takes an ALLOW-LIST of catalogue fields a manufacturer may write, and
+ * ignores everything else. It is derived from the model's own paths minus
+ * SERVER_OWNED_FIELDS, which means:
+ *  - a new schema field is NOT writable until someone adds it here on purpose
+ *    (silently inheriting a new capability is how the last one got in);
+ *  - the privilege fields cannot be set by shape, alias, nesting or spelling: they
+ *    are dropped by name before the document is built.
+ * The route logs what it dropped, because a caller silently losing data to a
+ * security rule wastes everyone's afternoon.
+ */
+export const SERVER_OWNED_FIELDS = [
+  // review workflow
+  'verificationStatus',
+  'verifiedAt',
+  'verifiedBy',
+  'verificationNotes',
+  'rejectionReason',
+  'dataCorrectedAt',
+  'submittedAt',
+  'lastUpdatedAt',
+  // placement and commercial controls
+  'isSponsored',
+  'sponsoredBy',
+  'sponsoredAt',
+  'commissionPercentage',
+  'totalEarnings',
+  // ownership and lifecycle, set by the door or by admin action
+  'manufacturer',
+  'seller',
+  'manufacturerSellerId',
+  'manufacturerProduct',
+  'brandSourceProduct',
+  'supplyClaim',
+  'isManufacturerProduct',
+  'isActive',
+  'isRemoved',
+  'removedAt',
+  'removedBy',
+  'blockedByAdmin',
+  'blockReason',
+  'isDiscontinued',
+  'discontinuedAt',
+  'discontinuedBy',
+  // identity and aggregates the system owns
+  'itemCode',
+  'uniqueId',
+  'listing',
+  'ratings',
+  'totalRatings',
+  'totalReviews',
+  'viewCount',
+  'sellerOffer',
+  'isUnderSaleEvent',
+  'saleEventId',
+  'effectivePrice',
+  'originalDiscountedPrice',
+  '__v',
+  '_id',
+];
+
+/** @returns {{ values: object, dropped: string[] }} */
+export function pickUploadableFields(body = {}, schemaPaths = []) {
+  const writable = new Set(
+    (schemaPaths.length ? schemaPaths : Object.keys(body)).filter(
+      (p) => !p.startsWith('__') && !SERVER_OWNED_FIELDS.includes(p) && p !== '_id'
+    )
+  );
+  const values = {};
+  const dropped = [];
+  for (const [key, value] of Object.entries(body || {})) {
+    if (writable.has(key)) values[key] = value;
+    else if (SERVER_OWNED_FIELDS.includes(key)) dropped.push(key);
+    // an unknown key is neither accepted nor reported as a violation: it is
+    // simply not a field on the model, and mongoose would drop it anyway
+  }
+  return { values, dropped };
+}

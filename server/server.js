@@ -78,7 +78,7 @@ import siteContentRoutes from './routes/siteContent.js';
 import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { requestContext, snapshot as metricSnapshot, recordError } from './middleware/requestContext.js';
-import { errorSurface } from './middleware/errorSurface.js';
+import { errorSurface, securityHeaders } from './middleware/errorSurface.js';
 import partnerRankingRoutes from './routes/partnerRanking.js';
 import brandLogoRoutes from './routes/brandLogos.js';
 import sessionGuard from './middleware/sessionGuard.js';
@@ -171,6 +171,7 @@ app.use(requestContext);
  * through it. See middleware/errorSurface.js for why this is a boundary rather
  * than 300 individual edits.
  */
+app.use(securityHeaders);
 app.use(errorSurface);
 
 /*

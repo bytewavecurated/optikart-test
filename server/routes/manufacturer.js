@@ -2,7 +2,12 @@ import { otpBypassAllowed } from '../config/authMode.js';
 import { saveUpload, StoragePolicyError } from '../services/storage.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import { brandOwnersByFoldedName, foldBrand } from '../services/brandOwnership.js';
-import { missingProductFields, describeRequired, sheetTextFor } from '../services/productRequirements.js';
+import {
+  missingProductFields,
+  describeRequired,
+  sheetTextFor,
+  pickUploadableFields,
+} from '../services/productRequirements.js';
 import { brandQueue, decideAsManufacturer } from '../services/listingApproval.js';
 import express from 'express';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
@@ -722,10 +727,37 @@ router.post('/products', verifyManufacturer, async (req, res) => {
       };
     }
 
+    /*
+     * Allow-list applied to the body before the document exists.
+     *
+     * This door used to spread req.body into `new Product(...)`, which meant a
+     * manufacturer could set any field the schema knows about. Verified against the
+     * running API: `verificationStatus: 'verified'` came back stored as verified and
+     * listed in the public catalogue with no review at all - the entire listing
+     * approval workflow (brands, supply claims, desk queue) bypassed by one extra
+     * key in a JSON body - and `isSponsored: true` bought a placement the desk
+     * sells. See services/productRequirements.js for the field list and why it is a
+     * deny-by-default derivation rather than a blocklist.
+     */
+    const { values: uploadable, dropped } = pickUploadableFields(incoming, Object.keys(Product.schema.paths));
+    if (dropped.length) {
+      /*
+       * Named in the log, and in the response, because a caller whose extra field
+       * is silently ignored will assume it was applied. `verificationStatus` from a
+       * manufacturer is also worth a line in the log: it is either an integration
+       * bug or someone probing, and both are worth seeing.
+       */
+      console.warn(
+        `POST /manufacturer/products from ${req.manufacturer.email}: ignored server-owned field(s) ${dropped.join(', ')}`
+      );
+    }
+
     const productData = {
-      ...incoming,
+      ...uploadable,
+      // Owned by the door, never by the caller.
       manufacturer: req.manufacturer._id,
       isManufacturerProduct: true,
+      verificationStatus: 'pending',
     };
 
     const product = new Product(productData);
@@ -859,7 +891,34 @@ router.put('/products/:id', verifyManufacturer, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
-    Object.assign(product, req.body);
+    /*
+     * The update door used to be `Object.assign(product, req.body)`, which is the
+     * single most permissive line in this controller: on an EXISTING product a
+     * manufacturer could set `verificationStatus: 'verified'` to publish past the
+     * review queue, `isSponsored: true` to buy a placement nobody sold them,
+     * `blockedByAdmin: false` to undo a desk takedown, or - worst, because it
+     * rewrites the ownership the query just enforced - `manufacturer` itself.
+     *
+     * Allow-listed like creation. Two fields are additionally held back below,
+     * because they are the desk's to set and the model's to reset: ownership and
+     * review state. Editing a listing does not re-verify it; the model's
+     * pre('save') drops verificationStatus to pending whenever a described field
+     * changes, and that behaviour is relied upon here rather than duplicated.
+     */
+    const { values: editable, dropped: droppedUpdate } = pickUploadableFields(
+      req.body,
+      Object.keys(Product.schema.paths)
+    );
+    if (droppedUpdate.length) {
+      console.warn(
+        `PUT /products/:id by ${req.manufacturer.email}: ignored server-owned field(s) ${droppedUpdate.join(', ')}`
+      );
+    }
+    // Ownership and lifecycle remain the desk's / the door's, never the caller's.
+    delete editable.manufacturer;
+    delete editable.isManufacturerProduct;
+    delete editable.seller;
+    Object.assign(product, editable);
     await product.save();
 
     res.json({

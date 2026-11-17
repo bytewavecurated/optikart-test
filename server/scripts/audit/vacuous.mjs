@@ -112,6 +112,51 @@ for (const file of testFiles) {
 }
 check(`no assertion that cannot fail across ${testFiles.length} test files`, true);
 
+let checkedGuardedCount = 0;
+const unverifiable = [];
+/* ── 1b. `if (!check(...))` against a helper that returns nothing ──────────────
+ *
+ * Found in the wild today: a suite's `check()` pushed to results, printed its
+ * line, and returned nothing. Every guard written as
+ * `if (!check('...')) return finish();` therefore evaluated `!undefined` -> true,
+ * so the group ran its FIRST assertion, called finish() and exited 0. It reported
+ * `1/1 checks passed` as a green group while measuring one of twenty-one designed
+ * checks - and nothing in the output looked wrong unless you knew the number to
+ * expect.
+ *
+ * The pattern is legitimate when check() returns its verdict, so the rule is the
+ * combination, not the syntax: a file that guards on check()'s return value MUST
+ * have a helper that returns one.
+ */
+const guardless = [];
+for (const file of testFiles) {
+  const code = stripComments(fs.readFileSync(file, 'utf8'));
+  /*
+   * Only flag the DANGEROUS COMBINATION when it is actually present: a guard on
+   * the helper's return value, plus a helper definition we can read that returns
+   * nothing. My first version treated "could not parse the definition" as a
+   * violation and reported three files that never guard on check() at all. A rule
+   * with false positives is not a strict rule - it is the next person's `|| true`,
+   * added to make the noise stop.
+   */
+  const guards = [...code.matchAll(/if\s*\(\s*!\s*check\s*\(/g)];
+  if (!guards.length) continue;
+  const def = code.match(
+    /(?:const|let|var)\s+check\s*=\s*(?:\([^)]*\)\s*=>|function\s*\/?\*?\s*\([^)]*\))\s*\{([\s\S]{0,700}?)\n\s*\};?/
+  );
+  if (!def) {
+    unverifiable.push(rel(file));
+    continue;
+  }
+  if (/\breturn\s+\S/.test(def[1])) checkedGuardedCount += 1;
+  else guardless.push(`${rel(file)}: ${guards.length} guard(s) on a check() that returns no value`);
+}
+check(
+  'suites that guard on !check(...) define a check() returning its verdict',
+  guardless.length === 0,
+  `${guardless.join(' | ') || 'no violations'}; readable guards verified in ${checkedGuardedCount}, definition shape unrecognised in ${unverifiable.length ? unverifiable.join(', ') : 'none'}`
+);
+
 /* ── 2. a group that ran no checks is not a pass ────────────────────────────── */
 /*
  * The harness counts `n/N checks passed` per group. A group whose summary is

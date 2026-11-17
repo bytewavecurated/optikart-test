@@ -40,6 +40,7 @@ const SUITES = [
   ['prescription and stock safety', 'scripts/safety_e2e.mjs'],
   ['catalogue and access control', 'scripts/catalog_access_e2e.mjs'],
   ['delivery dispatch', 'scripts/dispatch_e2e.mjs'],
+  ['privilege boundaries on listings', 'scripts/privilege_boundary_e2e.mjs'],
   ['seller ranking', 'scripts/ranking_e2e.mjs'],
   ['partner flow', 'scripts/partner_flow_e2e.mjs'],
   ['brand supply claims', 'scripts/listing_approval_e2e.mjs'],
@@ -177,13 +178,55 @@ const run = (cmd, args, opts = {}) =>
       ...opts,
     });
     let tail = '';
+    /*
+     * Failure detail is kept in FULL, and separately from the routine output.
+     *
+     * The previous ring buffer kept only the last 4000 characters, so on a group
+     * with 21 checks the FAIL line that named the cause could be evicted before the
+     * harness printed its summary - and I spent three debugging cycles today
+     * reading "FAIL <group>" with no reason attached, guessing at causes the suite
+     * had in fact reported. Retaining the failing assertions verbatim is the whole
+     * point of running them.
+     */
+    const failures = [];
+    const totals = { passed: 0, ran: 0 };
+    /*
+     * Line-buffered, because stdout arrives in arbitrary chunks. My first version
+     * tested each chunk line-by-line, so a `FAIL  <label>` that happened to split
+     * across two chunks matched neither pattern in full and the group reported a
+     * bare "FAIL" with no reason at all - which cost me three rounds of guessing at
+     * causes the suite had actually printed. Line boundaries are a property of the
+     * stream, not of the data, and the harness has to respect them.
+     */
+    let partial = '';
     const capture = (chunk) => {
-      tail += chunk.toString();
-      if (tail.length > 8000) tail = tail.slice(-4000);
+      const text = partial + chunk.toString();
+      const lines = text.split('\n');
+      partial = lines.pop() ?? '';
+      tail += text;
+      if (tail.length > 24000) tail = tail.slice(-16000);
+      for (const line of lines) {
+        if (/^FAIL\b/iu.test(line.trim()) || /^\s+-\s/.test(line)) failures.push(line.trimEnd());
+        const m = line.match(/(\d+)\/(\d+)\s+.*checks? passed|(\d+)\/(\d+)\s+.*assertions? passed/iu);
+        if (m) {
+          totals.passed = Number(m[1] ?? m[3]);
+          totals.ran = Number(m[2] ?? m[4]);
+        }
+        // a group that stopped early says so in its own words; keep it visible
+        if (/stopped early|CRASHED/iu.test(line)) failures.push(line.trimEnd());
+      }
+      if (failures.length > 60) failures.splice(0, failures.length - 60);
     };
     child.stdout.on('data', capture);
     child.stderr.on('data', capture);
-    child.on('exit', (code) => resolve({ code: code ?? 1, tail }));
+    child.on('exit', (code) => {
+      // the tail of the last line never carried a newline; do not lose it
+      if (partial) {
+        if (/^FAIL\b|stopped early|CRASHED/iu.test(partial.trim())) failures.push(partial.trimEnd());
+        tail += partial;
+      }
+      resolve({ code: code ?? 1, tail, failures, totals });
+    });
   });
 
 let mongoUriForSuites = '';
@@ -383,11 +426,11 @@ const results = [];
 let totalSkipped = 0;
 for (const [label, script] of AUDITS) {
   const r = await run('node', [script]);
-  results.push({ label, ok: r.code === 0, tail: r.tail });
+  results.push({ label, ok: r.code === 0, tail: r.tail, failures: r.failures, totals: r.totals });
 }
 for (const [label, script] of SUITES) {
   const r = await run('node', [script, BASE]);
-  results.push({ label, ok: r.code === 0, tail: r.tail });
+  results.push({ label, ok: r.code === 0, tail: r.tail, failures: r.failures, totals: r.totals });
 }
 
 teardown();
@@ -395,13 +438,19 @@ teardown();
 for (const r of results) {
   console.log(`\n${r.ok ? 'PASS' : 'FAIL'}  ${r.label}`);
   if (!r.ok) {
-    console.log(
-      r.tail
-        .split('\n')
-        .filter((l) => /FAIL|Error|expected/iu.test(l))
-        .slice(-20)
-        .join('\n')
-    );
+    /*
+     * Every FAIL line the group emitted, in order, without the old keyword filter
+     * (which dropped the detail lines that carried the reason). If the ring buffer
+     // still overflowed, the count says so rather than presenting a short list as
+     // the whole story.
+     */
+    const lines = (
+      r.failures && r.failures.length ? r.failures : r.tail.split('\n').filter((l) => /FAIL/iu.test(l))
+    ).slice(-40);
+    console.log(lines.join('\n'));
+    if (r.totals && r.totals.ran) {
+      console.log(`     ${r.totals.passed}/${r.totals.ran} of its own checks passed`);
+    }
   } else {
     console.log(r.tail.trim().split('\n').filter(Boolean).pop());
     /*

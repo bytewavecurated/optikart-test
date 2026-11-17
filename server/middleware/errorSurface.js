@@ -44,6 +44,41 @@ const scrub = (value, depth = 0) => {
   return value;
 };
 
+/*
+ * Baseline response headers, set beside the error surface because both decide what
+ * leaves the process.
+ *
+ * The app had no helmet and no setHeader call anywhere, while the browser keeps a
+ * bearer token in localStorage. Two of these are load-bearing, not decorative:
+ *
+ *  - X-Content-Type-Options: nosniff, because /uploads serves user-supplied files
+ *    from the SAME ORIGIN as the app. A browser that sniffs an uploaded file as HTML
+ *    or script turns a stored upload into code running with our cookies and
+ *    localStorage in scope - which is also why services/storage.js refuses SVG on
+ *    local disk; this header covers everything else.
+ *  - Strict-Transport-Security in production, so one http link cannot downgrade a
+ *    session bearer token onto the wire in clear.
+ *
+ * Deliberately NOT set here: a Content-Security-Policy. The built client uses inline
+ * style attributes and CRA-injected scripts, so a CSP written without measuring what
+ * the running pages actually load would break the storefront while looking like
+ * hardening. That belongs in its own change with the browser console compared before
+ * and after - and I would rather leave the gap named than paper over it with a policy
+ * I have not exercised.
+ */
+export function securityHeaders(req, res, next) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(self), camera=(), microphone=()');
+  if (isProduction()) {
+    // Six months, no subdomains: long enough to matter, short enough that a
+    // misconfigured host is recoverable inside a quarter rather than indefinitely.
+    res.setHeader('Strict-Transport-Security', 'max-age=15768000');
+  }
+  next();
+}
+
 export function errorSurface(req, res, next) {
   const original = res.json.bind(res);
 
