@@ -10,7 +10,7 @@ import { registerValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifyToken, verifyAnyPrincipal } from '../middleware/auth.js';
 import { uploadPrescription } from '../middleware/upload.js';
-import { sendOTP, sendPasswordReset } from '../services/email.js';
+import { describeOtpDelivery, sendOTP, sendPasswordReset } from '../services/email.js';
 import { otpBypassAllowed } from '../config/authMode.js';
 import { idleWindowMinutes, sessionState, CONTROLLED_ROLES } from '../services/sessionActivity.js';
 
@@ -147,12 +147,22 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
       user.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       await user.save();
 
-      // Send OTP to email
-      await sendOTP(user.email, otp, 'login');
+      /*
+       * The answer depends on whether the code was actually sent. See
+       * describeOtpDelivery: the message used to be unconditional, so an
+       * unconfigured mailer produced a page telling people to check an inbox that
+       * would never receive anything.
+       */
+      const delivery = describeOtpDelivery(await sendOTP(user.email, otp, 'login'), { purpose: 'sign-in' });
+      if (!delivery.ok) {
+        return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+      }
 
       res.json({
         success: true,
-        message: 'OTP sent to your email. Please verify to complete login.',
+        message: delivery.message,
+        devCode: delivery.devCode,
+        devCode: delivery.devCode,
         requiresOTP: true,
         email: user.email,
       });
@@ -182,12 +192,49 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
     user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendOTP(user.email, otp, 'login');
+    /*
+     * THE CODE IS MAILED, NEVER RETURNED.
+     *
+     * This endpoint takes a phone number, requires no session, and used to answer
+     * `{ success: true, message: 'OTP sent successfully.', otp }` - the live
+     * six-digit code in the body. Its partner POST /auth/verify-otp also needs no
+     * session and trades that code for `generateToken(user._id)`, a seven-day
+     * bearer token. Two unauthenticated requests plus any 10-digit number anyone
+     * knows, buys or guesses was therefore a complete account takeover for every
+     * shopper - and the 404 text here ("Phone number not registered") confirms
+     * which numbers hold accounts, so even blind phone enumeration pays off.
+     *
+     * Returning the code is a development convenience that survived into shipped
+     * code, and it is the reason an OTP exists in the first place: it proves the
+     * person holding the phone got the message. Anything the response can carry,
+     * curl can carry.
+     *
+     * Local development is not left stuck: when no mail service is configured,
+     * describeOtpDelivery surfaces the value as `devCode` - outside production
+     * only, and labelled as such - and the seeded test accounts keep the
+     * AUTH_OTP_BYPASS path. Production can only ever mail the code or fail
+     * loudly, and a failure now answers 503 with "there is nothing to wait for in
+     * your inbox" instead of a promise.
+     */
+    const delivery = describeOtpDelivery(await sendOTP(user.email, otp, 'reset'), { purpose: 'verification' });
+    if (!delivery.ok) {
+      /*
+       * Nothing was delivered, so the stored code is cleared rather than left
+       * live: an OTP that nobody received but that still verifies would be a
+       * permanent, invisible door with a known key format.
+       */
+      user.resetOtp = undefined;
+      user.resetOtpExpiry = undefined;
+      await user.save();
+      return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+    }
 
     res.json({
       success: true,
-      message: 'OTP sent successfully.',
-      otp,
+      message: delivery.message,
+      // Populated only off production and only when email is unconfigured.
+      devCode: delivery.devCode,
+      requiresOTP: true,
     });
   } catch (error) {
     console.error('Send OTP error:', error);
@@ -195,7 +242,7 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
   }
 });
 
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', otpLimiter, async (req, res) => {
   try {
     const { phone, otp } = req.body;
 
@@ -236,7 +283,7 @@ router.post('/verify-otp', async (req, res) => {
 });
 
 // Verify login OTP - completes login after OTP verification
-router.post('/verify-login-otp', async (req, res) => {
+router.post('/verify-login-otp', otpLimiter, async (req, res) => {
   try {
     const { email, otp } = req.body;
 
@@ -379,11 +426,14 @@ router.post('/forgot-password', otpLimiter, async (req, res) => {
     user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    await sendPasswordReset(email, otp);
+    const delivery = describeOtpDelivery(await sendPasswordReset(email, otp), { purpose: 'password reset' });
+    if (!delivery.ok) {
+      return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+    }
 
     res.json({
       success: true,
-      message: 'Password reset OTP sent to your email.',
+      message: delivery.message,
     });
   } catch (error) {
     console.error('Forgot password error:', error);
@@ -391,7 +441,7 @@ router.post('/forgot-password', otpLimiter, async (req, res) => {
   }
 });
 
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', authLimiter, async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
 

@@ -1,4 +1,5 @@
 import express from 'express';
+import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
@@ -9,7 +10,7 @@ import User from '../models/User.js';
 import Seller from '../models/Seller.js';
 import Order from '../models/Order.js';
 import { verifyToken, verifyAdmin, verifyExecutive } from '../middleware/auth.js';
-import { sendOTP, sendOrderStatusNotification } from '../services/email.js';
+import { describeOtpDelivery, sendOTP, sendOrderStatusNotification } from '../services/email.js';
 import { settleDeliveredOrder } from '../services/commissionTracking.js';
 import { otpBypassAllowed } from '../config/authMode.js';
 
@@ -27,7 +28,7 @@ const generateExecutiveToken = (executiveId) => {
 };
 
 // Executive Login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -114,12 +115,16 @@ router.post('/login', async (req, res) => {
       executive.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await executive.save();
 
-      await sendOTP(email, loginOtp, 'login');
+      const delivery = describeOtpDelivery(await sendOTP(email, loginOtp, 'login'), { purpose: 'executive sign-in' });
+      if (!delivery.ok) {
+        return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+      }
 
       res.json({
         success: true,
         requiresOTP: true,
-        message: 'Login OTP sent to your email.',
+        message: delivery.message,
+        devCode: delivery.devCode,
         executiveId: executive._id,
       });
     }
@@ -130,7 +135,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Verify Executive Login OTP
-router.post('/verify-login-otp', async (req, res) => {
+router.post('/verify-login-otp', otpLimiter, async (req, res) => {
   try {
     const { executiveId, otp } = req.body;
 

@@ -5,13 +5,14 @@ import { brandOwnersByFoldedName, foldBrand } from '../services/brandOwnership.j
 import { missingProductFields, describeRequired, sheetTextFor } from '../services/productRequirements.js';
 import { brandQueue, decideAsManufacturer } from '../services/listingApproval.js';
 import express from 'express';
+import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import Manufacturer from '../models/Manufacturer.js';
 import Product from '../models/Product.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 import ManufacturerStaff from '../models/ManufacturerStaff.js';
-import { sendOTP } from '../services/email.js';
+import { describeOtpDelivery, sendOTP } from '../services/email.js';
 import multer from 'multer';
 import xlsx from 'xlsx';
 import { verifyManufacturer } from '../middleware/auth.js';
@@ -471,7 +472,7 @@ const generateManufacturerToken = (manufacturerId) => {
 };
 
 // Manufacturer Login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -590,7 +591,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Verify Manufacturer Login OTP
-router.post('/verify-login-otp', async (req, res) => {
+router.post('/verify-login-otp', otpLimiter, async (req, res) => {
   try {
     const { manufacturerId, otp } = req.body;
 

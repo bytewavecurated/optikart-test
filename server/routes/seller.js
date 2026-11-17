@@ -9,7 +9,7 @@ import Product from '../models/Product.js';
 import { sellerRegisterValidation, loginValidation } from '../middleware/validate.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifySeller } from '../middleware/auth.js';
-import { sendOTP, sendOrderStatusNotification } from '../services/email.js';
+import { describeOtpDelivery, sendOTP, sendOrderStatusNotification } from '../services/email.js';
 import { settleDeliveredOrder } from '../services/commissionTracking.js';
 import { buildLocation, resolvePincode } from '../services/geo.js';
 import { createOrder as createRazorpayOrder } from '../services/razorpay.js';
@@ -108,11 +108,34 @@ router.post('/register', authLimiter, sellerRegisterValidation, async (req, res)
 
     await seller.save();
 
-    await sendOTP(email, phoneOtp, 'phone');
+    /*
+     * Unlike the sign-in routes, this one must NOT fail when the code could not
+     * be mailed: the shop record has been created, a 503 here would leave the
+     * person believing registration failed and send them to register again
+     * against a now-taken email. What it must not do is claim a code was sent -
+     * the client follows this response straight into POST /seller/verify-phone, so
+     * a false promise here becomes a verification step with no code to enter.
+     *
+     * So the answer stays 201 and states the delivery outcome, with the code
+     * surfaced as `devCode` only in the unconfigured-mailer, non-production case
+     * that describeOtpDelivery already governs.
+     */
+    const phoneDelivery = describeOtpDelivery(await sendOTP(email, phoneOtp, 'phone'), {
+      purpose: 'phone verification',
+    });
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful. Please verify your phone with the OTP sent.',
+      message: phoneDelivery.ok
+        ? 'Registration successful. Please verify your phone with the code we sent.'
+        : 'Shop created, but we could not send the phone-verification code (email is not working on this server). ' +
+          'Your account is active; phone verification can be completed once the code can be delivered.',
+      phoneVerification: {
+        required: true,
+        delivered: Boolean(phoneDelivery.ok && phoneDelivery.status === 200 && !phoneDelivery.devCode),
+        devCode: phoneDelivery.devCode || null,
+        reason: phoneDelivery.ok ? null : phoneDelivery.reason,
+      },
       /*
        * `sellerId` has always been the Mongo _id in this API's responses, and a
        * lot of screens depend on that. The readable shop code is the document
@@ -258,11 +281,15 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
       seller.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await seller.save();
 
-      await sendOTP(email, loginOtp, 'login');
+      const delivery = describeOtpDelivery(await sendOTP(email, loginOtp, 'login'), { purpose: 'shop sign-in' });
+      if (!delivery.ok) {
+        return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+      }
 
       res.json({
         success: true,
-        message: 'Login OTP sent to your email.',
+        message: delivery.message,
+        devCode: delivery.devCode,
         requiresOTP: true,
         sellerId: seller._id,
       });
@@ -273,7 +300,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
   }
 });
 
-router.post('/verify-login-otp', async (req, res) => {
+router.post('/verify-login-otp', otpLimiter, async (req, res) => {
   try {
     const { sellerId, otp } = req.body;
 

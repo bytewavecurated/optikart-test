@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { isProduction } from '../config/authMode.js';
 
 /*
  * Three bugs lived in the seven lines above, and all three were silent:
@@ -43,7 +44,7 @@ const mailTransport = () => {
  * honest about it instead of shipping a "check your inbox" dead end.
  */
 const undeliverable = (otp, email) => {
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction()) {
     console.error(`OTP delivery is impossible: SMTP is not configured in production (subject account ${email}).`);
     return { success: false, delivered: false, reason: 'smtp-unconfigured' };
   }
@@ -71,7 +72,7 @@ const undeliverable = (otp, email) => {
 async function deliver(mailOptions, what = 'email') {
   const transport = mailTransport();
   if (!transport) {
-    if (process.env.NODE_ENV === 'production') {
+    if (isProduction()) {
       console.error(`[mail] ${what} not sent: SMTP is not configured in production (${mailOptions.to}).`);
       return { success: false, delivered: false, reason: 'smtp-unconfigured' };
     }
@@ -90,6 +91,50 @@ async function deliver(mailOptions, what = 'email') {
       error: String(error?.message || error).slice(0, 200),
     };
   }
+}
+
+/**
+ * Turn an OTP send result into what an auth route should answer.
+ *
+ * The bug this replaces lived in the response text: the routes awaited sendOTP,
+ * threw the result away, and answered "OTP sent to your email. Please verify to
+ * complete login." On a machine with no SMTP the send had already returned
+ * { success: false }. The person then waited for an email that was never sent,
+ * with the only copy of the code sitting in our server log - which reads as a
+ * broken account and is in fact an unconfigured mailer, invisible to everyone
+ * except the one person locked out.
+ *
+ * Three outcomes, each with its own honest sentence:
+ *   delivered            -> say it was sent.
+ *   dev fallback         -> say email is unconfigured *here*, and return the code
+ *                           for local use. `devCode` only ever arrives with
+ *                           success from a non-production send (see undeliverable).
+ *   send failed/refused  -> 503, and explicitly say no code was issued, so the
+ *                           client stops telling people to check their inbox.
+ */
+export function describeOtpDelivery(result, { purpose = 'sign-in' } = {}) {
+  if (result && result.success && result.delivered) {
+    return { ok: true, status: 200, message: `A verification code is on its way to your email.`, devCode: null };
+  }
+  if (result && result.success && result.devCode) {
+    return {
+      ok: true,
+      status: 200,
+      message:
+        `Email is not configured on this server, so the ${purpose} code could not be posted to your inbox - ` +
+        'it is included as devCode instead. This never happens in production.',
+      devCode: String(result.devCode),
+    };
+  }
+  return {
+    ok: false,
+    status: 503,
+    message:
+      `We could not send the ${purpose} code, because email delivery is not working on this server. ` +
+      'No code has been issued, so there is nothing to wait for in your inbox.',
+    reason: (result && result.reason) || 'send-failed',
+    devCode: null,
+  };
 }
 
 export const sendOTP = async (email, otp, type = 'login') => {

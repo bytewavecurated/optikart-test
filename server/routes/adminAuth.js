@@ -1,10 +1,11 @@
 import express from 'express';
+import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifyToken } from '../middleware/auth.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import User from '../models/User.js';
-import { sendOTP } from '../services/email.js';
+import { describeOtpDelivery, sendOTP } from '../services/email.js';
 import { otpBypassAllowed } from '../config/authMode.js';
 
 const router = express.Router();
@@ -21,7 +22,7 @@ const generateAdminToken = (userId) => {
 };
 
 // Admin login with OTP and 2 attempt limit, 5 min lockout
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -113,11 +114,15 @@ router.post('/login', async (req, res) => {
       await admin.save();
 
       // Send OTP to email
-      await sendOTP(admin.email, otp, 'login');
+      const delivery = describeOtpDelivery(await sendOTP(admin.email, otp, 'login'), { purpose: 'admin sign-in' });
+      if (!delivery.ok) {
+        return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+      }
 
       res.json({
         success: true,
-        message: 'OTP sent to your email. Please verify to complete login.',
+        message: delivery.message,
+        devCode: delivery.devCode,
         requiresOTP: true,
         email: admin.email,
       });
@@ -129,7 +134,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Verify admin login OTP
-router.post('/verify-otp', async (req, res) => {
+router.post('/verify-otp', otpLimiter, async (req, res) => {
   try {
     const { email, otp } = req.body;
 

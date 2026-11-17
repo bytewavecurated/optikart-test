@@ -66,6 +66,7 @@ const SUITES = [
   ['brand registration and logos', 'scripts/brand_logo_e2e.mjs'],
   ['product upload parity', 'scripts/product_upload_parity_e2e.mjs'],
   ['entity codes over http', 'scripts/entity_ids_e2e.mjs'],
+  ['otp takeover chain', 'scripts/otp_takeover_chain_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.
@@ -82,6 +83,8 @@ const AUDITS = [
   ['entity code generation', 'server/scripts/entity_ids_unit.mjs'],
   ['storage guards and asset inventory', 'server/scripts/storage_upload_guards_unit.mjs'],
   ['harness disk guard', 'scripts/disk_headroom_unit.mjs'],
+  ['security audit gate', 'server/scripts/audit/security.mjs'],
+  ['otp delivery gate', 'server/scripts/otp_delivery_gate_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
   ['mounted routes', 'server/scripts/audit/routes-mounted.mjs'],
   ['controls that only announce success', 'scripts/audit/fake-actions.mjs'],

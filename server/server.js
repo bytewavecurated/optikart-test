@@ -1,7 +1,24 @@
 import './config/loadEnv.js'; // must precede every env-reading import (see that file)
 import { verifyToken, verifyAdmin } from './middleware/auth.js';
 import dns from 'node:dns';
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+/*
+ * DNS is left to the container unless an operator asks otherwise.
+ *
+ * `dns.setServers(['8.8.8.8', '1.1.1.1'])` ran unconditionally here AND in seed.js,
+ * sending every hostname this process resolves through public resolvers instead of
+ * the deployment's own. In practice: private zones (a VPC-internal MongoDB, a
+ * route53 private record) stop resolving, /etc/hosts entries are ignored, and an
+ * environment with no direct DNS egress fails at resolution rather than at the
+ * service it was trying to reach. It was there to work around one container with a
+ * broken resolv.conf - an infrastructure problem wearing an app-code fix.
+ *
+ * To restore the old behaviour deliberately: DNS_OVERRIDE=8.8.8.8,1.1.1.1
+ */
+const dnsOverride = String(process.env.DNS_OVERRIDE || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+if (dnsOverride.length) dns.setServers(dnsOverride);
 
 import express from 'express';
 import mongoose from 'mongoose';
@@ -61,6 +78,7 @@ import siteContentRoutes from './routes/siteContent.js';
 import sellerStockRoutes from './routes/sellerStock.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { requestContext, snapshot as metricSnapshot, recordError } from './middleware/requestContext.js';
+import { errorSurface } from './middleware/errorSurface.js';
 import partnerRankingRoutes from './routes/partnerRanking.js';
 import brandLogoRoutes from './routes/brandLogos.js';
 import sessionGuard from './middleware/sessionGuard.js';
@@ -113,8 +131,18 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+/*
+ * Uploads arrive as multipart with their own per-file cap (see
+ * middleware/upload.js `limits.fileSize`), so the JSON parser is sized for
+ * documents - a product, an order, a list of ids. The previous 50mb applied to
+ * every route: a single unauthenticated POST could book 50mb of parse work, and
+ * several of those is an outage. It was never protecting an upload.
+ * Override with JSON_BODY_LIMIT when a real integration needs more.
+ */
+const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '1mb';
+
+app.use(express.json({ limit: JSON_BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: JSON_BODY_LIMIT }));
 
 const uploadDirs = [
   'uploads',
@@ -136,6 +164,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // First in the chain, so a rate-limited or malformed request still has an id a
 // customer can quote.
 app.use(requestContext);
+
+/*
+ * Installed immediately after the request id exists and before any router, so
+ * every 5xx response in the app - including ones no one has written yet - passes
+ * through it. See middleware/errorSurface.js for why this is a boundary rather
+ * than 300 individual edits.
+ */
+app.use(errorSurface);
 
 /*
  * Mounted once, for every /api path, instead of inside each role middleware.

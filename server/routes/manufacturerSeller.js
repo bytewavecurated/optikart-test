@@ -1,11 +1,12 @@
 import express from 'express';
+import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import { declareSupply, pauseListing } from '../services/listingApproval.js';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 import Product from '../models/Product.js';
-import { sendOTP } from '../services/email.js';
+import { describeOtpDelivery, sendOTP } from '../services/email.js';
 import { verifyManufacturerSeller } from '../middleware/auth.js';
 import { otpBypassAllowed } from '../config/authMode.js';
 
@@ -94,7 +95,7 @@ const generateManufacturerSellerToken = (sellerId) => {
 };
 
 // Manufacturer Seller Login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -179,12 +180,16 @@ router.post('/login', async (req, res) => {
       seller.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await seller.save();
 
-      await sendOTP(email, loginOtp, 'login');
+      const delivery = describeOtpDelivery(await sendOTP(email, loginOtp, 'login'), { purpose: 'retailer sign-in' });
+      if (!delivery.ok) {
+        return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+      }
 
       res.json({
         success: true,
         requiresOTP: true,
-        message: 'Login OTP sent to your email.',
+        message: delivery.message,
+        devCode: delivery.devCode,
         sellerId: seller._id,
       });
     }
@@ -195,7 +200,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Verify Manufacturer Seller Login OTP
-router.post('/verify-login-otp', async (req, res) => {
+router.post('/verify-login-otp', otpLimiter, async (req, res) => {
   try {
     const { sellerId, otp } = req.body;
 

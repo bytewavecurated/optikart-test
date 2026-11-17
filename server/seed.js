@@ -1,6 +1,23 @@
 import './config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import dns from 'node:dns';
-dns.setServers(['8.8.8.8', '1.1.1.1']);
+/*
+ * DNS is left to the container unless an operator asks otherwise.
+ *
+ * `dns.setServers(['8.8.8.8', '1.1.1.1'])` used to run unconditionally here,
+ * sending every hostname this process resolves through public resolvers instead of
+ * the deployment's own. In practice: private zones (a VPC-internal MongoDB, a
+ * route53 private record) stop resolving, /etc/hosts entries are ignored, and an
+ * environment with no direct DNS egress fails at resolution rather than at the
+ * service it was reaching for. It worked around one container's broken
+ * resolv.conf - an infrastructure problem wearing an application-code fix.
+ *
+ * To restore the old behaviour deliberately: DNS_OVERRIDE=8.8.8.8,1.1.1.1
+ */
+const dnsOverride = String(process.env.DNS_OVERRIDE || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+if (dnsOverride.length) dns.setServers(dnsOverride);
 
 import mongoose from 'mongoose';
 import User from './models/User.js';

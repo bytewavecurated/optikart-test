@@ -1,12 +1,13 @@
 import { otpBypassAllowed } from '../config/authMode.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import express from 'express';
+import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import jwt from 'jsonwebtoken';
 import otpGenerator from 'otp-generator';
 import DeliveryPartner from '../models/DeliveryPartner.js';
 import Order from '../models/Order.js';
 import { verifyToken, verifyAdmin, verifyDeliveryPartner } from '../middleware/auth.js';
-import { sendOTP } from '../services/email.js';
+import { describeOtpDelivery, sendOTP } from '../services/email.js';
 import {
   findNearbyDeliveryPartners,
   assignDeliveryPartner,
@@ -94,7 +95,7 @@ router.post('/register', verifyToken, verifyAdmin, async (req, res) => {
  * POST /api/delivery-partner/login
  * Delivery partner login
  */
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -196,12 +197,16 @@ router.post('/login', async (req, res) => {
       partner.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await partner.save();
 
-      await sendOTP(email, loginOtp, 'login');
+      const delivery = describeOtpDelivery(await sendOTP(email, loginOtp, 'login'), { purpose: 'partner sign-in' });
+      if (!delivery.ok) {
+        return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
+      }
 
       res.json({
         success: true,
         requiresOTP: true,
-        message: 'Login OTP sent to your email.',
+        message: delivery.message,
+        devCode: delivery.devCode,
         partnerId: partner._id,
       });
     }
@@ -219,7 +224,7 @@ router.post('/login', async (req, res) => {
  * POST /api/delivery-partner/verify-login-otp
  * Verify delivery partner login OTP
  */
-router.post('/verify-login-otp', async (req, res) => {
+router.post('/verify-login-otp', otpLimiter, async (req, res) => {
   try {
     const { partnerId, otp } = req.body;
 
