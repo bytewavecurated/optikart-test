@@ -8,7 +8,9 @@
     "deprovision:demo": "node scripts/deprovisionDemoData.js",
     "audit:contract": "node scripts/audit/api-contract.mjs",
     "audit:routes": "node scripts/audit/routes-mounted.mjs",
-    "build:client": "cd ../client && npm run build && rm -rf ../server/build && cp -r ../client/build ../server/build"
+    "build:client": "cd ../client && npm run build && rm -rf ../server/build && cp -r ../client/build ../server/build",
+    "fixtures:apply": "node fixtures/apply.mjs",
+    "audit:security": "node scripts/audit/security.mjs"
   },
   "dependencies": {
     "aws-sdk": "^2.1693.0",

@@ -167,6 +167,7 @@ router.post('/login', authLimiter, async (req, res) => {
     const testPartnerEmails = [
       'suresh.partner@optikart.com',
       'anjali.partner@optikart.com',
+      'settlements.partner@optikart.com',
       'ramesh.partner@optikart.com',
     ];
     // Second-factor OTP may only be skipped outside production, and only

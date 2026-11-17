@@ -37,15 +37,22 @@ jobs:
           --health-retries 10
 
     env:
-      # CI always runs in development mode: the server refuses SEED_ON_BOOT in
-      # production, and every suite asserts against seeded accounts. OTP is
-      # bypassed by that mode, so no job needs an SMTP box.
+      # CI always runs in development mode, so the OTP second factor is bypassed
+      # and no job needs an SMTP box.
+      #
+      # SEED_ON_BOOT is gone deliberately. The application no longer loads demo
+      # data on boot in ANY environment - the dataset used to delete the eleven
+      # collections it owns as its first act, which made a boot that "looks like an
+      # empty database" (including a wrong MONGODB_URI) a data-loss event that only
+      # NODE_ENV=production was fenced against. scripts/verify.mjs now applies
+      # server/fixtures explicitly before starting the API, with
+      # --expect-database taken from MONGODB_URI, so this job's data is created by the
+      # harness and a mistaken connection is refused instead of wiped.
       NODE_ENV: development
       # Nothing here verifies a token signed elsewhere, so any stable value
       # works - but it must exist, because every login route calls jwt.sign.
       JWT_SECRET: ci-only-secret-not-for-production-use-0123456789
       MONGODB_URI: mongodb://localhost:27017/eyewear-platform
-      SEED_ON_BOOT: "true"
       # The suites use cash on delivery for every order. A CI container has no
       # payment keys, and since the Razorpay clients became lazy nothing needs
       # them to boot.

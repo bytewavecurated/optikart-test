@@ -67,7 +67,16 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  */
 async function main() {
   const admin = await login('/admin/auth/login', 'samedayopticians@gmail.com', 'Sameday123@');
-  const partner = await login('/delivery-partner/login', 'suresh.partner@optikart.com', 'Partner123@');
+  /*
+   * This suite's own subject, seeded for it (see fixtures/demoData.js). A partner
+   * may withdraw once per calendar day, and `partner_flow_e2e.mjs` - which runs
+   * earlier in the same database - already spends suresh.partner's allowance and
+   * settles the row it queues. Borrowing that partner meant the settlement
+   * contract went unasserted whenever the order of groups happened to drain the
+   * queue first, and the group reported green or red depending on which suite ran
+   * before it rather than on whether the code was correct.
+   */
+  const partner = await login('/delivery-partner/login', 'settlements.partner@optikart.com', 'Partner123@');
   const seller = await login('/seller/login', 'opticalworld@gmail.com', 'Seller123@');
   if (!check('desk and partner sign in', !!(admin && partner && seller))) return finish();
 

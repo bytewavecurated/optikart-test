@@ -62,6 +62,7 @@ const main = async () => {
   const { default: DeliveryPartner } = await import('../models/DeliveryPartner.js');
   const { default: StaffRole } = await import('../models/StaffRole.js');
   const { default: Product } = await import('../models/Product.js');
+  const { default: Brand } = await import('../models/Brand.js');
 
   const removals = [
     ['users', await User.deleteMany({ email: { $in: flat } })],
@@ -78,11 +79,30 @@ const main = async () => {
   removals.forEach(([label, res]) => console.log(`  removed ${res.deletedCount ?? 0} ${label}`));
 
   if (process.env.REMOVE_DEMO_CATALOGUE === 'yes') {
+    /*
+     * Products AND brand records, because the demo dataset registers brands the
+     * moment a logo is approved, and a brand left behind with no catalogue under it
+     * still shows in the rails and still owns its name in the one-brand-one-owner
+     * index - so clearing products alone leaves the storefront advertising a brand
+     * nobody sells.
+     *
+     * The deletion is unconditional within the collection, and says so: it is
+     * keyed on nothing, so a shop that has already entered real products into this
+     * same database loses them here. That is why this path needs its own
+     * confirmation rather than riding along with removing demo logins, and why the
+     * count is printed afterwards instead of trusted from the flag.
+     */
     const products = await Product.deleteMany({});
+    const brands = await Brand.deleteMany({});
+    const stock = await (await import('../models/SellerStock.js')).default.deleteMany({});
     console.log(`  removed ${products.deletedCount ?? 0} products`);
-    console.log('  NOTE: that deleted every product, including any real ones entered into this database.');
+    console.log(`  removed ${brands.deletedCount ?? 0} brand records`);
+    console.log(`  removed ${stock.deletedCount ?? 0} retailer stock rows`);
+    console.log(
+      '  NOTE: these were deleted by collection, not by demo identity - every product, brand and stock row in this database is gone, including real ones.'
+    );
   } else {
-    console.log('  catalogue left untouched (set REMOVE_DEMO_CATALOGUE=yes to clear products too)');
+    console.log('  catalogue left untouched (set REMOVE_DEMO_CATALOGUE=yes to clear products, brands and stock rows)');
   }
 
   const remainingAdmins = await User.countDocuments({ role: 'admin', isActive: true });

@@ -2,37 +2,80 @@
 
 Deploy, diagnose, and what is knowingly left undone.
 
-## Demo seed, staging, and production
+## Demo fixtures, staging, and production
 
-`SEED_ON_BOOT` defaults to `auto`. Outside production, `auto` seeds an empty
-database and `true` forces it - the verification suites sign in as seeded
-accounts, so the seed stays as the dev/CI fixture.
+**Nothing seeds at boot, in any environment.** The demo dataset used to be loaded
+by `server.js` on startup - `auto` when the database looked empty, `true` when
+forced - and its first act is deleting the eleven collections it owns plus seller
+stock. That made "looks empty" load-bearing, and "looks empty" is also what a
+mistyped `MONGODB_URI` and a staging box pointed at the wrong cluster look like; the
+instinctive recovery from an unexpectedly-empty database (`SEED_ON_BOOT=true`) was
+the same wipe. Production was fenced off with `ALLOW_DEMO_SEED`, which protected one
+mode out of several, and protected it by declining to seed rather than by making the
+dataset unreachable.
 
-**In production nothing is auto-seeded, not even against a completely empty
-database**, which is exactly what a fresh production database looks like on its
-first boot. Left as it was, an ordinary first boot would have deleted whatever
-collections the seed owns and rewritten demo sellers, shoppers, manufacturers
-and partners whose fixed passwords are published in `LOGINS.md` - a live site
-with working demo logins and a "degraded but healthy" look.
+The app now cannot reach it at all. The dataset lives in `server/fixtures/`:
 
-To load demo data in production mode deliberately (a staging box), set BOTH:
+| file                                          | role                                                                 |
+| --------------------------------------------- | -------------------------------------------------------------------- |
+| `fixtures/inventory.mjs`                      | the collections it owns, and the counting/clearing the guard uses    |
+| `fixtures/demoData.js`                        | the data, behind `applyDemoFixtures({ acceptWipe, expectDatabase })` |
+| `fixtures/apply.mjs`                          | the only entry point: `npm run fixtures:apply` from `server/`        |
+| `scripts/fixtures_destruction_guard_unit.mjs` | 19 checks pinning the above (in CI)                                  |
+
+To load demo data into a **throwaway** database:
 
 ```bash
-SEED_ON_BOOT=true
-ALLOW_DEMO_SEED=true
+cd server
+npm run fixtures:apply -- --expect-database=my-scratch-db            # empty DB only
+npm run fixtures:apply -- --force --expect-database=my-scratch-db    # knowingly overwrite
 ```
+
+Without `--force` it refuses when those collections hold anything, printing what it
+found. With a mismatched `--expect-database` it refuses even _with_ `--force`,
+because a wrong connection is the one case that row-counting cannot tell apart from
+an empty database.
+
+`SEED_ON_BOOT` / `ALLOW_DEMO_SEED` no longer load anything. `productionBootErrors`
+still refuses a production start that sets `SEED_ON_BOOT=true` without
+`ALLOW_DEMO_SEED=true` - not because that combination would seed (it cannot) but
+because an operator running a stale runbook should find out now, from an error,
+rather than later from an empty screen. The boot log names the flag as inert
+whenever it is set.
+
+**A new production database has no accounts**, by design, which is what the
+bootstrap administrator is for (`BOOTSTRAP_ADMIN_EMAIL` + a strong
+`BOOTSTRAP_ADMIN_PASSWORD`, idempotent, refusing weak passwords instead of shipping
+a known one). Real manufacturers, brands, products and partners are then created
+through the app's own surfaces - the structure those screens are built around - and
+demo content that got into a database by any route is removed with
+`npm run deprovision:demo` (see below).
 
 Anything less refuses, and the boot log names the reason it refused, because a
 silent production log is how a misconfiguration gets read as a healthy server.
 The first real admin comes from the bootstrap path, not from the seed.
-`scripts/seed_guard_unit.mjs` (14 checks, in CI) pins the decision function; a
-real production-mode boot against an empty database is verified to leave zero
-users while still printing why.
+`scripts/seed_guard_unit.mjs` (14 checks, in CI) pins the decision table; a real
+production-mode boot against an empty database is verified to leave zero users
+while still printing why.
 
-Removing `server/seed.js` entirely is a later change, not this one: it is the
-only source of the accounts 20 harness groups authenticate against, so deleting
-it before those suites carry their own fixtures would leave production
-unverifiable rather than clean.
+**Done since then, and worth the wait it caused:** the demo dataset left the
+application entirely. It lives in `server/fixtures/`
+(`inventory.mjs` = the collections it owns, `demoData.js` = the data plus the guard,
+`apply.mjs` = the only entry point), and `server.js` no longer imports it, so a
+deployed process cannot delete those collections whatever the environment variables
+say. `SEED_ON_BOOT` is now inert and the boot log says so out loud rather than
+silently ignoring a flag an operator still believes in.
+
+Doing it in this order mattered: the suites authenticate against these accounts, so
+deleting the dataset first would have converted a data-loss hazard into 20 groups of
+inconclusive results - which is how a "clean" refactor ends up with an unverified
+production path. `scripts/verify.mjs` now applies the fixtures itself before starting
+the API, so CI passes because the harness creates its test data, not because booting
+the product happens to. `server/scripts/fixtures_destruction_guard_unit.mjs`
+(19 checks) pins the guard: refusal on a populated database, refusal on a
+database-name mismatch even with `--force` (the one case row-counting cannot catch,
+since a wrong connection is indistinguishable from an empty one), and a check that
+the dataset performs no bulk delete the guard does not list.
 
 ## Configuration
 
@@ -48,13 +91,13 @@ Keep `server/.env` out of version control and out of images.
 
 ### Required
 
-| Key            | Notes                                                                                                              |
-| -------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `MONGODB_URI`  | local `mongodb://localhost:27017/optikart` or an Atlas SRV string                                                  |
-| `JWT_SECRET`   | long random string; changing it invalidates every session                                                          |
-| `PORT`         | 5000 by default                                                                                                    |
-| `SEED_ON_BOOT` | `auto` \| `true` \| `false`; the seed deletes the collections it owns, so `auto` only runs it on an empty database |
-| `FRONTEND_URL` | exact browser origin; must match for CORS and Socket.IO                                                            |
+| Key            | Notes                                                                                                                                               |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MONGODB_URI`  | local `mongodb://localhost:27017/optikart` or an Atlas SRV string                                                                                   |
+| `JWT_SECRET`   | long random string; changing it invalidates every session                                                                                           |
+| `PORT`         | 5000 by default                                                                                                                                     |
+| `SEED_ON_BOOT` | **inert** - boot never seeds in any environment; demo data is applied with `npm run fixtures:apply`, which refuses a populated or misnamed database |
+| `FRONTEND_URL` | exact browser origin; must match for CORS and Socket.IO                                                                                             |
 
 ### Environment
 

@@ -1,52 +1,35 @@
-import './config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
-import dns from 'node:dns';
 /*
- * DNS is left to the container unless an operator asks otherwise.
+ * Demo catalogue fixtures. NOT part of the application.
  *
- * `dns.setServers(['8.8.8.8', '1.1.1.1'])` used to run unconditionally here,
- * sending every hostname this process resolves through public resolvers instead of
- * the deployment's own. In practice: private zones (a VPC-internal MongoDB, a
- * route53 private record) stop resolving, /etc/hosts entries are ignored, and an
- * environment with no direct DNS egress fails at resolution rather than at the
- * service it was reaching for. It worked around one container's broken
- * resolv.conf - an infrastructure problem wearing an application-code fix.
+ * This was `server/seed.js`: imported by server.js and executed during boot
+ * whenever the database looked empty. See fixtures/inventory.mjs for what it
+ * deletes and fixtures/apply.mjs for the only supported way to run it.
  *
- * To restore the old behaviour deliberately: DNS_OVERRIDE=8.8.8.8,1.1.1.1
+ * Nothing here is loaded by the server any more. A deployed app starts with an
+ * empty database, and the operator builds their catalogue through the
+ * manufacturer/brand/product surfaces - which is the structure the product is
+ * actually organised around.
  */
-const dnsOverride = String(process.env.DNS_OVERRIDE || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-if (dnsOverride.length) dns.setServers(dnsOverride);
-
 import mongoose from 'mongoose';
-import User from './models/User.js';
-import Seller from './models/Seller.js';
-import Product from './models/Product.js';
-import Coupon from './models/Coupon.js';
-import HelpArticle from './models/HelpArticle.js';
-import Executive from './models/Executive.js';
-import Manufacturer from './models/Manufacturer.js';
-import ManufacturerSeller from './models/ManufacturerSeller.js';
-import Blog from './models/Blog.js';
-import DeliveryPartner from './models/DeliveryPartner.js';
-import StaffRole from './models/StaffRole.js';
-import SellerStock from './models/SellerStock.js';
+import { clearWipable, countWipable, WIPABLE } from './inventory.mjs';
+import User from '../models/User.js';
+import Seller from '../models/Seller.js';
+import Product from '../models/Product.js';
+import Coupon from '../models/Coupon.js';
+import HelpArticle from '../models/HelpArticle.js';
+import Executive from '../models/Executive.js';
+import Manufacturer from '../models/Manufacturer.js';
+import ManufacturerSeller from '../models/ManufacturerSeller.js';
+import Blog from '../models/Blog.js';
+import DeliveryPartner from '../models/DeliveryPartner.js';
+import StaffRole from '../models/StaffRole.js';
+import SellerStock from '../models/SellerStock.js';
 
-const seedDatabase = async () => {
+export { countWipable, WIPABLE };
+
+const writeDemoData = async () => {
   try {
-    await User.deleteMany({});
-    await Seller.deleteMany({});
-    await Product.deleteMany({});
-    await Coupon.deleteMany({});
-    await HelpArticle.deleteMany({});
-    await Blog.deleteMany({});
-    await Executive.deleteMany({});
-    await Manufacturer.deleteMany({});
-    await ManufacturerSeller.deleteMany({});
-    await DeliveryPartner.deleteMany({});
-    await StaffRole.deleteMany({});
-    console.log('Cleared existing data');
+    await clearWipable({ quiet: true });
 
     const admin = await User.create({
       name: 'Admin',
@@ -262,6 +245,31 @@ const seedDatabase = async () => {
         accountNumber: '987654321099',
         branchName: 'Andheri West',
         currentLocation: { latitude: 19.1197, longitude: 72.8464 },
+      },
+      {
+        /*
+         * Reserved for scripts/payout_console_e2e.mjs, which needs a partner whose
+         * daily withdrawal allowance is still unused. A partner may withdraw once
+         * per calendar day, so any suite that shares a subject with another suite
+         * silently tests nothing: the settlement console group spent that property
+         * reading a queue another group had already drained and settled, and
+         * reported either a SKIP or a red run depending on order. Its own subject is
+         * the fix, and the reason it exists in the seed rather than being created at
+         * runtime is that partner registration is deliberately outside the OTP-bypass
+         * list, so a suite cannot sign in to an account it made up.
+         */
+        name: 'Imtiaz Qureshi',
+        email: 'settlements.partner@optikart.com',
+        phone: '9876543237',
+        vehicleNumber: 'MH02GH3456',
+        licenseNumber: 'MH0220200078903',
+        aadharNumber: '123412341238',
+        panNumber: 'ABCDE1234J',
+        accountNumber: '987654321102',
+        branchName: 'Wadala',
+        // Near the Bandra stores, so this partner can actually be assigned runs
+        // (the queue under test is only non-empty if earning was possible).
+        currentLocation: { latitude: 19.0176, longitude: 72.8562 },
       },
       {
         name: 'Ramesh Nair',
@@ -1928,6 +1936,11 @@ const seedDatabase = async () => {
     // password - so any panel can be opened without hunting through this file.
     // Publish each seller's stock of every eyewear product they can fulfil, so
     // proximity routing has real candidates to offer an order to.
+    /*
+     * Cleared HERE, not with the up-front wipe, because that is where the original
+     * seed did it and the rows written above depend on the order. Flagged
+     * `deferred` in inventory.mjs so the guard still discloses it.
+     */
     await SellerStock.deleteMany({});
     try {
       const stockable = await Product.find({ isActive: true, category: { $ne: 'contactlenses' } })
@@ -2010,53 +2023,59 @@ const seedDatabase = async () => {
   }
 };
 
-export { seedDatabase };
+/**
+ * Apply the demo dataset, behind a destruction guard.
+ *
+ * @param acceptWipe      caller has been shown countWipable() and agreed.
+ * @param expectDatabase  the database name the caller intends to write. A
+ *                        mismatch stops the run: this is the mistyped-URI case
+ *                        the whole design exists for, and it cannot be caught by
+ *                        counting rows, because a wrong connection looks exactly
+ *                        like an empty database.
+ */
+export async function applyDemoFixtures({ acceptWipe = false, expectDatabase = null } = {}) {
+  const counts = await countWipable();
+  const database = mongoose.connection?.name ?? '(unknown)';
 
-// Allow running standalone
-if (process.argv[1] && process.argv[1].includes('seed')) {
-  (async () => {
-    try {
-      console.log('Connecting to MongoDB...');
-      console.log('URI:', process.env.MONGODB_URI?.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@') || 'Not set');
+  if (expectDatabase && database !== expectDatabase) {
+    const reason =
+      `refusing to write fixtures: connected to "${database}" but the caller named "${expectDatabase}". ` +
+      'This dataset deletes the collections it owns before writing, so a wrong connection string is how ' +
+      'someone destroys the database they did not mean to touch.';
+    console.error(reason);
+    return { skipped: true, reason, counts, database };
+  }
 
-      await mongoose.connect(process.env.MONGODB_URI, {
-        serverSelectionTimeoutMS: 30000,
-        connectTimeoutMS: 30000,
-      });
-
-      console.log('Connected to MongoDB');
-      await seedDatabase();
-      console.log('\n✅ Database seeded successfully!');
-      process.exit(0);
-    } catch (error) {
-      console.error('\n❌ Error connecting to MongoDB:\n');
-
-      if (error.message.includes('IP') || error.message.includes('whitelist')) {
-        console.error('🔧 FIX: Your IP address is not whitelisted in MongoDB Atlas');
-        console.error('   1. Go to: https://cloud.mongodb.com/');
-        console.error('   2. Click "Network Access" in left sidebar');
-        console.error('   3. Click "Add IP Address"');
-        console.error('   4. Click "Allow Access from Anywhere" (0.0.0.0/0)');
-        console.error('   5. Click "Confirm"');
-        console.error('   6. Wait 1-2 minutes and try again\n');
-      } else if (error.message.includes('bad auth') || error.message.includes('Authentication')) {
-        console.error('🔧 FIX: Invalid MongoDB username or password');
-        console.error('   1. Check your MONGODB_URI in .env file');
-        console.error('   2. Go to MongoDB Atlas → Database Access');
-        console.error('   3. Reset your database user password');
-        console.error('   4. Update .env with new password\n');
-      } else if (error.message.includes('ENOTFOUND')) {
-        console.error('🔧 FIX: Cannot resolve MongoDB cluster address');
-        console.error('   1. Check your internet connection');
-        console.error('   2. Verify cluster name in MONGODB_URI');
-        console.error('   3. Try flushing DNS: ipconfig /flushdns (Windows)\n');
-      } else {
-        console.error('Error details:', error.message);
-        console.error('\n🔧 Check your MONGODB_URI in .env file');
-        console.error('   Format: mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/eyewear-platform\n');
-      }
-
-      process.exit(1);
+  if (!acceptWipe) {
+    const populated = counts.filter((c) => c.documents > 0);
+    if (populated.length) {
+      const reason =
+        `refusing to write fixtures: the collections it owns already hold data (${populated
+          .map((c) => `${c.label}=${c.documents}`)
+          .join('; ')}). ` +
+        'Demo fixtures belong in an empty test database. Pass --force only when destroying the above is intended.';
+      console.error(reason);
+      return { skipped: true, reason, counts, database };
     }
-  })();
+  }
+
+  await writeDemoData();
+  return { skipped: false, counts, database };
 }
+
+/**
+ * The old entry point, kept only so that any surviving call fails loudly.
+ *
+ * A name that silently does nothing would be the worst outcome here: the seed was
+ * called because someone needed data, and a no-return-value no-op would leave them
+ * with an empty database and a green process.
+ */
+export const seedDatabase = async () => {
+  throw new Error(
+    'seedDatabase() no longer runs from the application. Boot-time seeding was removed because the ' +
+      'dataset wipes the collections it owns; use fixtures/apply.mjs (--force, --expect-database) or, ' +
+      'from the test harness, applyDemoFixtures().'
+  );
+};
+
+export { writeDemoData };

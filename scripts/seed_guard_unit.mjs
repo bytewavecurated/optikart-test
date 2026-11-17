@@ -2,6 +2,24 @@
 /**
  * The production seed guard, checked as arithmetic.
  *
+ * READ THIS FIRST: `seedDecision` no longer describes anything the application
+ * does. The app cannot seed at all - the demo dataset moved to
+ * `server/fixtures/` and server.js stopped importing it, so there is no boot-time
+ * decision left to make (see server/fixtures_destruction_guard_unit.mjs for what IS
+ * enforced now, and OPERATIONS.md "Demo fixtures, staging, and production").
+ *
+ * The cases below are kept because two things remain live:
+ *  - `productionBootErrors`, which still refuses a production start that sets
+ *    SEED_ON_BOOT=true without ALLOW_DEMO_SEED - not because it would seed, but
+ *    because an operator following a stale runbook should hear that now, from an
+ *    error, rather than later from a database that never filled;
+ *  - the historical decision table itself, which the next reader will find in
+ *    authMode.js and reasonably assume is current. Pinning it, with
+ *    `@deprecated` on the function and this note above the tests, is the honest
+ *    version: `seedDecision()` is asserted as documentation of an old rule, never
+ *    as behaviour of the running system. A test that quietly certifies dead code is
+ *    worse than no test, because it looks like coverage.
+ *
  * The hazard was quiet and total: `SEED_ON_BOOT` defaulted to `auto`, which
  * means "seed if the database looks empty" - and a brand new production
  * database is exactly that. A first ordinary boot would run the demo fixtures,
@@ -18,7 +36,11 @@
  *
  *   node scripts/seed_guard_unit.mjs
  */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { seedDecision, productionBootErrors } from '../server/config/authMode.js';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const results = [];
 const check = (name, ok, detail = '') => {
@@ -27,16 +49,21 @@ const check = (name, ok, detail = '') => {
   return ok;
 };
 
-// development / CI behaviour (what scripts/verify.mjs relies on)
+// Historical development behaviour. verify.mjs does NOT rely on this any more;
+// it applies fixtures itself before the API starts. Asserted so the table below is
+// known-good as a record, not as a runtime guarantee.
 check(
-  'development auto seeds an empty database (the suites need seeded logins)',
+  'historical: development auto seeded an empty database (no longer reachable from boot)',
   seedDecision({ flag: 'auto', existing: 0, production: false }).seed === true
 );
 check(
   'development auto skips a populated database',
   seedDecision({ flag: 'auto', existing: 12, production: false }).seed === false
 );
-check('development true forces a seed', seedDecision({ flag: 'true', existing: 99, production: false }).seed === true);
+check(
+  'historical: development true forced a seed',
+  seedDecision({ flag: 'true', existing: 99, production: false }).seed === true
+);
 
 // the production cases that used to be the hole
 const prodAutoEmpty = seedDecision({ flag: 'auto', existing: 0, production: true });
@@ -109,6 +136,27 @@ try {
   delete process.env.SMTP_HOST;
   delete process.env.SMTP_USER;
   delete process.env.SMTP_PASS;
+}
+
+/* ── what is actually true now (the reason this file still earns CI time) ── */
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const serverSrc = fs.default.readFileSync(path.default.join(ROOT, 'server', 'server.js'), 'utf8');
+  check(
+    'the application does not import the demo dataset',
+    !/seed\.js|writeDemoData|applyDemoFixtures/.test(serverSrc)
+  );
+  check(
+    'boot-time seeding is gone from the config table in authMode',
+    /@deprecated the app never seeds/.test(
+      fs.default.readFileSync(path.default.join(ROOT, 'server', 'config', 'authMode.js'), 'utf8')
+    )
+  );
+  check(
+    'SEED_ON_BOOT is reported as inert rather than silently ignored',
+    /SEED_ON_BOOT is set but no longer has any effect/.test(serverSrc)
+  );
 }
 
 const failed = results.filter((r) => !r.ok);

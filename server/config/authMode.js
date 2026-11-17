@@ -54,15 +54,24 @@ export const smtpConfigured = () => Boolean(process.env.SMTP_HOST && process.env
  * owns before writing, so a later "empty-looking" state on a staging box can
  * destroy data that was only half-migrated.
  *
- * The rule is now one pure function instead of an `if/else` ladder buried in
- * startup, so it can be asserted without booting a server against a database:
+ * RETIRED, and kept that way deliberately rather than deleted quietly.
  *
- *   - development / CI: `auto` seeds an empty database (the suites sign in as
- *     seeded accounts), `true` forces, `false` never.
- *   - production: `auto` NEVER seeds, empty database or not. Seeding happens
- *     only with the two explicit staging flags together - a deliberate action by
- *     someone who knows what it deletes.
+ * The rule was: development/CI `auto` seeds an empty database, `true` forces,
+ * `false` never; production `auto` never seeds and only loads demo data with both
+ * explicit staging flags. That whole ladder was protecting one mode (production)
+ * out of several, and it protected it by *declining* to seed rather than by making
+ * the dataset unreachable - so a staging deployment, a `NODE_ENV=development`
+ * server pointed at a real Atlas cluster, or a laptop with a mistyped URI still
+ * had a boot path whose first act is eleven `deleteMany({})` calls.
+ *
+ * The application no longer imports the dataset at all (see server/server.js and
+ * server/fixtures/), so there is no decision left to make at boot. This function
+ * remains exported because scripts/seed_guard_unit.mjs asserts the historical
+ * table while that file is rewritten: a pure function with tests that the app
+ * never calls is dead code with a green badge, which is the exact failure mode
+ * this session keeps having to name. It is marked, not trusted.
  */
+/** @deprecated the app never seeds at boot any more; use fixtures/apply.mjs. */
 export const seedDecision = ({ flag = 'auto', existing = 0, production = false, allowDemoSeed = false } = {}) => {
   const normalized = String(flag || 'auto').toLowerCase();
 
@@ -94,7 +103,7 @@ export const productionBootErrors = ({ seedForced, seedAcknowledged = false }) =
   const errors = [];
   if (seedForced && !seedAcknowledged) {
     errors.push(
-      'SEED_ON_BOOT=true is refused in production: the seed deletes the collections it owns before writing demo fixtures. On a staging database, set BOTH SEED_ON_BOOT=true and ALLOW_DEMO_SEED=true to say so deliberately.'
+      'SEED_ON_BOOT=true is set on a production-mode process. Boot-time seeding no longer exists, so nothing will be seeded either way - but the flag means someone expects demo data, and demo fixtures delete the eleven collections they own before writing. If this is a staging box that genuinely wants them, set ALLOW_DEMO_SEED=true as well and apply them deliberately with "npm run fixtures:apply" (never at boot). If it is a real deployment, unset SEED_ON_BOOT and create the first administrator with BOOTSTRAP_ADMIN_EMAIL/BOOTSTRAP_ADMIN_PASSWORD.'
     );
   }
   const secret = String(process.env.JWT_SECRET || '');
@@ -107,4 +116,20 @@ export const productionBootErrors = ({ seedForced, seedAcknowledged = false }) =
     );
   }
   return errors;
+};
+
+/**
+ * Did the environment ask for boot-time seeding?
+ *
+ * This is all the app now needs to know about SEED_ON_BOOT. It is not a decision
+ * to seed - nothing seeds at boot - it is the acknowledgement that somebody set a
+ * variable which used to load demo data and no longer does, so the process can say
+ * so out loud instead of leaving them to conclude the data had arrived. An
+ * unheeded flag is indistinguishable from a working one in a log that says nothing.
+ */
+export const seedRequestedAtBoot = () => {
+  const flag = String(process.env.SEED_ON_BOOT || '')
+    .trim()
+    .toLowerCase();
+  return ['true', '1', 'auto'].includes(flag);
 };

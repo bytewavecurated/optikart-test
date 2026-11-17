@@ -64,7 +64,7 @@ These settings change behaviour rather than credentials:
   database before you do.
 - `AUTH_OTP_BYPASS` - seeded test accounts may skip the email OTP step. This only applies
   when `NODE_ENV` is not `production`. Each role keeps an allow-list in its route module and
-  it must match `server/seed.js`, or the printed login quietly demands an OTP that never arrives.
+  it must match `server/fixtures/demoData.js`, or the printed login quietly demands an OTP that never arrives.
 - `AI_ORDER_ASSIGNMENT` - when `true`, an offer nobody answered is assigned by the scoring
   fallback instead of waiting for an administrator.
 
@@ -293,13 +293,13 @@ Set the corresponding variables in `server/.env` to enable each one.
 
 ## Scripts
 
-| Command                      | Effect                              |
-| ---------------------------- | ----------------------------------- |
-| `cd server && npm run dev`   | API with reload                     |
-| `cd server && npm start`     | API                                 |
-| `cd server && node seed.js`  | reseed only                         |
-| `cd client && npm start`     | dev server on :3000, `/api` proxied |
-| `cd client && npm run build` | production bundle in `client/build` |
+| Command                                          | Effect                                       |
+| ------------------------------------------------ | -------------------------------------------- |
+| `cd server && npm run dev`                       | API with reload                              |
+| `cd server && npm start`                         | API                                          |
+| `cd server && npm run fixtures:apply -- --force` | load demo fixtures into a THROWAWAY database |
+| `cd client && npm start`                         | dev server on :3000, `/api` proxied          |
+| `cd client && npm run build`                     | production bundle in `client/build`          |
 
 ## Contributing
 

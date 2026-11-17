@@ -83,6 +83,7 @@ const AUDITS = [
   ['entity code generation', 'server/scripts/entity_ids_unit.mjs'],
   ['storage guards and asset inventory', 'server/scripts/storage_upload_guards_unit.mjs'],
   ['harness disk guard', 'scripts/disk_headroom_unit.mjs'],
+  ['fixture destruction guard', 'server/scripts/fixtures_destruction_guard_unit.mjs'],
   ['security audit gate', 'server/scripts/audit/security.mjs'],
   ['otp delivery gate', 'server/scripts/otp_delivery_gate_unit.mjs'],
   ['client/API contract', 'server/scripts/audit/api-contract.mjs'],
@@ -272,6 +273,59 @@ if (!mongoUri) {
   console.log(`using the database already configured: ${process.env.MONGODB_URI}`);
 }
 
+/* ------------------------------------------------------------------ fixtures */
+/*
+ * The test data is created here, by the harness, rather than as a side effect of
+ * starting the application.
+ *
+ * Until now the API booted, noticed the database was empty, and loaded the demo
+ * dataset - which begins by deleting the eleven collections it owns. That made
+ * every deployment inherit a wipe-capable code path, and NODE_ENV=production was
+ * the only thing standing between a staging box (or a mistyped MONGODB_URI, which
+ * looks identical to an empty database) and losing real accounts, real products
+ * and real orders. The dataset now lives in server/fixtures/ and the app never
+ * imports it: an application process cannot clear a collection at all.
+ *
+ * `--expect-database` is passed so a wrong connection is refused rather than
+ * wiped. When the caller supplied MONGODB_URI (CI, or a developer pointing at
+ * their own cluster) the database name is taken from that URI, because guessing it
+ * would defeat the purpose: `apply.mjs` compares the name it actually connected to.
+ */
+const databaseNameOf = (uri) => {
+  try {
+    const u = new URL(uri);
+    const name = decodeURIComponent((u.pathname || '').replace(/^\/+/, ''));
+    const first = name.split('?')[0].trim();
+    return first || null;
+  } catch {
+    return null;
+  }
+};
+
+const expectedDatabase = databaseNameOf(mongoUri);
+process.stdout.write(`applying demo fixtures${expectedDatabase ? ` to "${expectedDatabase}"` : ''}... `);
+/*
+ * `run` overwrites cwd/env rather than merging them (see its definition), so both
+ * are supplied in full here: the fixtures script lives in server/ and needs the
+ * same hermetic environment the API gets, with the URI this run owns.
+ */
+const fixtures = await run(
+  'node',
+  ['fixtures/apply.mjs', '--force', ...(expectedDatabase ? ['--expect-database', expectedDatabase] : [])],
+  {
+    cwd: path.join(ROOT, 'server'),
+    env: { ...HERMETIC.env, MONGODB_URI: mongoUri },
+  }
+);
+if (fixtures.code !== 0) {
+  console.log('FAILED');
+  console.log(`\nthe fixture step could not prepare the test database (exit ${fixtures.code}):\n${fixtures.tail}`);
+  teardown();
+  process.exitCode = 1;
+  process.exit(1);
+}
+console.log('ready');
+
 /* -------------------------------------------------------------------- server */
 REPORT();
 process.stdout.write(`starting the API on ${BASE}... `);
@@ -282,11 +336,14 @@ const server = spawn('node', ['server.js'], {
     ...HERMETIC.env,
     PORT: String(PORT),
     MONGODB_URI: mongoUri,
-    // Seeding here is the point: the suites assert against known accounts.
-    // Boot-time seeding is refused when NODE_ENV=production for exactly this
-    // reason, so the harness states development explicitly.
     NODE_ENV: 'development',
-    SEED_ON_BOOT: 'true',
+    /*
+     * SEED_ON_BOOT is deliberately absent. The application cannot seed any more,
+     * so setting it here would only make this file look like it still relies on
+     * boot-time data. The fixtures block above is what prepares this database,
+     * and if that ever stops running the suites fail loudly rather than quietly
+     * asserting against an empty catalogue.
+     */
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });

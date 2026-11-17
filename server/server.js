@@ -4,7 +4,7 @@ import dns from 'node:dns';
 /*
  * DNS is left to the container unless an operator asks otherwise.
  *
- * `dns.setServers(['8.8.8.8', '1.1.1.1'])` ran unconditionally here AND in seed.js,
+ * `dns.setServers(['8.8.8.8', '1.1.1.1'])` ran unconditionally here AND in the fixtures module,
  * sending every hostname this process resolves through public resolvers instead of
  * the deployment's own. In practice: private zones (a VPC-internal MongoDB, a
  * route53 private record) stop resolving, /etc/hosts entries are ignored, and an
@@ -450,10 +450,12 @@ const startServer = async () => {
      * - it is broken in a way nobody notices until data is gone. These conditions
      * stop the boot rather than log a warning beside a running server.
      */
-    const { productionBootErrors, seedDecision, isProduction } = await import('./config/authMode.js');
+    const { productionBootErrors, isProduction, seedRequestedAtBoot } = await import('./config/authMode.js');
     const seedFlag = String(process.env.SEED_ON_BOOT || 'auto').toLowerCase();
     const allowDemoSeed = ['true', '1'].includes(String(process.env.ALLOW_DEMO_SEED || '').toLowerCase());
     const bootErrors = productionBootErrors({
+      // boot-time seeding no longer exists; the check stays so a stale
+      // SEED_ON_BOOT cannot be mistaken for a supported configuration.
       seedForced: ['true', '1'].includes(seedFlag),
       seedAcknowledged: allowDemoSeed,
     });
@@ -467,74 +469,63 @@ const startServer = async () => {
     // exist, or the console can never be reached.
     await ensureBootstrapAdmin();
 
-    // Seed script.
-    //
-    // The seed deletes the collections it owns before writing its fixtures, so
-    // running it on every boot against a populated database - the Atlas URI in
-    // .env, for example - erases real accounts and real orders. It now runs when
-    // the database looks empty, when SEED_ON_BOOT=true forces it, and never when
-    // SEED_ON_BOOT=false.
-    try {
-      const { seedDatabase } = await import('./seed.js');
+    /*
+     * No seeding, in any environment.
+     *
+     * This block called the demo dataset on boot whenever the database looked empty. The
+     * seed opens by deleting the eleven collections it owns, so "looks empty" was
+     * doing double duty: a fresh test database, and a mistyped MONGODB_URI or a
+     * staging box aimed at the wrong cluster - which is how an operator loses real
+     * accounts and orders. Worse still, the instinctive recovery from an
+     * unexpectedly-empty database (SEED_ON_BOOT=true) is the same wipe.
+     *
+     * productionBootErrors/ALLOW_DEMO_SEED fenced off NODE_ENV=production only:
+     * one mode out of several, and it fenced it by refusing to seed rather than by
+     * making seeding unreachable from the process. The dataset now lives in
+     * server/fixtures/ and the application never imports it, so a deployed process
+     * cannot clear a collection whatever the environment variables say.
+     * scripts/verify.mjs applies the fixtures for the suites - which is where that
+     * responsibility belongs, since it is the harness that needs the data.
+     *
+     * A new production database therefore starts with no accounts, by design. The
+     * bootstrap administrator above is the supported way in: BOOTSTRAP_ADMIN_EMAIL
+     * plus a strong BOOTSTRAP_ADMIN_PASSWORD, idempotent, and refusing weak
+     * passwords rather than shipping a known one.
+     */
+    if (seedRequestedAtBoot()) {
+      /*
+       * Announced every time, not quietly ignored: a runbook, an older README or a
+       * remembered habit that sets SEED_ON_BOOT must learn immediately that it no
+       * longer loads anything, rather than concluding the data arrived.
+       */
+      console.warn(
+        'SEED_ON_BOOT is set but no longer has any effect: boot-time seeding was removed because the demo ' +
+          'dataset wipes the collections it owns. For a THROWAWAY local database run "node fixtures/apply.mjs" ' +
+          '(--force to overwrite, --expect-database=<name> to be certain which one).'
+      );
+    } else if (isProduction()) {
       const { default: User } = await import('./models/User.js');
-      const flag = String(process.env.SEED_ON_BOOT || 'auto').toLowerCase();
-      const existing = await User.estimatedDocumentCount();
-      /*
-       * One function decides, and the reason is logged. The ladder it replaces
-       * treated an empty database as a licence to seed wherever the process
-       * happened to run - which is precisely what a fresh production database
-       * looks like on its first boot.
-       */
-      const decision = seedDecision({
-        flag,
-        existing,
-        production: isProduction(),
-        allowDemoSeed: ['true', '1'].includes(String(process.env.ALLOW_DEMO_SEED || '').toLowerCase()),
-      });
-      /*
-       * Every outcome announces itself.
-       *
-       * The first version of this block left the old else-branch's log line
-       * inside `if (decision.seed)`, which was brace-balanced and compiled: a
-       * seeded boot printed "Database seeded" and "Seed skipped ... already
-       * exist" in the same breath, while a production boot that had correctly
-       * refused to seed printed nothing at all. Silence in a production log is
-       * how a refused configuration gets read as a healthy one, so each reason
-       * now has its own line, including what a staging operator must set if
-       * demo data is genuinely wanted.
-       */
-      if (decision.seed) {
-        if (decision.destructive && isProduction()) {
-          console.warn(
-            'WARNING: demo seed running against a PRODUCTION-mode database; the seed deletes the collections it owns first (SEED_ON_BOOT=true + ALLOW_DEMO_SEED=true).'
-          );
-        }
-        await seedDatabase();
-        console.log(`\u2705 Database seeded (${decision.reason})`);
-      } else if (decision.reason === 'production-never-auto-seeds') {
-        console.log(
-          'Seed skipped: production never auto-seeds, not even against an empty database. Create the first real admin through the bootstrap path; on a staging database set SEED_ON_BOOT=true together with ALLOW_DEMO_SEED=true to load demo fixtures.'
+      const admins = await User.countDocuments({ role: 'admin', isActive: true, isBanned: false }).catch(() => 0);
+      if (!admins) {
+        console.warn(
+          'This database has no administrator and nothing will ever be seeded into it. Set BOOTSTRAP_ADMIN_EMAIL ' +
+            'with a strong BOOTSTRAP_ADMIN_PASSWORD (12+ characters, no common word) to create the first one.'
         );
-      } else if (decision.reason === 'production-refuses-demo-seed') {
-        console.log(
-          'Seed skipped: SEED_ON_BOOT=true was set in production without ALLOW_DEMO_SEED, so nothing was written.'
-        );
-      } else if (decision.reason === 'disabled-by-flag') {
-        console.log('Seed skipped (SEED_ON_BOOT=false).');
-      } else {
-        console.log(`Seed skipped (${decision.reason}); ${existing} user record(s) already present.`);
       }
-      // Catalogue rows created before products carried a `name` are filled from
-      // their title; idempotent, so it costs one query per restart.
-      try {
-        const { default: Product } = await import('./models/Product.js');
-        const filled = await Product.fillMissingNames();
-        if (filled) console.log(`Filled product names: ${filled}`);
-      } catch (bfErr) {
-        console.log('Name backfill note:', bfErr.message);
-      }
-    } catch (seedErr) {
-      console.log('ℹ️  Seed note:', seedErr.message);
+    }
+    console.log(
+      'Seeding: never, from any environment. Demo fixtures live in server/fixtures/ and are applied explicitly.'
+    );
+
+    // Catalogue rows created before products carried a `name` are filled from
+    // their title; idempotent, so it costs one query per restart. (Kept from the
+    // block removed above - it is data repair, not seeding.)
+    try {
+      const { default: Product } = await import('./models/Product.js');
+      const filled = await Product.fillMissingNames();
+      if (filled) console.log(`Filled product names: ${filled}`);
+    } catch (bfErr) {
+      console.log('Name backfill note:', bfErr.message);
     }
 
     /*
