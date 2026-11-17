@@ -46,8 +46,11 @@ server/uploads/
 # Local test/build artifacts
 client/build/
 
-# Local in-memory Mongo helper used during development
-server/.mongo.mjs
+# NOTE: server/.mongo.mjs (the harness's isolated-database launcher, spawned by
+# scripts/verify.mjs) is AUTHORITATIVE and tracked. It used to live in this
+# ignore list, which is why clean clones could not run `node scripts/verify.mjs`
+# without an external MONGODB_URI: a gate file that only exists untracked on one
+# laptop is not a gate.
 
 # browser automation scratch output
 .playwright-cli/

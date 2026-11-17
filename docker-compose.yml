@@ -1,0 +1,110 @@
+# =============================================================================
+# OptikArt - production bring-up: client (nginx) + api (node) + mongodb.
+#
+#   cp server/.env.example .env   # edit it - it documents every variable
+#   docker compose up -d --build
+#
+# The root .env is loaded for variable substitution AND passed wholesale to the
+# api container via env_file, so anything the server reads goes in there.
+# Delete the `ENV_FILE=` line from your copy if it survives from a harness
+# context - inside the container it points at a file that is not there.
+#
+# Notes on decisions, because each one is load-bearing:
+#
+#  - The client container is the only entry point browsers should reach.
+#    nginx proxies /api, /uploads and /socket.io to api:5000 on the internal
+#    network. If you ALSO publish :5000 publicly, clients can bypass nginx and
+#    forge X-Forwarded-For, which is the one input TRUST_PROXY_HOPS=1 tells
+#    Express to believe - the rate limiters and audit IPs are only as honest as
+#    the proxy chain in front of them. For local debugging against the raw API,
+#    add a `ports:` line to the api service while you are on the box - but read
+#    the sentence you just skipped first.
+#  - mongodb is NEVER published (not even to 127.0.0.1). It is reachable from
+#    the api over the compose network at mongodb://mongo:27017. "Publish mongo
+#    for convenience" is how exposed databases end up in the news.
+#  - Nothing here caps the application: JSON_BODY_LIMIT stays at the app's 1mb
+#    default (raise it in .env), nginx allows 64m bodies so the edge can never
+#    become a tighter limit than multer's 10x5MB design, no CPU/mem limits,
+#    no read-only fs, no storage provider forced.
+# =============================================================================
+
+name: optikart
+
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # ports:  # deliberately absent; see header note
+
+  api:
+    build:
+      context: ./server
+    restart: unless-stopped
+    # Every app variable documented in server/.env.example flows in from .env.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # These pin what the TOPOLOGY determines; env_file values below them are
+      # overridden here on purpose, so a laptop-shaped MONGODB_URI from the
+      # example file cannot silently point the container at its own filesystem
+      # and every deploy either talks to the compose database or to the Atlas
+      # URL you set explicitly in .env.
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: "5000"
+      # Fail now with this exact sentence instead of crash-looping a container
+      # whose first boot would refuse without a secret anyway.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set (32+ random chars) - generate: node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/eyewear-platform}
+      # One proxy hop: the client container. If you terminate TLS with ANOTHER
+      # proxy in front of the client container too, raise this to 2, or the
+      # audited IP of every visitor becomes the inner proxy's address.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+      # Same-origin by default - browsers do CORS checks against the ORIGIN,
+      # which is where the client is served from, not where the API hides.
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      # In production the OTP second factor is the login; AUTH_OTP_BYPASS does
+      # not apply under NODE_ENV=production at all (config/authMode.js), the
+      # default here just keeps .env honest about intent.
+      AUTH_OTP_BYPASS: ${AUTH_OTP_BYPASS:-false}
+      # STORAGE_BACKEND=auto uses Cloudinary when CLOUDINARY_* is configured and
+      # refuses the local fallback in production unless ALLOW_LOCAL_STORED_UPLOADS=true.
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-auto}
+      ALLOW_LOCAL_STORED_UPLOADS: ${ALLOW_LOCAL_STORED_UPLOADS:-false}
+      # Seeding is inert by default; both flags exist as runbook interlocks.
+      SEED_ON_BOOT: ${SEED_ON_BOOT:-auto}
+      ALLOW_DEMO_SEED: ${ALLOW_DEMO_SEED:-false}
+      # ENV_FILE stays unset: `server/.env` is excluded from the image by
+      # .dockerignore, the container's own environment IS its configuration.
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./client
+    restart: unless-stopped
+    ports:
+      - "${CLIENT_PORT:-80}:80"
+      # TLS belongs to whatever fronts this (host nginx + certbot, load
+      # balancer, or a `443:443` mapping once nginx.conf has certificates):
+      # - "${CLIENT_TLS_PORT:-443}:443"
+    depends_on:
+      # NOT `service_healthy` on api: the SPA must keep serving static shell +
+      # login page even while the API is between containers; nginx 502s only
+      # the proxied routes. The site being up should not depend on one probe.
+      - api
+
+volumes:
+  mongo-data:
+  uploads:

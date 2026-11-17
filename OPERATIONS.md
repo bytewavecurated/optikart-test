@@ -119,25 +119,53 @@ Each degrades safely; see the table in README for what still works without it.
 
 ## Deploying
 
-The API serves its own `server/build`, which is committed, while `client/build` is
-gitignored. The two drift silently otherwise, so the copy is a named step:
+Two shapes are supported by the same code; pick one.
+
+### A. Containers (recommended for going live)
+
+`docker-compose.yml` in the repository root brings up `mongo` + `api`
+(`server/Dockerfile`) + `client` (`client/Dockerfile`: the built bundle served by
+nginx, reverse-proxying `/api`, `/uploads` and `/socket.io` to the API - see
+`client/nginx.conf` for why the proxy has to carry the websocket upgrade and the
+security headers that Express only sets on responses it serves itself).
 
 ```bash
-cd server && npm run build:client   # builds client/, replaces server/build
+cp server/.env.example .env    # edit it: JWT_SECRET, SMTP_*, FRONTEND_URL, CLOUDINARY_* …
+docker compose up -d --build
+docker compose ps              # api healthcheck hits /api/health, so green == serving
 ```
 
-If a page shows behaviour that does not match the source, check which bundle is
-being served before reading the component - `grep -c <a string you just added>
-server/build/static/js/*.js`. A stale bundle was responsible for two dead ends in
-this project's history: a page that "still" showed a link the code no longer
-rendered, and a brand filter that appeared broken while the fix was in a chunk the
-browser had never fetched.
+- Compose passes every `.env` variable into the API and pins the topology facts
+  (`MONGODB_URI`, `TRUST_PROXY_HOPS=1`, `NODE_ENV`, `JWT_SECRET` - with a loud
+  refusal when the secret is missing, before a container even starts).
+- Neither Dockerfile carries credentials: `server/.env` is excluded by
+  `.dockerignore`, and `server/Dockerfile` runs as the non-root `node` user,
+  which owns `/app/uploads` - the named `uploads` volume persists a local
+  backend across redeploys, though production is expected to use Cloudinary.
+- First admin comes from `BOOTSTRAP_ADMIN_EMAIL/PASSWORD`; `--build` re-executes
+  the client build, so the "stale bundle" trap (below) cannot occur in this shape.
+- The two images are only coupled by nginx's `upstream … server:5000`, which is a
+  compose service name; any orchestrator that gives the client container that
+  DNS name works identically.
+
+### B. Single-origin process
 
 1. `cd client && npm run build`
 2. `cd ../server && npm ci --omit=dev && node server.js`
 
-Express then serves `client/build` and the API from one origin, so set `FRONTEND_URL` to
-that origin and leave the client's API base at the default `/api`.
+`server.js` reads `../../client/build` **per request** (a rebuild needs no
+restart), so Express serves the SPA and the API from one origin: set
+`FRONTEND_URL` to that origin and leave the client's API base at the default
+`/api`. The tracked `server/build/` directory is _not_ the served bundle - it is
+a stale deploy artifact; do not automate around refreshing it, and do not let the
+grep below run against it.
+
+If a page shows behaviour that does not match the source, check which bundle is
+being served before reading the component - `grep -c <a string you just added>
+client/build/static/js/*.js`. A stale bundle was responsible for two dead ends in
+this project's history: a page that "still" showed a link the code no longer
+rendered, and a brand filter that appeared broken while the fix was in a chunk the
+browser had never fetched.
 
 MongoDB Atlas: add the deployer's egress IP (or `0.0.0.0/0` on ephemeral PaaS) to the
 network allowlist, then expect a 30-90 second connection timeout if it is missing - the
@@ -147,15 +175,14 @@ If the platform's filesystem is ephemeral, mount a volume at `server/uploads/` o
 uploads to Cloudinary. Otherwise every re-deploy silently loses uploaded banners and
 product images.
 
-Seeding follows `SEED_ON_BOOT`: `auto` (the default) seeds only when the
-database looks empty, `true` forces it and wipes the collections the seed owns,
-`false` never runs it. The server refuses to start with `SEED_ON_BOOT=true` when
-`NODE_ENV=production` precisely because that flag deletes data - so a production
-deploy that also forgot to set the mode is stopped at boot rather than discovered
-later. To pull demo fixtures back out of a database that has real records in it,
-use `npm run deprovision:demo` in `server/`, which asks for confirmation twice.
-CI and `scripts/verify.mjs` always run development mode with seeding forced,
-because every suite asserts against the seeded accounts.
+Seeding no longer happens at boot in any environment: `SEED_ON_BOOT` /
+`ALLOW_DEMO_SEED` are inert interlocks, still refused in the stale-runbook
+combination by design, and `npm run fixtures:apply` is the only path to the demo
+dataset (see "Demo fixtures, staging, and production" at the top of this file).
+`npm run deprovision:demo` remains the way to pull demo logins back out of a
+database, which asks for confirmation twice. CI and `scripts/verify.mjs` run
+development mode with the fixtures applied explicitly by the harness, because
+every suite asserts against known accounts.
 
 Before publishing: CI must be green on the commit being deployed. It runs the
 contract audit and 143 assertions against a real MongoDB; a job that passes

@@ -3,7 +3,7 @@ import { FiCamera, FiUpload, FiX, FiCheck, FiInfo } from 'react-icons/fi';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
-import { products } from '../services/api';
+import { products, API_BASE_URL } from '../services/api';
 import toast from 'react-hot-toast';
 
 const FaceShapeGuide = () => {
@@ -132,7 +132,7 @@ const FaceShapeGuide = () => {
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      const response = await fetch('http://localhost:5000/api/face-detection/detect', {
+      const response = await fetch(`${API_BASE_URL}/face-detection/detect`, {
         method: 'POST',
         body: formData,
       });

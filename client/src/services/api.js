@@ -7,6 +7,11 @@ import hotToast from 'react-hot-toast';
 // really lives on another origin.
 const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
 
+// Bare `fetch()` call sites (speech search, face detection) must build their
+// URLs from this same base; hardcoding http://localhost:5000 worked in
+// development and broke against any real deployment.
+export { API_BASE_URL };
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

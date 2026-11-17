@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiX, FiTrendingUp, FiClock, FiChevronRight, FiMic, FiCamera } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../services/api';
 
 const TRENDING = [
   'Ray-Ban Aviator',
@@ -245,7 +246,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
 
       // Try to process with backend speech recognition
       try {
-        const response = await fetch('http://localhost:5000/api/speech/search', {
+        const response = await fetch(`${API_BASE_URL}/speech/search`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: transcript }),
@@ -323,7 +324,7 @@ export default function SearchBar({ placeholder = 'Search for eyewear, brands an
             const formData = new FormData();
             formData.append('image', blob);
 
-            const response = await fetch('http://localhost:5000/api/face-detection/detect', {
+            const response = await fetch(`${API_BASE_URL}/face-detection/detect`, {
               method: 'POST',
               body: formData,
             });
