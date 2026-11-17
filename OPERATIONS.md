@@ -185,9 +185,12 @@ development mode with the fixtures applied explicitly by the harness, because
 every suite asserts against known accounts.
 
 Before publishing: CI must be green on the commit being deployed. It runs the
-contract audit and 143 assertions against a real MongoDB; a job that passes
-locally but fails there usually means a route was never mounted, or a suite was
-written against state that only this machine's database happens to have.
+same `scripts/verify.mjs` gate described in README (every e2e group plus the
+static audits; the printed `N/N checks green` line is the authoritative count
+because it is computed from the registered list, not remembered in prose) against
+a real MongoDB; a job that passes locally but fails there usually means a route
+was never mounted, or a suite was written against state that only this machine's
+database happens to have.
 
 ## Auditing controls that only announce success
 

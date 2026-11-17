@@ -60,8 +60,15 @@ export const verifyOrder = (orderId, paymentId, signature) => {
   try {
     const sign = orderId + '|' + paymentId;
     const expectedSign = crypto.createHmac('sha256', process.env.RAZORPAY_KEY_SECRET).update(sign).digest('hex');
+    // Constant-time, after an explicit hex/length check - this is what decides
+    // whether an order is marked paid, so `===` on an attacker-observably
+    // early-exiting string comparison is the wrong primitive.
+    const provided = String(signature || '');
+    const ok =
+      /^[0-9a-f]{64}$/i.test(provided) &&
+      crypto.timingSafeEqual(Buffer.from(provided, 'hex'), Buffer.from(expectedSign, 'hex'));
 
-    if (signature === expectedSign) {
+    if (ok) {
       return { success: true, verified: true };
     }
 

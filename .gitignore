@@ -57,3 +57,9 @@ client/build/
 
 # verification harness output
 .verify-logs/
+
+# Dev-time leftovers from the pre-memoryStorage upload path (bulk test sheets).
+# Nothing reads them; the app has not written here since uploads moved to
+# services/storage.js. Untracked at the tip; history left alone pending the
+# authorised purge decision.
+uploads/

@@ -39,7 +39,9 @@ the relative `/api`.
 
 ### Prerequisites
 
-Node 18+, and a MongoDB instance (local `mongod` on 27017, or an Atlas string).
+Node 20+ (CI and the containers run 22). A MongoDB instance: local `mongod`, an Atlas
+string, or `node scripts/verify.mjs`'s isolated launcher (`server/.mongo.mjs`) - the same
+one CI-less clones use.
 
 ### Install
 
@@ -59,9 +61,11 @@ These settings change behaviour rather than credentials:
 - `TRUST_PROXY_HOPS` - how many reverse proxies sit in front. In production the default
   is `1`. Leave it at `0`/unset for direct local connections; never set Express
   `trust proxy` to `true`, because that lets clients spoof the IP the rate limiter keys on.
-- `SEED_ON_BOOT` - `auto` by default; the table in Seed and start below spells out the
-  three modes. Forcing it wipes the seeded collections, so point `MONGODB_URI` at a scratch
-  database before you do.
+- `SEED_ON_BOOT` / `ALLOW_DEMO_SEED` - inert interlocks. Nothing seeds at boot in any
+  environment (the demo dataset used to load itself on startup and its first act was deleting
+  the collections it owns); the flags now only exist so a production start following a stale
+  runbook fails loudly instead of coming up quietly empty. Demo data is applied deliberately
+  with `npm run fixtures:apply`; see OPERATIONS.md.
 - `AUTH_OTP_BYPASS` - seeded test accounts may skip the email OTP step. This only applies
   when `NODE_ENV` is not `production`. Each role keeps an allow-list in its route module and
   it must match `server/fixtures/demoData.js`, or the printed login quietly demands an OTP that never arrives.
@@ -70,16 +74,19 @@ These settings change behaviour rather than credentials:
 
 ### Seed and start
 
-The seed creates demo accounts, publishes catalogue data and writes placeholder product
-images into `server/uploads/products`. It **deletes the collections it owns first**, so it
-is not something to run against data you care about: on boot it now seeds only when the
-database looks empty, and logs why it skipped otherwise.
+Nothing seeds at boot. The demo dataset lives in `server/fixtures/` and is applied
+explicitly, by name, to the database you point at - and it refuses unless the eleven
+collections it owns are empty (or you pass `--force` together with a matching
+`--expect-database`) because its first act is deleting them:
 
-| `SEED_ON_BOOT`   | Behaviour                                                        |
-| ---------------- | ---------------------------------------------------------------- |
-| `auto` (default) | seed when there are no users yet; skip and say so when there are |
-| `true`           | seed regardless, deleting the seeded collections first           |
-| `false`          | never seed, even against an empty database                       |
+```bash
+cd server && npm run fixtures:apply -- --expect-database=my-scratch-db
+```
+
+A new production database therefore has **no accounts**, by design: the first
+administrator comes from `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD`, and every
+real manufacturer, shop, product and partner afterwards is created through the app's own
+screens. See OPERATIONS.md "Demo fixtures, staging, and production".
 
 ```bash
 # terminal 1 - API on :5000
@@ -98,9 +105,11 @@ cd ../server && node server.js   # now on http://localhost:5000
 
 ### Demo accounts
 
-Printed by the seed. Customer, seller, admin, staff, executive, manufacturer, manufacturer
-seller and delivery partner all have at least one working login, so every panel can be
-exercised without creating data first.
+Printed by the demo-fixture seed (`npm run fixtures:apply`) and listed in
+[LOGINS.md](LOGINS.md). Customer, seller, admin, staff, executive, manufacturer, manufacturer
+seller and delivery partner all have at least one working login there, so every panel can be
+exercised without creating data first - ON A THROWAWAY DATABASE; production installs get
+their one account from the bootstrap-admin path instead.
 
 ---
 
@@ -237,9 +246,14 @@ and current open-order count when no administrator is available.
 
 ## Realtime
 
-Socket.IO rooms drive live seller notifications. The server joins sockets to
-`seller_<id>`, `order_<id>`, `user_<id>` and `admin_room` using the same event names the
-client emits. Low-stock thresholds emit `inventory_alert` to the owning seller's room.
+Socket.IO rooms drive live seller notifications. Membership is derived from identity,
+never from what a connecting page asks for: `middleware/socketAuth.js` authenticates the
+handshake with the same tokens the HTTP API requires (signature, expiry, revocation and
+account liveness) and joins `seller_<id>`, `user_<id>`, `partner_<id>` and `admin_room`
+for the verified principal; `order_<id>` joins are additionally checked against the
+Order document (buyer, its seller, its current partner, admin). `scripts/socket_membership_e2e.mjs`
+pins the boundary, including the wire-level rejection of anonymous and forged handshakes.
+Low-stock thresholds emit `inventory_alert` to the owning seller's room.
 
 ---
 

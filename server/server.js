@@ -1,5 +1,6 @@
 import './config/loadEnv.js'; // must precede every env-reading import (see that file)
 import { verifyToken, verifyAdmin } from './middleware/auth.js';
+import { authenticateSocketToken, mayJoinOrderRoom } from './middleware/socketAuth.js';
 import dns from 'node:dns';
 /*
  * DNS is left to the container unless an operator asks otherwise.
@@ -276,39 +277,73 @@ app.get('/api/metrics', verifyToken, verifyAdmin, (req, res) => {
   res.json({ success: true, metrics: metricSnapshot() });
 });
 
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+/*
+ * Every socket carries the same session token the HTTP APIs require. The
+ * reasons are in middleware/socketAuth.js; the short version is that a
+ * WebSocket handshake is outside CORS, so before this, any page could join
+ * any room name it typed - including 'admin_room' - while the app's own
+ * legitimate sockets (which never learned to join) received nothing.
+ */
+io.use(async (socket, next) => {
+  const auth = await authenticateSocketToken(socket.handshake.auth?.token);
+  if (!auth.ok) {
+    // The code lands on the client's connect_error; the reasons are public
+    // because they mirror the HTTP 401/403 wording and leak nothing extra.
+    return next(new Error(auth.reason));
+  }
+  socket.data.principal = auth.principal;
+  socket.data.rooms = auth.rooms;
+  next();
+});
 
-  // Legacy generic join
+io.on('connection', (socket) => {
+  const principal = socket.data.principal;
+  for (const room of socket.data.rooms) socket.join(room);
+  console.log(`Socket connected: ${socket.id} (${principal.role})`);
+
+  /*
+   * The join handlers stay for wire-compatible clients but cannot widen
+   * membership: they honour a room only when it is one the verified identity
+   * already owns. Same for 'leave', which only ever subtracts.
+   */
   socket.on('join', (data) => {
-    if (data?.userId) socket.join(`user_${data.userId}`);
-    if (data?.sellerId) socket.join(`seller_${data.sellerId}`);
-    if (data?.adminId) socket.join('admin_room');
+    const wanted = [];
+    if (data?.userId && principal.role === 'user') wanted.push(`user_${String(data.userId)}`);
+    if (data?.sellerId && (principal.role === 'seller' || principal.role === 'manufacturerSeller'))
+      wanted.push(`seller_${String(data.sellerId)}`);
+    if (data?.adminId && principal.role === 'admin') wanted.push('admin_room');
+    for (const room of wanted) {
+      if (socket.data.rooms.includes(room)) socket.join(room);
+    }
   });
 
-  // The client emits these event names (see client/src/services/socket.js)
   socket.on('joinSellerRoom', (sellerId) => {
-    if (sellerId) socket.join(`seller_${sellerId}`);
+    const room = `seller_${String(sellerId)}`;
+    if (socket.data.rooms.includes(room)) socket.join(room);
   });
 
   socket.on('leaveSellerRoom', (sellerId) => {
-    if (sellerId) socket.leave(`seller_${sellerId}`);
+    socket.leave(`seller_${String(sellerId)}`);
   });
 
-  socket.on('joinOrderRoom', (orderId) => {
-    if (orderId) socket.join(`order_${orderId}`);
+  socket.on('joinOrderRoom', async (orderId) => {
+    try {
+      if (await mayJoinOrderRoom(principal, String(orderId || ''))) socket.join(`order_${String(orderId)}`);
+    } catch {
+      /* a bad id is simply a refused join */
+    }
   });
 
   socket.on('leaveOrderRoom', (orderId) => {
-    if (orderId) socket.leave(`order_${orderId}`);
+    if (orderId) socket.leave(`order_${String(orderId)}`);
   });
 
   socket.on('joinAdminRoom', () => {
-    socket.join('admin_room');
+    if (socket.data.rooms.includes('admin_room')) socket.join('admin_room');
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
+    console.log(`Socket disconnected: ${socket.id}`);
   });
 });
 

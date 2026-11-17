@@ -107,14 +107,33 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     const signature = req.headers['x-razorpay-signature'];
 
     const crypto = await import('crypto');
-    const expectedSignature = crypto.createHmac('sha256', secret).update(JSON.stringify(req.body)).digest('hex');
-
-    if (signature !== expectedSignature) {
+    /*
+     * The HMAC is over the exact bytes Razorpay sent. `express.raw` leaves
+     * req.body a Buffer, and the previous code signed `JSON.stringify(buffer)`
+     * - the serialization of {"type":"Buffer","data":[...]}, never the payload
+     * - so an authentic delivery could not verify and a configured webhook was
+     * 100% false negatives. Shape-check the hex signature, recompute over the
+     * raw body, and compare in constant time.
+     */
+    if (!secret || typeof signature !== 'string' || !/^[\da-f]{64}$/i.test(signature)) {
+      return res.status(400).json({ success: false, message: 'Invalid webhook signature.' });
+    }
+    const expectedSignature = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
+    const provided = Buffer.from(signature, 'hex');
+    const expectedBuf = Buffer.from(expectedSignature, 'hex');
+    if (provided.length !== expectedBuf.length || !crypto.timingSafeEqual(provided, expectedBuf)) {
       return res.status(400).json({ success: false, message: 'Invalid webhook signature.' });
     }
 
-    const event = req.body.event;
-    const payload = req.body.payload;
+    let body;
+    try {
+      body = JSON.parse(Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body));
+    } catch {
+      return res.status(400).json({ success: false, message: 'Webhook body is not JSON.' });
+    }
+
+    const event = body.event;
+    const payload = body.payload;
 
     switch (event) {
       case 'payment.captured':
