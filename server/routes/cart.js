@@ -37,7 +37,13 @@ router.post('/add', verifyToken, async (req, res) => {
   try {
     const { productId, variant, quantity = 1 } = req.body;
 
-    const product = await Product.findById(productId);
+    let product = null;
+    try {
+      // a malformed ObjectId rejects the QUERY; there is no Query to .populate after a .catch
+      product = await Product.findById(productId).populate('seller', 'isActive isBanned isVerified');
+    } catch {
+      product = null;
+    }
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
@@ -46,8 +52,37 @@ router.post('/add', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Product is not available.' });
     }
 
-    if (product.stock < quantity) {
-      return res.status(400).json({ success: false, message: 'Insufficient stock.' });
+    /*
+     * The cart only holds what the marketplace can actually deliver. The
+     * rule lives in one place (services/availability.js, sharing routing's
+     * own configuration match), so the page that offers Buy and this door
+     * that accepts it cannot disagree. A buyer who reached this endpoint
+     * anyway - bookmark, tab left open through a sell-out - gets the honest
+     * sentence, not a cart item that checkout/routing will strand.
+     */
+    const { availabilityForProducts } = await import('../services/availability.js');
+    const avail = (await availabilityForProducts([product.toObject()]))[String(product._id)];
+    if (!avail) {
+      return res.status(400).json({ success: false, message: 'Product id is not usable.', unsellable: true });
+    }
+    const fold = (v) =>
+      String(v || '')
+        .trim()
+        .toLowerCase();
+    const chosen = (avail.configs || []).find(
+      (c) => fold(c.color) === fold(variant?.color) && fold(c.size) === fold(variant?.size)
+    );
+    const gate =
+      chosen || (variant?.color || variant?.size ? null : avail.configs.find((c) => c.inStock > 0) || avail.configs[0]);
+    if (!gate || gate.inStock < quantity) {
+      return res.status(409).json({
+        success: false,
+        unsellable: true,
+        message:
+          gate && gate.inStock > 0
+            ? `Only ${gate.inStock} piece(s) of this configuration are in supply with the shops listing it, not ${quantity}.`
+            : 'No shop is currently selling that configuration, so it cannot go in the cart. The page has been updated - try a different colour or size.',
+      });
     }
 
     let cart = await Cart.findOne({ user: req.user._id });
@@ -102,15 +137,41 @@ router.post('/add-lens', verifyToken, async (req, res) => {
   try {
     const { productId, quantity = 1, lensConfiguration = {} } = req.body;
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).populate('seller', 'isActive isBanned isVerified');
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
     if (!product.isActive) {
       return res.status(400).json({ success: false, message: 'Product is not available.' });
     }
-    if (product.stock < quantity) {
-      return res.status(400).json({ success: false, message: 'Insufficient stock.' });
+
+    /*
+     * A powered order can only be met by a shop that opted into selling with
+     * power, and the frame still has to be sellable in the first place. This
+     * is the same availability read as POST /cart/add - the promise cannot
+     * depend on which door the buyer came through.
+     */
+    const { availabilityForProducts } = await import('../services/availability.js');
+    const avail = (await availabilityForProducts([product.toObject()]))[String(product._id)];
+    if (!avail) {
+      return res.status(400).json({ success: false, message: 'Product id is not usable.', unsellable: true });
+    }
+    const multiSeller = avail.totalSellersWhoList > 0;
+    // Legacy single-owner products carry no per-shop power declaration (their
+    // routing falls to the admin queue, as before); the type menu they render
+    // is the directory's, and refusing here would break flows never governed
+    // by SellerStock. Only shops that LISTED a power declaration can be bound
+    // by it.
+    const poweredOk = multiSeller ? avail.powered.includes(lensConfiguration.lensType) : true;
+    const anySellable = avail.configs.some((c) => c.buyable);
+    if (!anySellable || (anySellable && !poweredOk)) {
+      return res.status(409).json({
+        success: false,
+        unsellable: true,
+        message: !anySellable
+          ? avail.reasonWhenUnsellable || 'No shop is selling this frame right now.'
+          : `No shop selling this frame offers ${lensConfiguration.lensType || 'prescription'} lenses with it; the others will decline it.`,
+      });
     }
 
     let cart = await Cart.findOne({ user: req.user._id });

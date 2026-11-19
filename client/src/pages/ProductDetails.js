@@ -37,6 +37,7 @@ const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [availability, setAvailability] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [otherBrandProducts, setOtherBrandProducts] = useState([]);
   const [brandCards, setBrandCards] = useState([]);
@@ -71,6 +72,11 @@ const ProductDetails = () => {
         const res = await products.getById(id);
         const prod = oneOf(res.data, 'product');
         setProduct(prod);
+        // Seller reality: who can actually supply which configuration, and at
+        // what price. The directory describes the product; this says whether
+        // it can be bought. Never assume - fall back to pre-availability
+        // behaviour only when the server truly sent none (old bundle race).
+        setAvailability(res.data?.availability || null);
 
         // Track browsing history
         if (prod) {
@@ -166,8 +172,51 @@ const ProductDetails = () => {
     }
   };
 
+  const foldCfg = (v) =>
+    String(v || '')
+      .trim()
+      .toLowerCase();
+  const cfgFor = (color, size) =>
+    (availability?.configs || []).find((c) => foldCfg(c.color) === foldCfg(color) && foldCfg(c.size) === foldCfg(size));
+  const chosenCfg = availability ? cfgFor(selectedColor?.name, selectedSize) : null;
+  // A dimension (colour/size) is only offered when some shop lists it; the
+  // directory's full palette is not a promise anybody can keep.
+  const sellableColorNames = availability ? new Set(availability.configs.map((c) => foldCfg(c.color))) : null;
+  const offeredColors = sellableColorNames
+    ? (product?.colors || []).filter((c) => sellableColorNames.has(foldCfg(c.name)))
+    : product?.colors || [];
+  // Sizes are colour-dependent: a shop may sell Black in 52 only.
+  const offeredSizes = availability
+    ? (product?.sizes || []).filter((s) =>
+        availability.configs.some(
+          (c) =>
+            foldCfg(c.size) === foldCfg(s) && (!selectedColor?.name || foldCfg(c.color) === foldCfg(selectedColor.name))
+        )
+      )
+    : product?.sizes || [];
+  const selectionBuyable = availability ? !!(chosenCfg && chosenCfg.buyable && chosenCfg.inStock >= quantity) : true;
+  const productUnsold = availability && (availability.configs?.length || 0) === 0;
+  const sellPrice =
+    chosenCfg?.cheapest ?? (availability && availability.cheapestPrice != null ? availability.cheapestPrice : null);
+  const lensTypesOnTable =
+    availability && availability.poweredAuthoritative === false
+      ? null // the directory menu remains honest for legacy owner listings
+      : chosenCfg?.lensTypes?.length
+        ? chosenCfg.lensTypes
+        : chosenCfg
+          ? []
+          : availability?.powered || [];
+
   const handleAddToCart = () => {
     if (!product) return;
+    if (availability && !selectionBuyable) {
+      toast.error(
+        chosenCfg
+          ? 'No shop can supply that colour/size right now. Pick another configuration or check back later.'
+          : availability.reasonWhenUnsellable || 'This is not on sale right now.'
+      );
+      return;
+    }
     if (!isAuthenticated) {
       toast.error('Please login to add items to cart');
       return;
@@ -186,6 +235,14 @@ const ProductDetails = () => {
 
   const handleBuyNow = () => {
     if (!product) return;
+    if (availability && !selectionBuyable) {
+      toast.error(
+        chosenCfg
+          ? 'No shop can supply that colour/size right now. Pick another configuration or check back later.'
+          : availability.reasonWhenUnsellable || 'This is not on sale right now.'
+      );
+      return;
+    }
     if (!isAuthenticated) {
       toast.error('Please login to purchase items');
       return;
@@ -414,7 +471,7 @@ const ProductDetails = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '4px' }}>
                   <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    ₹{product.price}
+                    ₹{sellPrice != null ? sellPrice : product.price}
                   </span>
                   {product.originalPrice && (
                     <span className="price-original" style={{ fontSize: '16px' }}>
@@ -549,7 +606,7 @@ const ProductDetails = () => {
                     </span>
                   </h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                    {product.colors.map((color, idx) => (
+                    {offeredColors.map((color, idx) => (
                       <button
                         key={idx}
                         onClick={() => setSelectedColor(color)}
@@ -591,7 +648,7 @@ const ProductDetails = () => {
                     </span>
                   </h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {product.sizes.map((size, idx) => (
+                    {offeredSizes.map((size, idx) => (
                       <button
                         key={idx}
                         onClick={() => setSelectedSize(size)}
@@ -683,24 +740,69 @@ const ProductDetails = () => {
                 </div>
               </div>
 
-              <div className="card" style={{ padding: '20px', display: 'flex', gap: '12px' }}>
-                <button className="btn btn-primary btn-lg" style={{ flex: 1 }} onClick={handleAddToCart}>
-                  <FiShoppingCart /> Add to Cart
-                </button>
-                {product.category === 'eyeglasses' ? (
+              {productUnsold ? (
+                <div className="card" style={{ padding: '24px 20px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 600, marginBottom: '6px' }}>Not on sale right now</div>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                    {availability?.reasonWhenUnsellable ||
+                      'This is in the OptiKart catalogue, but no shop is currently selling it. Keep it on your wishlist and we will show it the moment a seller lists it.'}{' '}
+                    {availability?.directoryDirect ? 'Sold directly by the manufacturer with full lab support.' : ''}
+                  </p>
+                  <button className="btn btn-outline" onClick={toggleWishlist}>
+                    {wishlisted ? 'Saved to wishlist' : 'Save to wishlist'}
+                  </button>
+                </div>
+              ) : (
+                <div className="card" style={{ padding: '20px', display: 'flex', gap: '12px' }}>
                   <button
-                    className="btn btn-secondary btn-lg"
-                    style={{ flex: 1 }}
-                    onClick={() => navigate(`/product/${id}/lenses`)}
+                    className="btn btn-primary btn-lg"
+                    style={{
+                      flex: selectionBuyable ? 1 : 'none',
+                      width: selectionBuyable ? 'auto' : '100%',
+                      opacity: selectionBuyable ? 1 : 0.55,
+                      cursor: selectionBuyable ? 'pointer' : 'not-allowed',
+                    }}
+                    onClick={handleAddToCart}
                   >
-                    Choose Lenses
+                    <FiShoppingCart /> {selectionBuyable ? 'Add to Cart' : 'Out of stock here'}
                   </button>
-                ) : (
-                  <button className="btn btn-secondary btn-lg" style={{ flex: 1 }} onClick={handleBuyNow}>
-                    Buy Now
-                  </button>
-                )}
-              </div>
+                  {product.category === 'eyeglasses' &&
+                  selectionBuyable &&
+                  (!availability ||
+                    lensTypesOnTable === null ||
+                    lensTypesOnTable.length > 0 ||
+                    product.poweredOptionsAvailable === false) ? (
+                    <button
+                      className="btn btn-secondary btn-lg"
+                      style={{ flex: 1 }}
+                      onClick={() =>
+                        navigate(`/product/${id}/lenses`, { state: { availableLensTypes: lensTypesOnTable } })
+                      }
+                    >
+                      Choose Lenses
+                    </button>
+                  ) : selectionBuyable ? (
+                    <button className="btn btn-secondary btn-lg" style={{ flex: 1 }} onClick={handleBuyNow}>
+                      Buy Now
+                    </button>
+                  ) : (
+                    <span
+                      style={{
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '13px',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      {chosenCfg
+                        ? 'This shop-less colour/size combo has no seller holding stock.'
+                        : 'Try another colour or size above.'}
+                    </span>
+                  )}
+                </div>
+              )}
 
               <div className="card" style={{ padding: '16px 20px' }}>
                 <div

@@ -69,6 +69,7 @@ const SUITES = [
   ['entity codes over http', 'scripts/entity_ids_e2e.mjs'],
   ['otp takeover chain', 'scripts/otp_takeover_chain_e2e.mjs'],
   ['socket auth and room boundaries', 'scripts/socket_membership_e2e.mjs'],
+  ['seller availability boundary', 'scripts/seller_availability_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.

@@ -40,8 +40,12 @@ export const distanceKm = (a, b) => {
 /**
  * Does this seller hold the exact configuration the buyer chose?
  * Colour, size, brand, product and gender must match; prescription power must not.
+ *
+ * Exported because the storefront availability read uses THE SAME function: the
+ * rule "can somebody actually fulfil this configuration" must not be written
+ * twice, or the page promises what routing refuses. (See services/availability.js.)
  */
-const sellerHoldsConfig = (stock, wanted) => {
+export const sellerHoldsConfig = (stock, wanted) => {
   if (!stock || !stock.isListed || (stock.totalStock || 0) <= 0) return false;
   if (!wanted.color && !wanted.size) return true;
   return (stock.variants || []).some((v) => {

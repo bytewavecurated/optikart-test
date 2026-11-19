@@ -573,7 +573,7 @@ router.get('/filters', async (req, res) => {
 
 router.get('/:id/related', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id).catch(() => null);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
 
     const similarProducts = await Product.find({
@@ -615,18 +615,32 @@ router.get('/:id/related', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
+    const mongoose = (await import('mongoose')).default;
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ success: false, message: 'Product not found.' });
+    }
     const product = await Product.findById(req.params.id)
-      .populate('seller', 'storeName storeLogo rating sellerId createdAt gstNumber')
+      .populate('seller', 'storeName storeLogo rating sellerId createdAt gstNumber isActive isBanned isVerified')
       .populate('ratings.user', 'name avatar');
 
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found.' });
     }
 
+    /*
+     * The directory says WHAT this product is; availability says whether
+     * ANYBODY SELLS it right now, in which configuration, and at what price.
+     * The storefront renders the first and must gate on the second - see
+     * services/availability.js. Counting a page view is still honest on
+     * `save()` even though availability is not part of the document.
+     */
+    const { availabilityForProducts } = await import('../services/availability.js');
+    const availability = (await availabilityForProducts([product.toObject()]))[String(product._id)];
+
     product.viewCount += 1;
     await product.save();
 
-    res.json({ success: true, product });
+    res.json({ success: true, product, availability });
   } catch (error) {
     console.error('Get product error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FiEye, FiCheck, FiArrowLeft, FiInfo, FiUpload } from 'react-icons/fi';
 import { lensConfiguration as lensApi, products as productsApi } from '../services/api';
 import toast from 'react-hot-toast';
@@ -123,12 +123,14 @@ const STEPS = [
 
 const LensConfiguration = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [offeredTypes, setOfferedTypes] = useState(null); // null = not reported; full menu allowed
   const [existingConfigId, setExistingConfigId] = useState(null);
 
   const [selectedType, setSelectedType] = useState('');
@@ -154,6 +156,23 @@ const LensConfiguration = () => {
       try {
         setLoading(true);
         const [productRes, pricingRes] = await Promise.all([productsApi.getById(id), lensApi.getPricing()]);
+        /*
+         * Lens types are only on the menu if a shop that can supply THIS
+         * configuration sells with power for that type. The list arrives either
+         * from the product page (colour/size the buyer chose) or recomputed
+         * here from the same availability object; absent availability (older
+         * payload) keeps the full directory menu rather than refusing.
+         */
+        const avail = productRes?.data?.availability;
+        const fromNav = location.state?.availableLensTypes;
+        const computed = avail && fromNav === undefined ? avail.powered || [] : fromNav;
+        setOfferedTypes(
+          computed === undefined || computed === null
+            ? null
+            : avail && avail.poweredAuthoritative === false && fromNav === undefined
+              ? null // legacy product without per-shop declarations: keep the directory menu
+              : [...new Set(computed)]
+        );
         setProduct(oneOf(productRes.data));
         setPricing(oneOf(pricingRes.data));
 
@@ -409,8 +428,14 @@ const LensConfiguration = () => {
                 <FiEye size={20} style={{ color: 'var(--primary)' }} />
                 <h2 style={{ fontSize: '18px', fontWeight: 600 }}>Select Lens Type</h2>
               </div>
+              {offeredTypes && offeredTypes.length === 0 && (
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                  The shops selling this frame do not currently sell it with prescription lenses. You can still buy the
+                  frame as-is - go back and use Buy Now.
+                </p>
+              )}
               <div style={{ display: 'grid', gap: '12px' }} className="option-grid">
-                {LENS_TYPES.map((type) => (
+                {LENS_TYPES.filter((type) => !offeredTypes || offeredTypes.includes(type.value)).map((type) => (
                   <div
                     key={type.value}
                     onClick={() => setSelectedType(type.value)}
