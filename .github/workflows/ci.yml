@@ -124,6 +124,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Lint the compose file before anything expensive touches it - run 41
+      # pushed a YAML-syntax error straight into the build stage. `config -q`
+      # resolves interpolation and validates structure for pennies.
+      - name: Validate the compose topology
+        run: docker compose config -q
+
       - name: Build images via compose
         run: docker compose build --pull api client
 
