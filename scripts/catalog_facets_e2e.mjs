@@ -337,6 +337,8 @@ No Pack Solution,599,solution,Ray-Ban,FAC-UND-3,FAC-UND-3,Missing its pack prici
       companyName: 'Bulk Clash Manufacturing',
       gstNumber: '27QQQQQ2222Q1Z2',
       panNumber: 'QQQQQ2222Q',
+      address: { street: '2 Bulk Lane', city: 'Pune', state: 'Maharashtra', pincode: '411002' },
+      bank: { accountNumber: '40000987654', ifscCode: 'HDFC0001234', bankName: 'HDFC Bank', branchName: 'FC Road' },
       brands: [BULK_OWN_BRAND],
     },
   });

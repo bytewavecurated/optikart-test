@@ -83,7 +83,22 @@ const Checkout = () => {
     auth
       .getPrescriptions()
       .then((res) => {
-        if (alive) setPrescriptions(res.data.prescriptions || []);
+        if (!alive) return;
+        const list = res.data.prescriptions || [];
+        setPrescriptions(list);
+        /*
+         * The active-prescription prefill (RECOMMENDATIONS #1): one flagged
+         * default, or the most recent approved one by date. A returning buyer
+         * who verified an Rx no longer re-selects it every order; they can
+         * still change it below and it is their choice that ships.
+         */
+        if (!prescriptionId) {
+          const approved = list.filter((rx) => rx.verificationStatus === 'approved');
+          const def =
+            approved.find((rx) => rx.isDefault) ||
+            approved.slice().sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))[0];
+          if (def) setPrescriptionId(def._id);
+        }
       })
       .catch(() => {
         if (alive) setPrescriptions([]);
@@ -559,11 +574,37 @@ const Checkout = () => {
                     {approvedPrescriptions.map((rx) => (
                       <option key={rx._id} value={rx._id}>
                         {(rx.patientName || user?.name || 'Prescription') +
+                          (rx.isDefault ? ' · ACTIVE' : '') +
                           (rx.createdAt ? ' · ' + new Date(rx.createdAt).toLocaleDateString('en-IN') : '') +
                           (rx.fileUrl ? ' · document on file' : ' · typed numbers')}
                       </option>
                     ))}
                   </select>
+                  {prescriptionId && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await auth.setDefaultPrescription(prescriptionId);
+                          setPrescriptions(res.data?.prescriptions || prescriptions);
+                          toast.success('This prescription is now your active one.');
+                        } catch (err) {
+                          toast.error(err?.response?.data?.message || 'Could not set the active prescription.');
+                        }
+                      }}
+                      style={{
+                        marginLeft: 10,
+                        fontSize: 13,
+                        color: 'var(--primary)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textDecoration: 'underline',
+                      }}
+                    >
+                      Make this my active prescription
+                    </button>
+                  )}
                   {approvedPrescriptions.length === 0 && (
                     <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--danger)' }}>
                       No approved prescription is on your account yet. Upload one and it is normally reviewed within a

@@ -77,6 +77,11 @@ const ProductDetails = () => {
         // it can be bought. Never assume - fall back to pre-availability
         // behaviour only when the server truly sent none (old bundle race).
         setAvailability(res.data?.availability || null);
+        if (prod) {
+          document.title = `${prod.title}${prod.brand ? ' ' + prod.brand : ''} | OptiKart`;
+          const meta = document.querySelector('meta[name="description"]');
+          if (meta && prod.description) meta.setAttribute('content', String(prod.description).slice(0, 155));
+        }
 
         // Track browsing history
         if (prod) {
@@ -384,6 +389,45 @@ const ProductDetails = () => {
       <Header />
       <main style={{ flex: 1 }}>
         <div className="container" style={{ paddingTop: '16px', paddingBottom: '32px' }}>
+          <nav aria-label="Breadcrumb" style={{ fontSize: '13px', color: 'var(--text-secondary)', padding: '14px 0' }}>
+            <ol style={{ display: 'flex', gap: 6, listStyle: 'none', margin: 0, padding: 0, flexWrap: 'wrap' }}>
+              <li>
+                <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
+                  Home
+                </Link>
+              </li>
+              <li aria-hidden>/</li>
+              <li>
+                <Link
+                  to={'/category/' + String(product?.category || 'eyeglasses').toLowerCase()}
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                >
+                  {product?.category ? product.category[0].toUpperCase() + product.category.slice(1) : 'Products'}
+                </Link>
+              </li>
+              <li aria-hidden>/</li>
+              <li>
+                <Link
+                  to={
+                    '/brands/' +
+                    encodeURIComponent(
+                      String(product?.brand || '')
+                        .toLowerCase()
+                        .replace(/\s+/g, '-')
+                    )
+                  }
+                  style={{ color: 'inherit', textDecoration: 'none' }}
+                >
+                  {product?.brand}
+                </Link>
+              </li>
+              <li aria-hidden>/</li>
+              <li aria-current="page" style={{ color: 'var(--text-primary)' }}>
+                {String(product?.title || '').slice(0, 60)}
+              </li>
+            </ol>
+          </nav>
+
           <nav style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>
             <Link to="/" style={{ color: 'var(--primary)' }}>
               Home

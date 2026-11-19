@@ -111,6 +111,7 @@ export const auth = {
   uploadPrescriptionFile: (formData) =>
     api.post('/auth/prescription-upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   updatePrescription: (id, data) => api.put(`/auth/prescriptions/${id}`, data),
+  setDefaultPrescription: (id) => api.put(`/auth/prescriptions/${id}/default`, {}),
   deletePrescription: (id) => api.delete(`/auth/prescriptions/${id}`),
   // Addresses
   getAddresses: () => api.get('/auth/addresses'),
@@ -230,6 +231,13 @@ export const help = {
   contact: (data) => api.post('/help/contact', data),
 };
 
+export const onboarding = {
+  get: (token) => api.get(`/manufacturer/onboarding/${token}`),
+  verify: (token) => api.post(`/manufacturer/onboarding/${token}/verify`, {}),
+  otp: (token, body) => api.post(`/manufacturer/onboarding/${token}/otp`, body),
+  update: (token, body) => api.post(`/manufacturer/onboarding/${token}/update`, body),
+};
+
 export const admin = {
   dashboard: () => api.get('/admin/dashboard'),
   getUsers: (params) => api.get('/admin/users', { params }),
@@ -266,6 +274,10 @@ export const admin = {
   // Manufacturers
   getManufacturers: () => api.get('/admin/manufacturers'),
   createManufacturer: (data) => api.post('/admin/manufacturers', data),
+  getManufacturerUpdateRequests: () => api.get('/admin/manufacturer-update-requests'),
+  getSystemMetrics: () => api.get('/admin/system/metrics'),
+  recreateManufacturerInvitation: (id) => api.post(`/admin/manufacturers/${id}/recreate-invitation`, {}),
+  resendManufacturerConfirmation: (id) => api.post(`/admin/manufacturers/${id}/resend-confirmation`, {}),
   updateManufacturer: (id, data) => api.put(`/admin/manufacturers/${id}`, data),
   deleteManufacturer: (id) => api.delete(`/admin/manufacturers/${id}`),
   banManufacturer: (id, data) => api.put(`/admin/manufacturers/${id}/ban`, data),

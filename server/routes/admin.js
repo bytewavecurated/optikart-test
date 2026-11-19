@@ -934,7 +934,33 @@ router.get('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
 // Create manufacturer
 router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { name, email, password, phone, companyName, gstNumber, panNumber, address, brands } = req.body;
+    const { name, email, password, phone, companyName, gstNumber, panNumber, address, bank, brands } = req.body;
+
+    /*
+     * A manufacturer can be paid, invoiced and audited only as far as its
+     * KYC is complete, and everything downstream (brand claims, price
+     * approvals, listing decisions) acts on this identity. The desk entry used
+     * to accept four fields and flip the account live. Now: the whole record
+     * is checked against one completeness table (services/manufacturerOnboarding),
+     * and creation produces a PENDING invitation, not a trading partner -
+     * the company owns the confirmation via the emailed link, and activation
+     * finishes only after their OTP. `brandClash` rules are unchanged.
+     */
+    {
+      const { validateManufacturerKyc, normaliseKycStrings } = await import('../services/manufacturerOnboarding.js');
+      const draft = { name, companyName, email, phone, gstNumber, panNumber, address, bank, brands };
+      normaliseKycStrings(draft);
+      const kycErrors = validateManufacturerKyc(draft);
+      if (!password || String(password).length < 8) {
+        kycErrors.push({
+          field: 'password',
+          message: 'A sign-in password of at least 8 characters must be set for the manufacturer.',
+        });
+      }
+      if (kycErrors.length) {
+        return res.status(400).json({ success: false, message: 'Manufacturer record incomplete.', errors: kycErrors });
+      }
+    }
 
     const existingManufacturer = await Manufacturer.findOne({ email });
     if (existingManufacturer) {
@@ -964,6 +990,16 @@ router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
         .json({ success: false, message: 'Brand ownership could not be verified. Nothing was created.' });
     }
 
+    /*
+     * brands must be a flat list of strings before it reaches mongoose: a
+     * nested or object member used to surface as a 500 spilling validator
+     * internals. Coerce or refuse, never leak.
+     */
+    const brandList = Array.isArray(brands) ? brands : [];
+    if (brandList.some((b) => typeof b !== 'string' || !b.trim())) {
+      return res.status(400).json({ success: false, message: 'brands must be a flat list of names.' });
+    }
+
     const manufacturer = new Manufacturer({
       name,
       email,
@@ -973,17 +1009,186 @@ router.post('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
       gstNumber,
       panNumber,
       address,
-      brands: brands || [],
+      bank,
+      brands: brandList,
       createdBy: req.user.id,
     });
 
     await manufacturer.save();
 
+    /*
+     * The confirmation mail (and its state) are part of creating the record;
+     * a create that could not even attempt delivery says so in the response -
+     * the desk must know the company was never given a way to answer.
+     */
+    const { issueVerificationMail } = await import('../services/manufacturerOnboarding.js');
+    const mail = await issueVerificationMail({ m: manufacturer });
+
     res.status(201).json({
       success: true,
-      message: 'Manufacturer created successfully.',
+      message:
+        'Manufacturer recorded as PENDING VERIFICATION. A confirmation mail went out; the account activates only after the company clicks Verify and completes the OTP' +
+        (mail.devToken ? ' (this box has no SMTP; the invitation token is returned for local use).' : '.'),
       manufacturer: manufacturer.toJSON(),
+      onboarding: { state: 'pending_verification', mail },
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/*
+ * Manufacturer onboarding desk: the companies' own "update info" proposals
+ * (listUpdateRequests) and the deliberate re-creation that applies them and
+ * re-sends the confirmation. Re-create is a POST to the resource it recreates
+ * - it must never look like a blind PUT over live records.
+ */
+router.get('/manufacturer-update-requests', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { listUpdateRequests } = await import('../services/manufacturerOnboarding.js');
+    res.json({ success: true, data: await listUpdateRequests() });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error while listing update requests.' });
+  }
+});
+
+router.post('/manufacturers/:id/recreate-invitation', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { recreateWithCorrections } = await import('../services/manufacturerOnboarding.js');
+    const target = await Manufacturer.findById(req.params.id).select('-password -activationOtp');
+    if (!target) return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
+    const result = await recreateWithCorrections(target, req.app.get('io'));
+    if (!result.ok) {
+      return res
+        .status(result.errors ? 400 : 409)
+        .json({ success: false, message: result.message || 'Rejected.', errors: result.errors });
+    }
+    res.json({ success: true, message: 'Corrections applied and a fresh confirmation mail sent.', ...result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error during re-create.', error: error.message });
+  }
+});
+
+/*
+ * Re-send the confirmation link for a still-unconfirmed record - for example
+ * after the company says the mail never came (check `mailNote` first: a box
+ * with an unconfigured SMTP says so HERE instead of the invite dying silently.
+ */
+router.post('/manufacturers/:id/resend-confirmation', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { issueVerificationMail, onboardingStateOf } = await import('../services/manufacturerOnboarding.js');
+    const target = await Manufacturer.findById(req.params.id).select('-password -activationOtp');
+    if (!target) return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
+    if (onboardingStateOf(target) === 'active') {
+      return res
+        .status(409)
+        .json({ success: false, message: 'This manufacturer is already confirmed and active; nothing to re-send.' });
+    }
+    const mail = await issueVerificationMail({ m: target });
+    res.json({
+      success: true,
+      message: mail.delivered
+        ? 'A fresh confirmation mail is on its way.'
+        : mail.devToken
+          ? 'No SMTP configured here; the fresh token is returned in `devToken` for local use only.'
+          : 'The mail could not be sent on this server; the record stays pending until email is configured.',
+      mail,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/*
+ * Request metrics, for the people who operate the box. `middleware/
+ * requestContext.js` has counted every response since the day it shipped but
+ * nothing could read it; operators were left blind to exactly the thing the
+ * file logs at them - 5xx trends, the slowest endpoints at a glance, and the
+ * last error surfaced with its request id (which is how a support ticket
+ * reading "failed for id req_..." becomes a lookup instead of a guess).
+ * In-memory and monotonic - a restart resets it and the sentence says so.
+ */
+router.get('/system/metrics', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { metrics } = await import('../middleware/requestContext.js');
+    const topSlow = [...(metrics.slowest || [])].sort((a, b) => b.ms - a.ms).slice(0, 12);
+    res.json({
+      success: true,
+      metrics: {
+        startedAt: metrics.startedAt,
+        uptimeSeconds: Math.round((Date.now() - new Date(metrics.startedAt).getTime()) / 1000),
+        requests: metrics.requests,
+        byStatusClass: metrics.byStatusClass,
+        errorRatio5xx: metrics.requests
+          ? Number(((metrics.byStatusClass['5xx'] || 0) / metrics.requests).toFixed(4))
+          : 0,
+        busiestRoutes: [...(metrics.byRoute || new Map())]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 12)
+          .map(([route, count]) => ({ route, count })),
+        slowestCalls: topSlow,
+        lastError: metrics.lastError,
+        note: 'Counters live in this process; a deploy resets them.',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error reading metrics.' });
+  }
+});
+
+/*
+ * Desk override: mark an onboarding as confirmed without the company's
+ * email cycle - for migrating a manufacturer that completed verification
+ * through other means (or an e2e harness that needs a second real tenant
+ * but has no mailbox to click). This is deliberately loud: it requires a
+ * reason, it stamps who did it, and it notifies the admin pool so an
+ * override is never the quiet path around KYC.
+ */
+router.post('/manufacturers/:id/force-activate', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const reason = String(req.body?.reason || '').trim();
+    if (reason.length < 8) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'A recorded reason (8+ chars) is required to override confirmation.' });
+    }
+    const { onboardingStateOf } = await import('../services/manufacturerOnboarding.js');
+    const target = await Manufacturer.findById(req.params.id).select('-password');
+    if (!target) return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
+    const { validateManufacturerKyc } = await import('../services/manufacturerOnboarding.js');
+    const kycErrors = validateManufacturerKyc(target);
+    if (kycErrors.length && !(req.body && req.body.allowIncompleteKyc === true)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Cannot activate an incomplete record; fix KYC first (or pass allowIncompleteKyc with an auditor-approved exception).',
+        errors: kycErrors,
+      });
+    }
+    await Manufacturer.updateOne(
+      { _id: target._id },
+      {
+        'onboarding.state': 'active',
+        'onboarding.activatedAt': new Date(),
+        'onboarding.override': {
+          by: req.user.id || req.user._id,
+          at: new Date(),
+          reason,
+          incompleteKyc: Boolean(req.body?.allowIncompleteKyc),
+        },
+        isActive: true,
+        activationOtp: null,
+        'onboarding.verifyTokenHash': null,
+      }
+    );
+    const { notifyAdmins } = await import('../services/notifications.js');
+    await notifyAdmins({
+      title: 'Manufacturer confirmation overridden',
+      message: `${target.companyName} (${target.email}) was activated without the email cycle by ${req.user.email}: "${reason.slice(0, 140)}"`,
+      type: 'system',
+      data: { kind: 'manufacturer-override', manufacturerId: String(target._id), reason },
+    }).catch(() => {});
+    res.json({ success: true, message: 'Activated by desk override; admins were notified.', state: 'active' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }

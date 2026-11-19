@@ -108,6 +108,11 @@ async function main() {
   /* A second manufacturer, created through the desk with valid GST/PAN shapes.  */
   const stamp = Date.now().toString(36);
   const emailB = `brandprobe.${stamp}@example.test`;
+  const forceActivate = async (id) =>
+    call('/admin/manufacturers/' + id + '/force-activate', {
+      token: admin,
+      body: { reason: 'brand-logo e2e: activating a freshly created desk tenant without a mailbox to click' },
+    });
   const made = await call('/admin/manufacturers', {
     body: {
       name: `Probe Manufacturer ${stamp}`,
@@ -117,11 +122,14 @@ async function main() {
       companyName: `Probe Optics Pvt Ltd ${stamp}`,
       gstNumber: '27ABCDE1234F1Z5',
       panNumber: 'ABCDE1234F',
-      address: '1 Probe Lane, Mumbai, Maharashtra, 400001',
+      address: { street: '1 Probe Lane', city: 'Mumbai', state: 'Maharashtra', pincode: '400001' },
+      bank: { accountNumber: '90000456789', ifscCode: 'AXIS0001234', bankName: 'Axis Bank', branchName: 'Andheri' },
       brands: ['Vertiflex'],
     },
     token: admin,
   });
+  if (made.status === 201 || made.json?.success) await forceActivate(made.json?.manufacturer?._id);
+
   check(
     'a second manufacturer can be created for the ownership probe',
     made.json?.success === true,

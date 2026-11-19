@@ -19,6 +19,42 @@ const manufacturerSchema = new mongoose.Schema(
       pincode: String,
       country: { type: String, default: 'India' },
     },
+    bank: {
+      accountNumber: { type: String, default: '' },
+      ifscCode: { type: String, default: '' },
+      bankName: { type: String, default: '' },
+      branchName: { type: String, default: '' },
+    },
+    /*
+     * Onboarding state machine - see services/manufacturerOnboarding.js for the
+     * transitions and why a record is not "created" until the company itself
+     * has confirmed via token + OTP. `pending_verification` is what a brand-new
+     * desk insertion is; `active` is the only state sign-in honours.
+     */
+    onboarding: {
+      state: {
+        type: String,
+        enum: ['pending_verification', 'pending_otp', 'update_requested', 'active', 'declined'],
+        default: 'pending_verification',
+      },
+      verifyTokenHash: { type: String, default: null, select: false },
+      tokenIssuedAt: { type: Date, default: null },
+      tokenExpiresAt: { type: Date, default: null },
+      lastMailAt: { type: Date, default: null },
+      mailDelivered: { type: Boolean, default: false },
+      mailNote: { type: String, default: '' },
+      verifyClickedAt: { type: Date, default: null },
+      activatedAt: { type: Date, default: null },
+      recreatedAt: { type: Date, default: null },
+      pendingUpdates: { type: mongoose.Schema.Types.Mixed, default: {} },
+      updateNote: { type: String, default: '' },
+      updateRequestedAt: { type: Date, default: null },
+      // Desk overrides write { by, at, reason, incompleteKyc } here. Declared
+      // because mongoose silently drops unknown paths in updates - a lost
+      // override record would be exactly the unlogged side-door this exists
+      // to make loud.
+      override: { type: mongoose.Schema.Types.Mixed, default: null },
+    },
     website: { type: String, default: '' },
     description: { type: String, default: '' },
     brands: [{ type: String }], // Brands they manufacture
@@ -28,6 +64,9 @@ const manufacturerSchema = new mongoose.Schema(
     bannedAt: { type: Date },
     bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     lastLoginAt: { type: Date },
+    activationOtp: { type: String, default: null, select: false },
+    activationOtpExpiry: { type: Date, default: null },
+    activationAttempts: { type: Number, default: 0 },
     loginOtp: { type: String },
     loginOtpExpiry: { type: Date },
     failedLoginAttempts: { type: Number, default: 0 },
@@ -59,6 +98,10 @@ manufacturerSchema.methods.toJSON = function () {
   delete obj.password;
   delete obj.loginOtp;
   delete obj.loginOtpExpiry;
+  delete obj.activationOtp;
+  // The confirmation token is for the mail only; a console payload that
+  // echoed it would re-issue the link to anyone who could read a response.
+  if (obj.onboarding) delete obj.onboarding.verifyTokenHash;
   return obj;
 };
 installCodes(manufacturerSchema, 'manufacturer', 'Manufacturer');

@@ -366,6 +366,11 @@ const writeDemoData = async () => {
       },
       brands: ['Ray-Ban'],
       isActive: true,
+      // Historical entity: fixtures model an already-onboarded manufacturer.
+      // NEW desk creations land pending_verification instead — the suite that
+      // proves the pending flow is manufacturer_onboarding_e2e, and it creates
+      // its own record rather than relying on this one.
+      onboarding: { state: 'active', activatedAt: new Date() },
       createdBy: admin._id,
     });
     console.log('Manufacturer created:', manufacturer.email);

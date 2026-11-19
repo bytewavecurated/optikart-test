@@ -56,7 +56,7 @@ const SUITES = [
   // preparation rather than with the settlement behaviour. The fix is to fund the
   // partner through the offer path the cascade actually used (or ask for a
   // dev-only earnings fixture) - not to loosen the assertion. Until then the file
-  // is run by hand and the contract it covers is exercised in OPERATIONS.md.
+  // is run by hand and the contract it covers is exercised in SYSTEM.md.
   ['catalogue facets and upload criteria', 'scripts/catalog_facets_e2e.mjs'],
   ['global search and facet controls', 'scripts/search_facets_e2e.mjs'],
   ['partner payout settlement queue', 'scripts/payout_console_e2e.mjs'],
@@ -70,6 +70,8 @@ const SUITES = [
   ['otp takeover chain', 'scripts/otp_takeover_chain_e2e.mjs'],
   ['socket auth and room boundaries', 'scripts/socket_membership_e2e.mjs'],
   ['seller availability boundary', 'scripts/seller_availability_e2e.mjs'],
+  ['manufacturer onboarding journey', 'scripts/manufacturer_onboarding_e2e.mjs'],
+  ['production pilot drill', 'scripts/pilot-production-drill.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.

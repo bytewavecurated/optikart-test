@@ -214,6 +214,13 @@ async function main() {
       companyName: 'Second Manufacturing Co',
       gstNumber: '27ZZZZZ9999Z1Z9',
       panNumber: 'ZZZZZ9999Z',
+      address: { street: '9 Clash Estate', city: 'Jaipur', state: 'Rajasthan', pincode: '302001' },
+      bank: {
+        accountNumber: '20000555444',
+        ifscCode: 'PUNB0001234',
+        bankName: 'Punjab National Bank',
+        branchName: 'MI Road',
+      },
       brands: ['Ray-Ban'],
     },
   });
@@ -239,9 +246,28 @@ async function main() {
       companyName: 'Fresh Manufacturing Co',
       gstNumber: '27AAAAA1111A1Z1',
       panNumber: 'AAAAA1111A',
+      address: { street: '8 Fresh Park', city: 'Surat', state: 'Gujarat', pincode: '395003' },
+      bank: {
+        accountNumber: '70000123987',
+        ifscCode: 'KKBK0001234',
+        bankName: 'Kotak Mahindra',
+        branchName: 'Varachha',
+      },
       brands: [OWN_BRAND],
     },
   });
+  /*
+   * This suite's subject is BRAND OWNERSHIP; it needs Fresh Co to exist as a
+   * real signed-in manufacturer. The confirmation mail cannot be clicked here
+   * (no mailbox in the harness), so the desk override is the honest path -
+   * exactly what force-activate exists for.
+   */
+  if (ownCreate.status === 201 || ownCreate.json?.success) {
+    await call(`/admin/manufacturers/${ownCreate.json.manufacturer._id}/force-activate`, {
+      token: admin,
+      body: { reason: 'manufacturer_profile e2e: needs a live second tenant to test brand ownership' },
+    });
+  }
   check(
     'a brand nobody owns is still accepted (the rule must not block valid creates)',
     ownCreate.status === 201 || ownCreate.json?.success === true,

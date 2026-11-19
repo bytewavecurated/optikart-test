@@ -20,12 +20,25 @@ const ManageManufacturers = () => {
     gstNumber: '',
     panNumber: '',
     address: { street: '', city: '', state: '', pincode: '' },
+    bank: { accountNumber: '', ifscCode: '', bankName: '', branchName: '' },
     brands: [],
   });
+  const [updateRequests, setUpdateRequests] = useState([]);
 
   useEffect(() => {
     fetchManufacturers();
+    fetchUpdateRequests();
+    // eslint-disable-next-line
   }, []);
+
+  const fetchUpdateRequests = async () => {
+    try {
+      const res = await adminApi.getManufacturerUpdateRequests();
+      setUpdateRequests(res?.data?.data || []);
+    } catch {
+      /* queue is secondary; the table stays usable without it */
+    }
+  };
 
   const fetchManufacturers = async () => {
     try {
@@ -41,8 +54,10 @@ const ManageManufacturers = () => {
 
   const handleAdd = async () => {
     try {
-      await adminApi.createManufacturer(formData);
-      toast.success('Manufacturer added successfully');
+      const res = await adminApi.createManufacturer(formData);
+      // The desk's success now means PENDING, not live; say exactly what the
+      // server said so nobody thinks the manufacturer can sign in yet.
+      toast.success(res?.data?.message || 'Manufacturer recorded; confirmation mail sent.');
       setShowAddModal(false);
       setFormData({
         name: '',
@@ -53,11 +68,13 @@ const ManageManufacturers = () => {
         gstNumber: '',
         panNumber: '',
         address: { street: '', city: '', state: '', pincode: '' },
+        bank: { accountNumber: '', ifscCode: '', bankName: '', branchName: '' },
         brands: [],
       });
+      fetchUpdateRequests();
       fetchManufacturers();
     } catch (error) {
-      toast.error(err.response?.data?.message || 'Failed to add manufacturer');
+      toast.error(error?.response?.data?.message || error?.message || 'Failed to add manufacturer');
     }
   };
 
@@ -75,11 +92,13 @@ const ManageManufacturers = () => {
         gstNumber: '',
         panNumber: '',
         address: { street: '', city: '', state: '', pincode: '' },
+        bank: { accountNumber: '', ifscCode: '', bankName: '', branchName: '' },
         brands: [],
       });
+      fetchUpdateRequests();
       fetchManufacturers();
     } catch (error) {
-      toast.error(err.response?.data?.message || 'Failed to update manufacturer');
+      toast.error(error?.response?.data?.message || 'Failed to update manufacturer');
     }
   };
 
@@ -147,6 +166,70 @@ const ManageManufacturers = () => {
           <FiPlus /> Add Manufacturer
         </button>
       </div>
+
+      {updateRequests.length > 0 && (
+        <div
+          style={{
+            background: 'var(--warning-bg, #fff8e1)',
+            border: '1px solid var(--warning, #f59e0b)',
+            borderRadius: 'var(--radius-md)',
+            padding: '16px 20px',
+            marginBottom: '20px',
+          }}
+        >
+          <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 12px' }}>
+            Onboarding update requests ({updateRequests.length})
+          </h2>
+          {updateRequests.map((r) => (
+            <div
+              key={r.id}
+              style={{
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'flex-start',
+                flexWrap: 'wrap',
+                padding: '10px 0',
+                borderTop: '1px solid rgba(0,0,0,0.06)',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: '220px' }}>
+                <strong>{r.companyName}</strong> <span style={{ color: 'var(--text-secondary)' }}>({r.email})</span>
+                <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                  requests: {Object.keys(r.updates || {}).join(', ') || '-'}. Note: {r.note || 'none'} (
+                  {r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : ''})
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!window.confirm(`Apply ${r.companyName}'s corrections and send a fresh confirmation mail?`))
+                    return;
+                  try {
+                    const res = await adminApi.recreateManufacturerInvitation(r.id);
+                    toast.success(res?.data?.message || 'Invitation re-created.');
+                    fetchUpdateRequests();
+                    fetchManufacturers();
+                  } catch (err) {
+                    toast.error(
+                      err?.response?.data?.message || 'Re-create failed; the requested values may be incomplete.'
+                    );
+                  }
+                }}
+                style={{
+                  padding: '8px 14px',
+                  background: 'var(--brand)',
+                  color: 'var(--text-white)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                Re-create with updated details
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ position: 'relative', marginBottom: '20px' }}>
         <FiSearch
@@ -261,6 +344,9 @@ const ManageManufacturers = () => {
                             companyName: mfr.companyName,
                             phone: mfr.phone,
                             gstNumber: mfr.gstNumber || '',
+                            panNumber: mfr.panNumber || '',
+                            bank: { ...(mfr.bank || {}) },
+
                             panNumber: mfr.panNumber || '',
                             address: mfr.address || { street: '', city: '', state: '', pincode: '' },
                             brands: mfr.brands || [],
@@ -589,6 +675,86 @@ const ManageManufacturers = () => {
                   />
                 </div>
               </div>
+
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginTop: '16px' }}>
+                Bank & compliance (payouts & invoices)
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>
+                    Account number *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.bank.accountNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, bank: { ...formData.bank, accountNumber: e.target.value } })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                    placeholder="Current account number"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>
+                    IFSC *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.bank.ifscCode}
+                    onChange={(e) =>
+                      setFormData({ ...formData, bank: { ...formData.bank, ifscCode: e.target.value.toUpperCase() } })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                    placeholder="SBIN0001234"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>
+                    Bank name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.bank.bankName}
+                    onChange={(e) => setFormData({ ...formData, bank: { ...formData.bank, bankName: e.target.value } })}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                    placeholder="Bank"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '8px' }}>
+                    Branch
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.bank.branchName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, bank: { ...formData.bank, branchName: e.target.value } })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                    placeholder="Branch"
+                  />
+                </div>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
@@ -620,6 +786,7 @@ const ManageManufacturers = () => {
                     gstNumber: '',
                     panNumber: '',
                     address: { street: '', city: '', state: '', pincode: '' },
+                    bank: { accountNumber: '', ifscCode: '', bankName: '', branchName: '' },
                     brands: [],
                   });
                 }}

@@ -18,6 +18,7 @@ import {
   FiPieChart,
 } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
+import SystemMetricsCard from './SystemMetricsCard';
 
 const AdminDashboard = () => {
   const [dashboard, setDashboard] = useState(null);
@@ -437,6 +438,11 @@ const AdminDashboard = () => {
           border-color: ${quickLinks[0]?.color || 'var(--brand)'} !important;
         }
       `}</style>
+
+      <div className="card" style={{ padding: 20, marginTop: 24 }}>
+        <h2 style={{ fontSize: '17px', fontWeight: 700, marginTop: 0 }}>Request metrics (this process)</h2>
+        <SystemMetricsCard />
+      </div>
     </div>
   );
 };

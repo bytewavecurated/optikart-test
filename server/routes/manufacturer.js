@@ -477,6 +477,93 @@ const generateManufacturerToken = (manufacturerId) => {
 };
 
 // Manufacturer Login
+router.get('/onboarding/:token', async (req, res) => {
+  try {
+    const { resolveVerificationToken, onboardingSnapshot } = await import('../services/manufacturerOnboarding.js');
+    const found = await resolveVerificationToken(req.params.token);
+    if (!found.ok) {
+      return res.status(404).json({
+        success: false,
+        reason: found.reason,
+        message:
+          found.reason === 'expired'
+            ? 'This invitation link expired - ask the desk for a fresh confirmation mail.'
+            : 'That confirmation link is not valid.',
+      });
+    }
+    res.json({ success: true, onboarding: onboardingSnapshot(found.m), company: found.m.toJSON() });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/** VERIFY: details are correct - now prove it's really them with the OTP. */
+router.post('/onboarding/:token/verify', async (req, res) => {
+  try {
+    const { resolveVerificationToken, beginActivation } = await import('../services/manufacturerOnboarding.js');
+    const found = await resolveVerificationToken(req.params.token);
+    if (!found.ok)
+      return res.status(404).json({
+        success: false,
+        message: found.reason === 'expired' ? 'Link expired; request a fresh confirmation.' : 'Invalid link.',
+      });
+    const result = await beginActivation(found.m);
+    if (!result.ok) return res.status(409).json({ success: false, message: result.message, delivered: false });
+    return res.json({ success: true, message: result.message, devCode: result.devCode || undefined });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/** The emailed 6-digit code; only this instates the account. */
+router.post('/onboarding/:token/otp', async (req, res) => {
+  try {
+    const { resolveVerificationToken, completeActivation } = await import('../services/manufacturerOnboarding.js');
+    const found = await resolveVerificationToken(req.params.token);
+    if (!found.ok)
+      return res.status(404).json({
+        success: false,
+        message: found.reason === 'expired' ? 'Link expired; request a fresh confirmation.' : 'Invalid link.',
+      });
+    const result = await completeActivation(found.m, req.body.otp);
+    if (!result.ok) return res.status(400).json({ success: false, message: result.message });
+    /*
+     * Success carries the final state IN THE RESPONSE, because activation
+     * retires the invitation handle (correctly - the used token must not
+     * resolve any more). A page that re-reads the retired token after a
+     * successful activation would answer 'invitation not usable' to someone
+     * who just finished; the terminal state rides on the success instead.
+     */
+    return res.json({ success: true, message: result.message, onboarding: { state: 'active' } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
+/** UPDATE INFO: propose; nothing changes until the desk re-creates it. */
+router.post('/onboarding/:token/update', async (req, res) => {
+  try {
+    const { resolveVerificationToken, requestInfoUpdate } = await import('../services/manufacturerOnboarding.js');
+    const found = await resolveVerificationToken(req.params.token);
+    if (!found.ok)
+      return res.status(404).json({
+        success: false,
+        message: found.reason === 'expired' ? 'Link expired; request a fresh confirmation.' : 'Invalid link.',
+      });
+    const result = await requestInfoUpdate(found.m, { updates: req.body.updates || {}, note: req.body.note || '' });
+    const status = result.ok ? 200 : result.errors ? 400 : 409;
+    return res
+      .status(status)
+      .json(
+        result.ok
+          ? { success: true, message: result.message }
+          : { success: false, message: result.message, errors: result.errors, reason: result.reason }
+      );
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+  }
+});
+
 router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -487,6 +574,18 @@ router.post('/login', authLimiter, async (req, res) => {
     }
 
     if (!manufacturer.isActive) {
+      const { onboardingStateOf } = await import('../services/manufacturerOnboarding.js');
+      const st = onboardingStateOf(manufacturer);
+      if (st !== 'active') {
+        return res.status(403).json({
+          success: false,
+          onboarding: st,
+          message:
+            st === 'update_requested'
+              ? 'Your update request is with the OptiKart desk. Sign-in opens once they re-create the invitation and you confirm it.'
+              : 'This company record is awaiting email confirmation - open the newest confirmation mail from OptiKart and finish with Verify + the code we send.',
+        });
+      }
       return res.status(403).json({ success: false, message: 'Account has been deactivated.' });
     }
 

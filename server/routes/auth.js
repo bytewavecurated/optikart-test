@@ -563,6 +563,28 @@ const mapType = (t) =>
       .replace(/[\s_-]/g, '')
   ] || 'single-vision';
 
+/*
+ * The "active prescription" pointer (RECOMMENDATIONS #1). A repeat customer
+ * retypes a power every order today even though User.prescriptions already
+ * stores several with an isDefault flag nothing ever set. This makes the flag
+ * real: one approved Rx is the shopper's default, checkout pre-selects it,
+ * and moving the default is explicit. Only the owner's own list is touched.
+ */
+router.put('/prescriptions/:id/default', verifyToken, async (req, res) => {
+  try {
+    const rx = req.user.prescriptions.id(req.params.id);
+    if (!rx) return res.status(404).json({ success: false, message: 'No such saved prescription.' });
+    req.user.prescriptions.forEach((p) => {
+      p.isDefault = String(p._id) === String(rx._id);
+    });
+    rx.isDefault = true;
+    await req.user.save();
+    res.json({ success: true, message: 'Active prescription set.', prescriptions: req.user.prescriptions });
+  } catch (error) {
+    res.status(400).json({ success: false, message: 'Could not set the active prescription.', error: error.message });
+  }
+});
+
 router.post('/prescriptions', verifyToken, async (req, res) => {
   try {
     const { fileUrl, prescriptionType, lensType, notes, eyePower, patientName, doctorName } = req.body;

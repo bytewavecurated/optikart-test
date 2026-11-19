@@ -86,6 +86,7 @@ const ExecutiveLogin = lazy(() => import('./pages/executive/ExecutiveLogin'));
 const ExecutiveDashboard = lazy(() => import('./pages/executive/ExecutiveDashboard'));
 const ExecutiveSection = lazy(() => import('./pages/executive/ExecutiveSection'));
 const ManufacturerLogin = lazy(() => import('./pages/manufacturer/ManufacturerLogin'));
+const ManufacturerOnboarding = lazy(() => import('./pages/ManufacturerOnboarding'));
 const ManufacturerDashboard = lazy(() => import('./pages/manufacturer/ManufacturerDashboard'));
 const ManufacturerSellerLogin = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerLogin'));
 const ManufacturerSellerDashboard = lazy(() => import('./pages/manufacturerSeller/ManufacturerSellerDashboard'));
@@ -558,6 +559,7 @@ function App() {
           }
         />
         <Route path="/manufacturer/login" element={<ManufacturerLogin />} />
+        <Route path="/manufacturer/onboarding/:token" element={<ManufacturerOnboarding />} />
         <Route
           path="/manufacturer/dashboard"
           element={
