@@ -62,7 +62,7 @@ services:
       PORT: "5000"
       # Fail now with this exact sentence instead of crash-looping a container
       # whose first boot would refuse without a secret anyway.
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set (32+ random chars) - generate: node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"}
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set (32+ random chars) - generate: node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"}"
       MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/eyewear-platform}
       # One proxy hop: the client container. If you terminate TLS with ANOTHER
       # proxy in front of the client container too, raise this to 2, or the

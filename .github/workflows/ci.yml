@@ -125,7 +125,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build images via compose
-        run: docker compose build --pull=missing api client
+        run: docker compose build --pull api client
 
       - name: Boot stack and wait for the healthcheck
         run: |
