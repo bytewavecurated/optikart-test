@@ -116,7 +116,12 @@ jobs:
              node server.js &)
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:3121/api/health >/dev/null 2>&1 && break; sleep 1; done
           # no CSP_MODE set ANYWHERE above, so the default in server.js owns this claim:
-          H=$(curl -sI -H 'accept: text/html' http://127.0.0.1:3121/ | tr -d '\r')
+          H=$(curl -s -D - -o /dev/null -H 'accept: text/html' http://127.0.0.1:3121/ | tr -d '\r')
+          # GET, not curl-default-HEAD: the policy governs documents, and a
+          # HEAD carries no document. A browser will never request HTML via
+          # HEAD, so the header's absence there is correct; a first version of
+          # THIS step tested it with -I and failed on its own mistake - the
+          # mistake, in that case, was the -I.
           echo "$H" | grep -qi '^content-security-policy:' || { echo 'production default did not enforce'; exit 1; }
           echo "$H" | grep -q 'default-src '"'"'self'"'"'' || { echo 'policy is not the evaluated one'; exit 1; }
 
