@@ -133,11 +133,15 @@ jobs:
       - name: Build images via compose
         run: docker compose build --pull api client
 
-      - name: Boot stack and wait for the healthcheck
+      # --wait blocks until HEALTHCHECKS pass, not merely until start commands
+      # succeeded. The first version of this job slept 6s and then hit curl on a
+      # nginx that had [emerg]-exited at boot (reset, not refused) - which made a
+      # deploy-blocking config bug look like a network flake. Wait on health, and
+      # keep the explicit api-health assertion so a regression prints a sentence.
+      - name: Boot stack and wait for healthchecks
         run: |
-          docker compose up -d --wait mongo api
-          docker compose up -d client
-          sleep 6
+          docker compose up -d --wait mongo api client
+          docker compose ps
 
       - name: Edge serves the SPA
         run: |

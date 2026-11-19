@@ -188,7 +188,7 @@ docker compose ps                # api healthchecks /api/health: green == servin
   incident-report headline); JWT_SECRET missing fails the plan; env_file
   carries everything else; TRUST_PROXY_HOPS=1 for the client hop (+1 per
   TLS-terminating proxy IN FRONT of the client container).
-- The only coupling is nginx `upstream ... server:5000` (a compose DNS name).
+- The only coupling is the nginx `upstream ... api:5000` line, which must equal the compose service key (`api`).
 - TLS at the host edge (or add certificates here and let `Strict-Transport-
 Security` come from the HTTPS listener; the client container serves plain
   HTTP behind it and the compose header explains why the API's :5000 should
