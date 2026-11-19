@@ -80,14 +80,18 @@ jobs:
         run: npm run build
 
       - name: Dependency audit gate (runtime trees only)
-        # High and critical advisories in what actually SHIPS fail the build;
-        # the single accepted LOW (aws-sdk 2.x end-of-support notice) can only
-        # be "fixed" by the v3 migration that no CI here can test - it is a
-        # tracked next step in RECOMMENDATIONS/SYSTEM notes, not something to
-        # blind-migrate every run. Dev-toolchain advisories (CRA's webpack-dev
-        # server plumbing) are excluded with --omit=dev because they never
-        # reach a browser or this server's request path; when any direct client
-        # dependency turns high, the same flag catches it the moment it exists.
+        # High and critical advisories in what actually SHIPS fail the build.
+        # The first run of this gate caught react-scripts sitting in client
+        # `dependencies` (CRA convention) - a build tool whose webpack-dev-
+        # server advisories are real but exist in NO shipped artifact. It now
+        # lives in devDependencies, where --omit- dev correctly prunes it, and
+        # `npm run build` changes nothing (the Dockerfile build stage installs
+        # dev deps for exactly this reason). Two accepted residuals with
+        # written reasons, both in SYSTEM.md "deliberately does NOT do":
+        # aws-sdk v2's end-of-support LOW (the only 'fix' is an untestable v3
+        # rewrite of optional AI paths) and react-router-dom's moderate v7-
+        # only advisory, unreachable from app code (all Navigate targets are
+        # static literals - grep before you change that).
         run: |
           cd server && npm audit --omit=dev --audit-level=high
           cd ../client && npm audit --omit=dev --audit-level=high
