@@ -106,7 +106,12 @@ jobs:
         run: |
           (cd server && node .mongo.mjs > /tmp/mongo.csp.out &)
           for i in $(seq 1 30); do grep -q MONGO_READY /tmp/mongo.csp.out && break; sleep 1; done
-          URI=$(grep MONGO_READY /tmp/mongo.csp.out | awk '{print $2}')/cspci
+          RAW=$(grep MONGO_READY /tmp/mongo.csp.out | awk '{print $2}')
+          # pin exactly one path segment. the launcher's URI may or may not
+          # already carry a database (it ends in '/' when absent); appending
+          # '/x' to it produces '...//x' and mongo rejects '/' in DB names -
+          # the same class of bug the pilot drill already documents once.
+          URI=$(printf %s "$RAW" | sed 's|/*$||')/cspci
           (cd server && MONGODB_URI=$URI node fixtures/apply.mjs --expect-database=cspci >/dev/null 2>&1)
           (cd server && NODE_ENV=production PORT=3121 \
              JWT_SECRET=ci-csp-$$-0123456789abcdef0123456789abcdef \
