@@ -67,7 +67,7 @@ export const AuthProvider = ({ children }) => {
     const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
     if (expiry && Date.now() > parseInt(expiry, 10)) {
       clearAllState();
-      toast.error('Session expired. Please login again.');
+      toast.error('Session expired. Please login again.', { id: 'Session expired. Please login again.' });
       return false;
     }
     return true;
@@ -239,14 +239,14 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Login successful!');
+        toast.success('Login successful!', { id: 'Login successful!' });
         return { success: true, token };
       }
 
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -265,7 +265,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -282,11 +282,11 @@ export const AuthProvider = ({ children }) => {
       setUser(newUser);
       setIsAuthenticated(true);
       connectSocket(token);
-      toast.success('Registration successful!');
+      toast.success('Registration successful!', { id: 'Registration successful!' });
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -315,7 +315,7 @@ export const AuthProvider = ({ children }) => {
         setStaff(userData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Staff login successful!');
+        toast.success('Staff login successful!', { id: 'Staff login successful!' });
         // Enrich with the StaffRole record so the workspace can show the
         // correct queues for this person's actual role.
         try {
@@ -332,7 +332,7 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Staff login failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -359,7 +359,7 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -420,19 +420,19 @@ export const AuthProvider = ({ children }) => {
 
   const partnerLogout = useCallback(() => {
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   const staffLogout = useCallback(() => {
     api.post('/auth/logout').catch(() => {});
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   const logout = useCallback(() => {
     api.post('/auth/logout').catch(() => {});
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   /**
@@ -477,7 +477,7 @@ export const AuthProvider = ({ children }) => {
       };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -485,11 +485,11 @@ export const AuthProvider = ({ children }) => {
   const verifySellerPhoneOTP = async (sellerId, otp) => {
     try {
       const { data } = await api.post('/seller/verify-phone', { sellerId, otp });
-      toast.success('Phone verified. You can now sign in.');
+      toast.success('Phone verified. You can now sign in.', { id: 'Phone verified. You can now sign in.' });
       return { success: true, ...data };
     } catch (error) {
       const message = error.response?.data?.message || 'Verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -512,14 +512,14 @@ export const AuthProvider = ({ children }) => {
         setSeller(sellerData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Seller login successful!');
+        toast.success('Seller login successful!', { id: 'Seller login successful!' });
         return { success: true, token };
       }
 
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Seller login failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -538,7 +538,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -546,7 +546,7 @@ export const AuthProvider = ({ children }) => {
   const sellerLogout = useCallback(() => {
     api.post('/seller/logout').catch(() => {});
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   const adminLogin = async (email, password) => {
@@ -567,14 +567,14 @@ export const AuthProvider = ({ children }) => {
         setAdmin(adminData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Admin login successful!');
+        toast.success('Admin login successful!', { id: 'Admin login successful!' });
         return { success: true, token };
       }
 
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Admin login failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -593,7 +593,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -601,7 +601,7 @@ export const AuthProvider = ({ children }) => {
   const adminLogout = useCallback(() => {
     api.post('/admin/auth/logout').catch(() => {});
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   const executiveLogin = async (email, password) => {
@@ -622,14 +622,14 @@ export const AuthProvider = ({ children }) => {
         setExecutive(executiveData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Executive login successful!');
+        toast.success('Executive login successful!', { id: 'Executive login successful!' });
         return { success: true, token, executive: executiveData };
       }
 
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Executive login failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -648,7 +648,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, executive: executiveData };
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -656,7 +656,7 @@ export const AuthProvider = ({ children }) => {
   const executiveLogout = useCallback(() => {
     api.post('/executive/logout').catch(() => {});
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   const manufacturerLogin = async (email, password) => {
@@ -677,14 +677,14 @@ export const AuthProvider = ({ children }) => {
         setManufacturer(manufacturerData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Manufacturer login successful!');
+        toast.success('Manufacturer login successful!', { id: 'Manufacturer login successful!' });
         return { success: true, token, manufacturer: manufacturerData };
       }
 
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Manufacturer login failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -703,7 +703,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, manufacturer: manufacturerData };
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -711,7 +711,7 @@ export const AuthProvider = ({ children }) => {
   const manufacturerLogout = useCallback(() => {
     api.post('/manufacturer/logout').catch(() => {});
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   const manufacturerSellerLogin = async (email, password) => {
@@ -732,14 +732,14 @@ export const AuthProvider = ({ children }) => {
         setManufacturerSeller(sellerData);
         setIsAuthenticated(true);
         connectSocket(token);
-        toast.success('Manufacturer seller login successful!');
+        toast.success('Manufacturer seller login successful!', { id: 'Manufacturer seller login successful!' });
         return { success: true, token, seller: sellerData };
       }
 
       return { success: false, message: 'Unexpected response from server' };
     } catch (error) {
       const message = error.response?.data?.message || 'Manufacturer seller login failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -758,7 +758,7 @@ export const AuthProvider = ({ children }) => {
       return { success: true, seller: sellerData };
     } catch (error) {
       const message = error.response?.data?.message || 'OTP verification failed';
-      toast.error(message);
+      toast.error(message, { id: message });
       return { success: false, message };
     }
   };
@@ -766,7 +766,7 @@ export const AuthProvider = ({ children }) => {
   const manufacturerSellerLogout = useCallback(() => {
     api.post('/manufacturer-seller/logout').catch(() => {});
     clearAllState();
-    toast.success('Logged out successfully');
+    toast.success('Logged out successfully', { id: 'Logged out successfully' });
   }, [clearAllState]);
 
   /*

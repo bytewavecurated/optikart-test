@@ -66,7 +66,7 @@ export default function Logo({
       </svg>
 
       {showWordmark && (
-        <span style={{ display: 'flex', flexDirection: 'column', gap: tagline ? 2 : 0 }}>
+        <span style={{ display: 'flex', flexDirection: 'column', gap: tagline ? 3 : 0 }}>
           <span
             style={{
               fontFamily: 'var(--font-body)',
@@ -84,9 +84,9 @@ export default function Logo({
               className="logo-tagline"
               style={{
                 fontFamily: 'var(--font-body)',
-                fontSize: Math.max(9, size * 0.3),
-                fontWeight: 600,
-                letterSpacing: '0.14em',
+                fontSize: Math.max(9, size * 0.27),
+                fontWeight: 500,
+                letterSpacing: '0.18em',
                 textTransform: 'uppercase',
                 color: subColor,
                 whiteSpace: 'nowrap',

@@ -251,26 +251,62 @@ export function installCodes(schema, entity, modelName) {
    */
   const model = () => mongoose.model(modelName);
   const { field } = ID_DESCRIPTORS[entity];
-  schema.pre('validate', async function mintOnCreate(next) {
+  schema.pre('validate', async function mintOrRepair(next) {
     /*
-     * A new document always ends up owning a code of its own. Two cases, not one:
-     *  - it has no code at all (the ordinary signup), so we issue one;
-     *  - it arrives already carrying a code (a document cloned with
-     *    `...other.toObject()`), and that code belongs to the row it was copied
-     *    from - issuing a fresh one here is what stops a duplicate reaching the
-     *    unique index and surfacing as an E11000 the caller cannot interpret.
-     * An existing document being *updated* is never touched, so a code cannot
-     * change under a person who quoted it.
+     * Three cases, and the third one is the upgrade path this module used to
+     * break:
+     *  - a NEW document arrives with no code (ordinary signup) or with someone
+     *    else's (a cloned `...other.toObject()`): mint its own, as always;
+     *  - an EXISTING document whose code is present and well-shaped: never
+     *    touched. A code a person quoted last month cannot change under them,
+     *    which was the stated reason updates skipped minting;
+     *  - an EXISTING document whose code is present but NOT well-shaped: this
+     *    is a legacy row from the pre-module generator - `Math.random().
+     *    toString(36)` minted codes like USR-UPFNSA, and the deliberate
+     *    no-lookalike alphabet excludes the 'S' it carries. Rigid rejection
+     *    there is not a safety win, it is a denial of service on upgrades:
+     *    logging in writes lastLoginAt, and every such account 500s on its own
+     *    history while CI - which only ever sees freshly minted fixtures -
+     *    stays green. So: re-mint exactly once, loudly, and the row self-heals
+     *    on its first write. The transition is logged (old code -> new code)
+     *    because a support ticket may still quote the old one, and the answer
+     *    must be findable; operator-wide it is `node scripts/backfill_entity_ids.mjs`.
      */
-    if (!this.isNew) return next();
-    const takenByAnother = this[field] ? await model().exists({ _id: { $ne: this._id }, [field]: this[field] }) : null;
-    if (!this[field] || takenByAnother) {
+    const value = this[field];
+    if (this.isNew) {
+      const takenByAnother = value ? await model().exists({ _id: { $ne: this._id }, [field]: value }) : null;
+      if (!value || takenByAnother) {
+        try {
+          this[field] = undefined;
+          await mintCode(model(), this, entity);
+        } catch (error) {
+          return next(error);
+        }
+      }
+      next();
+      return;
+    }
+
+    if (value && !looksLikeId(entity, value)) {
+      const legacy = value;
+      this[field] = undefined;
       try {
-        if (this[field] && takenByAnother) this[field] = undefined;
-        await mintCode(model(), this, entity, { force: true });
+        await mintCode(model(), this, entity);
       } catch (error) {
+        this[field] = legacy; // never lose the row over the repair; checkShape will refuse this write, honestly
         return next(error);
       }
+      console.log(
+        JSON.stringify({
+          event: 'entity-code-remint',
+          entity,
+          model: model().modelName,
+          id: String(this._id),
+          from: legacy,
+          to: this[field],
+          reason: 'legacy shape predates the no-lookalike alphabet; re-minted on first write',
+        })
+      );
     }
     next();
   });
@@ -291,32 +327,53 @@ export function installCodes(schema, entity, modelName) {
 }
 
 /**
- * Backfill codes for documents created before their code existed.
+ * Backfill codes for documents created before their code existed - and REPAIR
+ * rows whose code predates the no-lookalike alphabet (USR-UPFNSA-style legacy
+ * values from the old Math.random(36) generator). The repair half matters as
+ * much as the fill half: without it an operator would have to log in as every
+ * affected account just to trigger its self-heal, and the ones that never log
+ * in stay broken; a migration that finishes the job in one pass is the point
+ * of a migration.
  *
- * Idempotent (the filter selects rows still missing the field), and it reports
- * collisions and failures rather than pretending a partial run succeeded - a
- * legacy entity left with no code is the thing an operator needs to see.
+ * Idempotent (the filter is "missing OR not matching the pattern"), and it
+ * reports collisions and failures rather than pretending a partial run
+ * succeeded - a legacy entity left with no usable code is the thing an
+ * operator needs to see. Transitions are printed per row (old -> new) so a
+ * support ticket quoting the old code can still be answered after the run.
  */
 export async function backfillCodes(Model, entity, { limit = 1000 } = {}) {
   const { field } = ID_DESCRIPTORS[entity];
-  const missing = await Model.find({ [field]: { $in: [null, ''] } })
-    .select('_id')
+  const pattern = ID_PATTERNS[entity];
+  const filter = pattern
+    ? { [field]: { $not: pattern } } // missing values never match $regex, so this covers both halves
+    : { [field]: { $in: [null, ''] } };
+  const candidates = await Model.find(filter)
+    .select('_id ' + field)
     .limit(limit)
     .lean();
   let assigned = 0;
+  let repaired = 0;
   const failures = [];
-  for (const row of missing) {
+  const transitions = [];
+  for (const row of candidates) {
     const doc = await Model.findById(row._id);
     if (!doc) continue;
+    const was = doc[field];
     try {
+      doc[field] = undefined; // force a fresh mint either way
       await mintCode(Model, doc, entity);
       // save() would re-run every hook and validator on a legacy row that may be
       // invalid today; $set touches the one field and cannot rewrite history.
       await Model.updateOne({ _id: doc._id }, { $set: { [field]: doc[field] } });
-      assigned += 1;
+      if (was) {
+        repaired += 1;
+        transitions.push({ entity, id: String(doc._id), from: String(was), to: String(doc[field]) });
+      } else {
+        assigned += 1;
+      }
     } catch (error) {
       failures.push({ id: String(doc._id), reason: String(error.message).slice(0, 120) });
     }
   }
-  return { checked: missing.length, assigned, failures };
+  return { checked: candidates.length, assigned, repaired, failures, transitions };
 }

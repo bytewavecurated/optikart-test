@@ -12,9 +12,17 @@
  *  2. Boot-time writes against a production collection are the worst time to
  *     discover a problem: no operator is watching, and the app has to come up
  *     even if the backfill cannot finish.
- *  3. It must be rerunnable. `backfillCodes()` only touches rows with no code and
- *     never overwrites an existing one, so an interrupted run can simply be
- *     started again - which is not true of a hand-written `updateMany` loop.
+ *  3. It must be rerunnable. `backfillCodes()` touches rows whose code is
+ *     missing OR whose shape predates the no-lookalike alphabet, assigns those,
+ *     and leaves correctly-shaped codes exactly as they are - so an interrupted
+ *     run can simply be started again, and a row repaired on pass one is not
+ *     re-minted on pass two. (Correctly-shaped existing codes are NEVER
+ *     rewritten by this script; that guarantee is what `never re-mints a valid
+ *     code` means, and the entity-ids unit suite tests it as behaviour, not
+ *     prose.)
+ *  4. It must REPORT what it changed, per entity: missing filled vs. legacy
+ *     repaired, with old->new transitions for anything a ticket might still
+ *     quote.
  *
  * Usage:
  *   node scripts/backfill_entity_ids.mjs            # every entity
@@ -82,12 +90,16 @@ try {
   }
 
   let totalAssigned = 0;
+  let totalRepaired = 0;
   const failures = [];
+  const allTransitions = [];
   for (const entity of list) {
     const Model = mongoose.model(ENTITY_MODEL[entity]);
     const result = await backfillCodes(Model, entity);
     const total = await Model.estimatedDocumentCount();
     totalAssigned += result.assigned;
+    totalRepaired += result.repaired;
+    for (const tr of result.transitions) allTransitions.push(tr);
     const flag = result.failures.length ? `  <-- ${result.failures.length} FAILED` : '';
     /*
      * `rows without a code` is the only column that matters to an operator:
@@ -95,7 +107,7 @@ try {
      * look rather than a summary that hides it.
      */
     console.log(
-      `${entity.padEnd(15)} total=${String(total).padStart(5)}  without-a-code=${String(result.checked).padStart(5)}  assigned=${String(result.assigned).padStart(5)}${flag}`
+      `${entity.padEnd(15)} total=${String(total).padStart(5)}  missing-or-legacy=${String(result.checked).padStart(5)}  filled=${String(result.assigned).padStart(5)}  repaired=${String(result.repaired).padStart(5)}${flag}`
     );
     for (const f of result.failures) failures.push({ entity, ...f });
   }
@@ -108,8 +120,14 @@ try {
     process.exitCode = 1;
   } else {
     console.log(
-      `\ndone - ${totalAssigned} code(s) assigned, no failures. Re-running this script is safe: rows that already have a code are left exactly as they are.`
+      `\ndone - ${totalAssigned} code(s) filled, ${totalRepaired} legacy-shaped code(s) repaired, no failures.`
     );
+    console.log('Re-running this script is safe: a row with a valid code never gets re-minted.');
+    if (allTransitions.length) {
+      console.log(`\nlegacy->current transitions (${allTransitions.length}), for tickets quoting an old code:`);
+      for (const tr of allTransitions.slice(0, 50)) console.log(`  ${tr.entity} ${tr.id}: ${tr.from} -> ${tr.to}`);
+      if (allTransitions.length > 50) console.log(`  ... and ${allTransitions.length - 50} more`);
+    }
   }
 } catch (error) {
   console.error('backfill failed to run:', String(error.message).slice(0, 200));

@@ -39,7 +39,12 @@ const DEMO_ACCOUNTS = {
   executives: ['executive.delivery@optikart.com'],
   manufacturers: ['rayban.manufacturer@optikart.com'],
   manufacturerSellers: ['rayban.retailer1@optikart.com'],
-  partners: ['suresh.partner@optikart.com', 'anjali.partner@optikart.com', 'ramesh.partner@optikart.com'],
+  partners: [
+    'suresh.partner@optikart.com',
+    'anjali.partner@optikart.com',
+    'ramesh.partner@optikart.com',
+    'settlements.partner@optikart.com', // created by the demo data, MISSED by an earlier version of this very list
+  ],
 };
 
 const flat = Object.values(DEMO_ACCOUNTS).flat();
@@ -61,7 +66,6 @@ const main = async () => {
   const { default: ManufacturerSeller } = await import('../models/ManufacturerSeller.js');
   const { default: DeliveryPartner } = await import('../models/DeliveryPartner.js');
   const { default: StaffRole } = await import('../models/StaffRole.js');
-  const { default: Product } = await import('../models/Product.js');
   const { default: Brand } = await import('../models/Brand.js');
 
   const removals = [
@@ -80,29 +84,58 @@ const main = async () => {
 
   if (process.env.REMOVE_DEMO_CATALOGUE === 'yes') {
     /*
-     * Products AND brand records, because the demo dataset registers brands the
-     * moment a logo is approved, and a brand left behind with no catalogue under it
-     * still shows in the rails and still owns its name in the one-brand-one-owner
-     * index - so clearing products alone leaves the storefront advertising a brand
-     * nobody sells.
+     * The catalogue reset deletes exactly the CONTENT collections the demo
+     * dataset owns - products, brands, stock rows, AND the demo coupons, help
+     * articles and blog posts. Hand-listing content collections here was how
+     * an earlier pass of this script cleared Product+Brand+SellerStock and
+     * left the demo vouchers and 'OptiKart Guides' blog sitting in a
+     * supposedly-purged live database: half a purge is exactly the surprise
+     * this script exists to end. The list is read from fixtures/inventory's
+     * WIPABLE, MINUS the identity collections (users, sellers, manufacturers,
+     * partners, ...) - those are removed by explicit email above, NOT by
+     * collection, so the people running this site who share those collections
+     * survive the catalogue reset.
      *
-     * The deletion is unconditional within the collection, and says so: it is
-     * keyed on nothing, so a shop that has already entered real products into this
-     * same database loses them here. That is why this path needs its own
-     * confirmation rather than riding along with removing demo logins, and why the
-     * count is printed afterwards instead of trusted from the flag.
+     * Within the content collections the deletion is unconditional, and says
+     * so: a shop that already imported real products into the same database
+     * loses them here. That is why this path needs its own confirmation, and
+     * why each count is read BACK from the database afterwards rather than
+     * trusted from the flag.
      */
-    const products = await Product.deleteMany({});
-    const brands = await Brand.deleteMany({});
-    const stock = await (await import('../models/SellerStock.js')).default.deleteMany({});
-    console.log(`  removed ${products.deletedCount ?? 0} products`);
-    console.log(`  removed ${brands.deletedCount ?? 0} brand records`);
-    console.log(`  removed ${stock.deletedCount ?? 0} retailer stock rows`);
+    const { WIPABLE } = await import('../fixtures/inventory.mjs');
+    const EMAIL_KEYED = new Set(['users (all roles, including admins)', 'sellers (shops)']);
+    const contentEntries = WIPABLE.filter((e) => !EMAIL_KEYED.has(e.label));
+    // Manufacturers/retailers/partners/executives are identity too: content
+    // reset must not delete the people. Only the catalogue collections go.
+    const IDENTITY = new Set([
+      'executives',
+      'manufacturers',
+      'manufacturer retailer shops',
+      'delivery partners',
+      'staff roles',
+    ]);
+    const toClear = contentEntries.filter((e) => !IDENTITY.has(e.label));
+    // The demo dataset also registers Brand rows (one-brand-one-owner); Brand is
+    // not in WIPABLE because the seed does not delete it before writing, but a
+    // catalogue reset has to clear it or the rails advertise brands with zero
+    // products and the name stays reserved.
+    const brandRes = await Brand.deleteMany({});
+    console.log(`  removed ${brandRes.deletedCount ?? 0} brand records`);
+    for (const entry of toClear) {
+      const r = await entry.model.deleteMany({});
+      const left = await entry.model.estimatedDocumentCount();
+      console.log(`  cleared ${String(r.deletedCount ?? 0).padStart(4)} x ${entry.label} (now ${left})`);
+    }
     console.log(
-      '  NOTE: these were deleted by collection, not by demo identity - every product, brand and stock row in this database is gone, including real ones.'
+      '  NOTE: content collections were emptied by collection, not by demo identity - every product, stock row, coupon, help article and blog in this database is gone, including real ones.'
+    );
+    console.log(
+      '  Identity collections were touched only by the explicit demo emails above; manufacturers, shops and partners you created yourself remain.'
     );
   } else {
-    console.log('  catalogue left untouched (set REMOVE_DEMO_CATALOGUE=yes to clear products, brands and stock rows)');
+    console.log(
+      '  catalogue left untouched (set REMOVE_DEMO_CATALOGUE=yes to clear products, brands, stock rows, coupons, help articles and blog posts)'
+    );
   }
 
   const remainingAdmins = await User.countDocuments({ role: 'admin', isActive: true });

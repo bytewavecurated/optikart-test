@@ -1110,7 +1110,7 @@ router.post('/manufacturers/:id/resend-confirmation', verifyToken, verifyAdmin, 
  */
 router.get('/system/metrics', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { metrics } = await import('../middleware/requestContext.js');
+    const { metrics, recentErrors } = await import('../middleware/requestContext.js');
     const topSlow = [...(metrics.slowest || [])].sort((a, b) => b.ms - a.ms).slice(0, 12);
     res.json({
       success: true,
@@ -1128,7 +1128,17 @@ router.get('/system/metrics', verifyToken, verifyAdmin, async (req, res) => {
           .map(([route, count]) => ({ route, count })),
         slowestCalls: topSlow,
         lastError: metrics.lastError,
-        note: 'Counters live in this process; a deploy resets them.',
+        recentErrors, // bounded to `cap` newest-first; see requestContext header for why in-memory is the right size of true
+        /*
+         * CSP observations (ring-buffered per directive) ride the same panel
+         * as every other in-process fact: this is the number an operator
+         * watches to decide whether report-mode can become enforce-mode, and
+         * it is printed on every read rather than stored elsewhere so a
+         * restart clearing it can never pretend it persisted.
+         */
+        cspMode: process.env.CSP_MODE || 'off',
+        cspViolations: (await import('../middleware/securityCsp.js')).cspViolationsSnapshot(),
+        note: 'Counters, violations and the recent-errors window live in this process and reset on deploy; that is by design, not an outage (see middleware/requestContext.js). The durable answer is metrics export, not a lying counter.',
       },
     });
   } catch (error) {

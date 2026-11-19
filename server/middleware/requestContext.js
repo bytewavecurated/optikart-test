@@ -19,6 +19,22 @@ import crypto from 'node:crypto';
 const STARTED_AT = Date.now();
 const newId = () => crypto.randomUUID().split('-')[0];
 
+/*
+ * Durability, deliberately process-local, and the file saying the consequence:
+ *  - the rolling recent-errors window below keeps the last 60 failures in
+ *    memory newest-first;
+ *  - the snapshot endpoint prints uptime-scoped totals plus that window.
+ * What survives a deploy is NOTHING, and the metrics reader says so on every
+ * response. That is the correct posture for these counters: a process-local
+ * counter that lies about surviving restarts is worse on a dashboard than one
+ * that honestly resets, and the platform's real durability question belongs
+ * to metrics EXPORT (next steps in SYSTEM.md), not to inventing storage the
+ * application has no business owning. If Sentry ever lands, recordError is the
+ * seam already written for it.
+ */
+export const recentErrors = [];
+const RECENT_CAP = 60;
+
 export const metrics = {
   startedAt: STARTED_AT,
   requests: 0,
@@ -124,5 +140,9 @@ export const recordError = (req, err) => {
       .join(' | ')
       .slice(0, 500),
   };
+  // newest-first bounded window; the cap is the contract, the list size never
+  // exceeds it under a hostile flood.
+  recentErrors.unshift(metrics.lastError);
+  recentErrors.length = Math.min(recentErrors.length, RECENT_CAP);
   return metrics.lastError;
 };

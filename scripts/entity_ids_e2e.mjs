@@ -362,6 +362,53 @@ async function main() {
     );
   }
 
+  /* ------------------------------------------------- legacy code vs the login door */
+  /*
+   * The field defect in HTTP terms: an account whose STORED userId predates the
+   * no-lookalike alphabet used to fail its own login - the success path stamps
+   * lastLoginAt, the write re-validates the stored code, and a correct password
+   * answered 500 'Server error during login.' forever. No CI run could see it,
+   * because every CI database is born from fixtures. So the e2e plants the exact
+   * state the way reality produced it (direct collection write, hooks bypassed -
+   * the same path an old backup restore takes) and demands that login not only
+   * succeeds but leaves the row repaired; then restores the fixture verbatim.
+   */
+  {
+    const { default: UserM } = await import('../server/models/User.js');
+    const mongoose = UserM.db.base;
+    if (!process.env.MONGODB_URI) {
+      check('legacy login regression needs MONGODB_URI (set by the harness)', false);
+    } else {
+      await mongoose.connect(process.env.MONGODB_URI);
+      try {
+        const adminFix = await UserM.findOne({ email: 'samedayopticians@gmail.com' });
+        const originalCode = adminFix.userId;
+        await UserM.collection.updateOne({ _id: adminFix._id }, { $set: { userId: 'USR-UPFNSA' } });
+
+        const loginResult = await call('/admin/auth/login', {
+          body: { email: 'samedayopticians@gmail.com', password: 'Sameday123@' },
+        });
+        check(
+          'a legacy-shaped code no longer turns a correct admin password into a 500',
+          loginResult.status === 200 && Boolean(loginResult.json?.token || loginResult.json?.requiresOTP),
+          `HTTP ${loginResult.status} :: ${JSON.stringify(loginResult.json).slice(0, 80)}`
+        );
+        const healed = await UserM.findById(adminFix._id).lean();
+        check(
+          'the login healed the row on the way through: valid code now, old shape gone',
+          healed.userId !== 'USR-UPFNSA' && /^USR-[ACDEFGHJKMNPQRTUVWXY34679]{6}$/.test(String(healed.userId)),
+          String(healed.userId)
+        );
+        // put the fixture exactly back for the suites that run after this one
+        await UserM.collection.updateOne({ _id: adminFix._id }, { $set: { userId: originalCode } });
+        const restored = await UserM.findById(adminFix._id).lean();
+        check('fixture admin code restored verbatim for later suites', restored.userId === originalCode);
+      } finally {
+        await mongoose.disconnect();
+      }
+    }
+  }
+
   /* ------------------------------------------------------------- legacy rows */
   const legacy = await call('/admin/returns', { token: admin });
   const legacyText = JSON.stringify(legacy.json ?? {});

@@ -1,16 +1,24 @@
 import '../config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
 import axios from 'axios';
-import AWS from 'aws-sdk';
 
-// Initialize AWS Transcribe if credentials are available
-if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_aws_access_key_here') {
-  AWS.config.update({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION || 'us-east-1',
-  });
-}
-
+/*
+ * AWS Transcribe note. The v2 path this replaces was not working and was not
+ * testable: `transcribe.startStreamTranscription(params).promise()` is not a
+ * thing the v2 SDK ever returned (stream transcription is a SigV4 websocket
+ * handshake that hands back a record stream, not a promise of a JSON result -
+ * the shape this code tried to read out of it does not exist). It therefore
+ * always threw, which the route then wrapped as 'Failed to process audio.
+ * Please try again.' - a clear message with the wrong reason, invisible until
+ * someone tries `SPEECH_RECOGNITION_SERVICE=aws` in production.
+ *
+ * Honest position: buffer-to-transcript AWS transcription with no S3 staging
+ * requires `@aws-sdk/transcribe-streams` (websocket, audio chunks) - a real
+ * feature, with real cost, that nothing in the product requires while Google
+ * works and is configured. The branch is retained ONLY as an explicit refusal
+ * that says the actual reason; the mock suite pins it, so a future "AWS
+ * speech" claim must come with the implementation, not an error-message
+ * wrapper.
+ */
 /**
  * Convert speech to text using configured service
  */
@@ -27,6 +35,16 @@ export const speechToText = async (audioBuffer, language = 'en-US') => {
         return await transcribeWithGoogle(audioBuffer, language);
     }
   } catch (error) {
+    /*
+     * The wrapper's job is to give UNKNOWN failures a safe sentence, not to
+     * relabel known provider refusals: 'not implemented', and the same
+     * 'not configured' family, carry the actionable reason in their own words.
+     * Laundering 'AWS speech is not implemented' into 'Failed to process
+     * audio. Please try again.' is how a mis-set SPEECH_RECOGNITION_SERVICE
+     * becomes an infinite retry loop by a user whose microphone is fine.
+     */
+    const known = /not implemented|not configured/i.test(String(error?.message || ''));
+    if (known) throw error;
     console.error('Speech recognition error:', error);
     throw new Error('Failed to process audio. Please try again.');
   }
@@ -77,36 +95,12 @@ const transcribeWithGoogle = async (audioBuffer, language) => {
 /**
  * Transcribe audio using AWS Transcribe
  */
-const transcribeWithAWS = async (audioBuffer, language) => {
-  if (!process.env.AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID === 'your_aws_access_key_here') {
-    throw new Error('AWS Transcribe not configured');
-  }
-
-  const transcribe = new AWS.TranscribeService();
-
-  const params = {
-    Audio: {
-      Payload: audioBuffer,
-    },
-    Settings: {
-      LanguageCode: language === 'en-US' ? 'en-US' : 'en-GB',
-      MaxAlternatives: 1,
-      ShowAlternatives: false,
-    },
-  };
-
-  const result = await transcribe.startStreamTranscription(params).promise();
-
-  const transcript = result.TranscriptResult.Transcripts[0].Transcript;
-  const confidence = result.TranscriptResult.Transcripts[0].Confidence;
-
-  return {
-    success: true,
-    transcript: transcript,
-    confidence: confidence || 0.95,
-    language: language,
-    source: 'aws-transcribe',
-  };
+const transcribeWithAWS = async () => {
+  throw new Error(
+    'AWS speech recognition is not implemented in this build. The Google and Azure paths work and are what the product uses; ' +
+      'an AWS branch is a websocket-streaming integration (@aws-sdk/transcribe-streams), not a one-line swap, and this refusal ' +
+      'exists so the config cannot half-promise it.'
+  );
 };
 
 /**

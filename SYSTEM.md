@@ -113,6 +113,19 @@ customer delivery charge; partner pay = ₹10/km leg, ₹3/platform per started
 `transferFunds()` has no mock path anymore because a fabricated `tr_mock_*`
 receipt was marking payouts complete against money that never moved.
 
+## Upgrading an existing database (the login-500 trap, now closed)
+
+Accounts created by a build older than `services/entityIds.js` carry codes from
+the old base36 generator (letters like S that the deliberate no-lookalike
+alphabet cannot issue). Shape validation on every write used to refuse those
+stored values, so such an account could not even complete its own login (login
+stamps lastLoginAt, the save re-validates). The write path now SELF-HEALS: the
+first ordinary save re-mints a valid code once, logs the old→new transition, and
+every later write is stable; `node server/scripts/backfill_entity_ids.mjs` does
+the same sweep in one operator pass (reporting `filled` and `repaired`), and the
+harness pins both behaviours as wire + unit assertions. Valid codes, once
+assigned, are never rewritten - by either path.
+
 ## Configuration surface (every flag, what it does at runtime)
 
 Everything reads `server/.env` (or the environment; `ENV_FILE` overrides the
@@ -131,7 +144,7 @@ this codebase has seen.
 | FRONTEND_URL                                                        | CORS origin + mail link base + exact browser origin                                                                                                                                                | localhost:3000 |
 | TRUST_PROXY_HOPS                                                    | numeric proxy depth (never true)                                                                                                                                                                   | prod:1         |
 | AUTH_OTP_BYPASS                                                     | seeded-public-password logins skip the mailed OTP (non-prod only)                                                                                                                                  | true(dev)      |
-| SESSION_IDLE_MINUTES                                                | console-role idle sign-out                                                                                                                                                                         | 30             |
+| SESSION_IDLE_MINUTES                                                | console-role idle sign-out                                                                                                                                                                         | 60             |
 | STORAGE_BACKEND                                                     | auto/cloudinary/local; local refused in production without next line + is warned when auto-fell-back                                                                                               | auto           |
 | ALLOW_LOCAL_STORED_UPLOADS                                          | the acknowledge-to-use-disk flag (volume-backed installs)                                                                                                                                          | false          |
 | JSON_BODY_LIMIT                                                     | parser ceiling for documents (uploads are separate)                                                                                                                                                | 1mb            |
@@ -157,11 +170,11 @@ Nothing seeds at boot — the demo dataset deleted the eleven collections it
 owns as its first act, and "database looks empty" (the old auto-trigger)
 described a wrong `MONGODB_URI` just as well as a fresh install. Data creation:
 
-| Entry                                                                      | What it is for                                                                                                                                |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cd server && npm run fixtures:apply -- --expect-database=YOUR_SCRATCH_DB` | demo data into a THROWAWAY database; refuses non-empty collections, wrong db name even with --force.                                          |
-| `deprovision:demo` (`DANGEROUS_CONFIRM=yes [REMOVE_DEMO_CATALOGUE=yes]`)   | pull demo accounts (and optionally catalogue) back out of a live-ish database; two explicit confirmations because the second deletes content. |
-| `BOOTSTRAP_ADMIN_*`                                                        | the only production account path.                                                                                                             |
+| Entry                                                                      | What it is for                                                                                                                                            |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cd server && npm run fixtures:apply -- --expect-database=YOUR_SCRATCH_DB` | demo data into a THROWAWAY database; refuses non-empty collections, wrong db name even with --force.                                                      |
+| `deprovision:demo` (`DANGEROUS_CONFIRM=yes [REMOVE_DEMO_CATALOGUE=yes]`)   | logins only by demo email; WITH the second flag also the full demo-content surface by collection (products, brands, stock, coupons, help articles, blogs) |
+| `BOOTSTRAP_ADMIN_*`                                                        | the only production account path.                                                                                                                         |
 
 After provisioning, real entities arrive through the app's own doors — the
 screens are the structural contract.
@@ -259,32 +272,56 @@ rules the loop believed it enforced); per-listing `sell with price`
 declaration and the 7-working-day emailed price-change approval sit on
 SellerStock, not Product.
 
-## What this system deliberately does NOT do (open, named gaps)
+## What this system deliberately does NOT do (and what it now DOES)
 
-1. **Content-Security-Policy** — absent on purpose. The built bundle uses
-   inline styles + runtime-injected scripts (react-hot-toast, CRA); a CSP
-   written without measuring every page's real loads WILL break the
-   storefront while looking like hardening. The fix is a measured rollout:
-   run the app behind `Content-Security-Policy-Report-Only` (or a dev proxy
-   injecting it), browse every console role, ship the nonce policy that the
-   observation supports. New harness group when a policy lands.
-2. **aws-sdk v2** (1 LOW: end-of-support notice). The "fix" `--force` offers is
-   a downgrade to the 1.x line; v3 migration is a rewrite of
-   services/faceDetection + speechRecognition against mock endpoints, testable
-   only with those. Migrate with CI behind a mock, never blind-swap the SDK.
-3. **react-router data-router advisory** — app uses only declarative routes
-   with static `to` targets; v6.30.6 carries no reachable instance. Watch
-   `to={}`-from-user-input patterns before it matters.
-4. **Redis for rate limiting** — the limiter store is in-process; one replica
-   is the documented shape (compose). Scale the API beyond one and counts get
-   per-pod. The plan is a `rate-limit-redis` store behind a `REDIS_URL` flag.
-5. **Metrics durability** — /api/admin/system/metrics counts a process
-   lifetime; restarts reset. Ship a push-exporter (or Sentry, below) rather
-   than pretending an in-memory counter is a time series.
-6. **Multi-file upload dedupe (bulk sheets)** — same row twice is two rows.
-7. **Search spelling tolerance** — facets handle case/plurals; "aviytor" finds
-   nothing. A thesaurus + trigram suggestion table when it earns the query
-   volume.
+This section changed status in the `58476c41`-..HEAD era and is rewritten to
+say which, because 'open gap' prose that survives the fix becomes folklore:
+
+1. Content-Security-Policy — **shipped with the measured rollout**: the
+   policy is the exact set the production bundle proved it needs (asserted
+   per-directive so a future edit cannot quietly un-break payments, fonts,
+   inline styles or the socket), `CSP_MODE` chooses `enforce` (production
+   default when unset — the gap was the ABSENT policy, not an unset flag),
+   `report` (same policy, Report-Only, for staging the next change) or `off`.
+   Violations posted by browsers land in a bounded per-directive ring on
+   `GET /api/admin/system/metrics` — that ring is what turns the next policy
+   edit from guesswork back into measurement. Pinned by
+   `server/scripts/csp_mode_e2e.mjs` (14 checks).
+2. aws-sdk v2 end-of-support — **gone**: no v2 dependency in the graph
+   anymore, so no advisory and no boot-time end-of-support notice. Face
+   detection runs on the lazy v3 client (no module load, no warning, and no
+   construction-time credential check on unconfigured boxes); the v3 wire
+   contract with the documented response shape, casing and real response
+   bodies classified differently, is pinned by
+   `scripts/face_shape_aws_mock_e2e.mjs`. **Honest residual**: the AWS
+   SPEECH branch is an explicit refusal (the v2 path was a phantom that
+   never returned the shape it read), and a refusal tested as behaviour is
+   the fixable kind of wrong — the websocket integration, when the product
+   wants it, replaces one sentence; Google/Azure work today.
+3. Silent-simulation laundering — **closed**: a provider that IS configured
+   and then fails now surfaces as a refusal with the reason, never a
+   simulated answer wearing the label of a detection (the face path; pinned).
+4. react-router advisory — unchanged by deliberate choice (declarative routes,
+   static `to` targets only; the data-router path the advisory lives in is
+   not reached at all by app code — re-check that sentence when someone
+   adds `to={userInput}`).
+5. Redis limiter store — **flag shipped with its two halves**: unset = the
+   documented in-process behaviour, unchanged, limiter still tested; set =
+   one external store for every limiter, and an UNREACHABLE or UNINSTALLED
+   Redis causes the process to refuse to boot with the reason, rather than
+   keep serving '200/15min' limits that are secretly 200/15min PER POD. What
+   the suite does not claim: that it re-implemented protocol-level Redis
+   semantics — the library's counting correctness is its own test surface;
+   ours is the construction and the refusal (pinned by
+   `server/scripts/redis_limiter_store_e2e.mjs`, with the reason for that
+   scope written at the top of the suite).
+6. Metrics durability — **improved to the honest size**: the rolling recent-
+   errors window (last ~60, newest-first, bounded) and the CSP ring join the
+   metrics panel; every read says, in its own words, that a deploy resets
+   them. The durable answer remains metrics EXPORT, which is now the named
+   'should' below, not a counter that quietly pretends to be durable.
+7. Bulk dedupe (same row twice, two inserts), search spelling — still open,
+   unchanged (not this session's asks, not silently 'fixed').
 
 ## Next, in priority order (and why)
 

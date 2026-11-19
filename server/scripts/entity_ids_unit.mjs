@@ -451,6 +451,102 @@ try {
     !fixedCodes.includes('COLLISION') && new Set(fixedCodes).size === 6,
     fixedCodes.join(',')
   );
+
+  /* --------------------------------------- legacy-code upgrade path (the login 500) */
+  /*
+   * The real-world defect this pins is not a generator bug: accounts created by a
+   * pre-entityIds build carry codes minted by `Math.random().toString(36)` - base36
+   * includes an 'S', which the deliberate no-lookalike alphabet can never produce.
+   * When shape validation then refused such a stored value on ANY write, and login
+   * writes (it stamps lastLoginAt on success), the effect was a 500 'Server error
+   * during login' for correct credentials - forever, on every legacy account, while
+   * CI stayed green because CI only ever runs freshly fixture-seeded databases.
+   * The upgrade path therefore gets asserted the way it actually arrives: a row
+   * whose stored code predates the alphabet, written by an ordinary update, then
+   * read back repaired; the repair stable across a second write; and the bulk
+   * migration catching what an interactive write never will.
+   */
+  const legacyEmail = `legacy.shape.${Date.now().toString(36)}@probe.test`;
+  const legacyRow = await User.create({
+    name: 'Legacy Shape',
+    email: legacyEmail,
+    password: 'Str0ngPassL!',
+    phone: '9000000777',
+  });
+  // Simulate stored history the only honest way: write the old-format value INTO
+  // the row, bypassing the hooks the same way an old backup restore does. Hooks
+  // only fire on mongoose writes by definition; the upgrade case has no hook that
+  // has ever seen this value.
+  await User.collection.updateOne(
+    { _id: legacyRow._id },
+    { $set: { userId: 'USR-UPFNSA' } } // the exact shape from the field, including the S
+  );
+
+  const loadedLegacy = await User.findById(legacyRow._id);
+  let remintLines = '';
+  const realConsoleLog = console.log;
+  let saveError = null;
+  try {
+    console.log = (...a) => {
+      remintLines += a.map(String).join(' ') + '\n';
+    };
+    loadedLegacy.phone = '9000000778'; // an ordinary profile update; this is where login dies today
+    await loadedLegacy.save();
+  } catch (error) {
+    saveError = error;
+  } finally {
+    console.log = realConsoleLog;
+  }
+  check(
+    'a legacy-shaped stored code no longer breaks an ordinary write',
+    saveError === null,
+    saveError && String(saveError.message).slice(0, 120)
+  );
+  const afterRepair = await User.findById(legacyRow._id).lean();
+  check(
+    'the update re-mints a valid no-lookalike code, once',
+    looksLikeId('user', String(afterRepair.userId)) &&
+      afterRepair.userId !== 'USR-UPFNSA' &&
+      !ambiguous(afterRepair.userId),
+    String(afterRepair.userId)
+  );
+  check(
+    'and logs the transition so tickets quoting the old code stay answerable',
+    /entity-code-remint/.test(remintLines) &&
+      remintLines.includes('USR-UPFNSA') &&
+      remintLines.includes(String(afterRepair.userId))
+  );
+  const stablePhone = '9000000779';
+  loadedLegacy.phone = stablePhone;
+  await loadedLegacy.save();
+  check(
+    'second write never re-mints: the repaired code is now the stable one',
+    (await User.findById(legacyRow._id).lean()).userId === afterRepair.userId
+  );
+
+  // The operator-wide migration: rows that take no interactive write still get
+  // fixed, and the run REPAIRS (its own column) rather than pretending only
+  // missing codes exist.
+  await User.collection.updateOne({ _id: legacyRow._id }, { $set: { userId: 'USR-BAD0LS' } });
+  const migration = await backfillCodes(User, 'user', { limit: 5000 });
+  check(
+    'migration sweeps legacy shapes and counts them REPAIRED',
+    migration.repaired >= 1 && migration.transitions.some((tr) => tr.from === 'USR-BAD0LS'),
+    JSON.stringify({ checked: migration.checked, assigned: migration.assigned, repaired: migration.repaired })
+  );
+  check(
+    'its own new transitions match the pattern they claim',
+    migration.transitions.every((tr) => looksLikeId('user', tr.to))
+  );
+  const finalLegacy = await User.findById(legacyRow._id).lean();
+  check('that row is repaired by the batch pass too', looksLikeId('user', String(finalLegacy.userId)));
+  const invalidLeft = await User.countDocuments({ userId: { $not: ID_PATTERNS.user } });
+  check(
+    'after the run, NO user row in the database holds an invalid-shaped code',
+    invalidLeft === 0,
+    `invalid-left=${invalidLeft}`
+  );
+  await User.deleteOne({ _id: legacyRow._id });
 } catch (error) {
   check(
     'the suite ran without an unexpected failure',

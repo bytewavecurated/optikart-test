@@ -72,6 +72,9 @@ const SUITES = [
   ['seller availability boundary', 'scripts/seller_availability_e2e.mjs'],
   ['manufacturer onboarding journey', 'scripts/manufacturer_onboarding_e2e.mjs'],
   ['production pilot drill', 'scripts/pilot-production-drill.mjs'],
+  ['aws v3 face-shape wire contract', 'scripts/face_shape_aws_mock_e2e.mjs'],
+  ['csp modes (off, report, enforce) + sink', 'server/scripts/csp_mode_e2e.mjs'],
+  ['redis limiter-store flag: memory default + fail-fast', 'server/scripts/redis_limiter_store_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.

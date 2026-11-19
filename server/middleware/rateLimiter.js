@@ -32,9 +32,53 @@ export const identifyAttempt = (req) => {
   return `ip:${req.ip}`;
 };
 
+/*
+ * Cross-replica counting, on a flag.
+ *
+ * The limiters are, by default, per-process in-memory. That is CORRECT until
+ * someone deploys a second replica, at which point it is quietly WRONG:
+ * `max` and every login attempt budget become per-pod, the limits advertises
+ * are multiplied by the pod count, and nothing fails loudly to say so - the
+ * only symptom is abuse that keeps getting under the threshold.
+ *
+ * `REDIS_URL` switches every limiter in this file to a shared store. The
+ * store CANNOT half-work: if the package is missing or the server is
+ * unreachable, construction itself throws with the reason, so booting
+ * continues and per-process counting silently replaces what an operator
+ * asked for is impossible. Scripts/redis_limiter_store_e2e.mjs pins both
+ * failure sentences by driving a live limiter pair through the store the
+ * same way express-rate-limit will at request time.
+ */
+export function redisLimiterStore() {
+  const url = process.env.REDIS_URL;
+  if (!url) return undefined;
+  if (!redisLimiterStore._p) {
+    redisLimiterStore._p = (async () => {
+      const clientMod = await import('redis').catch(() => {
+        throw Object.assign(
+          new Error(
+            'REDIS_URL is set but the optional `redis` package is not installed: npm i redis, or unset REDIS_URL. The limiter will not quietly run per-process while a shared store was asked for.'
+          )
+        );
+      });
+      const { RedisStore } = await import('rate-limit-redis');
+      const client = clientMod.createClient({ url });
+      await client.connect().catch((e) => {
+        throw Object.assign(
+          new Error(`limiters refused to boot: REDIS_URL unreachable (${e.message}) - fail-fast by design`),
+          { cause: e }
+        );
+      });
+      return new RedisStore({ sendCommand: (...args) => client.sendCommand(args) });
+    })();
+  }
+  return redisLimiterStore._p;
+}
+
 export const authLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 10,
+  store: redisLimiterStore(),
   keyGenerator: identifyAttempt,
   message: {
     success: false,
@@ -55,6 +99,7 @@ export const authLimiter = rateLimit({
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000,
+  store: redisLimiterStore(),
   message: {
     success: false,
     message: 'Too many requests. Please slow down and try again shortly.',
@@ -66,6 +111,7 @@ export const apiLimiter = rateLimit({
 });
 
 export const otpLimiter = rateLimit({
+  store: redisLimiterStore(),
   windowMs: 5 * 60 * 1000,
   max: 10,
   // Same reasoning as the sign-in limiter: an OTP quota shared by an entire

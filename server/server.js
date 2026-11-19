@@ -173,6 +173,36 @@ app.use(requestContext);
  * than 300 individual edits.
  */
 app.use(securityHeaders);
+
+/*
+ * CSP is mounted for exactly the documents the header governs (GET+HTML) and
+ * under a mode, never a guess: `CSP_MODE=report` ships the policy as
+ * Report-Only (browsers observe, nothing breaks) while `CSP_MODE=enforce`
+ * puts the same string under Content-Security-Policy. The default is off —
+ * an absent policy on a page is a known posture; a wrong one that is live by
+ * default is an outage shipped as a feature flag. The report sink below
+ * collects violations into the ring buffer that
+ * GET /api/admin/system/metrics prints.
+ */
+{
+  const { securityCsp } = await import('./middleware/securityCsp.js').catch(() => ({
+    securityCsp: () => (req, res, next) => next(),
+  }));
+  /*
+   * Default by deployment mode, and both halves of that sentence are load-
+   * bearing: production without CSP is the gap this closes, so `enforce` is
+   * the production default when CSP_MODE is unset (an unset flag that fails
+   * open silently is exactly how this stayed unwritten for months); local
+   * dev/CI leave it `off` because CRA's dev server injects inline/HMR assets
+   * no production bundle uses and a broken localhost dev experience would
+   * teach people to disable the flag everywhere. `report` remains the
+   * staging posture for any future policy edit.
+   */
+  const cspDefault = (process.env.NODE_ENV || '').toLowerCase() === 'production' ? 'enforce' : 'off';
+  app.use(securityCsp(process.env.CSP_MODE || cspDefault));
+}
+
+app.use(securityHeaders);
 app.use(errorSurface);
 
 /*
@@ -181,6 +211,31 @@ app.use(errorSurface);
  * themselves; a revoked session that got through one gap would be completely
  * invisible, because a signed-out token looks exactly like a live one.
  */
+/*
+ * CSP violation sink: intentionally OUTSIDE the authed routers (a report
+ * posted by a victim's browser cannot first obtain our bearer token), so it
+ * carries its own limiter and is read-only storage of bounded strings on a
+ * capped directive-key ring. The one thing it must never do is trust the
+ * reported URL as anything but display-capped text.
+ */
+{
+  const { cspReportStore } = await import('./middleware/securityCsp.js');
+  const rateLimit = (await import('express-rate-limit')).default;
+  const cspLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 120,
+    standardHeaders: false,
+    legacyHeaders: false,
+    validate: { trustProxy: true, xForwardedForHeader: false },
+  });
+  app.post(
+    '/api/security/csp-report',
+    cspLimiter,
+    express.json({ type: 'application/csp-report', limit: '32kb' }),
+    cspReportStore
+  );
+}
+
 app.use('/api', sessionGuard);
 
 app.use(apiLimiter);

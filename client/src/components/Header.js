@@ -179,17 +179,19 @@ const Header = () => {
         >
           <input
             type="text"
-            placeholder="Search for sunglasses, eyeglasses, contact lenses and more"
+            placeholder="Search eyewear, brands, prescriptions…"
+            aria-label="Search for sunglasses, eyeglasses, contact lenses and more"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '10px 80px 10px 40px',
-              borderRadius: 'var(--radius-xs)',
-              border: 'none',
+              padding: '10px 84px 10px 42px',
+              borderRadius: '999px',
+              border: '1px solid transparent',
               fontSize: '14px',
               background: 'var(--bg-white)',
               color: 'var(--text-primary)',
+              transition: 'border-color .15s ease, box-shadow .15s ease',
             }}
           />
           <FiSearch
@@ -407,20 +409,24 @@ const Header = () => {
           ) : roleConsole ? null : (
             <Link
               to="/login"
+              className="hdr-pill"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
-                color: 'var(--primary)',
-                fontSize: '14px',
+                gap: '7px',
+                color: 'var(--text-white)',
+                fontSize: '13px',
                 fontWeight: 600,
-                padding: '6px 24px',
-                background: 'var(--text-white)',
-                borderRadius: 'var(--radius-xs)',
+                letterSpacing: '.015em',
+                padding: '7px 14px',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.4)',
+                borderRadius: '999px',
                 textDecoration: 'none',
+                whiteSpace: 'nowrap',
               }}
             >
-              <FiUser size={16} />
+              <FiUser size={15} />
               Login
             </Link>
           )}
@@ -444,10 +450,11 @@ const Header = () => {
                   fontWeight: 600,
                   padding: '7px 12px',
                   border: '1px solid rgba(255,255,255,0.45)',
-                  borderRadius: 'var(--radius-xs)',
+                  borderRadius: '999px',
                   textDecoration: 'none',
                   whiteSpace: 'nowrap',
                 }}
+                className="hdr-pill"
               >
                 <FiUser size={15} />
                 {roleConsole.label}
@@ -472,6 +479,8 @@ const Header = () => {
           {!roleConsole && (
             <Link
               to="/wishlist"
+              aria-label="Wishlist"
+              className="hdr-act"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -479,6 +488,8 @@ const Header = () => {
                 color: 'var(--text-white)',
                 fontSize: '14px',
                 fontWeight: 500,
+                padding: '6px 8px',
+                borderRadius: '999px',
                 textDecoration: 'none',
               }}
             >
@@ -489,14 +500,18 @@ const Header = () => {
           {!roleConsole && (
             <Link
               to="/cart"
+              aria-label="Shopping cart"
+              className="hdr-act"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px',
+                gap: '8px',
                 color: 'var(--text-white)',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: 500,
                 position: 'relative',
+                padding: '6px 12px',
+                borderRadius: '999px',
                 textDecoration: 'none',
               }}
             >
@@ -1076,6 +1091,12 @@ const Header = () => {
             display: none !important;
           }
         }
+        /* Header action affordances: hover belongs in CSS, not 40px of inline
+           handlers that would need wiring into blur/touch states. */
+        .hdr-pill { transition: background-color .15s ease, border-color .15s ease; }
+        .hdr-pill:hover { background: rgba(255, 255, 255, 0.12) !important; border-color: rgba(255, 255, 255, 0.75); }
+        .hdr-act { transition: background-color .15s ease; }
+        .hdr-act:hover { background: rgba(255, 255, 255, 0.1); }
         /* Hide scrollbar for category nav */
         .category-nav-scroll::-webkit-scrollbar {
           display: none;

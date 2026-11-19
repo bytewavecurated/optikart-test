@@ -1,16 +1,41 @@
 import '../config/loadEnv.js'; // env loading belongs to one place, and it honours ENV_FILE
-import AWS from 'aws-sdk';
 import axios from 'axios';
 
-// Initialize AWS Rekognition if credentials are available
-const rekognition =
-  process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'your_aws_access_key_here'
-    ? new AWS.Rekognition({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_REGION || 'us-east-1',
-      })
-    : null;
+/*
+ * v3 (aws-sdk v2 reached end of support: frozen at one advisory, printing an
+ * end-of-support warning on every boot even on boxes with no AWS configured,
+ * because v2 constructed the client at module-load time). v3 changes two
+ * things that matter, not just the package name:
+ *  - the SDK is imported LAZILY, so a server with no Rekognition credentials
+ *    never even loads it (and never prints anything about it);
+ *  - the credential check is one branch (the old file tested
+ *    AWS_ACCESS_KEY_ID twice with the same sentinel - a dead second arm).
+ * `AWS_ENDPOINT` points the client at any SigV4-compatible endpoint - the same
+ * hole every v3 client leaves open for mocks and local stacks, and the
+ * face-shape mock suite drives a fake Rekognition through it with REAL
+ * response shapes captured from AWS's documented output.
+ */
+const credentialsConfigured = () =>
+  Boolean(process.env.AWS_ACCESS_KEY_ID) && process.env.AWS_ACCESS_KEY_ID !== 'your_aws_access_key_here';
+
+let rekognitionPromise = null;
+const rekognition = async () => {
+  if (!credentialsConfigured()) return null;
+  if (!rekognitionPromise) {
+    rekognitionPromise = import('@aws-sdk/client-rekognition').then(
+      ({ RekognitionClient }) =>
+        new RekognitionClient({
+          region: process.env.AWS_REGION || 'us-east-1',
+          credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          },
+          ...(process.env.AWS_ENDPOINT ? { endpoint: process.env.AWS_ENDPOINT } : {}),
+        })
+    );
+  }
+  return rekognitionPromise;
+};
 
 /**
  * Detect face shape from image using configured service
@@ -30,8 +55,35 @@ export const detectFaceShape = async (imageBuffer) => {
         return await detectWithAWS(imageBuffer);
     }
   } catch (error) {
-    console.error('Face detection error:', error);
-    // Fallback to simulated detection
+    /*
+     * The simulation is for the PROVIDER BEING ABSENT - a box that has no
+     * Rekognition configured, which is what its own code branch already
+     * checked. Once a caller DID configure a provider and the provider then
+     * fails (bad keys, region typo, endpoint down), returning a simulated
+     * result labelled it a detection anyway: the guidance page told real
+     * customers their face was 'oblong' because an AWS call threw. Now:
+     * configured-and-failing surfaces as a refusal WITH the reason, the way
+     * every other integration in this app reports its own absence or failure;
+     * not-configured still simulates, loudly naming itself as simulation.
+     */
+    const byProvider =
+      service === 'aws'
+        ? credentialsConfigured()
+        : service === 'google'
+          ? Boolean(
+              process.env.GOOGLE_VISION_API_KEY &&
+              process.env.GOOGLE_VISION_API_KEY !== 'your_google_vision_api_key_here'
+            )
+          : service === 'azure'
+            ? Boolean(process.env.AZURE_FACE_API_KEY && process.env.AZURE_FACE_ENDPOINT)
+            : false;
+    if (byProvider) {
+      console.error(`Face detection via ${service} failed after configuration:`, error.message);
+      throw new Error(
+        `Face analysis is temporarily unavailable (${service} refused the request). Try again shortly or use the guided questions.`
+      );
+    }
+    console.warn(`Face detection via ${service} not configured; using guidance simulation for this request.`);
     return simulateFaceDetection();
   }
 };
@@ -40,25 +92,41 @@ export const detectFaceShape = async (imageBuffer) => {
  * Detect face shape using AWS Rekognition
  */
 const detectWithAWS = async (imageBuffer) => {
-  if (!rekognition) {
+  const client = await rekognition();
+  if (!client) {
     console.warn('AWS Rekognition not configured, using simulation');
     return simulateFaceDetection();
   }
 
-  const params = {
-    Image: {
-      Bytes: imageBuffer,
-    },
-    Attributes: ['ALL'],
-  };
-
-  const result = await rekognition.detectFaces(params).promise();
+  const { DetectFacesCommand } = await import('@aws-sdk/client-rekognition');
+  const result = await client.send(
+    new DetectFacesCommand({
+      Image: { Bytes: imageBuffer },
+      Attributes: ['ALL'],
+    })
+  );
 
   if (!result.FaceDetails || result.FaceDetails.length === 0) {
     throw new Error('No face detected in the image');
   }
 
-  const face = result.FaceDetails[0];
+  /*
+   * Casing normalizer, and THE reason it exists: aws-sdk v2 lower-camel-cased
+   * every response member (Landmarks: [{type,x,y}]), while the v3 client hands
+   * back the documented wire shape ({Type,X,Y}). The geometry function below was
+   * written against v2's keys; without this map, rightEye is undefined on the
+   * first real photo and the port would fail LOUDLY in production and silently
+   * in review. Accepting both shapes keeps the old sim fixtures honest too.
+   */
+  const raw = result.FaceDetails[0];
+  const face = {
+    ...raw,
+    Landmarks: (raw.Landmarks || []).map((l) => ({
+      type: String(l.type ?? l.Type ?? ''),
+      x: Number(l.x ?? l.X),
+      y: Number(l.y ?? l.Y),
+    })),
+  };
 
   // Analyze face geometry to determine shape
   const faceShape = analyzeFaceGeometry(face);

@@ -428,20 +428,6 @@ const ProductDetails = () => {
             </ol>
           </nav>
 
-          <nav style={{ fontSize: '13px', color: 'var(--text-light)', marginBottom: '16px' }}>
-            <Link to="/" style={{ color: 'var(--primary)' }}>
-              Home
-            </Link>
-            {' / '}
-            <Link to={`/category/${product.category}`} style={{ color: 'var(--primary)' }}>
-              {product.category}
-            </Link>
-            {' / '}
-            <span>{product.brand}</span>
-            {' / '}
-            <span style={{ color: 'var(--text-primary)' }}>{productTitle}</span>
-          </nav>
-
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}
             className="product-detail-grid"
