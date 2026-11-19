@@ -162,8 +162,8 @@ router.post('/login', authLimiter, async (req, res) => {
 
     // Check if this is a test credential - bypass OTP for testing
     // Must match the accounts created by seed.js, so the logins printed at boot
-    // and listed in LOGINS.md actually work - a seeded partner left out of this
-    // list is told its password is an OTP that never arrives.
+    // and listed in SYSTEM.md 'Demo logins' actually work - a seeded partner
+    // missing from that list is told its password is an OTP that never arrives.
     const testPartnerEmails = [
       'suresh.partner@optikart.com',
       'anjali.partner@optikart.com',

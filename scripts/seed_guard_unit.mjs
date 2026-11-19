@@ -6,7 +6,7 @@
  * does. The app cannot seed at all - the demo dataset moved to
  * `server/fixtures/` and server.js stopped importing it, so there is no boot-time
  * decision left to make (see server/fixtures_destruction_guard_unit.mjs for what IS
- * enforced now, and OPERATIONS.md "Demo fixtures, staging, and production").
+ * enforced now, and SYSTEM.md "Demo fixtures, staging and production").
  *
  * The cases below are kept because two things remain live:
  *  - `productionBootErrors`, which still refuses a production start that sets
@@ -24,7 +24,7 @@
  * means "seed if the database looks empty" - and a brand new production
  * database is exactly that. A first ordinary boot would run the demo fixtures,
  * whose seller, shopper, manufacturer and partner accounts have fixed
- * passwords published in LOGINS.md, and the seed deletes the collections it
+ * passwords published in SYSTEM.md, and the seed deletes the collections it
  * owns before writing. Nothing would have looked broken: the site would have
  * simply come up full of demo data and demo logins.
  *

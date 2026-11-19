@@ -79,6 +79,19 @@ jobs:
           CI: "false"
         run: npm run build
 
+      - name: Dependency audit gate (runtime trees only)
+        # High and critical advisories in what actually SHIPS fail the build;
+        # the single accepted LOW (aws-sdk 2.x end-of-support notice) can only
+        # be "fixed" by the v3 migration that no CI here can test - it is a
+        # tracked next step in RECOMMENDATIONS/SYSTEM notes, not something to
+        # blind-migrate every run. Dev-toolchain advisories (CRA's webpack-dev
+        # server plumbing) are excluded with --omit=dev because they never
+        # reach a browser or this server's request path; when any direct client
+        # dependency turns high, the same flag catches it the moment it exists.
+        run: |
+          cd server && npm audit --omit=dev --audit-level=high
+          cd ../client && npm audit --omit=dev --audit-level=high
+
       - name: Run the API suites
         run: node scripts/verify.mjs
 
@@ -89,3 +102,49 @@ jobs:
           tail -n 60 .verify-logs/server.log 2>/dev/null || echo "no server log"
           echo "--- mongo.log (tail) ---"
           tail -n 20 .verify-logs/mongo.log 2>/dev/null || echo "no mongo log"
+  # The Docker story CI never had: build the exact images the release would
+  # ship, boot the compose topology (its own mongo - not the job service),
+  # and hit the site through the edge. A Dockerfile that cannot install,
+  # a compose that cannot start, or an nginx that does not proxy /api would
+  # otherwise first be found on the deploy box the day we go live.
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: verify
+
+    env:
+      NODE_ENV: development
+      JWT_SECRET: ci-only-secret-not-for-production-use-0123456789
+      CLIENT_PORT: "18080"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images via compose
+        run: docker compose build --pull=missing api client
+
+      - name: Boot stack and wait for the healthcheck
+        run: |
+          docker compose up -d --wait mongo api
+          docker compose up -d client
+          sleep 6
+
+      - name: Edge serves the SPA
+        run: |
+          curl -fsS http://127.0.0.1:18080/ | grep -qi "OptiKart"
+          docker compose ps api | tail -1 | grep -i "(healthy)"
+
+      # 42 = socket namespace refused without a token, which is the
+      # security posture proven through the real nginx path, not just the
+      # direct one.
+      - name: nginx routes /api to the service and reports health
+        run: |
+          curl -fsS http://127.0.0.1:18080/api/health | grep -q '"status":"ok"'
+          curl -s -o /dev/null -w '%{http_code}' 'http://127.0.0.1:18080/socket.io/?EIO=4&transport=polling' | grep -q 200
+          curl -s -X POST -H 'Content-Type: text/plain' --data-binary '40{}' \
+            "http://127.0.0.1:18080/socket.io/?EIO=4&transport=polling&sid=$(curl -s 'http://127.0.0.1:18080/socket.io/?EIO=4&transport=polling' | sed 's/^0//' | python3 -c 'import sys,json;print(json.load(sys.stdin)["sid"])')" \
+            > /dev/null
+
+      - name: Dumps the container logs if the run fell over
+        if: failure()
+        run: docker compose logs --tail 80 api client mongo
