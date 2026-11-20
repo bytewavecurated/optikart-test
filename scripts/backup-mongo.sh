@@ -63,7 +63,7 @@ fi
 mkdir -p "$DIR"
 ARCHIVE="$OUT/mongodump-$DB.archive"
 
-if ! mongodump --uri "$MONGO_URI/$DB" --archive="$ARCHIVE.tmp" --noCompression; then
+if ! mongodump --uri "$MONGO_URI/$DB" --archive="$ARCHIVE.tmp"; then
   rm -rf "$OUT"
   echo "ERROR: mongodump failed - see above." >&2
   exit 2
