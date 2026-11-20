@@ -211,7 +211,7 @@ export const wishlist = {
 
 export const coupons = {
   getAll: () => api.get('/coupons'),
-  validate: (code, orderAmount) => api.post('/coupons/validate', { code, orderAmount }),
+  validate: (code, orderAmount, items) => api.post('/coupons/validate', { code, orderAmount, items }),
 };
 
 export const blog = {

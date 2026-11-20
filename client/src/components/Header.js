@@ -274,6 +274,8 @@ const Header = () => {
 
         {/* Desktop Nav */}
         <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {isCustomerAuthenticated ? <NotificationBell /> : null}
+
           {isCustomerAuthenticated ? (
             <div style={{ position: 'relative' }}>
               <button

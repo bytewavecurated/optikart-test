@@ -168,7 +168,15 @@ const Checkout = () => {
     if (!couponCode.trim()) return;
     setApplyingCoupon(true);
     try {
-      const res = await coupons.validate(couponCode.trim(), subtotal);
+      // cart lines go along so a category/brand-scoped voucher is quoted on
+      // the matching items only (the server re-reads prices itself; this is
+      // an id list, not an amount claim); without them the server refuses
+      // to quote and says needsCart.
+      const lines = items.map((i) => ({
+        product: (i.product?._id || i.productId || i.product || '').toString(),
+        quantity: i.quantity,
+      }));
+      const res = await coupons.validate(couponCode.trim(), subtotal, lines);
       // Server answers { success, message, coupon: { code, discountType, discountValue, discount } }
       const applied = res.data.coupon || res.data.data || res.data;
       applyCoupon(applied);

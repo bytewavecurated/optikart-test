@@ -76,6 +76,7 @@ const SUITES = [
   ['csp modes (off, report, enforce) + sink', 'server/scripts/csp_mode_e2e.mjs'],
   ['redis limiter-store flag: memory default + fail-fast', 'server/scripts/redis_limiter_store_e2e.mjs'],
   ['admin list queries: search/filters/sort/pages', 'scripts/admin_list_queries_e2e.mjs'],
+  ['festive offer scopes + voucher scope parity', 'scripts/offers_scopes_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.

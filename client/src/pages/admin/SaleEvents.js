@@ -310,21 +310,28 @@ const SaleEvents = () => {
                           {cat.label}
                         </label>
                       ))}
-                    
 
-                  <div>
-                    <label>Brands (optional - comma separated)</label>
-                    <input
-                      type="text"
-                      value={formData.brands}
-                      onChange={(e) => setFormData({ ...formData, brands: e.target.value })}
-                      placeholder={'e.g. Ray-Ban, Vinco'}
-                      style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)', fontSize: '14px' }}
-                    />
-                    <small style={{ color: 'var(--text-light)', fontSize: '11.5px' }}>
-                      leave empty to cover every brand in the selected categories; a festival offer on one label is brands + that percentage
-                    </small>
-                  </div></div>
+                      <div>
+                        <label>Brands (optional - comma separated)</label>
+                        <input
+                          type="text"
+                          value={formData.brands}
+                          onChange={(e) => setFormData({ ...formData, brands: e.target.value })}
+                          placeholder={'e.g. Ray-Ban, Vinco'}
+                          style={{
+                            width: '100%',
+                            padding: '10px',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-xs)',
+                            fontSize: '14px',
+                          }}
+                        />
+                        <small style={{ color: 'var(--text-light)', fontSize: '11.5px' }}>
+                          leave empty to cover every brand in the selected categories; a festival offer on one label is
+                          brands + that percentage
+                        </small>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="input-group">
@@ -360,19 +367,25 @@ const SaleEvents = () => {
                       />
                     </div>
                   </div>
-                <div>
-                  <label>Brands (optional — comma separated)</label>
-                  <input
-                    type="text"
-                    value={formData.brands}
-                    onChange={(e) => setFormData({ ...formData, brands: e.target.value })}
-                    placeholder="e.g. Ray-Ban, Vinco"
-                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)', fontSize: '14px' }}
-                  />
-                  <small style={{ color: 'var(--text-light)', fontSize: 11.5 }}>
-                    leave empty to cover every brand in the selected categories.
-                  </small>
-                </div>
+                  <div>
+                    <label>Brands (optional — comma separated)</label>
+                    <input
+                      type="text"
+                      value={formData.brands}
+                      onChange={(e) => setFormData({ ...formData, brands: e.target.value })}
+                      placeholder="e.g. Ray-Ban, Vinco"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-xs)',
+                        fontSize: '14px',
+                      }}
+                    />
+                    <small style={{ color: 'var(--text-light)', fontSize: 11.5 }}>
+                      leave empty to cover every brand in the selected categories.
+                    </small>
+                  </div>
 
                   <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                     <button onClick={handleSave} className="btn btn-primary" disabled={formLoading}>

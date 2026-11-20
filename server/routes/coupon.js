@@ -61,7 +61,12 @@ router.post('/validate', verifyToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Coupon already used by you.' });
     }
 
-    if (coupon.minOrderAmount > 0 && orderAmount < coupon.minOrderAmount) {
+    if (
+      !coupon.applicableCategories?.length &&
+      !coupon.applicableBrands?.length &&
+      coupon.minOrderAmount > 0 &&
+      orderAmount < coupon.minOrderAmount
+    ) {
       return res.status(400).json({
         success: false,
         message: `Minimum order amount of ₹${coupon.minOrderAmount} required.`,
@@ -90,17 +95,25 @@ router.post('/validate', verifyToken, async (req, res) => {
       }
       const Product = (await import('../models/Product.js')).default;
       const ids = [...new Set(lines.map((l) => String(l.product || l.productId || l)).filter(Boolean))];
-      const docs = await Product.find({ _id: { $in: ids } }).select('category brand price').lean();
+      const docs = await Product.find({ _id: { $in: ids } })
+        .select('category brand price')
+        .lean();
       const byId = new Map(docs.map((d) => [String(d._id), d]));
       const cartLines = lines.map((l) => {
         const d = byId.get(String(l.product || l.productId || l)) || {};
         const qty = Math.max(1, Number(l.quantity || 1));
-        const amount = Number(l.amount ?? (Number(d.price || 0) * qty));
+        const amount = Number(l.amount ?? Number(d.price || 0) * qty);
         return { category: d.category, brand: d.brand, amount };
       });
       const { couponScopeResult, couponDiscountFor } = await import('../services/couponScope.js');
       const scope = couponScopeResult(scoped, cartLines, orderAmount);
       if (!scope.eligible) return res.status(400).json({ success: false, message: scope.reason });
+      if (coupon.minOrderAmount > 0 && scope.base < coupon.minOrderAmount) {
+        return res.status(400).json({
+          success: false,
+          message: `Minimum order amount of ₹${coupon.minOrderAmount} required in ${scope.scopeLabel} - this cart has ₹${Math.round(scope.base)} eligible.`,
+        });
+      }
       const d = couponDiscountFor(scoped, scope);
       if (!d.ok) return res.status(400).json({ success: false, message: d.reason });
       discount = d.discount;

@@ -30,7 +30,11 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { name, description, bannerImage, categories, discountPercentage, startDate, endDate, brands } = req.body;
 
-    if (brands !== undefined && brands !== null && (!Array.isArray(brands) || brands.some((b) => typeof b !== 'string' || !b.trim()))) {
+    if (
+      brands !== undefined &&
+      brands !== null &&
+      (!Array.isArray(brands) || brands.some((b) => typeof b !== 'string' || !b.trim()))
+    ) {
       return res.status(400).json({ success: false, message: 'brands must be a list of brand names.' });
     }
     if (!name || !discountPercentage || !startDate || !endDate) {
@@ -72,7 +76,8 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
 
 router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { name, description, bannerImage, categories, discountPercentage, startDate, endDate, isActive, brands } = req.body;
+    const { name, description, bannerImage, categories, discountPercentage, startDate, endDate, isActive, brands } =
+      req.body;
 
     const event = await SaleEvent.findById(req.params.id);
     if (!event) return res.status(404).json({ success: false, message: 'Sale event not found.' });

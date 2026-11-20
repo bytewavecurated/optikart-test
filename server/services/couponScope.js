@@ -32,14 +32,24 @@ const norm = (list) => (Array.isArray(list) ? list.map((v) => String(v || '')).f
 export function couponLineEligible(coupon, line) {
   const cats = norm(coupon.applicableCategories);
   const brands = norm(coupon.applicableBrands);
-  if (cats.length && !cats.includes(String(line.category || '').trim().toLowerCase())) return false;
+  if (
+    cats.length &&
+    !cats.includes(
+      String(line.category || '')
+        .trim()
+        .toLowerCase()
+    )
+  )
+    return false;
   if (brands.length && !brands.some((b) => foldBrand(b) === foldBrand(line.brand || ''))) return false;
   return true;
 }
 
 export function couponScopeResult(coupon, lines, fullSubtotal) {
   const cats = norm(coupon.applicableCategories).join('/');
-  const brands = norm(coupon.applicableBrands).map((b) => b).join(', ');
+  const brands = norm(coupon.applicableBrands)
+    .map((b) => b)
+    .join(', ');
   if (!cats.length && !brands.length) {
     return { eligible: true, base: fullSubtotal, matched: fullSubtotal, scopeLabel: '' };
   }
@@ -47,7 +57,10 @@ export function couponScopeResult(coupon, lines, fullSubtotal) {
   const matched = matchedLines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
   const scopeLabel = [cats ? `categories ${cats}` : '', brands ? `brands ${brands}` : ''].filter(Boolean).join(' and ');
   if (!matchedLines.length) {
-    return { eligible: false, reason: `This coupon applies only to ${scopeLabel}, and none of the items in this order are in scope.` };
+    return {
+      eligible: false,
+      reason: `This coupon applies only to ${scopeLabel}, and none of the items in this order are in scope.`,
+    };
   }
   return { eligible: true, base: matched, matched, anyMatched: true, scopeLabel };
 }
