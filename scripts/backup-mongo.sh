@@ -77,9 +77,24 @@ BYTES="$(wc -c < "$ARCHIVE")"
 
 # -------- real verification: restore the archive into a THROWAWAY namespace --------
 VERIFY_DB="__backupverify_${STAMP}"
-if ! mongorestore --uri "$MONGO_URI" --nsInclude="{$DB}.*" --nsFrom="$DB.*" --nsTo="$VERIFY_DB.*" --archive="$ARCHIVE" --noIndexRestore >/dev/null; then
+if ! mongorestore --uri "$MONGO_URI" --nsInclude="$DB.*" --nsFrom="$DB.*" --nsTo="$VERIFY_DB.*" --archive="$ARCHIVE" --noIndexRestore >/dev/null; then
   rm -rf "$OUT"
   echo "ERROR: the archive failed a REAL restore. Treat as incident: backups exist but may be unusable." >&2
+  exit 3
+fi
+
+# A restore that matched nothing is not "verified": a pattern that never hit
+# still exits 0, and two empty namespace lists are equal - the exact way a
+# silent zero could masquerade as parity. Count rows in the restored
+# namespace first and refuse on the zero, before comparing anything.
+RESTORED_ROWS="$(mongosh --quiet "$MONGO_URI/$VERIFY_DB" --eval '
+  const names = db.getCollectionNames().filter((c) => !c.startsWith("system."));
+  names.reduce((n, c) => n + db.getCollection(c).countDocuments(), 0);
+')"
+if [ "$RESTORED_ROWS" = "0" ]; then
+  mongosh --quiet "$MONGO_URI" --eval "db.getSiblingDB('$VERIFY_DB').dropDatabase()" >/dev/null
+  rm -rf "$OUT"
+  echo "ERROR: the archive restored ZERO documents into $VERIFY_DB - the verification namespace matched nothing; refusing to call this verified." >&2
   exit 3
 fi
 
