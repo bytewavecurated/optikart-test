@@ -1219,8 +1219,7 @@ const ProductDetails = () => {
             <section style={{ marginBottom: '32px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Similar Products</h2>
               <div
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}
-              >
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
                 {relatedProducts
                   .filter((p) => p._id !== product._id)
                   .slice(0, 5)
@@ -1235,8 +1234,7 @@ const ProductDetails = () => {
             <section style={{ marginBottom: '32px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Browse from Other Brands</h2>
               <div
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}
-              >
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
                 {otherBrandProducts.slice(0, 5).map((p) => (
                   <ProductCard key={p._id} product={p} />
                 ))}
@@ -1248,8 +1246,7 @@ const ProductDetails = () => {
             <section style={{ marginBottom: '32px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px' }}>Browse by Brand</h2>
               <div
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}
-              >
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
                 {brandCards.slice(0, 8).map((brand, idx) => (
                   <Link
                     key={idx}

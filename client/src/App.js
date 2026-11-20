@@ -61,6 +61,7 @@ const ContactUs = lazy(() => import('./pages/ContactUs'));
 const UploadPrescription = lazy(() => import('./pages/UploadPrescription'));
 const VirtualTryOn = lazy(() => import('./pages/VirtualTryOn'));
 const ProductCompare = lazy(() => import('./pages/ProductCompare'));
+const Offers = lazy(() => import('./pages/Offers'));
 const AvailableCoupons = lazy(() => import('./pages/AvailableCoupons'));
 const BrandPage = lazy(() => import('./pages/BrandPage'));
 const AboutUs = lazy(() => import('./pages/AboutUs'));
@@ -499,6 +500,7 @@ function App() {
         />
         <Route path="/compare" element={<ProductCompare />} />
         <Route path="/coupons" element={<AvailableCoupons />} />
+        <Route path="/offers" element={<Offers />} />
         <Route path="/brands/:brand" element={<BrandPage />} />
         <Route path="/about" element={<AboutUs />} />
         <Route path="/careers" element={<Careers />} />

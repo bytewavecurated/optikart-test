@@ -43,6 +43,10 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
     }
 
     let subtotal = 0;
+    // per-line {category, brand, amount} for coupon scope enforcement - the
+    // same decision services/couponScope applies at the validate door, so a
+    // code quoted 'valid' and then refused at placement is impossible.
+    const linesMeta = [];
     const sellerItems = {};
 
     for (const item of items) {
@@ -74,6 +78,7 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
       const price = variantPrice || product.discountedPrice || product.price;
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
+      linesMeta.push({ category: product.category, brand: product.brand, amount: itemTotal });
 
       const sellerId = product.seller.toString();
       if (!sellerItems[sellerId]) {
@@ -100,28 +105,37 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid or expired coupon.' });
       }
 
-      if (coupon.minOrderAmount > 0 && subtotal < coupon.minOrderAmount) {
-        return res
-          .status(400)
-          .json({ success: false, message: `Minimum order amount of ₹${coupon.minOrderAmount} required.` });
-      }
+      /*
+       * Scope first - a voucher written for eyeglasses or one brand cannot
+       * discount lines it was never issued on. min-order is then assessed
+       * against the IN-SCOPE base (the cart must contain that value in the
+       * eligible items, which is what a scoped min has always meant), while
+       * usage/already-used checks are unchanged and run on the same coupon.
+       */
+      {
+        const { couponScopeResult, couponDiscountFor } = await import('../services/couponScope.js');
+        const scope = couponScopeResult(coupon, linesMeta, subtotal);
+        if (!scope.eligible) return res.status(400).json({ success: false, message: scope.reason });
 
-      if (coupon.usageLimit > 0 && coupon.usageCount >= coupon.usageLimit) {
-        return res.status(400).json({ success: false, message: 'Coupon usage limit reached.' });
-      }
-
-      const alreadyUsed = coupon.usedBy.some((u) => u.user.toString() === userId.toString());
-      if (alreadyUsed) {
-        return res.status(400).json({ success: false, message: 'Coupon already used by you.' });
-      }
-
-      if (coupon.discountType === 'percentage') {
-        couponDiscount = (subtotal * coupon.discountValue) / 100;
-        if (coupon.maxDiscount && couponDiscount > coupon.maxDiscount) {
-          couponDiscount = coupon.maxDiscount;
+        if (coupon.minOrderAmount > 0 && scope.base < coupon.minOrderAmount) {
+          return res.status(400).json({
+            success: false,
+            message: `Minimum order amount of ₹${coupon.minOrderAmount} required${scope.scopeLabel ? ` in ${scope.scopeLabel}` : ''} - this order has ₹${Math.round(scope.base)} eligible.`,
+          });
         }
-      } else {
-        couponDiscount = coupon.discountValue;
+
+        if (coupon.usageLimit > 0 && coupon.usageCount >= coupon.usageLimit) {
+          return res.status(400).json({ success: false, message: 'Coupon usage limit reached.' });
+        }
+
+        const alreadyUsed = coupon.usedBy.some((u) => u.user.toString() === userId.toString());
+        if (alreadyUsed) {
+          return res.status(400).json({ success: false, message: 'Coupon already used by you.' });
+        }
+
+        const d = couponDiscountFor(coupon, scope);
+        if (!d.ok) return res.status(400).json({ success: false, message: d.reason });
+        couponDiscount = d.discount;
       }
     }
 

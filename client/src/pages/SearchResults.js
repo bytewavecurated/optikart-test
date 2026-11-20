@@ -279,7 +279,7 @@ const SearchResults = () => {
           </div>
 
           {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            <div className="pgrid">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="card" style={{ height: '280px' }}>
                   <div className="skeleton" style={{ height: '200px' }} />

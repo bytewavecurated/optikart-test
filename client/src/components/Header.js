@@ -19,6 +19,7 @@ import { useCart } from '../contexts/CartContext';
 import Logo from './Logo';
 import { STOREFRONT_NAV } from '../utils/catalogTaxonomy';
 import { useSiteFooter } from '../services/homeContent';
+import NotificationBell from './NotificationBell.jsx';
 
 /*
  * Destinations each console offers from the avatar menu. Keyed by the same
@@ -606,6 +607,9 @@ const Header = () => {
            * partner token, so a shop saw an account menu whose every entry failed.
            * Consoles get the labelled link above instead.
            */}
+          {/* bell: inboxes the shopper cannot otherwise see while the tab is closed */}
+          {isCustomerAuthenticated ? <NotificationBell /> : null}
+
           {isCustomerAuthenticated ? (
             <Link to="/profile" style={{ color: 'var(--text-white)', display: 'flex', alignItems: 'center' }}>
               <FiUser size={22} />
@@ -820,7 +824,7 @@ const Header = () => {
               Upload Prescription
             </NavLink>
             <NavLink
-              to="/coupons"
+              to="/offers"
               className="cat-nav-link"
               style={{
                 fontSize: '13.5px',
@@ -962,7 +966,7 @@ const Header = () => {
                 Upload Prescription
               </Link>
               <Link
-                to="/coupons"
+                to="/offers"
                 onClick={() => setMobileMenuOpen(false)}
                 style={{ fontSize: '14px', padding: '8px 0', textDecoration: 'none', color: 'var(--text-primary)' }}
               >

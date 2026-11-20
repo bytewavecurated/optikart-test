@@ -4,14 +4,18 @@ import { saleEvents } from '../../services/api';
 import toast from 'react-hot-toast';
 import { toastError } from '../../services/errors.js';
 
+// values are the SaleEvent model's own category vocabulary (models/SaleEvent.js);
+// the previous list sent hyphenated labels ('contact-lenses') that the schema
+// enum rejects, so creating any event that touched those categories died at the
+// database with a validation error and the operator only ever saw 'Failed'.
 const CATEGORIES = [
   { value: 'sunglasses', label: 'Sunglasses' },
   { value: 'eyeglasses', label: 'Eyeglasses' },
-  { value: 'contact-lenses', label: 'Contact Lenses' },
-  { value: 'reading-glasses', label: 'Reading Glasses' },
-  { value: 'sports', label: 'Sports' },
+  { value: 'contactlenses', label: 'Contact Lenses' },
+  { value: 'readingglasses', label: 'Reading Glasses' },
+  { value: 'sportseyewear', label: 'Sports' },
   { value: 'kids', label: 'Kids' },
-  { value: 'all', label: 'All Categories' },
+  { value: 'all', label: 'All eyewear' },
 ];
 
 const SaleEvents = () => {
@@ -23,6 +27,7 @@ const SaleEvents = () => {
     name: '',
     description: '',
     categories: [],
+    brands: '',
     discount: '',
     startDate: '',
     endDate: '',
@@ -59,7 +64,8 @@ const SaleEvents = () => {
       name: event.name,
       description: event.description || '',
       categories: event.categories || [],
-      discount: event.discount || '',
+      brands: (event.brands || []).join(', '),
+      discount: event.discountPercentage ?? '',
       startDate: event.startDate ? event.startDate.split('T')[0] : '',
       endDate: event.endDate ? event.endDate.split('T')[0] : '',
     });
@@ -94,7 +100,14 @@ const SaleEvents = () => {
         name: formData.name,
         description: formData.description,
         categories: formData.categories,
-        discount: discountNum,
+        // the schema stores discountPercentage; sending `discount` made the
+        // server's own required-field check reject every create it touched.
+        discountPercentage: discountNum,
+        // empty string = all brands in the chosen categories
+        brands: formData.brands
+          .split(',')
+          .map((b) => b.trim())
+          .filter(Boolean),
         startDate: formData.startDate,
         endDate: formData.endDate,
       };
@@ -109,7 +122,7 @@ const SaleEvents = () => {
       setShowForm(false);
       fetchEvents();
     } catch (error) {
-      toast.error(err.response?.data?.message || 'Failed to save event');
+      toast.error(error?.response?.data?.message || 'Failed to save event');
     } finally {
       setFormLoading(false);
     }
@@ -297,7 +310,21 @@ const SaleEvents = () => {
                           {cat.label}
                         </label>
                       ))}
-                    </div>
+                    
+
+                  <div>
+                    <label>Brands (optional - comma separated)</label>
+                    <input
+                      type="text"
+                      value={formData.brands}
+                      onChange={(e) => setFormData({ ...formData, brands: e.target.value })}
+                      placeholder={'e.g. Ray-Ban, Vinco'}
+                      style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)', fontSize: '14px' }}
+                    />
+                    <small style={{ color: 'var(--text-light)', fontSize: '11.5px' }}>
+                      leave empty to cover every brand in the selected categories; a festival offer on one label is brands + that percentage
+                    </small>
+                  </div></div>
                   </div>
 
                   <div className="input-group">
@@ -333,6 +360,19 @@ const SaleEvents = () => {
                       />
                     </div>
                   </div>
+                <div>
+                  <label>Brands (optional — comma separated)</label>
+                  <input
+                    type="text"
+                    value={formData.brands}
+                    onChange={(e) => setFormData({ ...formData, brands: e.target.value })}
+                    placeholder="e.g. Ray-Ban, Vinco"
+                    style={{ width: '100%', padding: '10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)', fontSize: '14px' }}
+                  />
+                  <small style={{ color: 'var(--text-light)', fontSize: 11.5 }}>
+                    leave empty to cover every brand in the selected categories.
+                  </small>
+                </div>
 
                   <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                     <button onClick={handleSave} className="btn btn-primary" disabled={formLoading}>

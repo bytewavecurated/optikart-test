@@ -284,7 +284,7 @@ export default function ProductCard({ product }) {
         </button>
       </div>
 
-      <div style={styles.body}>
+      <div data-pc-body="1" style={styles.body}>
         <div style={styles.brand}>{brand}</div>
         <div style={styles.title}>{title}</div>
 

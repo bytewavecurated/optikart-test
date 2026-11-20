@@ -234,9 +234,7 @@ const ContactLenses = () => {
                 No {flowConfig.title.toLowerCase()} are listed right now.
               </div>
             ) : (
-              <div
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}
-              >
+              <div className="pgrid">
                 {browseItems.map((product) => (
                   <Link
                     key={product._id}
@@ -421,9 +419,7 @@ const ContactLenses = () => {
                 <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '16px' }}>
                   Available Lenses ({filteredLenses.length})
                 </h3>
-                <div
-                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}
-                >
+                <div className="pgrid">
                   {filteredLenses.map((lens) => (
                     <Link
                       key={lens._id}
@@ -459,7 +455,7 @@ const ContactLenses = () => {
         {/* Solutions Section */}
         <div style={{ marginBottom: '48px' }}>
           <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Lens Solutions</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          <div className="pgrid">
             {solutions.map((solution) => (
               <Link
                 key={solution._id}
@@ -492,7 +488,7 @@ const ContactLenses = () => {
         {/* Accessories Section */}
         <div>
           <h2 style={{ fontFamily: 'var(--font-heading)', marginBottom: '24px' }}>Accessories</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          <div className="pgrid">
             {accessories.map((accessory) => (
               <Link
                 key={accessory._id}

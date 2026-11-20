@@ -391,7 +391,7 @@ export default function ProductsBrowse() {
               </div>
             )}
             {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+              <div className="pgrid">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <div
                     key={i}
@@ -411,7 +411,7 @@ export default function ProductsBrowse() {
               </div>
             ) : (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+                <div className="pgrid">
                   {items.map((product) => (
                     <ProductCard key={product._id} product={product} />
                   ))}

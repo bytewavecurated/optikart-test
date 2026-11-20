@@ -116,7 +116,7 @@ const Wishlist = () => {
           </Link>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+        <div className="pgrid">
           {items.map((item) => (
             <div key={item._id} className="card">
               <Link to={`/product/${item.product._id}`}>

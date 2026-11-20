@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 
 router.post('/validate', verifyToken, async (req, res) => {
   try {
-    const { code } = req.body;
+    const { code, items } = req.body;
     // The discount maths needs a real number; a missing amount must never
     // silently produce NaN prices.
     const orderAmount = Number(req.body.orderAmount);
@@ -68,12 +68,46 @@ router.post('/validate', verifyToken, async (req, res) => {
       });
     }
 
+    /*
+     * Scope + base are decided by the SAME module the checkout applies (it
+     * prices against the in-scope lines only). Validate without a cart, on a
+     * scoped voucher, can only guess; guessing in the customer's favour is how
+     * a rejected-at-checkout code gets promised in the UI, so the answer here
+     * is the honest 'needs the cart to quote', and unscoped codes keep their
+     * historical orderAmount-only behaviour untouched.
+     */
+    const scoped = coupon.applicableCategories?.length || coupon.applicableBrands?.length ? coupon : null;
     let discount = 0;
-    if (coupon.discountType === 'percentage') {
-      discount = (orderAmount * coupon.discountValue) / 100;
-      if (coupon.maxDiscount && discount > coupon.maxDiscount) {
-        discount = coupon.maxDiscount;
+    let scopeNote = '';
+    if (scoped) {
+      const lines = Array.isArray(items) ? items : [];
+      if (!lines.length) {
+        return res.status(400).json({
+          success: false,
+          message: 'This coupon has category/brand limits; send the cart lines so it can be quoted honestly.',
+          needsCart: true,
+        });
       }
+      const Product = (await import('../models/Product.js')).default;
+      const ids = [...new Set(lines.map((l) => String(l.product || l.productId || l)).filter(Boolean))];
+      const docs = await Product.find({ _id: { $in: ids } }).select('category brand price').lean();
+      const byId = new Map(docs.map((d) => [String(d._id), d]));
+      const cartLines = lines.map((l) => {
+        const d = byId.get(String(l.product || l.productId || l)) || {};
+        const qty = Math.max(1, Number(l.quantity || 1));
+        const amount = Number(l.amount ?? (Number(d.price || 0) * qty));
+        return { category: d.category, brand: d.brand, amount };
+      });
+      const { couponScopeResult, couponDiscountFor } = await import('../services/couponScope.js');
+      const scope = couponScopeResult(scoped, cartLines, orderAmount);
+      if (!scope.eligible) return res.status(400).json({ success: false, message: scope.reason });
+      const d = couponDiscountFor(scoped, scope);
+      if (!d.ok) return res.status(400).json({ success: false, message: d.reason });
+      discount = d.discount;
+      scopeNote = `Applies to ${scope.scopeLabel}; quoted on the matching items only.`;
+    } else if (coupon.discountType === 'percentage') {
+      discount = (orderAmount * coupon.discountValue) / 100;
+      if (coupon.maxDiscount && discount > coupon.maxDiscount) discount = coupon.maxDiscount;
     } else {
       discount = coupon.discountValue;
     }
@@ -81,11 +115,14 @@ router.post('/validate', verifyToken, async (req, res) => {
     res.json({
       success: true,
       message: 'Coupon applied successfully.',
+      note: scopeNote || undefined,
       coupon: {
         code: coupon.code,
         discountType: coupon.discountType,
         discountValue: coupon.discountValue,
         discount: Math.round(discount),
+        applicableCategories: coupon.applicableCategories || [],
+        applicableBrands: coupon.applicableBrands || [],
       },
     });
   } catch (error) {
@@ -107,6 +144,7 @@ router.post('/', verifyToken, verifyAdmin, couponValidation, async (req, res) =>
       validUntil,
       usageLimit,
       applicableCategories,
+      applicableBrands,
     } = req.body;
 
     const existingCoupon = await Coupon.findOne({ code: code.toUpperCase() });
@@ -125,6 +163,7 @@ router.post('/', verifyToken, verifyAdmin, couponValidation, async (req, res) =>
       validUntil,
       usageLimit: usageLimit || 0,
       applicableCategories: applicableCategories || [],
+      applicableBrands: applicableBrands || [],
     });
 
     await coupon.save();

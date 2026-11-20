@@ -31,6 +31,12 @@ const couponSchema = new mongoose.Schema(
     usageCount: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true },
     applicableCategories: [String],
+    /*
+     * A voucher can be limited to named brands (empty = any brand the category
+     * rule allows). Stored-only before; now enforced by BOTH redemption doors
+     * through services/couponScope - see the group 'offers scopes & sale events'.
+     */
+    applicableBrands: [String],
   },
   {
     timestamps: true,

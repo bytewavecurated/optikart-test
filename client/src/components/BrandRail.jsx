@@ -197,9 +197,9 @@ export default function BrandRail({
             key={brand.urlSlug || brand.slug}
             to={`/brands/${brand.urlSlug}`}
             style={styles.card}
-            className="brand-card"
+            data-pc-root="1" className="brand-card"
           >
-            <div style={styles.markCell}>
+            <div data-pc-media="1" style={styles.markCell}>
               {brand.logoUrl ? (
                 <img
                   src={brand.logoUrl}
@@ -221,11 +221,13 @@ export default function BrandRail({
                 </span>
               )}
             </div>
+            <div data-pc-body="1" style={{ flex: 1, minWidth: 0 }}>
             <div style={styles.brandName}>{brand.name}</div>
             {brand.minPrice != null && <div style={styles.price}>From {rupees(brand.minPrice)}</div>}
             <div style={styles.count}>
               {brand.productCount} {brand.productCount === 1 ? 'style' : 'styles'} live
             </div>
+          </div>
           </Link>
         ))}
       </div>

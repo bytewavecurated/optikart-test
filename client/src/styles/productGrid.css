@@ -1,0 +1,67 @@
+/*
+ * Product grids, one breakpoint system everywhere.
+ *
+ * The card grids scattered `repeat(auto-fill, minmax(220px|240px|280px, 1fr))`
+ * inline - five spellings of a similar idea, none of them the shape operators
+ * actually asked for: FOUR per row on a desktop, 2-3 on tablets, ONE full-width
+ * card on phones (Flipkart/Lenskart's own rhythm). auto-fill-with-minmax also
+ * changes column count with the width of the text, which is how two 'identical'
+ * pages rendered different grids.
+ *
+ * Mobile is not one column of stacked portrait cards: below 640px each card
+ * flips to a horizontal row - media left, details right - which is what the
+ * thumb-scan pattern looks like and keeps titles readable at 100% width.
+ * ProductCard renders [data-pc-media]/[data-pc-body] markers for exactly this.
+ */
+.pgrid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 560px) {
+  .pgrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .pgrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .pgrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* phone layout: card becomes a horizontal row */
+@media (max-width: 639px) {
+  .pgrid {
+    gap: 12px;
+  }
+  .pgrid [data-pc-root] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .pgrid [data-pc-media] {
+    flex: 0 0 128px;
+    width: 128px;
+    max-width: 40%;
+    height: auto !important;
+    align-self: stretch;
+    padding: 8px !important;
+  }
+  .pgrid [data-pc-media] img {
+    height: 100% !important;
+    min-height: 110px;
+  }
+  .pgrid [data-pc-body] {
+    flex: 1;
+    min-width: 0;
+  }
+}

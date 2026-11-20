@@ -329,6 +329,8 @@ export const admin = {
 
 export const notifications = {
   getAll: (params) => api.get('/notifications', { params }),
+  // named alias the bell uses; same endpoint, same params
+  list: (params) => api.get('/notifications', { params }),
   markRead: (id) => api.put(`/notifications/${id}/read`),
   markAllRead: () => api.put('/notifications/read-all'),
 };
