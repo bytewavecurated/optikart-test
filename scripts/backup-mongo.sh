@@ -60,7 +60,11 @@ if ! mongosh --quiet "$MONGO_URI/$DB" --eval 'db.runCommand({ ping: 1 }).ok' | g
   exit 2
 fi
 
-mkdir -p "$DIR"
+# The archive directory is created HERE, not assumed: mongodump refuses to
+# make parents for --archive paths (CI proved it with 'no such file or
+# directory' against the exact layout this script had created - an earlier
+# version of this same file created OUT; the rewrite dropped it).
+mkdir -p "$OUT"
 ARCHIVE="$OUT/mongodump-$DB.archive"
 
 if ! mongodump --uri "$MONGO_URI/$DB" --archive="$ARCHIVE.tmp"; then
