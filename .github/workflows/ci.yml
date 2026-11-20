@@ -241,7 +241,13 @@ jobs:
           mkdir -p /tmp/moshs && tar -xzf /tmp/mongosh.tgz -C /tmp/moshs --strip-components=1
           echo "/tmp/dtools/bin" >> "$GITHUB_PATH"
           echo "/tmp/moshs/bin" >> "$GITHUB_PATH"
-          mongodump --version | head -1 && mongorestore --version | head -1 && mongosh --quiet --eval '1'
+          # GITHUB_PATH only affects SUBSEQUENT steps - verifying through PATH
+          # in the same step that just wrote it can only ever find the tools
+          # through luck of shell startup. Check the absolute paths here; the
+          # steps that consume them later get the PATH exactly as promised.
+          /tmp/dtools/bin/mongodump --version | head -1
+          /tmp/dtools/bin/mongorestore --version | head -1
+          /tmp/moshs/bin/mongosh --quiet --eval '1'
 
       - name: Seed the source server with two real collections
         run: |
