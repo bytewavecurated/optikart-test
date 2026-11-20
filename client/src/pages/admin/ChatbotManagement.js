@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiEdit2, FiInfo, FiMessageCircle, FiPlus, FiSave, FiX } from 'react-icons/fi';
 import { chatbot } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { oneOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
@@ -71,18 +69,15 @@ const ChatbotManagement = () => {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Header />
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="spinner spinner-lg" />
         </main>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
@@ -203,7 +198,6 @@ const ChatbotManagement = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

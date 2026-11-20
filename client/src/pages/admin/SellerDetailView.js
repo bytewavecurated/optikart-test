@@ -19,8 +19,6 @@ import {
   FiUser,
 } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { listOf, oneOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
@@ -102,11 +100,9 @@ const SellerDetailView = () => {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Header />
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="spinner spinner-lg" />
         </main>
-        <Footer />
       </div>
     );
   }
@@ -114,7 +110,6 @@ const SellerDetailView = () => {
   if (!seller) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Header />
         <main style={{ flex: 1 }}>
           <div className="container page-wrapper" style={{ textAlign: 'center', padding: '60px 20px' }}>
             <h2>Seller not found</h2>
@@ -127,7 +122,6 @@ const SellerDetailView = () => {
             </button>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -138,7 +132,6 @@ const SellerDetailView = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <button
@@ -538,7 +531,6 @@ const SellerDetailView = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

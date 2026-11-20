@@ -17,6 +17,7 @@ import Executive from '../models/Executive.js';
 import Manufacturer from '../models/Manufacturer.js';
 import ManufacturerSeller from '../models/ManufacturerSeller.js';
 
+import { buildListQuery, listResponse } from '../services/adminQuery.js';
 const router = express.Router();
 
 /*
@@ -190,26 +191,21 @@ router.get('/dashboard', verifyToken, verifyAdmin, async (req, res) => {
 
 router.get('/users', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
-    const query = { role: 'user' };
-
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    const users = await User.find(query)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      base: { role: 'user' },
+      fields: ['name', 'email', 'phone', 'userId'],
+      statuses: {
+        // map form inside the ONE normalizer: semantics stay in the query
+        // built correctly, and search never gets collateral damage.
+        active: { $and: [{ isActive: true }, { isBanned: { $ne: true } }] },
+        inactive: { $or: [{ isActive: false }, { isBanned: true }] },
+      },
+      statusField: '_mapped',
+      sortable: { createdAt: { createdAt: -1 }, name: { name: 1 }, joined: { createdAt: -1 } },
+    });
+    const users = await User.find(query).select('-password').sort(sort).skip(skip).limit(limit);
     const total = await User.countDocuments(query);
-
-    res.json({ success: true, users, total, page: parseInt(page), totalPages: Math.ceil(total / limit) });
+    return listResponse(res, 'users', users, total, meta);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
@@ -238,30 +234,29 @@ router.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
 
 router.get('/sellers', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
-    const query = {};
-
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { storeName: { $regex: search, $options: 'i' } },
-        { sellerId: { $regex: search, $options: 'i' } },
-        { gstNumber: { $regex: search, $options: 'i' } },
-        { panNumber: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    const sellers = await Seller.find(query)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      fields: ['name', 'email', 'phone', 'storeName', 'sellerId', 'gstNumber', 'panNumber'],
+      statuses: {
+        verified: { isVerified: true },
+        unverified: { isVerified: false },
+        // 'pending' is the word the old dashboard chips used for unverified:
+        // keep the alias, map it to the real column, do not invent a state.
+        pending: { isVerified: false },
+        inactive: { isActive: false },
+        banned: { isBanned: true },
+      },
+      statusField: '_mapped',
+      sortable: {
+        createdAt: { createdAt: -1 },
+        joined: { createdAt: -1 },
+        storeName: { storeName: 1 },
+        rating: { rating: -1 },
+        sales: { totalSales: -1 },
+      },
+    });
+    const sellers = await Seller.find(query).select('-password').sort(sort).skip(skip).limit(limit);
     const total = await Seller.countDocuments(query);
-
-    res.json({ success: true, sellers, total, page: parseInt(page), totalPages: Math.ceil(total / limit) });
+    return listResponse(res, 'sellers', sellers, total, meta);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
@@ -314,34 +309,51 @@ router.delete('/sellers/:id', verifyToken, verifyAdmin, async (req, res) => {
 
 router.get('/orders', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, search } = req.query;
-    const query = {};
-
-    if (status) query.orderStatus = status;
-    if (search) {
-      query.$or = [{ orderNumber: { $regex: search, $options: 'i' } }];
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      fields: ['orderNumber'],
+      codeFields: ['orderNumber'],
+      statuses: [
+        'pending',
+        'confirmed',
+        'processing',
+        'shipped',
+        'in_transit',
+        'out_for_delivery',
+        'delivered',
+        'cancelled',
+        'returned',
+      ],
+      statusField: 'orderStatus',
+      sortable: { createdAt: { createdAt: -1 }, updated: { updatedAt: -1 }, amount: { totalAmount: -1 } },
+    });
+    // admin order search must also find the human: resolve buyer/seller text
+    // to ids server-side, then fold them into the same $or the client asked
+    // for. An id-less search string is then just the orderNumber clause.
+    const term = meta.filters.search;
+    if (term) {
+      // esc first, rx only ever from esc: one escape path, every use.
+      const esc = String(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const rx = { $regex: esc, $options: 'i' };
+      const buyerIds = await User.find({ $or: [{ name: rx }, { email: rx }, { phone: rx }, { userId: rx }] })
+        .select('_id')
+        .lean();
+      const sellerIds = await Seller.find({ $or: [{ storeName: rx }, { email: rx }, { sellerId: rx }] })
+        .select('_id')
+        .lean();
+      const clauses = [{ orderNumber: rx }];
+      if (buyerIds.length) clauses.push({ user: { $in: buyerIds.map((u) => u._id) } });
+      if (sellerIds.length) clauses.push({ seller: { $in: sellerIds.map((s) => s._id) } });
+      query.$and = [...(query.$and || []), { $or: clauses }];
     }
-
     const orders = await Order.find(query)
-      .populate('user', 'name email phone')
+      .populate('user', 'name email phone userId')
       .populate('seller', 'storeName')
       .populate('items.product', 'title')
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
-
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
     const total = await Order.countDocuments(query);
-
-    res.json({
-      success: true,
-      orders,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit)),
-      },
-    });
+    return listResponse(res, 'orders', orders, total, meta);
   } catch (error) {
     console.error('Get orders error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -456,9 +468,16 @@ router.post('/staff', verifyToken, verifyAdmin, async (req, res) => {
 
 router.get('/staff', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const staff = await StaffRole.find().populate('admin', 'name email').sort({ createdAt: -1 });
-
-    res.json({ success: true, staff });
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      fields: ['name', 'email', 'role', 'permissions'],
+      statuses: { active: { isActive: true }, inactive: { isActive: false } },
+      statusField: '_mapped',
+      dateField: 'assignedAt',
+      sortable: { createdAt: { createdAt: -1 }, name: { name: 1 }, assignedAt: { assignedAt: -1 } },
+    });
+    const staff = await StaffRole.find(query).populate('admin', 'name email').sort(sort).skip(skip).limit(limit);
+    const total = await StaffRole.countDocuments(query);
+    return listResponse(res, 'staff', staff, total, meta);
   } catch (error) {
     console.error('Get staff error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -505,8 +524,29 @@ router.put('/staff/:id/permissions', verifyToken, verifyAdmin, async (req, res) 
 
 router.get('/coupons', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const coupons = await Coupon.find().sort({ createdAt: -1 });
-    res.json({ success: true, coupons });
+    const now = new Date();
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      fields: ['code', 'title', 'description', 'couponCode'],
+      statuses: {
+        // a voucher is 'active' when the clock is inside its window; said
+        // with plain date clauses (computed now), never $expr gymnastics.
+        active: { isActive: true, startsAt: { $lte: now }, endsAt: { $gte: now } },
+        expired: { endsAt: { $lt: now } },
+        inactive: { isActive: false },
+        scheduled: { isActive: true, startsAt: { $gt: now } },
+      },
+      statusField: '_mapped',
+      sortable: {
+        createdAt: { createdAt: -1 },
+        code: { code: 1 },
+        used: { usedCount: -1 },
+        endsAt: { endsAt: 1 },
+      },
+      dateField: 'createdAt',
+    });
+    const coupons = await Coupon.find(query).sort(sort).skip(skip).limit(limit);
+    const total = await Coupon.countDocuments(query);
+    return listResponse(res, 'coupons', coupons, total, meta);
   } catch (error) {
     console.error('Get coupons error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -615,24 +655,50 @@ router.get('/seller-payouts', verifyToken, verifyAdmin, async (req, res) => {
 
 router.get('/delivery', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const orders = await Order.find({
-      orderStatus: { $in: ['in_transit', 'delivered'] },
-    })
-      .populate('user', 'name phone email')
+    // same clause the board needs (transit + delivered) as a base, so a page
+    // and a filter never fight over scope.
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      base: { orderStatus: { $in: ['in_transit', 'delivered'] } },
+      fields: ['orderNumber'],
+      statuses: { in_transit: { orderStatus: 'in_transit' }, delivered: { orderStatus: 'delivered' } },
+      statusField: '_mapped',
+      sortable: { updated: { updatedAt: -1 }, created: { createdAt: -1 } },
+      dateField: 'updatedAt',
+    });
+    const term = meta.filters.search;
+    if (term) {
+      const esc = String(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const rx = { $regex: esc, $options: 'i' };
+      const buyerIds = await User.find({ $or: [{ name: rx }, { email: rx }, { phone: rx }] })
+        .select('_id')
+        .lean();
+      const clauses = [{ orderNumber: rx }];
+      if (buyerIds.length) clauses.push({ user: { $in: buyerIds.map((u) => u._id) } });
+      query.$and = [...(query.$and || []), { $or: clauses }];
+    }
+    const orders = await Order.find(query)
+      .populate('user', 'name phone email userId')
       .populate('seller', 'storeName')
-      .sort({ updatedAt: -1 })
-      .limit(50);
-
-    const inTransit = orders.filter((o) => o.orderStatus === 'in_transit');
-    const delivered = orders.filter((o) => o.orderStatus === 'delivered');
-
-    res.json({
+      .sort(sort)
+      .skip(skip)
+      .limit(limit);
+    const total = await Order.countDocuments(query);
+    // board counters independent of the current page, from the same base scope
+    const scoped = { orderStatus: { $in: ['in_transit', 'delivered'] } };
+    const [inTr, dl] = await Promise.all([
+      Order.countDocuments({ ...scoped, orderStatus: 'in_transit' }),
+      Order.countDocuments({ ...scoped, orderStatus: 'delivered' }),
+    ]);
+    return res.json({
       success: true,
-      delivery: {
-        inTransit: inTransit.length,
-        delivered: delivered.length,
-        orders,
-      },
+      delivery: { inTransit: inTr, delivered: dl },
+      orders,
+      total,
+      page: meta.page,
+      limit: meta.limit,
+      totalPages: Math.max(1, Math.ceil(total / meta.limit)),
+      filters: meta.filters,
+      badFilterParams: meta.problems.length ? meta.problems : undefined,
     });
   } catch (error) {
     console.error('Delivery error:', error);
@@ -791,29 +857,24 @@ router.get('/sellers/:id/orders', verifyToken, verifyAdmin, async (req, res) => 
 // Get all executives
 router.get('/executives', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { search, department } = req.query;
-    const query = {};
-
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { executiveId: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    if (department) {
-      query.department = department;
-    }
-
-    const executives = await Executive.find(query).select('-password').sort({ createdAt: -1 });
-    res.json({ success: true, data: executives });
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      fields: ['name', 'email', 'phone', 'executiveId', 'department'],
+      statuses: { active: { isActive: true }, inactive: { isActive: false } },
+      statusField: '_mapped',
+      sortable: { createdAt: { createdAt: -1 }, name: { name: 1 } },
+    });
+    // department remains an exact facet (not fuzzy search text): a dropdown
+    // that silently doubles as regex would blur ops' org drill-down.
+    const dept = String(req.query.department || '').trim();
+    if (dept) query.$and = [...(query.$and || []), { department: dept }];
+    const executives = await Executive.find(query).select('-password').sort(sort).skip(skip).limit(limit);
+    const total = await Executive.countDocuments(query);
+    return listResponse(res, 'executives', executives, total, meta);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 
-// Create executive
 router.post('/executives', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { name, email, password, phone, department, permissions } = req.body;
@@ -912,20 +973,23 @@ router.put('/executives/:id/ban', verifyToken, verifyAdmin, async (req, res) => 
 // Get all manufacturers
 router.get('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { search } = req.query;
-    const query = {};
-
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { companyName: { $regex: search, $options: 'i' } },
-        { manufacturerId: { $regex: search, $options: 'i' } },
-      ];
-    }
-
-    const manufacturers = await Manufacturer.find(query).select('-password').sort({ createdAt: -1 });
-    res.json({ success: true, data: manufacturers });
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      fields: ['name', 'email', 'companyName', 'manufacturerId', 'gstNumber', 'panNumber', 'website'],
+      statuses: {
+        active: { isActive: true, isBanned: { $ne: true } },
+        inactive: { isActive: false },
+        banned: { isBanned: true },
+        pending_verification: { 'onboarding.state': 'pending_verification' },
+        pending_otp: { 'onboarding.state': 'pending_otp' },
+        update_requested: { 'onboarding.state': 'update_requested' },
+        confirmed: { 'onboarding.state': 'active' },
+      },
+      statusField: '_mapped',
+      sortable: { createdAt: { createdAt: -1 }, name: { name: 1 }, company: { companyName: 1 } },
+    });
+    const manufacturers = await Manufacturer.find(query).select('-password').sort(sort).skip(skip).limit(limit);
+    const total = await Manufacturer.countDocuments(query);
+    return listResponse(res, 'data', manufacturers, total, meta);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }

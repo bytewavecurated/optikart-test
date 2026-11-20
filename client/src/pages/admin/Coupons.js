@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
+import { ListToolbar, ListPagination, useListQuery } from '../../components/admin/AdminListKit.jsx';
 
 /*
  * Field names follow server/models/Coupon.js. The previous form posted `type`,
@@ -54,15 +53,21 @@ const Coupons = () => {
   const [formData, setFormData] = useState(EMPTY);
   const [fieldErrors, setFieldErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
+  const list = useListQuery({ limit: 12 });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const lastParams = JSON.stringify(list.params());
 
   useEffect(() => {
     fetchCoupons();
-  }, []);
+  }, [refreshKey, lastParams]);
 
   const fetchCoupons = async () => {
     try {
-      const res = await adminApi.getCoupons();
-      setCouponList(listOf(res.data));
+      const res = await adminApi.getCoupons(list.params());
+      const d = res.data || {};
+      setCouponList(listOf(d));
+      setMeta({ total: d.total ?? 0, page: d.page ?? 1, totalPages: d.totalPages ?? 1 });
     } catch (error) {
       console.error(error);
       toastError(error, 'Could not load coupons');
@@ -180,7 +185,6 @@ const Coupons = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <div
@@ -193,7 +197,7 @@ const Coupons = () => {
               gap: 10,
             }}
           >
-            <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Coupons ({couponList.length})</h1>
+            <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Coupons ({meta.total})</h1>
             <button onClick={openCreate} className="btn btn-primary">
               <FiPlus /> Add Coupon
             </button>
@@ -390,11 +394,18 @@ const Coupons = () => {
                   })}
                 </tbody>
               </table>
+              <ListPagination
+                page={meta.page}
+                totalPages={meta.totalPages}
+                total={meta.total}
+                limit={12}
+                onPage={(p) => list.set({ page: p })}
+                unit="coupons"
+              />
             </div>
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

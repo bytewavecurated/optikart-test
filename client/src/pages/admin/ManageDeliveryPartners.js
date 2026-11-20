@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ListPagination } from '../../components/admin/AdminListKit.jsx';
 import api from '../../services/api';
 import { listOf, oneOf } from '../../services/apiResponse.js';
 import { toastError, toastSuccess } from '../../services/errors.js';
@@ -45,14 +46,23 @@ export default function ManageDeliveryPartners() {
   const [busy, setBusy] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
+  const [pMeta, setPMeta] = useState({ total: 0, page: 1, totalPages: 1 });
+  const [pPage, setPagePartners] = useState(1);
   const fetchPartners = useCallback(async () => {
     try {
-      const res = await api.get('/delivery-partner');
-      setPartners(listOf(res.data));
+      // server-side: the list endpoint searches/filters/paginates over every
+      // partner; doing it client-side against page one of a paginated answer
+      // would be a search that quietly cannot find page two.
+      const params = { page: pPage, limit: 10 };
+      if (query.trim()) params.search = query.trim();
+      const res = await api.get('/delivery-partner', { params });
+      const d = res.data || {};
+      setPartners(listOf(d));
+      setPMeta({ total: d.total ?? 0, page: d.page ?? 1, totalPages: d.totalPages ?? 1 });
     } catch (err) {
       toastError(err, 'Could not load delivery partners');
     }
-  }, []);
+  }, [pPage, query]);
 
   const fetchWorking = useCallback(async () => {
     try {
@@ -105,6 +115,15 @@ export default function ManageDeliveryPartners() {
     }
   };
 
+  // debounced server query for the partners tab
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (pPage !== 1 && !query) setPagePartners(1);
+      fetchPartners();
+    }, 340);
+    return () => clearTimeout(t);
+  }, [query, pPage]);
+
   useEffect(() => {
     let cancelled = false;
     const boot = async () => {
@@ -118,15 +137,10 @@ export default function ManageDeliveryPartners() {
     };
   }, [fetchPartners, fetchWorking, fetchUnassigned]);
 
-  const filteredPartners = useMemo(() => {
-    if (!query.trim()) return partners;
-    const q = query.toLowerCase();
-    return partners.filter((p) =>
-      [p.name, p.email, p.phone, p.vehicleNumber, p.deliveryPartnerId]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q))
-    );
-  }, [partners, query]);
+  // The search now runs on the SERVER (escaped, over every partner, not the
+  // loaded page), so no client filtering remains here; the name persists for
+  // the call sites below rather than churning six render lines for the rename.
+  const filteredPartners = partners;
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const setBank = (k, v) => setForm((f) => ({ ...f, bankDetails: { ...f.bankDetails, [k]: v } }));
@@ -191,7 +205,7 @@ export default function ManageDeliveryPartners() {
           className={tab === 'partners' ? 'btn btn-primary' : 'btn btn-outline'}
           onClick={() => setTab('partners')}
         >
-          <FiTruck size={15} /> Partners ({partners.length})
+          <FiTruck size={15} /> Partners ({pMeta.total.toLocaleString()})
         </button>
         <button className={tab === 'working' ? 'btn btn-primary' : 'btn btn-outline'} onClick={() => setTab('working')}>
           <FiSearch size={15} /> Working now ({working.length})
@@ -448,6 +462,16 @@ export default function ManageDeliveryPartners() {
               </table>
             )}
           </div>
+          <div style={{ marginTop: 18 }}>
+            <ListPagination
+              page={pMeta.page}
+              totalPages={pMeta.totalPages}
+              total={pMeta.total}
+              limit={10}
+              onPage={(p) => setPagePartners(p)}
+              unit="partners"
+            />
+          </div>
         </>
       )}
 
@@ -541,6 +565,16 @@ export default function ManageDeliveryPartners() {
                 </tbody>
               </table>
             )}
+          </div>
+          <div style={{ marginTop: 18 }}>
+            <ListPagination
+              page={pMeta.page}
+              totalPages={pMeta.totalPages}
+              total={pMeta.total}
+              limit={10}
+              onPage={(p) => setPagePartners(p)}
+              unit="partners"
+            />
           </div>
         </>
       )}

@@ -32,6 +32,7 @@ import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import toast from 'react-hot-toast';
 import { oneOf, listOf } from '../services/apiResponse.js';
+import CardImage from '../components/CardImage.jsx';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -439,7 +440,7 @@ const ProductDetails = () => {
                     key={idx}
                     style={{ background: 'var(--bg-page)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}
                   >
-                    <img
+                    <CardImage
                       src={img}
                       alt={`${productTitle} - ${idx + 1}`}
                       style={{ width: '100%', height: '400px', objectFit: 'contain' }}

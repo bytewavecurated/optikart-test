@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { blog as blogApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
@@ -84,7 +82,6 @@ const BlogManagement = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -227,7 +224,6 @@ const BlogManagement = () => {
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

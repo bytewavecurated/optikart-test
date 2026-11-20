@@ -6,7 +6,11 @@ import { banners } from '../services/api';
 const DEFAULT_BANNERS = [
   {
     _id: 'default-1',
-    title: 'Summer Sale',
+    title: 'Summer Edit',
+    eyebrow: 'LIMITED SERIES',
+    subtitle: 'Polarized shades and blue-cut lenses, styled for the season.',
+    ctaText: 'Shop offers',
+
     images: {
       desktop: { url: '/assets/banner-1.svg' },
       tablet: { url: '/assets/banner-1.svg' },
@@ -17,6 +21,10 @@ const DEFAULT_BANNERS = [
   {
     _id: 'default-2',
     title: 'New Arrivals',
+    eyebrow: 'JUST LANDED',
+    subtitle: 'Fresh frames from the brands you trust, added weekly.',
+    ctaText: 'Browse brands',
+
     images: {
       desktop: { url: '/assets/banner-2.svg' },
       tablet: { url: '/assets/banner-2.svg' },
@@ -27,6 +35,10 @@ const DEFAULT_BANNERS = [
   {
     _id: 'default-3',
     title: 'Blue Cut Lenses',
+    eyebrow: 'SCREEN READY',
+    subtitle: 'Filter the glare, keep the look - lenses graded for screen time.',
+    ctaText: 'See eligible frames',
+
     images: {
       desktop: { url: '/assets/banner-3.svg' },
       tablet: { url: '/assets/banner-3.svg' },
@@ -59,9 +71,62 @@ const styles = {
   },
   image: {
     width: '100%',
-    height: '300px',
+    height: '100%',
     objectFit: 'cover',
     display: 'block',
+  },
+  /* fluid cinematic proportion instead of a fixed 300px strip: reads like a
+     campaign surface on desktop, stays a touch taller on mobile so the copy
+     never gets orphaned. */
+  slideBox: {
+    position: 'relative',
+    display: 'block',
+    width: '100%',
+    height: 'clamp(280px, 30vw, 440px)',
+    overflow: 'hidden',
+    background: 'var(--bg-secondary)',
+  },
+  scrim: {
+    position: 'absolute',
+    inset: 0,
+    background: 'linear-gradient(90deg, rgba(10,12,20,.72) 0%, rgba(10,12,20,.42) 38%, rgba(10,12,20,0) 68%)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    padding: '0 clamp(18px, 5vw, 56px)',
+    pointerEvents: 'none',
+  },
+  heroTitle: {
+    fontFamily: 'var(--font-display, inherit)',
+    fontSize: 'clamp(22px, 3.4vw, 40px)',
+    fontWeight: 800,
+    letterSpacing: '-0.02em',
+    color: '#fff',
+    textShadow: '0 2px 18px rgba(0,0,0,.35)',
+    maxWidth: '72%',
+  },
+  heroEyebrow: {
+    fontSize: 11.5,
+    fontWeight: 700,
+    letterSpacing: '.16em',
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,.82)',
+    marginBottom: 8,
+  },
+  heroCta: {
+    marginTop: 14,
+    alignSelf: 'flex-start',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '9px 18px',
+    borderRadius: 999,
+    background: '#fff',
+    color: '#111',
+    fontSize: 12.5,
+    fontWeight: 700,
+    letterSpacing: '.02em',
+    boxShadow: '0 8px 24px rgba(0,0,0,.28)',
   },
   arrow: {
     position: 'absolute',
@@ -208,8 +273,33 @@ export default function HeroCarousel() {
           }}
         >
           {bannerList.map((banner) => (
-            <Link to={banner.linkUrl} key={banner._id} style={{ ...styles.slide, width: `${slideWidth}%` }}>
-              <img src={getImageUrl(banner)} alt={banner.title} style={styles.image} className="hero-slide-image" />
+            <Link
+              to={banner.linkUrl}
+              key={banner._id}
+              style={{ ...styles.slide, width: `${slideWidth}%` }}
+              aria-label={banner.ctaText ? `${banner.title} - ${banner.ctaText}` : banner.title}
+            >
+              <span style={styles.slideBox}>
+                <img
+                  src={getImageUrl(banner)}
+                  alt={banner.title}
+                  style={styles.image}
+                  className="hero-slide-image"
+                  loading="lazy"
+                />
+                <span style={styles.scrim}>
+                  <span style={styles.heroEyebrow}>{banner.eyebrow || 'OPTIKART'}</span>
+                  <span style={styles.heroTitle}>{banner.title}</span>
+                  {banner.subtitle ? (
+                    <span style={{ color: 'rgba(255,255,255,.86)', fontSize: 13.5, marginTop: 6, maxWidth: '68%' }}>
+                      {banner.subtitle}
+                    </span>
+                  ) : null}
+                  <span style={styles.heroCta} aria-hidden>
+                    {(banner.ctaText || 'Explore') + ' →'}
+                  </span>
+                </span>
+              </span>
             </Link>
           ))}
         </div>

@@ -75,6 +75,7 @@ const SUITES = [
   ['aws v3 face-shape wire contract', 'scripts/face_shape_aws_mock_e2e.mjs'],
   ['csp modes (off, report, enforce) + sink', 'server/scripts/csp_mode_e2e.mjs'],
   ['redis limiter-store flag: memory default + fail-fast', 'server/scripts/redis_limiter_store_e2e.mjs'],
+  ['admin list queries: search/filters/sort/pages', 'scripts/admin_list_queries_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.
@@ -378,6 +379,43 @@ if (fixtures.code !== 0) {
 console.log('ready');
 
 /* -------------------------------------------------------------------- server */
+/*
+ * Port discipline BEFORE anything binds: a surviving process on VERIFY_PORT -
+ * yesterday's interrupted run, or a second harness on this checkout (both have
+ * happened to this project) - means the health-poll below could be answered by
+ * code that is NOT the one being certified, and the actual server this run
+ * spawns crashes silently into EADDRINUSE. That is how a green-looking suite
+ * ends up testing fiction. Refuse first, name the pids, say exactly what to
+ * do; a deliberate parallel run is one VERIFY_PORT= away, and pays for its own
+ * database too.
+ */
+{
+  const net = await import('node:net');
+  const taken = await new Promise((resolve) => {
+    const probe = net.createServer();
+    probe.once('error', (e) => resolve(e.code === 'EADDRINUSE'));
+    probe.once('listening', () => probe.close(() => resolve(false)));
+    probe.listen(PORT, '127.0.0.1');
+  });
+  if (taken) {
+    let pids = [];
+    try {
+      const { execSync } = await import('node:child_process');
+      const out = execSync(`ss -ltnp 2>/dev/null | grep -w ${PORT} || true`, { encoding: 'utf8' });
+      pids = [...out.matchAll(/pid=(\d+)/g)].map((m) => m[1]);
+    } catch {}
+    console.log('FAILED');
+    console.error(
+      `\nVERIFY_PORT ${PORT} is already in use${pids.length ? ` by pid(s) ${pids.join(', ')}` : ''}. ` +
+        'This harness cannot know whether the stranger running there contains the code you want certified - so it refuses. ' +
+        `Stop that process first${pids.length ? ` (kill ${pids.join(' ')})` : ''}, or set VERIFY_PORT=${PORT + 1} to run in parallel deliberately.`
+    );
+    teardown();
+    process.exitCode = 1;
+    process.exit(1);
+  }
+}
+
 REPORT();
 process.stdout.write(`starting the API on ${BASE}... `);
 const srvOut = logStream('server');

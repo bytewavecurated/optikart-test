@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { FiCheck, FiX, FiFilter, FiSearch } from 'react-icons/fi';
 import { toastError } from '../../services/errors.js';
@@ -84,20 +82,17 @@ const ProductVerification = () => {
   if (loading) {
     return (
       <>
-        <Header />
         <div className="container page-wrapper">
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div className="spinner"></div>
           </div>
         </div>
-        <Footer />
       </>
     );
   }
 
   return (
     <>
-      <Header />
       <div className="container page-wrapper">
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontFamily: 'var(--font-heading)' }}>Product Verification</h1>
@@ -320,7 +315,6 @@ const ProductVerification = () => {
           </div>
         )}
       </div>
-      <Footer />
     </>
   );
 };

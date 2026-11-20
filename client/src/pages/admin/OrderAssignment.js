@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { admin as adminApi } from '../../services/api';
 import toast from 'react-hot-toast';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import { FiMapPin, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { listOf, oneOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
@@ -111,7 +109,6 @@ const OrderAssignment = () => {
   if (loading) {
     return (
       <>
-        <Header />
         <div className="container page-wrapper">
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div className="spinner"></div>
@@ -126,14 +123,12 @@ const OrderAssignment = () => {
         .resp.r-accepted { background: var(--success-light); color: var(--success); }
         .resp.r-rejected, .resp.r-timeout { background: var(--danger-light); color: var(--danger); }
       `}</style>
-        <Footer />
       </>
     );
   }
 
   return (
     <>
-      <Header />
       <div className="container page-wrapper">
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>Order Assignment</h1>
@@ -431,7 +426,6 @@ const OrderAssignment = () => {
           </div>
         )}
       </div>
-      <Footer />
     </>
   );
 };

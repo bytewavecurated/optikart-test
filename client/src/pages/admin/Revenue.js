@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiDollarSign, FiTrendingUp, FiShoppingBag, FiCalendar } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import { oneOf } from '../../services/apiResponse.js';
 
 const Revenue = () => {
@@ -34,7 +32,6 @@ const Revenue = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <div
@@ -230,7 +227,6 @@ const Revenue = () => {
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

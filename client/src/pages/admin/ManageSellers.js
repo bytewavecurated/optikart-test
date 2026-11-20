@@ -1,344 +1,262 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiCheck, FiX, FiTrash2, FiEye, FiShield, FiEyeOff } from 'react-icons/fi';
+import { FiCheck, FiEye, FiTrash2, FiRefreshCw, FiShield } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { listOf } from '../../services/apiResponse.js';
 import { toastError } from '../../services/errors.js';
+import {
+  PageHead,
+  ListToolbar,
+  ListPagination,
+  StatusPill,
+  TableSkeleton,
+  EmptyState,
+  useListQuery,
+} from '../../components/admin/AdminListKit.jsx';
 
+/**
+ * Shops, using the model's real truth. This page used to render
+ * `seller.businessName` and `seller.status` - neither of which exists on
+ * models/Seller.js - so every row's name came out blank, the 'verified'
+ * badge was permanently amber (undefined === 'verified' is never true),
+ * and the Verify action showed on already-verified shops whose click just
+ * re-ran it. What is real (storeName, name, isVerified/isActive/isBanned,
+ * the verified timestamp the server also writes) now drives both the
+ * columns and the status chips, and the filters are server-side like every
+ * other admin page.
+ */
 const ManageSellers = () => {
   const navigate = useNavigate();
-  const [sellers, setSellers] = useState([]);
+  const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const debounceRef = useRef(null);
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
+  const [refreshKey, setRefreshKey] = useState(0);
+  const list = useListQuery({ limit: 20 });
+  const last = useRef('');
 
-  const fetchSellers = useCallback(async (searchQuery = '', statusFilter = 'all', pageNum = 1) => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page: pageNum, limit: 20 };
-      if (statusFilter !== 'all') params.status = statusFilter;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
+      const params = list.params();
+      last.current = JSON.stringify(params);
       const res = await adminApi.getSellers(params);
-      setSellers(listOf(res.data));
-      setTotalPages(res.data.totalPages || 1);
+      const d = res.data || {};
+      setRows(listOf(d));
+      setMeta({ total: d.total ?? 0, page: d.page ?? 1, totalPages: d.totalPages ?? 1 });
     } catch (error) {
       console.error(error);
+      toast.error('Sellers could not be listed');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
-    fetchSellers();
-  }, []);
+    const t = setTimeout(() => {
+      if (JSON.stringify(list.params()) !== last.current) setRefreshKey((k) => k + 1);
+    }, 320);
+    return () => clearTimeout(t);
+  }, [list.q]);
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setPage(1);
-      fetchSellers(search, filter, 1);
-    }, 400);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [search, filter, fetchSellers]);
+    load();
+  }, [load]);
 
-  const handleVerify = async (id, status) => {
+  const verify = async (seller) => {
+    if (!window.confirm(`Verify ${seller.storeName}? This approves the shop for live listings.`)) return;
     try {
-      await adminApi.verifySeller(id, status);
-      toast.success(`Seller ${status}`);
-      fetchSellers(search, filter, page);
+      await adminApi.verifySeller(seller._id, 'approved');
+      toast.success('Seller verified');
+      load();
     } catch (error) {
       toastError(error, 'Failed');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Delete this seller?')) return;
+  const remove = async (id) => {
+    if (!window.confirm('Deactivate this shop? Existing orders are untouched.')) return;
     try {
       await adminApi.deleteSeller(id);
-      toast.success('Seller deleted');
-      fetchSellers(search, filter, page);
+      toast.success('Seller deactivated');
+      load();
     } catch (error) {
       toastError(error, 'Failed');
     }
   };
 
-  const handleBan = async (id, banType) => {
-    const action = banType === 'ban' ? 'ban' : 'shadow ban';
-    if (!window.confirm(`Are you sure you want to ${action} this seller?`)) return;
+  const badge = (s) =>
+    s.isBanned ? (
+      <StatusPill tone="bad">Banned</StatusPill>
+    ) : s.isActive === false ? (
+      <StatusPill tone="idle">Inactive</StatusPill>
+    ) : s.isVerified ? (
+      <StatusPill tone="ok">Verified</StatusPill>
+    ) : (
+      <StatusPill tone="warn">Pending review</StatusPill>
+    );
 
-    try {
-      await adminApi.banSeller(id, {
-        isBanned: banType === 'ban',
-        isShadowBanned: banType === 'shadow',
-        banReason: banType !== 'unban' ? 'Banned by admin' : '',
-      });
-      toast.success(`Seller ${action}ned successfully`);
-      fetchSellers(search, filter, page);
-    } catch (error) {
-      toastError(error, 'Failed to update seller status');
-    }
-  };
+  const th = (extra = {}) => ({
+    padding: '11px 16px',
+    textAlign: 'left',
+    fontSize: 11.5,
+    fontWeight: 700,
+    letterSpacing: '.06em',
+    textTransform: 'uppercase',
+    color: 'var(--text-light)',
+    background: 'var(--bg-secondary)',
+    borderBottom: '1px solid var(--border)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
+    ...extra,
+  });
+  const td = { padding: '13px 16px', fontSize: 13.5, borderBottom: '1px solid var(--border-light)' };
+  const filteredActive = !!(list.q.search || list.q.status || list.q.from || list.q.windowDays);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
-      <main style={{ flex: 1 }}>
-        <div className="container page-wrapper">
-          <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Manage Sellers</h1>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-            {['all', 'pending', 'verified', 'rejected'].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilter(s)}
-                style={{
-                  padding: '6px 16px',
-                  borderRadius: 'var(--radius-xl)',
-                  fontSize: '13px',
-                  border: `1px solid ${filter === s ? 'var(--primary)' : 'var(--border)'}`,
-                  background: filter === s ? 'var(--primary-light)' : 'var(--bg-white)',
-                  color: filter === s ? 'var(--primary)' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {s}
-              </button>
-            ))}
+    <div>
+      <PageHead
+        title="Sellers"
+        subtitle={`${meta.total.toLocaleString()} shop${meta.total === 1 ? '' : 's'}${filteredActive ? ' matching filters' : ''}`}
+        actions={
+          <button className="btn btn-outline btn-sm" onClick={() => setRefreshKey((k) => k + 1)}>
+            <FiRefreshCw size={13} style={{ marginRight: 6, verticalAlign: -2 }} />
+            Refresh
+          </button>
+        }
+      />
+
+      <ListToolbar
+        search={list.q.search}
+        onSearch={(v) => list.set({ search: v })}
+        searchPlaceholder="Store, owner, email, phone, GST, PAN or OPT- code…"
+        statuses={[
+          { value: 'verified', label: 'Verified' },
+          { value: 'pending', label: 'Pending review' },
+          { value: 'inactive', label: 'Inactive' },
+          { value: 'banned', label: 'Banned' },
+        ]}
+        status={list.q.status}
+        onStatus={(v) => list.set({ status: v })}
+        sortOptions={[
+          { value: '', label: 'Newest first' },
+          { value: 'storeName', label: 'Store A→Z' },
+          { value: 'rating', label: 'Top rated' },
+          { value: 'sales', label: 'Most sales' },
+        ]}
+        sort={list.q.sort}
+        onSort={(v) => list.set({ sort: v })}
+        showWindow
+        windowDays={list.q.windowDays}
+        onWindow={(w) => list.set({ windowDays: w })}
+        customFrom={list.q.from}
+        customTo={list.q.to}
+        onCustomRange={(from, to) => list.set({ from, to, windowDays: null })}
+      />
+
+      <div className="card" style={{ overflow: 'auto' }}>
+        {loading && rows.length === 0 ? (
+          <div style={{ padding: '8px 16px' }}>
+            <TableSkeleton />
           </div>
-          <div style={{ position: 'relative', maxWidth: '500px', marginBottom: '20px' }}>
-            <FiSearch
-              style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'var(--text-light)',
-              }}
-            />
-            <input
-              className="input"
-              placeholder="Search by name, email, phone, store, seller ID, GST, PAN..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: '38px' }}
-            />
-          </div>
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-              <div className="spinner spinner-lg" />
-            </div>
-          ) : (
-            <>
-              <div className="card">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-primary)' }}>
-                      {['Business', 'Email', 'Phone', 'Seller ID', 'Verification', 'Status', 'Actions'].map((h) => (
-                        <th
-                          key={h}
-                          style={{
-                            padding: '12px 16px',
-                            textAlign: 'left',
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            color: 'var(--text-secondary)',
-                          }}
+        ) : rows.length === 0 ? (
+          <EmptyState
+            title={filteredActive ? 'No shops match those filters' : 'No shops registered yet'}
+            hint={
+              filteredActive
+                ? 'Widen the window or clear the status filter.'
+                : 'Shop sign-ups appear here for verification.'
+            }
+            action={
+              filteredActive ? (
+                <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => list.set({ search: '', status: '', windowDays: null, from: '', to: '' })}
+                >
+                  Clear filters
+                </button>
+              ) : undefined
+            }
+          />
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={th()}>Shop</th>
+                <th style={th()}>Owner</th>
+                <th style={th()}>Contact</th>
+                <th style={th()}>Seller ID</th>
+                <th style={th()}>Tax IDs</th>
+                <th style={th()}>Status</th>
+                <th style={th({ textAlign: 'right' })}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((s) => (
+                <tr key={s._id}>
+                  <td style={td}>
+                    <span style={{ fontWeight: 700 }}>{s.storeName || '—'}</span>
+                    {s.city ? (
+                      <span style={{ display: 'block', fontSize: 11.5, color: 'var(--text-light)' }}>{s.city}</span>
+                    ) : null}
+                  </td>
+                  <td style={td}>{s.name || '—'}</td>
+                  <td style={{ ...td, color: 'var(--text-secondary)' }}>
+                    <span style={{ display: 'block' }}>{s.email}</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-light)' }}>{s.phone}</span>
+                  </td>
+                  <td style={{ ...td, fontFamily: 'ui-monospace, monospace', fontSize: 12 }}>{s.sellerId || '—'}</td>
+                  <td style={{ ...td, fontSize: 11.5, color: 'var(--text-light)' }}>
+                    <span style={{ display: 'block' }}>{s.gstNumber || 'GST —'}</span>
+                    <span style={{ display: 'block' }}>{s.panNumber || 'PAN —'}</span>
+                  </td>
+                  <td style={td}>{badge(s)}</td>
+                  <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'inline-flex', gap: 6 }}>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        title="Open shop profile"
+                        onClick={() => navigate(`/admin/sellers/${s._id}`)}
+                      >
+                        <FiEye size={13} />
+                      </button>
+                      {!s.isVerified && !s.isBanned && s.isActive !== false && (
+                        <button
+                          className="btn btn-outline btn-sm"
+                          title="Approve for listings"
+                          style={{ color: 'var(--success)', borderColor: 'var(--success)' }}
+                          onClick={() => verify(s)}
                         >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sellers.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)', fontSize: '14px' }}
-                        >
-                          No sellers found
-                        </td>
-                      </tr>
-                    ) : (
-                      sellers.map((seller) => (
-                        <tr key={seller._id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                          <td style={{ padding: '12px 16px' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 500 }}>{seller.businessName}</div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{seller.ownerName}</div>
-                          </td>
-                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>{seller.email}</td>
-                          <td style={{ padding: '12px 16px', fontSize: '13px' }}>{seller.phone}</td>
-                          <td
-                            style={{
-                              padding: '12px 16px',
-                              fontSize: '12px',
-                              fontFamily: 'monospace',
-                              color: 'var(--text-secondary)',
-                            }}
-                          >
-                            {seller.sellerId || '-'}
-                          </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            <span
-                              className={`badge ${seller.status === 'verified' ? 'badge-success' : seller.status === 'rejected' ? 'badge-danger' : 'badge-warning'}`}
-                              style={{ textTransform: 'capitalize' }}
-                            >
-                              {seller.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            {seller.isBanned ? (
-                              <span
-                                style={{
-                                  padding: '4px 8px',
-                                  borderRadius: 'var(--radius-xs)',
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  background: 'var(--danger-light)',
-                                  color: 'var(--danger)',
-                                }}
-                              >
-                                Banned
-                              </span>
-                            ) : seller.isShadowBanned ? (
-                              <span
-                                style={{
-                                  padding: '4px 8px',
-                                  borderRadius: 'var(--radius-xs)',
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  background: 'var(--warning-light)',
-                                  color: 'var(--warning)',
-                                }}
-                              >
-                                Shadow Banned
-                              </span>
-                            ) : (
-                              <span
-                                style={{
-                                  padding: '4px 8px',
-                                  borderRadius: 'var(--radius-xs)',
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  background: 'var(--success-light)',
-                                  color: 'var(--success)',
-                                }}
-                              >
-                                Active
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button
-                                onClick={() => navigate(`/admin/sellers/${seller._id}`)}
-                                className="btn btn-outline btn-sm"
-                                title="View Details"
-                              >
-                                <FiEye size={12} />
-                              </button>
-                              {seller.status !== 'verified' && (
-                                <button
-                                  onClick={() => handleVerify(seller._id, 'verified')}
-                                  className="btn btn-success btn-sm"
-                                  title="Verify Seller"
-                                >
-                                  <FiCheck size={12} />
-                                </button>
-                              )}
-                              {seller.status !== 'rejected' && (
-                                <button
-                                  onClick={() => handleVerify(seller._id, 'rejected')}
-                                  className="btn btn-danger btn-sm"
-                                  title="Reject Seller"
-                                >
-                                  <FiX size={12} />
-                                </button>
-                              )}
-                              {!seller.isBanned && !seller.isShadowBanned && (
-                                <>
-                                  <button
-                                    onClick={() => handleBan(seller._id, 'shadow')}
-                                    className="btn btn-outline btn-sm"
-                                    title="Shadow Ban"
-                                    style={{ color: 'var(--warning)', borderColor: 'var(--warning)' }}
-                                  >
-                                    <FiEyeOff size={12} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleBan(seller._id, 'ban')}
-                                    className="btn btn-danger btn-sm"
-                                    title="Ban Seller"
-                                  >
-                                    <FiShield size={12} />
-                                  </button>
-                                </>
-                              )}
-                              {(seller.isBanned || seller.isShadowBanned) && (
-                                <button
-                                  onClick={() => handleBan(seller._id, 'unban')}
-                                  className="btn btn-outline btn-sm"
-                                  title="Unban Seller"
-                                  style={{ color: 'var(--success)', borderColor: 'var(--success)' }}
-                                >
-                                  <FiEye size={12} />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDelete(seller._id)}
-                                className="btn btn-outline btn-sm"
-                                title="Delete Seller"
-                              >
-                                <FiTrash2 size={12} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '20px' }}>
-                  <button
-                    onClick={() => {
-                      setPage((p) => Math.max(1, p - 1));
-                      fetchSellers(search, filter, p - 1);
-                    }}
-                    disabled={page === 1}
-                    className="btn btn-outline btn-sm"
-                  >
-                    Previous
-                  </button>
-                  <span style={{ padding: '6px 12px', fontSize: '14px' }}>
-                    Page {page} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setPage((p) => p + 1);
-                      fetchSellers(search, filter, p + 1);
-                    }}
-                    disabled={page === totalPages}
-                    className="btn btn-outline btn-sm"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-      <Footer />
+                          <FiCheck size={13} /> Verify
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-outline btn-sm"
+                        title="Deactivate shop"
+                        style={{ color: 'var(--text-secondary)' }}
+                        onClick={() => remove(s._id)}
+                      >
+                        <FiTrash2 size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {!loading && rows.length > 0 && (
+          <ListPagination
+            page={meta.page}
+            totalPages={meta.totalPages}
+            total={meta.total}
+            limit={20}
+            onPage={(p) => list.set({ page: p })}
+            unit="shops"
+          />
+        )}
+      </div>
     </div>
   );
 };

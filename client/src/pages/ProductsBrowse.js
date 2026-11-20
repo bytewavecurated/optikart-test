@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import { resolveCategory, facetsForCategory, fixedFiltersFor, PRICE_RANGES } from '../utils/catalogTaxonomy';
+import NumberedPages from '../components/NumberedPages.jsx';
 
 const SORT_OPTIONS = [
   { value: 'popularity', label: 'Popularity' },
@@ -51,6 +52,7 @@ export default function ProductsBrowse() {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [pages, setPagesFromServer] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
   const brand = searchParams.get('brand') || '';
@@ -143,10 +145,16 @@ export default function ProductsBrowse() {
         if (cancelled) return;
         setItems(listOf(res.data));
         setTotal(res.data.pagination?.total || 0);
+        // page count from the server (it already computes it in the catalog
+        // audit shape); without this the numbered pager silently degrades to a
+        // single-page world. Captured on the SUCCESS path only: an error
+        // response cannot be evidence of a page count.
+        setPagesFromServer(res.data.pagination?.pages ?? res.data.pagination?.totalPages ?? 0);
       } catch (err) {
         console.error('Products fetch error:', err);
         if (!cancelled) {
           setItems([]);
+          setPagesFromServer(0);
           setTotal(0);
         }
       } finally {
@@ -408,28 +416,24 @@ export default function ProductsBrowse() {
                     <ProductCard key={product._id} product={product} />
                   ))}
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 32 }}>
-                  <button
-                    className="btn btn-outline"
-                    disabled={page <= 1}
-                    onClick={() => {
-                      setPage((p) => Math.max(1, p - 1));
-                      window.scrollTo(0, 0);
+                {/*
+                 * The server already says how many pages exist
+                 * (`pagination.pages` / `meta.pages` are read where they are
+                 * present) - so this control shows real numbered pages
+                 * instead of the old blind "Page N" with a Next that kept
+                 * working past the end because it only knew page-full
+                 * heuristics. Clicks keep the scroll-to-top behavior the
+                 * storefront has always managed for itself.
+                 */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 34 }}>
+                  <NumberedPages
+                    page={page}
+                    totalPages={pages || Math.max(1, Math.ceil((total || page * 24) / 24))}
+                    onMove={(p) => {
+                      setPage(p);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                  >
-                    Previous
-                  </button>
-                  <span style={{ padding: '10px 14px', fontSize: 14 }}>Page {page}</span>
-                  <button
-                    className="btn btn-outline"
-                    disabled={items.length < 24}
-                    onClick={() => {
-                      setPage((p) => p + 1);
-                      window.scrollTo(0, 0);
-                    }}
-                  >
-                    Next
-                  </button>
+                  />
                 </div>
               </>
             )}

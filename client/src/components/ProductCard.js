@@ -4,6 +4,7 @@ import { FiHeart, FiShoppingCart, FiStar, FiColumns } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import toast from 'react-hot-toast';
+import CardImage from './CardImage.jsx';
 
 const styles = {
   card: {
@@ -262,7 +263,7 @@ export default function ProductCard({ product }) {
       onMouseLeave={() => setHovered(false)}
     >
       <div style={styles.imageWrap}>
-        <img src={image} alt={title} style={styles.image} loading="lazy" />
+        <CardImage src={image} alt={title} style={styles.image} imgStyle={styles.image} />
         <button
           style={styles.compareBtn}
           onClick={handleCompare}

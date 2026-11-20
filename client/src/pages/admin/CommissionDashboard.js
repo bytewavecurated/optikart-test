@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import toast from 'react-hot-toast';
 import { FiDollarSign, FiTrendingUp, FiCheckCircle, FiClock } from 'react-icons/fi';
 import { toastError } from '../../services/errors.js';
@@ -55,21 +53,18 @@ const CommissionDashboard = () => {
   if (loading) {
     return (
       <>
-        <Header />
         <div className="container page-wrapper">
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div className="spinner"></div>
             <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading commission data...</p>
           </div>
         </div>
-        <Footer />
       </>
     );
   }
 
   return (
     <>
-      <Header />
       <div className="container page-wrapper">
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px' }}>Commission Dashboard</h1>
@@ -227,7 +222,6 @@ const CommissionDashboard = () => {
           </div>
         )}
       </div>
-      <Footer />
     </>
   );
 };

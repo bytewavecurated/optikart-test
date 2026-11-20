@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
+  FiChevronLeft,
   FiFileText,
   FiHome,
   FiUsers,
@@ -61,9 +62,18 @@ const AdminLayout = () => {
     { label: 'Footer & Nav', path: '/admin/site-footer', icon: <FiImage /> },
   ];
 
+  // Longest-match wins: '/admin/delivery' used to start-with-light-up BOTH
+  // 'Delivery' and 'Delivery Partners' because one path is a prefix string of
+  // the other. Picking the item with the longest matching path (and treating
+  // the dashboard as an exact-only item) makes exactly one row light.
   const isActive = (item) => {
-    if (item.exact) return location.pathname === item.path;
-    return location.pathname.startsWith(item.path);
+    const here = location.pathname;
+    if (item.exact) return here === item.path;
+    if (!here.startsWith(item.path)) return false;
+    const best = menuItems
+      .filter((m) => !m.exact && here.startsWith(m.path))
+      .sort((a, b) => b.path.length - a.path.length)[0];
+    return !!best && best.path === item.path;
   };
 
   return (
@@ -286,27 +296,64 @@ const AdminLayout = () => {
             boxShadow: 'var(--shadow-sm)',
           }}
         >
-          <div>
-            <BackButton fallbackTo="/admin" label="Back" style={{ marginBottom: 4 }} />
-            <h1
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+            <span
+              onClick={(e) => {
+                e.preventDefault();
+                if (window.history.length > 2) navigate(-1);
+                else navigate('/admin');
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+              title="Go back to where you came from"
+              aria-label="Go back"
+              className="admin-back"
               style={{
-                fontSize: '24px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 7,
+                padding: '8px 14px 8px 11px',
+                borderRadius: 999,
+                border: '1px solid var(--border)',
+                background: 'var(--bg-white)',
+                color: 'var(--text-secondary)',
+                fontSize: 12.5,
                 fontWeight: 700,
-                color: 'var(--text-primary)',
-                margin: 0,
-                letterSpacing: '-0.5px',
+                letterSpacing: '.02em',
+                cursor: 'pointer',
+                flexShrink: 0,
+                transition: 'border-color .15s ease, color .15s ease',
               }}
             >
-              {menuItems.find((item) => isActive(item))?.label || 'Admin Panel'}
-            </h1>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
+              <FiChevronLeft size={14} />
+              Back
+            </span>
+            <span aria-hidden style={{ width: 1, height: 26, background: 'var(--border)', flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <h1
+                style={{
+                  fontSize: 18,
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                  letterSpacing: '-0.2px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {menuItems.find((item) => isActive(item))?.label || 'Admin Panel'}
+              </h1>
+              <p style={{ fontSize: 11.5, color: 'var(--text-light)', margin: '2px 0 0 0' }}>
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div
@@ -337,6 +384,7 @@ const AdminLayout = () => {
         <main style={{ flex: 1, padding: '32px' }}>
           <Outlet />
         </main>
+        <style>{`.admin-back:hover { border-color: var(--primary) !important; color: var(--primary) !important; }`}</style>
       </div>
     </div>
   );

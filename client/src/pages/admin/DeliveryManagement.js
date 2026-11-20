@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiTruck, FiPackage, FiSearch } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import { listOf } from '../../services/apiResponse.js';
 
 const STATUS_COLORS = {
@@ -60,7 +58,6 @@ const DeliveryManagement = () => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Delivery Management</h1>
@@ -242,7 +239,6 @@ const DeliveryManagement = () => {
           )}
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

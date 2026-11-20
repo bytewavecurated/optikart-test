@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiDollarSign, FiSearch, FiCalendar, FiFilter, FiDownload, FiTrendingUp, FiPackage } from 'react-icons/fi';
 import { admin as adminApi } from '../../services/api';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
 import { listOf } from '../../services/apiResponse.js';
 
 const Commissions = () => {
@@ -99,18 +97,15 @@ const Commissions = () => {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <Header />
         <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="spinner spinner-lg" />
         </main>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -332,7 +327,6 @@ const Commissions = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

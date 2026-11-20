@@ -193,3 +193,103 @@ jobs:
       - name: Dumps the container logs if the run fell over
         if: failure()
         run: docker compose logs --tail 80 api client mongo
+
+  # The backup story, end to end, on real servers: seed one, run
+  # backup-mongo.sh (host database tools installed fresh here - not present
+  # on the runner image; the script's tool check would otherwise abort, and
+  # CI exists to be the place that finds out BEFORE a cron month passes),
+  # assert its in-script verify passes, then take the SAME archive to a
+  # brand-new SECOND mongod, restore, and diff every collection by name and
+  # row count externally to the script. A backup claim is only as true as
+  # its last successful restore into a server that has never seen the
+  # source - which is exactly the sentence an operator reads on the worst
+  # day of their life.
+  restore-drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: containers
+
+    services:
+      src-mongo:
+        image: mongo:6.0
+        ports: ['127.0.0.1:27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+      dst-mongo:
+        image: mongo:6.0
+        ports: ['127.0.0.1:27018:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mongodb database tools (mongodump/mongorestore)
+        # The exact URL below was probed live before this job shipped (200, not
+        # a remembered pattern): mongodb rotates fastdl paths and an apt repo
+        # line would break on every runner image bump. -e + the two checks
+        # means a moved artifact fails HERE, in CI, not silently on the first
+        # backup night three weeks from now.
+        run: |
+          set -eu
+          curl -fsSL -o /tmp/tools.tgz https://downloads.mongodb.org/tools/db/mongodb-database-tools-ubuntu2204-x86_64-100.9.3.tgz
+          mkdir -p /tmp/dtools
+          tar -xzf /tmp/tools.tgz -C /tmp/dtools --strip-components=1
+          curl -fsSL -o /tmp/mongosh.tgz https://downloads.mongodb.com/compass/mongosh-2.3.1-linux-x64.tgz
+          mkdir -p /tmp/moshs && tar -xzf /tmp/mongosh.tgz -C /tmp/moshs --strip-components=1
+          echo "/tmp/dtools/bin" >> "$GITHUB_PATH"
+          echo "/tmp/moshs/bin" >> "$GITHUB_PATH"
+          mongodump --version | head -1 && mongorestore --version | head -1 && mongosh --quiet --eval '1'
+
+      - name: Seed the source server with two real collections
+        run: |
+          mongosh --quiet mongodb://127.0.0.1:27017/eyewear-platform --eval '
+            db.products.insertMany([
+              { title: "A", sku: "ITM-AAA111", price: 100, verified: true },
+              { title: "B", sku: "ITM-BBB222", price: 200, verified: false },
+              { title: "C", sku: "ITM-CCC333", price: 300, verified: true },
+            ]);
+            db.orders.insertMany([
+              { orderNumber: "OK251120AAAAA", total: 10, done: true },
+              { orderNumber: "OK251120BBBBB", total: 20, done: false },
+              { orderNumber: "OK251120CCCCC", total: 30, done: true },
+              { orderNumber: "OK251120DDDDD", total: 40, done: false },
+              { orderNumber: "OK251120EEEEE", total: 50, done: true },
+              { orderNumber: "OK251120FFFFF", total: 60, done: false },
+            ]);
+            print("seeded:", db.products.countDocuments(), db.orders.countDocuments());
+          '
+
+      - name: Run backup-mongo.sh (in-script restore verification must pass)
+        env:
+          OPS_BACKUP_DIR: /tmp/ops-backups
+          MONGO_URI: mongodb://127.0.0.1:27017
+          BACKUP_DB: eyewear-platform
+        run: |
+          ./scripts/backup-mongo.sh | tee /tmp/backup-output.txt
+          grep -q "PARITY_OK rows=9 collections=2" /tmp/backup-output.txt
+          echo "backup verified in-script (restored into a throwaway namespace on the live server)"
+
+      - name: Restore the SAME archive into the fresh second server and diff
+        run: |
+          ARCHIVE=$(find /tmp/ops-backups -name 'mongodump-*.archive' | head -1)
+          [ -s "$ARCHIVE" ] || { echo "no archive produced"; exit 1; }
+          mongorestore --uri mongodb://127.0.0.1:27018 --archive="$ARCHIVE" --nsInclude='eyewear-platform.*' --noIndexRestore
+          mongosh --quiet mongodb://127.0.0.1:27018/eyewear-platform --eval '
+            const want = { products: 3, orders: 6 };
+            const names = Object.keys(want);
+            let fail = [];
+            for (const n of names) {
+              const c = db.getCollection(n).countDocuments();
+              if (c !== want[n]) fail.push(n + " got " + c + " want " + want[n]);
+            }
+            if (fail.length) { print("RESTORE PARITY FAILED: " + fail.join(", ")); quit(1); }
+            print("cross-server RESTORE PARITY OK: names and row counts equal the seed");
+          '
+          # content-level, not just counts: the actual document values must match.
+          cmp_src=$(mongosh --quiet mongodb://127.0.0.1:27017/eyewear-platform --eval 'JSON.stringify(db.products.find({},{_id:0}).sort({sku:1}).toArray())')
+          cmp_dst=$(mongosh --quiet mongodb://127.0.0.1:27018/eyewear-platform --eval 'JSON.stringify(db.products.find({},{_id:0}).sort({sku:1}).toArray())')
+          [ "$cmp_src" = "$cmp_dst" ] || { echo "restored CONTENT differs from source"; exit 1; }
+          echo "restored content byte-identical for products"

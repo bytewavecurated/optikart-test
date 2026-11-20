@@ -439,40 +439,72 @@ router.post('/withdraw', verifyDeliveryPartner, async (req, res) => {
  */
 router.get('/', verifyToken, verifyAdmin, async (req, res) => {
   try {
+    const { buildListQuery } = await import('../services/adminQuery.js');
     const { isActive, isAvailable, isBanned } = req.query;
-    const filters = {};
+    const base = {};
+    if (isActive !== undefined) base.isActive = isActive === 'true';
+    if (isAvailable !== undefined) base.isAvailable = isAvailable === 'true';
+    if (isBanned !== undefined) base.isBanned = isBanned === 'true';
 
-    if (isActive !== undefined) filters.isActive = isActive === 'true';
-    if (isAvailable !== undefined) filters.isAvailable = isAvailable === 'true';
-    if (isBanned !== undefined) filters.isBanned = isBanned === 'true';
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      base,
+      fields: ['name', 'email', 'phone', 'deliveryPartnerId', 'vehicleNumber'],
+      statuses: {
+        active: { isActive: true, isBanned: { $ne: true } },
+        inactive: { isActive: false },
+        banned: { isBanned: true },
+        available: { isAvailable: true },
+        busy: { isAvailable: false, isActive: true },
+      },
+      statusField: '_mapped',
+      sortable: {
+        createdAt: { createdAt: -1 },
+        name: { name: 1 },
+        rating: { rating: -1 },
+        deliveries: { totalDeliveries: -1 },
+        earnings: { totalEarnings: -1 },
+      },
+    });
 
-    const result = await getAllDeliveryPartners(filters);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        data: result.partners,
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: result.error,
-      });
+    // filtering (and $and clauses) go through the service unchanged; sorting
+    // by a non-default key and paging happen route-side in one pass on the
+    // already-secured select list (credentials never leave the service).
+    const scoped = query;
+    const result = await getAllDeliveryPartners(scoped);
+    if (!result.success) {
+      res.status(400).json({ success: false, message: result.error });
+      return;
     }
+    const all = result.partners;
+    const sortKey = Object.keys(sort)[0];
+    const dir = sort[sortKey];
+    const ordered =
+      dir === -1 && sortKey === 'createdAt'
+        ? all
+        : all.slice().sort((a, b) => {
+            const av = a[sortKey] ?? 0;
+            const bv = b[sortKey] ?? 0;
+            if (typeof av === 'string' || typeof bv === 'string')
+              return dir * String(av ?? '').localeCompare(String(bv ?? ''));
+            return dir * ((Number(av) || 0) - (Number(bv) || 0));
+          });
+    const paged = ordered.slice(skip, skip + limit);
+    res.json({
+      success: true,
+      data: paged,
+      total: ordered.length,
+      page: meta.page,
+      limit: meta.limit,
+      totalPages: Math.max(1, Math.ceil(ordered.length / meta.limit)),
+      filters: meta.filters,
+      badFilterParams: meta.problems.length ? meta.problems : undefined,
+    });
   } catch (error) {
     console.error('Error getting all delivery partners:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message,
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
-/**
- * PUT /api/delivery-partner/:id/ban
- * Ban/unban delivery partner (admin)
- */
 router.put('/:id/ban', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { id } = req.params;
