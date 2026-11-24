@@ -670,14 +670,14 @@ and re-paste, or wire the CI check.
 
 ### `/api/face-detection` — server/routes/faceDetection.js
 
-| `POST /api/face-detection/detect` | multerMiddleware |
+| `POST /api/face-detection/detect` | optionalAuth, <anonymous>, multerMiddleware |
 | `GET /api/face-detection/recommendations/:faceShape` | public |
 | `GET /api/face-detection/face-shapes` | public |
 
 ### `/api/speech` — server/routes/speechRecognition.js
 
-| `POST /api/speech/search` | multerMiddleware |
-| `POST /api/speech/transcribe` | multerMiddleware |
+| `POST /api/speech/search` | optionalAuth, <anonymous>, multerMiddleware |
+| `POST /api/speech/transcribe` | optionalAuth, <anonymous>, multerMiddleware |
 | `GET /api/speech/languages` | public |
 
 ### `/api/payouts` — server/routes/payouts.js
@@ -889,3 +889,80 @@ and re-paste, or wire the CI check.
 - `GET *`
 - `GET io`
 - `GET io`
+
+## Security posture — the 2026-11 attack-review batch
+
+A 210-technique catalogue (OWASP-shaped: authentication, object access, uploads,
+Mongo, money, API surface, browser, sockets, deployment, supply chain, business
+logic, integrations) was turned from a checklist into executable proofs. The
+rule for this batch: a defense either has a check that FAILS when the defense is
+removed, or it is documented as not held. `scripts/security_attacks_e2e.mjs`
+(52 checks) IS the attacker: forged tokens, injected operators, cross-tenant
+ObjectIds, MZ-prefixed ".jpg"s, forged webhooks, race attempts on last-stock and
+stolen-session replays, against the live HTTP API and a real socket handshake.
+`scripts/audit/mutation_authz.mjs` enumerates all 217 mutating routes from code
+and fails on any un-authenticated new door; `server/scripts/audit/security.mjs`
+grew 8 more structural tripwires for exactly the controls below.
+
+Controls added or extended in this batch (each maps to numbered catalogue items
+in its test's name):
+
+| Area                           | What changed                                                                                                                                                                                                                                                                      | Proof                                                                                                 |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| JWT A4/A5                      | every `jwt.verify` pins HS256; sign side pins too; alg:none and confused-alg tokens refused at HTTP AND socket doors                                                                                                                                                              | attack A4/A5/H137, security-gate rule 1                                                               |
+| Sessions A6/17/18/19           | legacy jti-less tokens die at the edge; logout revokes (verified working before, refused after); idle policy unchanged                                                                                                                                                            | A6, A17; socket revocation lives in `socket_membership_e2e`                                           |
+| OTP A11-a13/16                 | codes stored only as JWT_SECRET-peppered HMAC digests per record+field; consume-on-success (replay dies); one indistinguishable refusal sentence across all eight account types for expired/wrong/unknown                                                                         | A10/A12/13/16 + takeover-chain step 4 (inverted to prove the oracle closed) + security-gate rules 3-5 |
+| Enumeration A13/15             | login (customer + consoles), send-otp, forgot-password, reset: unknown vs known answers byte-identical incl. removal of the per-attempt counter in messages; lockout state survives only as 423/503 transport facts, with the old disclosed phone-oracle explicitly retired       | A13-15, takeover chain                                                                                |
+| Password policy A16            | 8+ upper+lower+digit enforced on every path that sets a password (register, reset, console staff creation), client text aligned                                                                                                                                                   | A16 weak-reset check                                                                                  |
+| Authz B1-B40                   | mounts+chains are now MACHINERY-enforced: 217 mutating routes parsed out of server.js + every router file, must carry `verify*` or sit on a reason-written allowlist (35 anonymous-by-design entries); cross-tenant order/invoice/address/product probes on the wire              | mutation_authz audit; B21/22/25/26/27/31/32/33/34/37/38/39/40 checks                                  |
+| Mass assignment B35/34/104     | registration and consoles ignore role/isAdmin payloads (proved on DB row, not on response politeness); order pricing recomputed from catalogue (claimed price/subtotal/discount/coupon 'FREEEVER' have no effect)                                                                 | A1/A2, B34/E76/E77/E78                                                                                |
+| Uploads C41-C60                | magic-byte gate: stored extension must match the first bytes (MZ-as-jpg, PDF-as-PNG refused); svg refused for on-origin local storage; per-route size caps and authorization verified live                                                                                        | C41/42/43/44/47/60 + storage-guards unit + security-gate rule 6                                       |
+| Mongo/Nosql D61-D63 (F105/120) | `middleware/mongoGuard.js` scrubs `{$...}` / `__proto__` keys out of body AND query (query shapes get scalar-only policy), before every route; `{email:{$ne}}` login becomes an honest 400                                                                                        | D61/62/63, F105, F120 (pollution stays undefined), security-gate rule 2                               |
+| Money E76-E100                 | server-side pricing proven end-to-end; coupon scope parity held from the previous batch; webhook HMAC (shape + constant-time) refuses forged/replayed events; last-unit stock race decided by ONE winner with atomic decrement + reservation release                              | E76/77, E84/86, E95, E97                                                                              |
+| API surface F101/108           | CORS fixed to the single configured origin, never wildcard-with-credentials; OPTIONS probe; X-Amazon-style header `X-Powered-By` disabled; error surface stays stack-free                                                                                                         | A0 fixtures refusal set, F108, gate rule 7                                                            |
+| Browser G121-G135              | the one `dangerouslySetInnerHTML` surface (blog body) is now sanitized with an explicit allowlist at BOTH write doors (the imported-and-never-called sanitize-html is now wired); secret literals scanned client-wide                                                             | G121 (+gate rule 6), G128                                                                             |
+| Sockets H136-H147              | handshake refuses anonymous/none-alg tokens; pinning covers socket auth; room rules already pinned by the socket-membership suite                                                                                                                                                 | H136/137 + existing membership group                                                                  |
+| Business K179-K200             | capability-URL decides refuse guessed tokens; console price-change propose gate untouched; shipped reviews require delivered-owned order; wishlist boxes stay per-account                                                                                                         | K186/187/190/191/198                                                                                  |
+| Third-party L, I               | shiprocket webhook: header secret + timingSafeEqual + refuse-open if unset (also stops anonymous order-state writes); SSRF storeRemoteImages stays on its own-host/policy rules (already pinned by storage-guards unit); paid AI endpoints behind per-hour identity-or-IP limiter | shiprocket gate, face/speech limiter, payload shape refusal                                           |
+
+### Standing recommendations (not in code; decisions for the operator)
+
+1. Rotate secrets ON A CALENDAR and hold each in the platform secret store, not
+   in shell history. After the bootstrap admin creates the real day-2 admin
+   account, change the bootstrap password (or delete that identity) — the
+   default credentials documented in this repo are a starter pistol, not
+   permanent access.
+2. Keep AUTH_OTP_BYPASS unset anywhere reachable by real customers (the pilot
+   drill proves production refuses it; staging copies must too), and treat
+   seeded demo accounts as a CI-only concept.
+3. Backups (`scripts/backup-mongo.sh`) into storage with ACL + encryption, or
+   their exposure is a full-data exposure by definition (#67); periodic
+   off-host restore drills already exist in CI.
+4. GitHub Actions: pin third-party uses to commit SHAs and enable
+   dependency-review + secret scanning on PRs (#172/#173). The current CI
+   audits are strict, but supply-chain hardening is a settings + habit.
+5. WAF/rate limiting at the edge (Cloudflare or nginx limit_req) in front of
+   the api container: the in-app limiters are keyed by `req.ip`; behind NAT or
+   a shared proxy, set the same TRUST_PROXY_HOPS discipline at both layers or
+   one shared office becomes one anonymous bucket (#162-164).
+6. Monitoring that matters: alert on `mongo_guard_drop`, on webhook signature
+   successes dropping to zero from Shiprocket, on 423/429 spikes per account,
+   and on `paidAiLimiter` refusals (abuse radar). The metrics ring + error
+   surface already carry the raw material.
+7. Email domain protection (SPF/DKIM/DMARC + reject-subdomain-spoof) is a
+   prerequisite to trusting the password-reset and OTP channel (#199).
+8. Log hygiene: guard events are structured JSON lines; ship them somewhere
+   immutable (log injection #166 is mitigated by format but shipping off-host
+   is what closes #165).
+9. Session policy is per-role and idle-based; a hard absolute cap (e.g. 12h)
+   per role is trivial to add in `sessionActivity` defaults if policy wants it.
+10. A dependency-update cadence (Renovate/Dependabot) with `npm audit --omit=dev
+--audit-level=high` already gating merges should get a human review SLA;
+    automation that opens PRs is how the gate stays green instead of frozen.
+11. For prescription privacy (#28/51): the files are unguessable-random and
+    unreferenced by static routes, but a signed expiring download URL (or
+    Cloudinary's `sign_url`) removes reliance on randomness forever; the local
+    fallback should not be used for PHI in production.
+12. Run CSP in `report` mode on staging against each release and watch the
+    directive ring before flipping production `enforce` — the rollout is
+    measurable by design now.

@@ -1,4 +1,5 @@
 import { otpBypassAllowed } from '../config/authMode.js';
+import { stampOtp, matchOtp } from '../services/otpCode.js';
 import { saveUpload, StoragePolicyError } from '../services/storage.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import { brandOwnersByFoldedName, foldBrand } from '../services/brandOwnership.js';
@@ -624,7 +625,7 @@ router.post('/login', authLimiter, async (req, res) => {
       const remainingAttempts = 3 - manufacturer.failedLoginAttempts;
       return res.status(401).json({
         success: false,
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
+        message: 'Invalid email or password.',
       });
     }
 
@@ -657,7 +658,7 @@ router.post('/login', authLimiter, async (req, res) => {
         lowerCaseAlphabets: false,
       });
 
-      manufacturer.loginOtp = loginOtp;
+      stampOtp(manufacturer, 'loginOtp', loginOtp);
       manufacturer.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await manufacturer.save();
 
@@ -704,16 +705,17 @@ router.post('/verify-login-otp', otpLimiter, async (req, res) => {
     }
 
     const manufacturer = await Manufacturer.findById(manufacturerId);
-    if (!manufacturer) {
-      return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
-    }
-
-    if (manufacturer.loginOtp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
-    }
-
-    if (new Date() > manufacturer.loginOtpExpiry) {
-      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    /*
+     * NOT FOUND, WRONG CODE and EXPIRED now answer one identical sentence. The old
+     * 404 "X not found" was a free oracle for enumerating console identities -
+     * and the digest lookup returns false for all three cases anyway, so the
+     * separate guards carried disclosure for zero diagnostic value.
+     */
+    if (
+      !matchOtp(manufacturer, 'loginOtp', otp) ||
+      !(manufacturer && manufacturer.loginOtpExpiry && new Date() <= manufacturer.loginOtpExpiry)
+    ) {
+      return res.status(400).json({ success: false, message: 'The code is invalid or has expired.' });
     }
 
     manufacturer.loginOtp = undefined;
@@ -746,7 +748,7 @@ router.get('/me', verifyManufacturer, async (req, res) => {
       return res.status(401).json({ success: false, message: 'No token provided.' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     const manufacturer = await Manufacturer.findById(req.manufacturer._id);
 
     if (!manufacturer) {

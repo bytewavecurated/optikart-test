@@ -1,4 +1,5 @@
 import express from 'express';
+import { stampOtp, matchOtp } from '../services/otpCode.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import mongoose from 'mongoose';
@@ -77,7 +78,7 @@ router.post('/login', authLimiter, async (req, res) => {
       const remainingAttempts = 3 - executive.failedLoginAttempts;
       return res.status(401).json({
         success: false,
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
+        message: 'Invalid email or password.',
       });
     }
 
@@ -111,7 +112,7 @@ router.post('/login', authLimiter, async (req, res) => {
         lowerCaseAlphabets: false,
       });
 
-      executive.loginOtp = loginOtp;
+      stampOtp(executive, 'loginOtp', loginOtp);
       executive.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await executive.save();
 
@@ -144,16 +145,11 @@ router.post('/verify-login-otp', otpLimiter, async (req, res) => {
     }
 
     const executive = await Executive.findById(executiveId);
-    if (!executive) {
-      return res.status(404).json({ success: false, message: 'Executive not found.' });
-    }
-
-    if (executive.loginOtp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
-    }
-
-    if (new Date() > executive.loginOtpExpiry) {
-      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    if (
+      !matchOtp(executive, 'loginOtp', otp) ||
+      !(executive && executive.loginOtpExpiry && new Date() <= executive.loginOtpExpiry)
+    ) {
+      return res.status(400).json({ success: false, message: 'The code is invalid or has expired.' });
     }
 
     executive.loginOtp = undefined;
@@ -299,8 +295,10 @@ router.post('/staff', verifyExecutive, async (req, res) => {
     if (!STAFF_ROLES.includes(role)) {
       return res.status(400).json({ success: false, message: `Role must be one of: ${STAFF_ROLES.join(', ')}` });
     }
-    if (password && password.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+    if (password && (password.length < 8 || !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password))) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Password needs 8+ characters with upper, lower and a number.' });
     }
     if (await StaffRole.findOne({ email })) {
       return res.status(400).json({ success: false, message: 'A staff record for this email already exists.' });

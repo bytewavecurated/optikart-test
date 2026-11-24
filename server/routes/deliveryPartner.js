@@ -1,4 +1,5 @@
 import { otpBypassAllowed } from '../config/authMode.js';
+import { stampOtp, matchOtp } from '../services/otpCode.js';
 import { signSession, logoutHandler } from '../services/session.js';
 import express from 'express';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
@@ -153,7 +154,7 @@ router.post('/login', authLimiter, async (req, res) => {
       const remainingAttempts = 3 - partner.failedLoginAttempts;
       return res.status(401).json({
         success: false,
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
+        message: 'Invalid email or password.',
       });
     }
 
@@ -194,7 +195,7 @@ router.post('/login', authLimiter, async (req, res) => {
         lowerCaseAlphabets: false,
       });
 
-      partner.loginOtp = loginOtp;
+      stampOtp(partner, 'loginOtp', loginOtp);
       partner.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
       await partner.save();
 
@@ -237,25 +238,15 @@ router.post('/verify-login-otp', otpLimiter, async (req, res) => {
     }
 
     const partner = await DeliveryPartner.findById(partnerId);
-    if (!partner) {
-      return res.status(404).json({
-        success: false,
-        message: 'Partner not found',
-      });
-    }
-
-    if (partner.loginOtp !== otp) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid OTP',
-      });
-    }
-
-    if (new Date() > partner.loginOtpExpiry) {
-      return res.status(400).json({
-        success: false,
-        message: 'OTP has expired',
-      });
+    /*
+     * The three separate answers (not found / invalid / expired) were an
+     * enumeration oracle for delivery-partner ids. One sentence now.
+     */
+    if (
+      !matchOtp(partner, 'loginOtp', otp) ||
+      !(partner && partner.loginOtpExpiry && new Date() <= partner.loginOtpExpiry)
+    ) {
+      return res.status(400).json({ success: false, message: 'The code is invalid or has expired.' });
     }
 
     partner.loginOtp = undefined;

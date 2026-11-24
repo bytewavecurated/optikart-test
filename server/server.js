@@ -83,6 +83,7 @@ import { errorSurface, securityHeaders } from './middleware/errorSurface.js';
 import partnerRankingRoutes from './routes/partnerRanking.js';
 import brandLogoRoutes from './routes/brandLogos.js';
 import sessionGuard from './middleware/sessionGuard.js';
+import mongoGuard from './middleware/mongoGuard.js';
 import { logSessionIdlePolicy } from './services/sessionActivity.js';
 
 /* dotenv is loaded by the first import above; validated here so a weak secret is a refuse-to-boot. */
@@ -92,6 +93,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.disable('x-powered-by');
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
@@ -144,6 +146,14 @@ const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || '1mb';
 
 app.use(express.json({ limit: JSON_BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true, limit: JSON_BODY_LIMIT }));
+
+/*
+ * NoSQL-operator / prototype-shape filter, after the parsers so structures
+ * exist, before every route so nothing can forget it. See
+ * middleware/mongoGuard.js for the three attacks and the req-query getter
+ * trap it handles.
+ */
+app.use('/api', mongoGuard);
 
 const uploadDirs = [
   'uploads',

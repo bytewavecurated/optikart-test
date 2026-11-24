@@ -77,10 +77,12 @@ const SUITES = [
   ['redis limiter-store flag: memory default + fail-fast', 'server/scripts/redis_limiter_store_e2e.mjs'],
   ['admin list queries: search/filters/sort/pages', 'scripts/admin_list_queries_e2e.mjs'],
   ['festive offer scopes + voucher scope parity', 'scripts/offers_scopes_e2e.mjs'],
+  ['attack suite: auth, object-access, uploads, mongo, money, sockets', 'scripts/security_attacks_e2e.mjs'],
 ];
 
 // Static checks: no server needed, but they gate the same push.
 const AUDITS = [
+  ['mutating-route authorization audit', 'scripts/audit/mutation_authz.mjs'],
   /*
    * Registration note for whoever reads a "19 groups" number somewhere in the
    * project history: the seed guard is asserted here because a boot-time hazard

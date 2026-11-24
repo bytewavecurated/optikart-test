@@ -177,7 +177,7 @@ export const touchSession = async (authorization) => {
   const token = authorization.slice(7);
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
   } catch {
     return { allowed: true };
   }
@@ -223,7 +223,7 @@ export const sessionState = async (authorization) => {
   const token = authorization.slice(7);
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
   } catch {
     return null;
   }

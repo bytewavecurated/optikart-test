@@ -1,6 +1,7 @@
 import express from 'express';
 import Blog from '../models/Blog.js';
 import { verifyToken, verifyAdmin, verifyStaff, verifyStaffPermission } from '../middleware/auth.js';
+import sanitizeHtml from 'sanitize-html';
 
 const router = express.Router();
 
@@ -63,9 +64,58 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
+/*
+ * The blog body is authored as HTML (the storefront renders it with
+ * dangerouslySetInnerHTML), so it is the ONE place raw markup is allowed to
+ * exist in the product. sanitize-html runs before anything is stored, with an
+ * explicit allowlist (paragraphs, headings, lists, links, images; only
+ * href/src/alt/title attributes): scripts, event handlers, iframes and
+ * javascript: URLs cannot reach the database. Server-side, at the write
+ * boundary, deliberately - clean-at-rest means every consumer inherits it.
+ */
+const BLOG_ALLOWED = {
+  allowedTags: [
+    'p',
+    'a',
+    'strong',
+    'b',
+    'em',
+    'i',
+    'u',
+    'ul',
+    'ol',
+    'li',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'img',
+    'br',
+    'figure',
+    'figcaption',
+    'blockquote',
+    'pre',
+    'code',
+    'span',
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'td',
+    'th',
+  ],
+  allowedAttributes: { a: ['href', 'title', 'target', 'rel'], img: ['src', 'alt', 'title'] },
+  allowedSchemes: ['http', 'https', 'mailto'],
+  disallowedTagsMode: 'discard',
+};
+const sanitizeBlogHtml = (raw) => sanitizeHtml(String(raw || ''), BLOG_ALLOWED);
+
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { title, content, excerpt, coverImage, category, tags, isPublished } = req.body;
+    const { title, excerpt, coverImage, category, tags, isPublished } = req.body;
+    const content = sanitizeBlogHtml(req.body.content);
 
     if (req.user.role !== 'admin') {
       const hasPermission = req.user.permissions && req.user.permissions.includes('manage_blogs');
@@ -120,7 +170,8 @@ router.put('/:id', verifyToken, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied.' });
     }
 
-    const { title, content, excerpt, coverImage, category, tags, isPublished } = req.body;
+    const { title, excerpt, coverImage, category, tags, isPublished } = req.body;
+    const content = req.body.content !== undefined ? sanitizeBlogHtml(req.body.content) : undefined;
 
     if (title) {
       blog.title = title;

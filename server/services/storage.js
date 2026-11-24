@@ -186,6 +186,52 @@ function assertSvnPolicy(ext) {
   }
 }
 
+/** Byte-signature check: the file must BE what it says, family-by-family.
+ *
+ * The strict rule is "declared extension's exact magic must match". Relaxation
+ * exists ONLY across the raster-image family (jpg/png/gif/webp): a JPEG that
+ * declares itself .gif is a label mistake, stored bytes are still a decodable
+ * image, the site serves it as an image, and the route already validated the
+ * PIXELS (dimensions). Everything else stays exact:
+ *  - unknown leading bytes (MZ, raw JSON, PHP source) die: not an image;
+ *  - PDF declared as an image dies and vice versa: a PDF is a content-bearing
+ *    document with its own parsers, not a picture;
+ *  - SVG declared as a raster (or raster bytes declared svg - the XSS-adjacent
+ *    shape) dies: svg is XML-as-image and handled by its own origin policy
+ *    above this function.
+ */
+const IMAGE_FAMILY = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+const sniff = (buf) => {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'jpeg';
+  if (buf.length >= 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])))
+    return 'png';
+  const m6 = buf.subarray(0, 6).toString('latin1');
+  if (m6 === 'GIF87a' || m6 === 'GIF89a') return 'gif';
+  if (buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP')
+    return 'webp';
+  if (buf.subarray(0, 5).toString('latin1') === '%PDF-') return 'pdf';
+  const head = buf
+    .subarray(0, 512)
+    .toString('latin1')
+    .replace(/^﻿?\s*|<\?xml[^>]*\?>\s*/gi, '');
+  if (/^<(svg|!doctype svg)/i.test(head)) return 'svg';
+  return null;
+};
+function assertRealBytes(buf, ext) {
+  const kind = sniff(buf);
+  const same = kind === ext || (kind === 'jpeg' && ext === 'jpg') || (ext === 'jpeg' && kind === 'jpg');
+  const imageSwap = IMAGE_FAMILY.includes(ext) && IMAGE_FAMILY.includes(kind || '');
+  const ok = same || imageSwap;
+  if (ok) return;
+  const label = ext === 'jpg' || ext === 'jpeg' ? 'IMAGE' : ext.toUpperCase();
+  throw new StoragePolicyError(
+    kind === null
+      ? `The file declared as .${ext} begins with bytes that match no format the store accepts; it was not stored.`
+      : `The file named ".${ext}" actually contains ${kind} bytes; only ${label} bytes pass for that name.`,
+    { field: 'file' }
+  );
+}
+
 export async function saveUpload({ buffer, originalname, mimeType, folder }) {
   /*
    * No default folder. There used to be a literal default, which meant a
@@ -199,11 +245,23 @@ export async function saveUpload({ buffer, originalname, mimeType, folder }) {
     throw new StoragePolicyError('No file bytes were received.', { field: 'logo' });
   const f = assertFolder(folder);
   const ext = safeExtension(originalname, mimeType);
+  /*
+   * The declared type and the name are attacker input (a .exe called
+   * photo.jpg.exe, a PDF whose magic bytes are MZ). The extension whitelist
+   * says what we MIGHT store; this says what the bytes ARE, and the two must
+   * agree before anything is written anywhere. Signatures below match the
+   * first bytes of each accepted format exactly (JPEG SOI, PNG IHDR start,
+   * GIF8, RIFF....WEBP, %PDF-, and SVG/ XML text starts).
+   */
   if (!ext)
     throw new StoragePolicyError(
       `Unsupported file type "${mimeType || originalname || '?'}". Allowed: ${UPLOAD_EXTENSIONS.join(', ')}.`
     );
+  // SVG is rejected on non-CDN origins before any byte discussion: the
+  // documented operator sentence (brand-logo suite, README) stays the answer
+  // for an svg upload attempt either way.
   assertSvnPolicy(ext);
+  assertRealBytes(buffer, ext);
   const bytes = buffer.length;
 
   if (decision().backend === 'cloudinary') {

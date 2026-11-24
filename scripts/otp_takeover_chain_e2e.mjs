@@ -9,8 +9,8 @@
  * `generateToken(user._id)`, a seven-day bearer token. Two unauthenticated
  * requests and any 10-digit number the attacker knows, buys or guesses was a
  * complete account takeover of any shopper, reachable with curl. The response also
- * distinguished "Phone number not registered", which turns guessing into
- * enumeration.
+ * answered "Phone number not registered"; the enumeration oracle was closed
+ * in the security batch of 2026-11 and step 4 now proves it stays shut.
  *
  * The code field was a development convenience that shipped. It is gone, and this
  * suite is what keeps it gone: the fix is one deleted response property, the most
@@ -184,30 +184,39 @@ async function main() {
     );
   }
 
-  /* ── step 4: the enumeration oracle, recorded rather than hidden ─────────── */
+  /* ── step 4: the enumeration oracle, CLOSED (was disclosed in 2026-11) ───── */
   const unknown = await post('/auth/send-otp', { phone: UNREGISTERED_PHONE });
   check(
-    'unregistered numbers answer differently (known weakness, disclosed here on purpose)',
-    unknown.status === 404 || /not registered/i.test(String(unknown.json?.message)),
+    'unregistered numbers are refused with the sent-anyway sentence: no more 404 oracle',
+    unknown.status === 200 &&
+      !/404|not registered/i.test(JSON.stringify(unknown.json || '')) &&
+      /matches an account/i.test(String(unknown.json?.message || '')),
     `HTTP ${unknown.status} ${String(unknown.json?.message).slice(0, 70)}`
   );
   /*
-   * send-otp confirms which phone numbers hold accounts, which is what makes
-   * guessing worth attempting. It is left in place because the sign-in UX depends
-   * on telling a user their number is not registered, and silently changing that
-   * during a security batch is the kind of unreviewed behaviour change I have been
-   * careful about elsewhere. So it is asserted as it actually is, with a
-   * deliberately loose rate limiter check below to at least slow it down.
+   * The old comment kept this open because the sign-in UX wanted to tell a user
+   * their number is not registered. Security review overruled the convenience:
+   * the phone leg is passwordless sign-in, so an existence oracle there hands out
+   * half of a credential. The VERIFY step is now the single indistinguishable
+   * answer ("The code is invalid or has expired.") for unknown numbers, wrong
+   * codes and expired codes alike.
    */
   const hammer = [];
-  for (let i = 0; i < 14; i += 1) {
+  for (let i = 0; i < 30; i += 1) {
     const r = await post('/auth/send-otp', { phone: UNREGISTERED_PHONE });
     hammer.push(r.status);
   }
+  /*
+   * Two guarantees now, in order: (1) every pre-ceiling answer is the SAME
+   * shape (the old failure-counting 429 was itself an oracle and is gone),
+   * and (2) the client-level ceiling still refuses bulk sweeps - the 429 is
+   * there for the phone-number LIST, not for one number.
+   */
+  const pre = hammer.slice(0, 12);
   check(
-    'the attempt limiter eventually refuses repeat probing of that oracle',
-    hammer.includes(429),
-    `statuses: ${hammer.join(',')}`
+    'unknown numbers get identical sent-anyway answers until a per-client ceiling bites',
+    pre.every((s) => s === 200) && hammer.includes(429),
+    `first12=${pre.join(',')} total=${hammer.join(',')}`
   );
 
   const failed = results.filter((r) => !r.ok);

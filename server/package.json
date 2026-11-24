@@ -32,6 +32,7 @@
     "rate-limit-redis": "^4.3.1",
     "razorpay": "^2.9.2",
     "redis": "^6.3.1",
+    "sanitize-html": "^2.18.2",
     "socket.io": "^4.7.2",
     "web-push": "^3.6.7",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"

@@ -1,6 +1,8 @@
 import express from 'express';
 import multer from 'multer';
 import { detectFaceShape, getFrameRecommendations } from '../services/faceDetection.js';
+import { paidAiLimiter } from '../middleware/rateLimiter.js';
+import { optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -24,7 +26,7 @@ const upload = multer({
  * POST /api/face-detection/detect
  * Detect face shape from uploaded image
  */
-router.post('/detect', upload.single('image'), async (req, res) => {
+router.post('/detect', optionalAuth, paidAiLimiter, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({

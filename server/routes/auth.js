@@ -1,4 +1,6 @@
 import express from 'express';
+import { isProduction } from '../config/authMode.js';
+import { stampOtp, matchOtp } from '../services/otpCode.js';
 import { persistMulterFile } from '../services/storage.js';
 import { signSession, revokeAuthorization } from '../services/session.js';
 import jwt from 'jsonwebtoken';
@@ -7,7 +9,7 @@ import User from '../models/User.js';
 import Prescription from '../models/Prescription.js';
 import { submitForVerification } from '../services/prescriptionVerification.js';
 import { registerValidation, loginValidation } from '../middleware/validate.js';
-import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
+import { authLimiter, otpLimiter, otpProbeLimiter } from '../middleware/rateLimiter.js';
 import { verifyToken, verifyAnyPrincipal } from '../middleware/auth.js';
 import { uploadPrescription } from '../middleware/upload.js';
 import { describeOtpDelivery, sendOTP, sendPasswordReset } from '../services/email.js';
@@ -98,10 +100,12 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
       }
 
       await user.save();
-      const remainingAttempts = 3 - user.failedLoginAttempts;
+      // the counter lives in the row, not in the response: "2 attempts
+      // remaining" was a one-request oracle that told an attacker which
+      // emails hold accounts (unknown emails never increment)
       return res.status(401).json({
         success: false,
-        message: `Invalid email or password. ${remainingAttempts} attempts remaining.`,
+        message: 'Invalid email or password.',
       });
     }
 
@@ -143,7 +147,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
         length: 6,
       });
 
-      user.loginOtp = otp;
+      stampOtp(user, 'loginOtp', otp);
       user.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       await user.save();
 
@@ -173,7 +177,7 @@ router.post('/login', authLimiter, loginValidation, async (req, res) => {
   }
 });
 
-router.post('/send-otp', otpLimiter, async (req, res) => {
+router.post('/send-otp', otpLimiter, otpProbeLimiter, async (req, res) => {
   try {
     const { phone } = req.body;
 
@@ -184,11 +188,21 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
     const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
     const user = await User.findOne({ phone });
+    /*
+     * Uniform answer (security batch): the old 404 was an enumeration oracle -
+     * it made guessing who holds an account free. The sign-in step still tells
+     * the user its code was invalid; that is now the only error that can name a
+     * number, and it fires for wrong codes, unknown numbers, and expired codes
+     * with the SAME response, so the oracle cannot be rebuilt downstream.
+     */
     if (!user) {
-      return res.status(404).json({ success: false, message: 'Phone number not registered.' });
+      return res.json({
+        success: true,
+        message: 'If that number matches an account, a verification code has been sent.',
+      });
     }
 
-    user.resetOtp = otp;
+    stampOtp(user, 'resetOtp', otp);
     user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
@@ -201,8 +215,9 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
      * session and trades that code for `generateToken(user._id)`, a seven-day
      * bearer token. Two unauthenticated requests plus any 10-digit number anyone
      * knows, buys or guesses was therefore a complete account takeover for every
-     * shopper - and the 404 text here ("Phone number not registered") confirms
-     * which numbers hold accounts, so even blind phone enumeration pays off.
+     * shopper - and the old 404 text here ("Phone number not registered") used to
+     * confirm which numbers hold accounts; it was removed in the security batch
+     * so this flow now answers unknown numbers with the sent-anyway sentence.
      *
      * Returning the code is a development convenience that survived into shipped
      * code, and it is the reason an OTP exists in the first place: it proves the
@@ -229,6 +244,15 @@ router.post('/send-otp', otpLimiter, async (req, res) => {
       return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
     }
 
+    if (isProduction()) {
+      return res.json({
+        success: true,
+        // production is byte-identical to the unknown-number answer above:
+        // passwordless sign-in must not become an account oracle.
+        message: 'If that number matches an account, a verification code has been sent.',
+        requiresOTP: true,
+      });
+    }
     res.json({
       success: true,
       message: delivery.message,
@@ -251,16 +275,8 @@ router.post('/verify-otp', otpLimiter, async (req, res) => {
     }
 
     const user = await User.findOne({ phone });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Phone number not registered.' });
-    }
-
-    if (!user.resetOtp || user.resetOtp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
-    }
-
-    if (new Date() > user.resetOtpExpiry) {
-      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    if (!matchOtp(user, 'resetOtp', otp) || !user.resetOtpExpiry || new Date() > user.resetOtpExpiry) {
+      return res.status(400).json({ success: false, message: 'The code is invalid or has expired.' });
     }
 
     user.resetOtp = undefined;
@@ -292,16 +308,8 @@ router.post('/verify-login-otp', otpLimiter, async (req, res) => {
     }
 
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-
-    if (!user.loginOtp || user.loginOtp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
-    }
-
-    if (new Date() > user.loginOtpExpiry) {
-      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    if (!matchOtp(user, 'loginOtp', otp) || !user.loginOtpExpiry || new Date() > user.loginOtpExpiry) {
+      return res.status(400).json({ success: false, message: 'The code is invalid or has expired.' });
     }
 
     // Clear OTP and generate token
@@ -407,7 +415,7 @@ router.put('/update-profile', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/forgot-password', otpLimiter, async (req, res) => {
+router.post('/forgot-password', otpLimiter, otpProbeLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -416,13 +424,23 @@ router.post('/forgot-password', otpLimiter, async (req, res) => {
     }
 
     const user = await User.findOne({ email });
+    /*
+     * Unknown emails get the SAME answer as known ones, minus the dev code (the
+     * development fallback only exists where an account really was mailed).
+     * Production responses are byte-shape identical either way, and the reset
+     * step below refuses wrong codes, unknown accounts, and expired codes with
+     * one sentence - there is no oracle left here.
+     */
     if (!user) {
-      return res.status(404).json({ success: false, message: 'Email not registered.' });
+      return res.json({
+        success: true,
+        message: 'If that email matches an account, reset instructions have been sent.',
+      });
     }
 
     const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
 
-    user.resetOtp = otp;
+    stampOtp(user, 'resetOtp', otp);
     user.resetOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
@@ -431,6 +449,14 @@ router.post('/forgot-password', otpLimiter, async (req, res) => {
       return res.status(delivery.status).json({ success: false, message: delivery.message, reason: delivery.reason });
     }
 
+    // Production answers known and unknown emails identically when the mail
+    // path worked: see the unknown-account return above for the sentence.
+    if (isProduction()) {
+      return res.json({
+        success: true,
+        message: 'If that email matches an account, reset instructions have been sent.',
+      });
+    }
     res.json({
       success: true,
       message: delivery.message,
@@ -449,21 +475,15 @@ router.post('/reset-password', authLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+    if (newPassword.length < 8 || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Password needs 8+ characters with upper, lower and a number.' });
     }
 
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Email not registered.' });
-    }
-
-    if (!user.resetOtp || user.resetOtp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
-    }
-
-    if (new Date() > user.resetOtpExpiry) {
-      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    if (!matchOtp(user, 'resetOtp', otp) || !user.resetOtpExpiry || new Date() > user.resetOtpExpiry) {
+      return res.status(400).json({ success: false, message: 'The code is invalid or has expired.' });
     }
 
     user.password = newPassword;

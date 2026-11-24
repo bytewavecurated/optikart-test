@@ -14,7 +14,7 @@ export const verifyToken = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
 
     const user = await User.findById(decoded.id || decoded.userId);
     if (!user) {
@@ -59,7 +59,7 @@ export const verifyAnyPrincipal = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
     }
 
-    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET, { algorithms: ['HS256'] });
     const id = decoded.id || decoded.userId || decoded.sellerId || decoded.executiveId || decoded.partnerId;
 
     const principal = { id, role: decoded.role || 'user', decoded };
@@ -148,7 +148,7 @@ export const verifySeller = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
 
     const seller = await Seller.findById(decoded.id || decoded.sellerId);
     if (!seller) {
@@ -289,7 +289,7 @@ export const optionalAuth = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
 
     const user = await User.findById(decoded.id || decoded.userId);
     if (user && user.isActive) {
@@ -312,7 +312,7 @@ export const verifyManufacturerSeller = async (req, res, next) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
     }
-    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET, { algorithms: ['HS256'] });
     const { default: ManufacturerSeller } = await import('../models/ManufacturerSeller.js');
     const seller = await ManufacturerSeller.findById(decoded.id || decoded.sellerId);
     if (!seller)
@@ -342,7 +342,7 @@ export const verifyAnySeller = async (req, res, next) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
     }
-    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+    const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET, { algorithms: ['HS256'] });
     const id = decoded.id || decoded.sellerId;
     const own = await Seller.findById(id);
     if (own && own.isActive !== false) {
@@ -373,7 +373,7 @@ export const verifyDeliveryPartner = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
 
     const partner = await DeliveryPartner.findById(decoded.id || decoded.partnerId);
     if (!partner) {
@@ -410,7 +410,7 @@ export const verifyManufacturer = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
 
     const manufacturer = await Manufacturer.findById(decoded.id || decoded.manufacturerId);
     if (!manufacturer) {
@@ -447,7 +447,7 @@ export const verifyExecutive = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
 
     const executive = await Executive.findById(decoded.id || decoded.executiveId);
     if (!executive) {

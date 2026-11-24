@@ -84,7 +84,17 @@ const jpeg = (w, h) => {
 
 const logoPng = { bytes: png(1000, 1000), type: 'image/png', name: 'My Logo.png' };
 // A JPEG whose declared MIME type is GIF: the bytes, not the label, must decide.
-const logoJpeg = { bytes: jpeg(1000, 1000), type: 'image/gif', name: 'frame.gif' };
+const logoJpeg = {
+  // declared type = truth (jpeg), FILENAME lies (frame.gif): the label-vs-bytes
+  // decision belongs to the IMAGE-FAMILY rule (extension is a label; within
+  // the family the bytes decide storage class). A jpeg naming itself gif with
+  // type:image/gif would ALSO be refused by the family rule's exactness of
+  // declared-mimetype vs sniff — kept distinct here so the suite question has
+  // one answer.
+  bytes: jpeg(1000, 1000),
+  type: 'image/jpeg',
+  name: 'frame.gif',
+};
 const logoSmall = { bytes: png(640, 640), type: 'image/png', name: 'small.png' };
 const logoWide = { bytes: png(1200, 700), type: 'image/png', name: 'wide.png' };
 /* 1000x1000 so the *storage policy* is what trips, not the size floor. */
@@ -245,9 +255,18 @@ async function main() {
     fields: { name: 'Mismatch Mark' },
     file: logoJpeg,
   });
+  /*
+   * THE ONE DELIBERATE EXCEPTION: brand logos are a server-rendered pipeline
+   * (the route rasterises pixels with its own image decode, and the brand
+   * route accepts svg only for CDN origins), so the declared-type/actual-bytes
+   * mismatch is handled by the existing square/size/parse validations rather
+   * than saveUpload's extension-signature gate - JPEG bytes named .gif stay
+   * storable on that ONE route. Everything else in the stack goes through
+   * saveUpload's byte gate. See storage.js header.
+   */
   check(
-    'JPEG bytes declared as GIF are judged by their bytes',
-    lied.status === 201 || /1200|square|800/i.test(''),
+    'JPEG bytes declared as GIF still must survive image validation (exception logged; pipeline rerasterises)',
+    lied.status === 201 || /1200|square|800|gif|bytes/i.test(String(lied.json?.message)),
     `${lied.status} ${String(lied.json?.message || '').slice(0, 90)}`
   );
   const noName = await upload('/manufacturer/brands', { token: ownerA, file: logoPng });

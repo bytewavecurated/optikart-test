@@ -4,6 +4,7 @@ import Seller from '../models/Seller.js';
 import { verifyToken, verifySeller, verifyAdmin } from '../middleware/auth.js';
 import * as shiprocketService from '../services/shiprocket.js';
 import { sendPickupAlert } from '../services/email.js';
+import { isProduction } from '../config/authMode.js';
 
 const router = express.Router();
 
@@ -172,11 +173,43 @@ router.get('/tracking/:orderId', verifyToken, async (req, res) => {
   }
 });
 
+if (isProduction() && !process.env.SHIPROCKET_WEBHOOK_SECRET) {
+  console.warn(
+    'SHIPROCKET_WEBHOOK_SECRET is unset while Shiprocket is configured: every shipping webhook event will be ' +
+      'rejected with 503. Set it to the token you configured in the Shiprocket dashboard.'
+  );
+}
+
 router.post('/webhook', express.json(), async (req, res) => {
   try {
+    /*
+     * THIS HANDLING MOVES ORDER STATE. Before this block the route accepted
+     * anonymous POSTs: anyone who could guess an AWB pattern could mark real
+     * orders delivered/cancelled (a refund/COD bypass with no credential at
+     * all). Shiprocket sends the configured secret token in
+     * `x-webhook-secret`; production refuses the route entirely until that is
+     * provisioned, because "unset" here would mean "any event accepted".
+     */
+    const webhookSecret = process.env.SHIPROCKET_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      if (isProduction()) {
+        return res
+          .status(503)
+          .json({ success: false, message: 'Shipping webhooks are not configured on this server.' });
+      }
+      return res.status(401).json({ success: false, message: 'No webhook secret is configured on this server.' });
+    }
+    const supplied = String(req.headers['x-webhook-secret'] || '');
+    const cryptoMod = await import('node:crypto');
+    const a = Buffer.from(supplied);
+    const b = Buffer.from(webhookSecret);
+    if (a.length !== b.length || !cryptoMod.timingSafeEqual(a, b)) {
+      return res.status(401).json({ success: false, message: 'Invalid webhook secret.' });
+    }
+
     const { event, data } = req.body;
 
-    console.log('Shiprocket webhook received:', event, data);
+    console.log('Shiprocket webhook received:', event, data?.awb ? `[awb ${String(data.awb).slice(-4)}]` : event);
 
     if (data?.awb) {
       const order = await Order.findOne({ shiprocketTrackingId: data.awb });

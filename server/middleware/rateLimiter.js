@@ -141,3 +141,29 @@ export const paymentLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+export const paidAiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: Number(process.env.PAID_AI_MAX_PER_HOUR || 30),
+  // Every one of these calls is bought by the request - face inference,
+  // speech transcription. Keyed like the OTP limiter so one shared IP cannot
+  // drain the monthly provider quota through anonymous traffic.
+  keyGenerator: (req) => (req.user ? `id:${req.user.id}` : `ip:${req.ip}`),
+  message: { success: false, message: 'Too many requests to this feature. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: VALIDATE,
+});
+
+export const otpProbeLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 25,
+  // Second layer for the routes whose FIRST layer counts failures only:
+  // send-otp/forgot-password now answer unknown identities with the same
+  // 200 sentence as known ones (closing the 404 oracle), which also closed
+  // the 429 signal those failures used to emit when probed at one number.
+  // This limiter keeps the probe itself finite per client anyway - success
+  // is counted here, because the shape an attacker can count is the point.
+  standardHeaders: false,
+  legacyHeaders: false,
+  validate: VALIDATE,
+});

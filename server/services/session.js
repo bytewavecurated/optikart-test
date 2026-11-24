@@ -32,7 +32,7 @@ export const sessionKey = ({ decoded, token }) => {
  * build and adds the session id.
  */
 export const signSession = (payload, options = {}) =>
-  jwt.sign({ ...payload, jti: crypto.randomUUID() }, process.env.JWT_SECRET, options);
+  jwt.sign({ ...payload, jti: crypto.randomUUID() }, process.env.JWT_SECRET, { ...options, algorithm: 'HS256' });
 
 /**
  * True when this bearer token has been signed out.
@@ -46,7 +46,7 @@ export const isRevoked = async (authorization) => {
   if (!authorization || !authorization.startsWith('Bearer ')) return false;
   const token = authorization.slice(7);
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     return !!(await RevokedSession.findOne({ key: sessionKey({ decoded, token }) }).lean());
   } catch {
     return false;
@@ -65,7 +65,7 @@ export const revokeAuthorization = async (authorization, role = 'user') => {
   const token = authorization.slice(7);
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
   } catch {
     return false;
   }

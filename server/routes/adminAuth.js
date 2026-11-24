@@ -1,4 +1,5 @@
 import express from 'express';
+import { stampOtp, matchOtp } from '../services/otpCode.js';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter.js';
 import { verifyToken } from '../middleware/auth.js';
 import { signSession, logoutHandler } from '../services/session.js';
@@ -70,10 +71,9 @@ router.post('/login', authLimiter, async (req, res) => {
       }
 
       await admin.save();
-      const remainingAttempts = 2 - admin.failedLoginAttempts;
       return res.status(401).json({
         success: false,
-        message: `Invalid email or password. ${remainingAttempts} attempt(s) remaining.`,
+        message: 'Invalid email or password.',
       });
     }
 
@@ -109,7 +109,7 @@ router.post('/login', authLimiter, async (req, res) => {
         length: 6,
       });
 
-      admin.loginOtp = otp;
+      stampOtp(admin, 'loginOtp', otp);
       admin.loginOtpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       await admin.save();
 
@@ -143,16 +143,14 @@ router.post('/verify-otp', otpLimiter, async (req, res) => {
     }
 
     const admin = await User.findOne({ email, role: 'admin' });
-    if (!admin) {
-      return res.status(404).json({ success: false, message: 'Admin not found.' });
-    }
-
-    if (!admin.loginOtp || admin.loginOtp !== otp) {
-      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
-    }
-
-    if (new Date() > admin.loginOtpExpiry) {
-      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    /*
+     * NOT FOUND, WRONG CODE and EXPIRED now answer one identical sentence. The old
+     * 404 "X not found" was a free oracle for enumerating console identities -
+     * and the digest lookup returns false for all three cases anyway, so the
+     * separate guards carried disclosure for zero diagnostic value.
+     */
+    if (!matchOtp(admin, 'loginOtp', otp) || !(admin && admin.loginOtpExpiry && new Date() <= admin.loginOtpExpiry)) {
+      return res.status(400).json({ success: false, message: 'The code is invalid or has expired.' });
     }
 
     // Clear OTP and generate token

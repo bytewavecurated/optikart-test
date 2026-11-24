@@ -417,6 +417,132 @@ check(
   /Strict-Transport-Security/.test(headerSite)
 );
 
+/* ------------------------------------------------------------------------- */
+/* 11. The 2026-11 security batch: controls that must stay switched on        */
+/* ------------------------------------------------------------------------- */
+
+{
+  let total = 0;
+  let pinned = 0;
+  for (const f of allServerFiles) {
+    let text = '';
+    try {
+      text = read(f);
+    } catch {}
+    for (const m of text.matchAll(/jwt\.verify\(/gmu)) {
+      total += 1;
+      if (/algorithms/u.test(text.slice(m.index, m.index + 220))) pinned += 1;
+    }
+  }
+  check(
+    'every jwt.verify pins allowed algorithms explicitly',
+    total > 0 && pinned === total,
+    `${pinned}/${total} call sites`
+  );
+}
+
+check(
+  'mongoGuard mounted on /api (operator + prototype shapes die at the edge)',
+  /app\.use\(\s*['"]\/api\/?['"],\s*mongoGuard\s*\)/u.test(boot)
+);
+{
+  const raw = [];
+  for (const f of routeFiles) {
+    let text = '';
+    try {
+      text = read(f);
+    } catch {}
+    for (const m of text.matchAll(/(\w+)\.(loginOtp|resetOtp) = (?!undefined)/gmu)) {
+      const around = text.slice(Math.max(0, m.index - 90), m.index + 110);
+      if (!/stampOtp\(/u.test(around)) raw.push(`${rel(f)}::${m[0].slice(0, 46)}`);
+    }
+  }
+  check(
+    'OTP never written to documents as plaintext (digests via services/otpCode)',
+    raw.length === 0,
+    raw.slice(0, 4).join(' | ')
+  );
+}
+
+{
+  const banned = [
+    /message:\s*[`"'][^`"']*phone number not registered/iu,
+    /message:\s*[`"'][^`"']*email not registered/iu,
+    /message:\s*[`"']OTP has expired[`"']/u,
+    /message:\s*'Invalid OTP\.'/u,
+    /\$\{remainingAttempts\} attempts? remaining/u,
+    /attempt\(s\) remaining/u,
+  ];
+  const seen = [];
+  for (const f of routeFiles) {
+    let text = '';
+    try {
+      text = read(f);
+    } catch {}
+    for (const rx of banned) if (rx.test(text)) seen.push(`${rel(f)}~${String(rx).slice(1, 24)}`);
+  }
+  check(
+    'old enumeration / lockout-counter sentences are gone from route text',
+    seen.length === 0,
+    seen.slice(0, 4).join(' | ')
+  );
+  const uniformRe = /The code is invalid or has expired\./u;
+  const good = [
+    'auth',
+    'adminAuth',
+    'seller',
+    'executive',
+    'deliveryPartner',
+    'manufacturer',
+    'manufacturerSeller',
+  ].filter((n) => {
+    const p2 = path.join(SERVER, 'routes', `${n}.js`);
+    return fs.existsSync(p2) && uniformRe.test(read(p2));
+  });
+  check('all console OTP verify paths share one indistinguishable refusal', good.length >= 7, good.join(','));
+}
+
+{
+  const st = read(path.join(SERVER, 'services', 'storage.js'));
+  check(
+    'saveUpload enforces magic-byte signatures before storing bytes',
+    /function assertRealBytes/u.test(st) && /assertRealBytes\(buffer,\s*ext\)/u.test(st)
+  );
+}
+
+{
+  const walk = (dir) => {
+    let out = [];
+    if (!fs.existsSync(dir)) return out;
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const pp = path.join(dir, e.name);
+      if (e.isDirectory()) out = out.concat(walk(pp));
+      else if (/\.jsx?$/u.test(e.name) && /dangerouslySetInnerHTML/u.test(read(pp))) out.push(pp);
+    }
+    return out;
+  };
+  const sites = walk(path.join(SERVER, '..', 'client', 'src'));
+  const bt = read(path.join(SERVER, 'routes', 'blog.js'));
+  const doors =
+    (bt.match(/sanitizeBlogHtml\(req\.body\.content\)/gmu) || []).length +
+    (bt.match(/req\.body\.content !== undefined \?\s*sanitizeBlogHtml/gmu) || []).length;
+  check(
+    'exactly one raw-HTML render surface (blog) and both blog write doors sanitize',
+    sites.length <= 1 && doors >= 2,
+    `sites=${sites.length} doors=${doors}`
+  );
+}
+
+{
+  const sx = read(path.join(SERVER, 'routes', 'shiprocket.js'));
+  check(
+    'shiprocket webhook requires its header secret and timing-compares it',
+    /SHIPROCKET_WEBHOOK_SECRET/u.test(sx) && /timingSafeEqual/u.test(sx) && /isProduction\(\)/u.test(sx)
+  );
+}
+
+check('the framework banner header is explicitly disabled', /app\.disable\('x-powered-by'\)/u.test(boot));
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} security gate checks passed`);
 if (failed.length) {

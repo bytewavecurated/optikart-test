@@ -1,6 +1,8 @@
 import express from 'express';
 import multer from 'multer';
 import { processAudioSearch, buildSearchFilters } from '../services/speechRecognition.js';
+import { paidAiLimiter } from '../middleware/rateLimiter.js';
+import { optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -24,7 +26,7 @@ const upload = multer({
  * POST /api/speech/search
  * Process audio search query
  */
-router.post('/search', upload.single('audio'), async (req, res) => {
+router.post('/search', optionalAuth, paidAiLimiter, upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -66,7 +68,7 @@ router.post('/search', upload.single('audio'), async (req, res) => {
  * POST /api/speech/transcribe
  * Transcribe audio to text without search processing
  */
-router.post('/transcribe', upload.single('audio'), async (req, res) => {
+router.post('/transcribe', optionalAuth, paidAiLimiter, upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
