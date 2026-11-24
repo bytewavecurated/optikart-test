@@ -27,7 +27,7 @@ jobs:
 
     services:
       mongodb:
-        image: mongo:6.0
+        image: mongo:6.0@sha256:8b6d8f5bbedb25cb73517b65cf99f13aeb75ad5b157a56c479287a840bbad3ac # tag + index digest — see PRODUCTION-CHECKLIST "supply chain"
         ports:
           - 27017:27017
         options: >-
@@ -59,9 +59,14 @@ jobs:
       VERIFY_PORT: "3111"
 
     steps:
-      - uses: actions/checkout@v4
+      # Pinned to commit SHAs (recommendation #4, 2026-11): a mutable tag in a
+      # workflow means every runner executes whatever upstream pushes to that
+      # name next. The comment records which release each SHA was verified to
+      # carry at pin time; bump deliberately (github.com/actions/*/releases),
+      # verify the tag actually peels to the new SHA, and commit the pair.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
 
@@ -130,6 +135,16 @@ jobs:
           echo "$H" | grep -qi '^content-security-policy:' || { echo 'production default did not enforce'; exit 1; }
           echo "$H" | grep -q 'default-src '"'"'self'"'"'' || { echo 'policy is not the evaluated one'; exit 1; }
 
+          # PHI door (recommendation #11): production on the LOCAL uploads
+          # backend must answer 410 for prescription files and keep serving
+          # nothing PHI-shaped off disk; the public folders stay open (they
+          # are public by design), proven here by being NOT-410.
+          P=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3121/uploads/prescriptions/probe.png)
+          [ "$P" = "410" ] || { echo "PHI guard expected 410, got $P"; exit 1; }
+          printf 'PHI door holds (410)\n'
+          Q=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3121/uploads/products/probe.png)
+          [ "$Q" != "410" ] || { echo 'public uploads unexpectedly gated'; exit 1; }
+
       - name: Report on this run's logs if anything failed
         if: failure()
         run: |
@@ -153,7 +168,12 @@ jobs:
       CLIENT_PORT: "18080"
 
     steps:
-      - uses: actions/checkout@v4
+      # Pinned to commit SHAs (recommendation #4, 2026-11): a mutable tag in a
+      # workflow means every runner executes whatever upstream pushes to that
+      # name next. The comment records which release each SHA was verified to
+      # carry at pin time; bump deliberately (github.com/actions/*/releases),
+      # verify the tag actually peels to the new SHA, and commit the pair.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Lint the compose file before anything expensive touches it - run 41
       # pushed a YAML-syntax error straight into the build stage. `config -q`
@@ -211,20 +231,25 @@ jobs:
 
     services:
       src-mongo:
-        image: mongo:6.0
+        image: mongo:6.0@sha256:8b6d8f5bbedb25cb73517b65cf99f13aeb75ad5b157a56c479287a840bbad3ac # digest-pinned, see PRODUCTION-CHECKLIST supply chain
         ports: ['127.0.0.1:27017:27017']
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
           --health-interval 10s --health-timeout 5s --health-retries 10
       dst-mongo:
-        image: mongo:6.0
+        image: mongo:6.0@sha256:8b6d8f5bbedb25cb73517b65cf99f13aeb75ad5b157a56c479287a840bbad3ac # digest-pinned, see PRODUCTION-CHECKLIST supply chain
         ports: ['127.0.0.1:27018:27017']
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
           --health-interval 10s --health-timeout 5s --health-retries 10
 
     steps:
-      - uses: actions/checkout@v4
+      # Pinned to commit SHAs (recommendation #4, 2026-11): a mutable tag in a
+      # workflow means every runner executes whatever upstream pushes to that
+      # name next. The comment records which release each SHA was verified to
+      # carry at pin time; bump deliberately (github.com/actions/*/releases),
+      # verify the tag actually peels to the new SHA, and commit the pair.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Install mongodb database tools (mongodump/mongorestore)
         # The exact URL below was probed live before this job shipped (200, not

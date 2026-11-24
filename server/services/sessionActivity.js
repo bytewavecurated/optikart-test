@@ -55,6 +55,7 @@ export const isControlledRole = (role) => CONTROLLED_ROLES.includes(role);
  * symptom would be indistinguishable from a broken server.
  */
 export const DEFAULT_IDLE_MINUTES = 60;
+export const DEFAULT_ABSOLUTE_HOURS = 12;
 
 /*
  * The configured window is reported at boot because a mistyped environment
@@ -73,9 +74,16 @@ export const logSessionIdlePolicy = () => {
           ? '(sub-minute window: testing configuration, not a production setting)'
           : '(from SESSION_IDLE_MINUTES)';
   console.log(
-    `Idle sign-out: ${minutes === 0 ? 'disabled' : `${minutes} minute(s) of inactivity`} for console roles ${note}. Customer sessions are unaffected.`
+    `Idle sign-out: ${minutes === 0 ? 'disabled' : `${minutes} minute(s) of inactivity`} for console roles ${note} · absolute cap ${absoluteCapHours()}h (SESSION_ABSOLUTE_HOURS; 0 disables). Customer sessions are unaffected.`
   );
   return minutes;
+};
+
+/** The absolute console-session ceiling in hours; 0 = disabled. Env read per
+ *  call so a test (or an operator restart) can change it without a code edit. */
+export const absoluteCapHours = () => {
+  const raw = Number(process.env.SESSION_ABSOLUTE_HOURS);
+  return Number.isFinite(raw) && raw >= 0 ? raw : DEFAULT_ABSOLUTE_HOURS;
 };
 
 export const idleWindowMinutes = () => {
@@ -131,6 +139,23 @@ export const evaluateSessionActivity = ({
 
   const role = decoded?.role || 'user';
   if (!isControlledRole(role)) return { controlled: false, idleSeconds: null, refresh: false };
+
+  /*
+   * Absolute lifetime ceiling, independent of activity (recommendation #9,
+   * 2026-11): an idle window alone means a console that pings itself awake -
+   * a dashboard poll, a kept-open tab on a shared machine - can live until
+   * the token's own expiry. The cap counts from the token's issued-at, so a
+   * session older than it must re-authenticate however attentively it behaved.
+   * A 12-hour default is one working day; 0 disables. Customer sessions
+   * remain untouched (uncontrolled roles exit above).
+   */
+  const capHours = absoluteCapHours();
+  if (capHours > 0 && decoded?.iat) {
+    const ageSeconds = Math.round(now / 1000 - decoded.iat);
+    if (ageSeconds > capHours * 3600) {
+      return { controlled: true, absolute: true, ageSeconds, capHours };
+    }
+  }
 
   const lastSeen = row?.lastSeenAt ? new Date(row.lastSeenAt).getTime() : null;
   if (lastSeen === null) return { controlled: true, idle: false, idleSeconds: 0, refresh: true, seeded: true };
@@ -189,6 +214,14 @@ export const touchSession = async (authorization) => {
   try {
     const row = await SessionActivity.findOne({ key }).lean();
     const decision = evaluateSessionActivity({ decoded, row });
+    if (decision.absolute) {
+      return {
+        allowed: false,
+        code: 'SESSION_TOO_OLD',
+        message: `Signed out after ${decision.capHours} hours of session age (the absolute cap, independent of activity). Please sign in again.`,
+        ageSeconds: decision.ageSeconds,
+      };
+    }
     if (decision.idle) {
       // Leave the row: its TTL is what removes it. Marking it expired now would
       // mean a second write on the path whose whole purpose is to write less.

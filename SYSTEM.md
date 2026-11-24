@@ -925,44 +925,45 @@ in its test's name):
 | Business K179-K200             | capability-URL decides refuse guessed tokens; console price-change propose gate untouched; shipped reviews require delivered-owned order; wishlist boxes stay per-account                                                                                                         | K186/187/190/191/198                                                                                  |
 | Third-party L, I               | shiprocket webhook: header secret + timingSafeEqual + refuse-open if unset (also stops anonymous order-state writes); SSRF storeRemoteImages stays on its own-host/policy rules (already pinned by storage-guards unit); paid AI endpoints behind per-hour identity-or-IP limiter | shiprocket gate, face/speech limiter, payload shape refusal                                           |
 
-### Standing recommendations (not in code; decisions for the operator)
+### Standing recommendations — and what became code in the follow-up batch
 
-1. Rotate secrets ON A CALENDAR and hold each in the platform secret store, not
-   in shell history. After the bootstrap admin creates the real day-2 admin
-   account, change the bootstrap password (or delete that identity) — the
-   default credentials documented in this repo are a starter pistol, not
-   permanent access.
-2. Keep AUTH_OTP_BYPASS unset anywhere reachable by real customers (the pilot
-   drill proves production refuses it; staging copies must too), and treat
-   seeded demo accounts as a CI-only concept.
-3. Backups (`scripts/backup-mongo.sh`) into storage with ACL + encryption, or
-   their exposure is a full-data exposure by definition (#67); periodic
-   off-host restore drills already exist in CI.
-4. GitHub Actions: pin third-party uses to commit SHAs and enable
-   dependency-review + secret scanning on PRs (#172/#173). The current CI
-   audits are strict, but supply-chain hardening is a settings + habit.
-5. WAF/rate limiting at the edge (Cloudflare or nginx limit_req) in front of
-   the api container: the in-app limiters are keyed by `req.ip`; behind NAT or
-   a shared proxy, set the same TRUST_PROXY_HOPS discipline at both layers or
-   one shared office becomes one anonymous bucket (#162-164).
-6. Monitoring that matters: alert on `mongo_guard_drop`, on webhook signature
-   successes dropping to zero from Shiprocket, on 423/429 spikes per account,
-   and on `paidAiLimiter` refusals (abuse radar). The metrics ring + error
-   surface already carry the raw material.
-7. Email domain protection (SPF/DKIM/DMARC + reject-subdomain-spoof) is a
-   prerequisite to trusting the password-reset and OTP channel (#199).
-8. Log hygiene: guard events are structured JSON lines; ship them somewhere
-   immutable (log injection #166 is mitigated by format but shipping off-host
-   is what closes #165).
-9. Session policy is per-role and idle-based; a hard absolute cap (e.g. 12h)
-   per role is trivial to add in `sessionActivity` defaults if policy wants it.
-10. A dependency-update cadence (Renovate/Dependabot) with `npm audit --omit=dev
---audit-level=high` already gating merges should get a human review SLA;
-    automation that opens PRs is how the gate stays green instead of frozen.
-11. For prescription privacy (#28/51): the files are unguessable-random and
-    unreferenced by static routes, but a signed expiring download URL (or
-    Cloudinary's `sign_url`) removes reliance on randomness forever; the local
-    fallback should not be used for PHI in production.
-12. Run CSP in `report` mode on staging against each release and watch the
-    directive ring before flipping production `enforce` — the rollout is
-    measurable by design now.
+Operator actions (secrets, edge, backups, mail DNS) now live as one document:
+**PRODUCTION-CHECKLIST.md**. Items from the original 12 that were
+implemented in code in the same work as that checklist:
+
+- **#4 supply chain** — every third-party GitHub Action pinned to commit
+  SHAs (`# vX.Y.Z` comments after verifying the tag peels to that SHA), CI's
+  mongo service images digest-pinned, and Dependabot (`github-actions` +
+  both npm trees, weekly) so the audit gate never freezes. Reasoning at the
+  pin lines in `.github/workflows/ci.yml`.
+- **#6 monitoring** — structured refusals land in a bounded ring
+  (`server/services/securityEvents.js`), admin-readable at
+  `GET /api/admin/system/security-events`: `guard_drop`, `revoked_use`,
+  `webhook_signature` (shape or compare, either provider),
+  `auth_throttle` (account _and_ per-IP probe ceilings), `paid-ai` throttle.
+  The attack suite proves the ring fills from real hostile traffic and that
+  anon/customer readers are refused. Scrape-and-alert stays operator-side.
+- **#9 session policy** — console sessions ALSO cap on absolute age: 12 h
+  default, `SESSION_ABSOLUTE_HOURS` (0 disables), independent of the idle
+  window; an ever-refreshing dashboard dies with `SESSION_TOO_OLD` naming
+  the ceiling. Proven pure and over HTTP (session_idle group + attack suite
+  P9 checks).
+- **#11 PHI storage** — production boots on the local uploads backend emit a
+  loud `phi_storage_warning`, and every `/uploads/prescriptions` read answers
+  **410** by door: prescription documents are not served from disk in
+  production; Cloudinary is the prerequisite. The CI production smoke asserts
+  the 410 _and_ that public upload folders are not collaterally gated.
+
+Remaining recommendations are environment-only — secret rotation & bootstrap
+retirement (#1/#2), SPF/DKIM/DMARC (#7), encrypted offsite backups + drills
+(#3), WAF/edge alignment with TRUST_PROXY_HOPS (#5), immutable log shipping
+(#8/#165-166), the release-day digest-pinning of runtime base images and
+the dependency-review SLA (#4/#10 remainder). None can exist in a repo; all
+are written down in PRODUCTION-CHECKLIST.md with their verification step.
+
+**Homepage carousel contract** (this batch): the hero renders the uploaded
+creative EXACTLY as it is — overlay eyebrow, title, subtitle, CTA chip and
+the left shadow-gradient were removed from `HeroCarousel`; bake campaign
+copy into the artwork. The banner record keeps `title` (screen-reader/name
+of the slide) and `linkUrl` (where the slide clicks); the admin form now
+states this rule where the operator will hit it.

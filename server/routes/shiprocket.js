@@ -5,6 +5,7 @@ import { verifyToken, verifySeller, verifyAdmin } from '../middleware/auth.js';
 import * as shiprocketService from '../services/shiprocket.js';
 import { sendPickupAlert } from '../services/email.js';
 import { isProduction } from '../config/authMode.js';
+import { recordSecurityEvent } from '../services/securityEvents.js';
 
 const router = express.Router();
 
@@ -204,6 +205,10 @@ router.post('/webhook', express.json(), async (req, res) => {
     const a = Buffer.from(supplied);
     const b = Buffer.from(webhookSecret);
     if (a.length !== b.length || !cryptoMod.timingSafeEqual(a, b)) {
+      (await import('../services/securityEvents.js')).recordSecurityEvent('webhook_signature', {
+        stage: 'secret',
+        source: 'shiprocket',
+      });
       return res.status(401).json({ success: false, message: 'Invalid webhook secret.' });
     }
 

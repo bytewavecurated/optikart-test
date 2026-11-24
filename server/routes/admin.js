@@ -1172,6 +1172,19 @@ router.post('/manufacturers/:id/resend-confirmation', verifyToken, verifyAdmin, 
  * reading "failed for id req_..." becomes a lookup instead of a guess).
  * In-memory and monotonic - a restart resets it and the sentence says so.
  */
+/*
+ * Security event glance (recommendation #6 monitoring surface).
+ * Newest-first ring from services/securityEvents: guard drops, revoked-token
+ * use, bad webhook signatures, throttled auth attempts, PHI refusals. Read
+ * this from the ops dashboard or a poller; alert on `counts` growth over a
+ * scrape window. Durable alerting belongs to the log pipeline (see
+ * PRODUCTION-CHECKLIST.md), this endpoint is the live signal.
+ */
+router.get('/system/security-events', verifyToken, verifyAdmin, async (req, res) => {
+  const { securityEvents } = await import('../services/securityEvents.js');
+  res.json({ success: true, ...securityEvents() });
+});
+
 router.get('/system/metrics', verifyToken, verifyAdmin, async (req, res) => {
   try {
     const { metrics, recentErrors } = await import('../middleware/requestContext.js');

@@ -82,6 +82,8 @@ import { requestContext, snapshot as metricSnapshot, recordError } from './middl
 import { errorSurface, securityHeaders } from './middleware/errorSurface.js';
 import partnerRankingRoutes from './routes/partnerRanking.js';
 import brandLogoRoutes from './routes/brandLogos.js';
+import { storageDecision, hasCloudinaryCredentials } from './config/storage.js';
+import { isProduction } from './config/authMode.js';
 import sessionGuard from './middleware/sessionGuard.js';
 import mongoGuard from './middleware/mongoGuard.js';
 import { logSessionIdlePolicy } from './services/sessionActivity.js';
@@ -170,6 +172,36 @@ uploadDirs.forEach((dir) => {
     fs.mkdirSync(fullPath, { recursive: true });
   }
 });
+/*
+ * PHI door (recommendation #11): prescription images/PDFs must never live on
+ * the plain-disk fallback reachable through this static mount in production.
+ * Random UUID names are unguessable, but unguessability is not an
+ * authorization model for medical documents: if the box loses Cloudinary
+ * config while running production, the honest answer is 410, loudly, not a
+ * quietly-served stack of prescriptions. Non-production keeps serving so a
+ * developer's local flow stays testable.
+ */
+if (isProduction() && storageDecision({ credentialsPresent: hasCloudinaryCredentials() }).backend !== 'cloudinary') {
+  console.warn(
+    JSON.stringify({
+      event: 'phi_storage_warning',
+      message:
+        'production is booting on the LOCAL uploads backend; /uploads/prescriptions will refuse to serve (410). Set CLOUDINARY_URL for prescription storage before go-live.',
+    })
+  );
+}
+app.use('/uploads/prescriptions', (req, res, next) => {
+  const onCloud = storageDecision({ credentialsPresent: hasCloudinaryCredentials() }).backend === 'cloudinary';
+  if (isProduction() && !onCloud) {
+    return res.status(410).json({
+      success: false,
+      message:
+        "Prescription files are not served from this server's disk: production requires CLOUDINARY_URL for PHI storage.",
+    });
+  }
+  return next();
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // First in the chain, so a rate-limited or malformed request still has an id a

@@ -213,6 +213,11 @@ const BannerManagement = () => {
                       onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
                       className="input"
                     />
+                    <p className="field-hint" style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
+                      The carousel renders the uploaded creative EXACTLY as it is - no overlay text, buttons or gradient
+                      are added anymore. Bake the campaign copy into the image itself; Title remains for screen
+                      readers/alt text, and Link URL decides where a click on the slide goes.
+                    </p>
                   </div>
 
                   <div className="input-group">

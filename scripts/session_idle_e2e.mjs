@@ -15,6 +15,7 @@
  *   MONGODB_URI=mongodb://127.0.0.1:27017/eyewear-platform node scripts/session_idle_e2e.mjs
  */
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -178,6 +179,57 @@ async function main() {
   await sleep(Math.ceil(WINDOW_MINUTES * 60000) + 3000);
   const custAfter = await call('/auth/me', { token: custToken });
   check('and an idle customer is not signed out', custAfter.status === 200, `status ${custAfter.status}`);
+
+  /* -------------------- absolute session ceiling (recommendation #9) ------------ */
+  {
+    const reqJwt = createRequire(path.join(ROOT, 'server', 'server.js'))('jsonwebtoken');
+    // reuse the live admin token's CLAIMS but move its issued-at 13 hours into
+    // the past; the expiry stays comfortably future, so this can fail only for
+    // the absolute-age reason - an activity-refreshed 13-hour-old console still
+    // has to re-authenticate.
+    const [, pl] = adminToken.split('.');
+    const claims = JSON.parse(Buffer.from(pl, 'base64url').toString());
+    const { exp: _e, nbf: _n, ...cleanClaims } = claims;
+    const pastIat = Math.floor(Date.now() / 1000) - 13 * 3600;
+    // payload-carried iat is honoured by jsonwebtoken (options reject it);
+    // payload exp = past + 30h, so the token signature/expiry are FUTURE and
+    // only its age can be the reason it fails.
+    const oldTok = reqJwt.sign({ ...cleanClaims, iat: pastIat, exp: pastIat + 30 * 3600 }, process.env.JWT_SECRET, {
+      algorithm: 'HS256',
+    });
+    const probe = await call('/admin/me', { token: oldTok });
+    check(
+      'a console older than the absolute cap is refused even though it never idled',
+      probe.status === 401 && probe.json?.code === 'SESSION_TOO_OLD',
+      `${probe.status} ${probe.json?.code || probe.json?.message || probe.text.slice(0, 40)}`
+    );
+    check(
+      'and it names the reason (the ceiling exists to bound stolen-but-active sessions)',
+      /absolute cap/i.test(probe.json?.message || ''),
+      String(probe.json?.message || '').slice(0, 70)
+    );
+
+    const { evaluateSessionActivity } = await import('../server/services/sessionActivity.js');
+    const decoded = { role: 'admin', iat: Math.floor(Date.now() / 1000) - 13 * 3600 };
+    process.env.SESSION_ABSOLUTE_HOURS = '0';
+    const off = evaluateSessionActivity({ decoded, row: { lastSeenAt: new Date() } });
+    delete process.env.SESSION_ABSOLUTE_HOURS;
+    check(
+      'SESSION_ABSOLUTE_HOURS=0 disables the ceiling (pure)',
+      off.absolute !== true && off.idle === false,
+      JSON.stringify(off)
+    );
+    const on = evaluateSessionActivity({ decoded, row: { lastSeenAt: new Date() } });
+    check(
+      'the default ceiling is 12 console-hours (pure)',
+      on.absolute === true && on.capHours === 12 && on.ageSeconds >= 12 * 3600,
+      JSON.stringify(on)
+    );
+    check(
+      'customers sit outside the ceiling too (only controlled roles are evaluated)',
+      evaluateSessionActivity({ decoded: { role: 'user', iat: decoded.iat }, row: null }).controlled === false
+    );
+  }
 
   return finish();
 }

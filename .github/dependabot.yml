@@ -1,0 +1,21 @@
+# Dependency cadence (recommendation #10 companion). The audit GATE already
+# fails CI on high/critical runtime advisories; this file is how the fixes
+# arrive as reviewable PRs instead of folklore. Operators: set a review SLA
+# (merge or leave a written reason), and remember Actions bumps must re-verify
+# the tag->SHA peel before the pin comment is trusted.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/server"
+    schedule: { interval: "weekly", day: "tuesday" }
+    open-pull-requests-limit: 6
+    labels: ["dependencies"]
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule: { interval: "weekly", day: "tuesday" }
+    open-pull-requests-limit: 6
+    labels: ["dependencies"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "weekly", day: "tuesday" }
+    labels: ["dependencies", "ci"]

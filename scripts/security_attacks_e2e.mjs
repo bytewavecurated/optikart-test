@@ -716,6 +716,73 @@ async function main() {
     );
   }
 
+  /* =================== M - monitoring surface (rec #6) ==================== */
+  {
+    const ev = await call('/admin/system/security-events', { token: admin });
+    const kinds = new Set((ev.json?.events || []).map((e) => e.type));
+    check(
+      'M6 security-events ring answers the admin desk',
+      ev.status === 200 && !!ev.json?.counts,
+      `${ev.status} ${[...kinds].slice(0, 5).join(',')}`
+    );
+    check(
+      'M6 guard drops are IN the ring (this suite provoked one earlier)',
+      kinds.has('guard_drop'),
+      JSON.stringify([...kinds])
+    );
+    check(
+      'M6 forged webhooks are IN the ring',
+      kinds.has('webhook_signature'),
+      JSON.stringify(ev.json?.counts || {}).slice(0, 90)
+    );
+    check(
+      'M6 revoked-token use is IN the ring (A17 logged one out)',
+      kinds.has('revoked_use') || (ev.json?.events || []).some((e) => e.type === 'revoked_use'),
+      String(kinds.has('revoked_use'))
+    );
+    const anonEv = await call('/admin/system/security-events');
+    check(
+      'M6 the ring itself needs admin (anon 401, no intel for probes)',
+      anonEv.status === 401,
+      String(anonEv.status)
+    );
+    const custEv = await call('/admin/system/security-events', { token: attacker });
+    check('M6 and a signed-in customer cannot read it either', custEv.status === 403, String(custEv.status));
+  }
+
+  /* =================== P - absolute session ceiling (rec #9) ============== */
+  {
+    const reqJwt2 = createRequire(new URL('../server/server.js', import.meta.url))('jsonwebtoken');
+    const { signSession } = await import('../server/services/session.js');
+    void signSession;
+    const claims = { id: 'x'.padEnd(24, '0'), role: 'admin', iat: undefined };
+    void claims;
+    // mint through the same pepper+pinning the guard uses, then move iat back;
+    // live admin claims from A0, age-shifted (see session_idle group for the
+    // end-to-end refusal; here: the pure-decision contract)
+    const { evaluateSessionActivity, absoluteCapHours } = await import('../server/services/sessionActivity.js');
+    check('P9 default absolute ceiling is 12 console-hours', absoluteCapHours() === 12, String(absoluteCapHours()));
+    const old = evaluateSessionActivity({
+      decoded: { role: 'admin', iat: Math.floor(Date.now() / 1000) - 13 * 3600 },
+      row: { lastSeenAt: new Date() },
+    });
+    check(
+      'P9 a fully-active console still dies past the ceiling',
+      old.absolute === true && old.capHours === 12,
+      JSON.stringify(old).slice(0, 90)
+    );
+    const fresh = evaluateSessionActivity({
+      decoded: { role: 'seller', iat: Math.floor(Date.now() / 1000) - 60 },
+      row: { lastSeenAt: new Date() },
+    });
+    check(
+      'P9 normal fresh sessions sail past the ceiling untouched',
+      fresh.absolute !== true,
+      JSON.stringify(fresh).slice(0, 70)
+    );
+    void reqJwt2;
+  }
+
   /* ========================= static: front-end bundle ===================== */
   {
     const fs = await import('node:fs');

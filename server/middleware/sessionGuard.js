@@ -1,3 +1,4 @@
+import { recordSecurityEvent } from '../services/securityEvents.js';
 import { isRevoked } from '../services/session.js';
 import { touchSession } from '../services/sessionActivity.js';
 
@@ -37,6 +38,7 @@ const sessionGuard = async (req, res, next) => {
     }
 
     if (await isRevoked(authorization)) {
+      recordSecurityEvent('revoked_use', { path: req.path, method: req.method });
       return res.status(401).json({
         success: false,
         message: 'This session has been signed out. Please sign in again.',

@@ -116,12 +116,20 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
      * raw body, and compare in constant time.
      */
     if (!secret || typeof signature !== 'string' || !/^[\da-f]{64}$/i.test(signature)) {
+      (await import('../services/securityEvents.js')).recordSecurityEvent('webhook_signature', {
+        stage: 'shape',
+        source: 'razorpay',
+      });
       return res.status(400).json({ success: false, message: 'Invalid webhook signature.' });
     }
     const expectedSignature = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
     const provided = Buffer.from(signature, 'hex');
     const expectedBuf = Buffer.from(expectedSignature, 'hex');
     if (provided.length !== expectedBuf.length || !crypto.timingSafeEqual(provided, expectedBuf)) {
+      (await import('../services/securityEvents.js')).recordSecurityEvent('webhook_signature', {
+        stage: 'compare',
+        source: 'razorpay',
+      });
       return res.status(400).json({ success: false, message: 'Invalid webhook signature.' });
     }
 

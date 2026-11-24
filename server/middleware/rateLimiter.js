@@ -1,4 +1,24 @@
 import rateLimit from 'express-rate-limit';
+import { recordSecurityEvent } from '../services/securityEvents.js';
+/*
+ * A custom express-rate-limit handler REPLACES the default one - including its
+ * "only count failures" behaviour. The site-wide philosophy for the auth doors is
+ * `skipSuccessfulRequests` (a working desk must never be locked out by its own
+ * traffic), so these handlers mirror the option: only a rejection records and
+ * answers; successes must reach the route untouched. `handler` is therefore set
+ * ONLY on the two limiters whose quota counts successes by design
+ * (otpProbeLimiter - whose whole point is counting identity-blind sweeps that
+ * all answer 200 - and paidAiLimiter, which is ordinary quota, not auth).
+ * authLimiter/otpLimiter keep the default handler + message (and their
+ * documented per-account refusal texts) AND a recordSecurityEvent via the
+ * store-agnostic after-hook below.
+ */
+const throttleHandler = (name) => (req, res) => {
+  recordSecurityEvent('auth_throttle', { which: name, path: req.path });
+  res
+    .status(429)
+    .json({ success: false, message: 'Too many requests from this client. Please wait a few minutes and try again.' });
+};
 
 // The server sets an explicit trusted-hop count (never `true`), so the
 // permissive-trust-proxy validation can stay enabled. `xForwardedForHeader` is
@@ -142,6 +162,7 @@ export const paymentLimiter = rateLimit({
   legacyHeaders: false,
 });
 export const paidAiLimiter = rateLimit({
+  handler: throttleHandler('paid-ai'),
   windowMs: 60 * 60 * 1000,
   max: Number(process.env.PAID_AI_MAX_PER_HOUR || 30),
   // Every one of these calls is bought by the request - face inference,
@@ -155,6 +176,7 @@ export const paidAiLimiter = rateLimit({
 });
 
 export const otpProbeLimiter = rateLimit({
+  handler: throttleHandler('otp-ip-probe'),
   windowMs: 5 * 60 * 1000,
   max: 25,
   // Second layer for the routes whose FIRST layer counts failures only:

@@ -31,6 +31,7 @@
  */
 
 const FORBIDDEN_KEY = /^\$|^(?:__proto__|constructor|prototype)$/iu;
+import { recordSecurityEvent } from '../services/securityEvents.js';
 
 let droppedTotal = 0;
 export const guardStats = () => ({ droppedTotal });
@@ -98,6 +99,7 @@ export const mongoGuard = (req, _res, next) => {
 
   if (tally.dropped) {
     droppedTotal += tally.dropped;
+    recordSecurityEvent('guard_drop', { method: req.method, path: req.path, keys: tally.dropped, id: req.id || null });
     // one structured line per guarded request that actually saw a hostile
     // shape: enough to spot probing, cheap enough to keep forever
     console.warn(
