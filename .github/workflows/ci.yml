@@ -64,7 +64,7 @@ jobs:
       # name next. The comment records which release each SHA was verified to
       # carry at pin time; bump deliberately (github.com/actions/*/releases),
       # verify the tag actually peels to the new SHA, and commit the pair.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -173,7 +173,7 @@ jobs:
       # name next. The comment records which release each SHA was verified to
       # carry at pin time; bump deliberately (github.com/actions/*/releases),
       # verify the tag actually peels to the new SHA, and commit the pair.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Lint the compose file before anything expensive touches it - run 41
       # pushed a YAML-syntax error straight into the build stage. `config -q`
@@ -249,7 +249,7 @@ jobs:
       # name next. The comment records which release each SHA was verified to
       # carry at pin time; bump deliberately (github.com/actions/*/releases),
       # verify the tag actually peels to the new SHA, and commit the pair.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install mongodb database tools (mongodump/mongorestore)
         # The exact URL below was probed live before this job shipped (200, not
