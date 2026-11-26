@@ -21,6 +21,9 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const ManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
 const ManageSellers = lazy(() => import('./pages/admin/ManageSellers'));
 const ManageOrders = lazy(() => import('./pages/admin/ManageOrders'));
+const ManageInvoices = lazy(() => import('./pages/admin/ManageInvoices'));
+const SellerInvoices = lazy(() => import('./pages/seller/SellerInvoices'));
+const MyInvoices = lazy(() => import('./pages/MyInvoices'));
 const Revenue = lazy(() => import('./pages/admin/Revenue'));
 const StaffManagement = lazy(() => import('./pages/admin/StaffManagement'));
 const Coupons = lazy(() => import('./pages/admin/Coupons'));
@@ -264,6 +267,14 @@ function App() {
           }
         />
         <Route
+          path="/seller/invoices"
+          element={
+            <SellerRoute>
+              <SellerInvoices />
+            </SellerRoute>
+          }
+        />
+        <Route
           path="/seller/orders"
           element={
             <SellerRoute>
@@ -366,6 +377,7 @@ function App() {
           <Route path="sellers" element={<ManageSellers />} />
           <Route path="sellers/:id" element={<SellerDetailView />} />
           <Route path="orders" element={<ManageOrders />} />
+          <Route path="invoices" element={<ManageInvoices />} />
           <Route path="revenue" element={<Revenue />} />
           <Route path="staff" element={<StaffManagement />} />
           <Route path="coupons" element={<Coupons />} />
@@ -418,6 +430,15 @@ function App() {
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route
+          path="/invoices"
+          element={
+            <UserRoute>
+              <MyInvoices />
+            </UserRoute>
+          }
+        />
+
         <Route
           path="/orders"
           element={

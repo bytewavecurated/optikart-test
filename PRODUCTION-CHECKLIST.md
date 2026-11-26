@@ -127,6 +127,40 @@ each.
     live rupee end-to-end verified in `paymentStatus` and the settlement CSV
     before pointing checkout users at it.
 
+## B+. Invoicing before the first customer sees a PDF
+
+11. **Platform invoicing identity must be real before DNS.** Set
+    `INVOICE_LEGAL_NAME`, `INVOICE_GSTIN`, `INVOICE_PLATFORM_STATE`,
+    `INVOICE_PLATFORM_ADDRESS`, `INVOICE_SUPPORT_EMAIL/PHONE`; the engine
+    boots fine WITHOUT them (dev default name, blank GSTIN) but the
+    documents then carry `NOTE: platform GSTIN not configured` across the
+    footer - acceptable on a laptop, unacceptable on the open web. The PDF
+    renderer prints exactly what you put in, once, for every copy forever.
+    Also decide `PAID_STAMP` behaviour? (it is automatic: capture -> the
+    customer PDF shows PAID and mails one paid copy.)
+12. **GST/HSN tables need CA sign-off.** `services/gst.js` carries the
+    defaults (HSN 9004 @18% spectacles/sunglasses, 9001 @12% contact lenses,
+    services SAC 9965/9972 @18%); classification is a professional
+    judgement, and a wrong slab on issued documents is a notice-and-amend
+    conversation with tax - not a code fix. Use the admin Invoices page's
+    _Tax classification_ panel (per category / brand / product overrides,
+    each with a `confirmed` flag) and have your accountant walk the list
+    for the categories you actually sell BEFORE announcing launch dates.
+    (Already-issued documents never rewrite; that is by design.)
+13. **Storage + delivery of the papers.** PDFs live on the host under
+    `server/invoices-private/` (outside the web root; downloads are token
+    authenticated, never URL-guessable, never public): if you move them off
+    host (S3/SMB share), mount that path at `server/invoices-private` OR
+    set `INVOICE_STORE_DIR` - the engine reads/writes through one module so
+    a host migration is a one-line env and backfill is unchanged.
+14. **Run the backfill after upgrade/migration** once, then whenever the
+    ops alert `invoice_*_failed` ever fired:
+    `MONGODB_URI=... node scripts/invoices_backfill.mjs [--dry]`. The
+    invoice number series is collision-checked by the shared mint registry
+    (same machinery as DP/EXEC/RET ids); gaps in the series printed on
+    documents are normal for voided/cancelled drafts - keep the series
+    monotonic, which is what tax folks check.
+
 ## C. Day one of real traffic
 
 11. **Rotation calendar.** SMTP creds, JWT_SECRET (requires deliberate logout

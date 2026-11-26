@@ -328,6 +328,27 @@ router.post('/', verifyToken, orderValidation, async (req, res) => {
 
     await sendOrderConfirmation(req.user.email, orders[0]);
 
+    /*
+     * TAX PAPERWORK, minted from the amounts WE just computed and stored (no
+     * client input is read here). The document is the promise that the
+     * charged amount and the invoiced amount can never part:
+     * invoiceEngine holds that invariant and the e2e group checks it against
+     * a real order placed over HTTP. A paperwork failure can NEVER undo or
+     * fake-reject a placed order - the order already exists, stock is held,
+     * routing started; the failure is logged and visible to ops, and the
+     * admin 'ensure' route (or the paid hook below) re-mints it.
+     */
+    try {
+      const { issueOrderInvoices } = await import('../services/invoiceEngine.js');
+      for (const o of orders) {
+        const paper = await issueOrderInvoices(o, { stage: 'issued' });
+        if (paper.ok === false)
+          console.error(JSON.stringify({ event: 'invoice_stage_failed', order: o.orderNumber, reason: paper.error }));
+      }
+    } catch (paperErr) {
+      console.error('Invoice issuing skipped (placement stands):', paperErr.message);
+    }
+
     // Hand each order to proximity routing: up to five nearby sellers who stock
     // the exact configuration are offered it in turn. If nobody is nearby the
     // order lands in the admin queue instead.
@@ -598,6 +619,13 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
     }
 
     await order.save();
+
+    try {
+      const { voidOrderInvoices } = await import('../services/invoiceEngine.js');
+      await voidOrderInvoices(order, 'order cancelled by customer');
+    } catch (e) {
+      console.error('Invoice void skipped on cancel:', e.message);
+    }
 
     // Return the goods to the exact colour/size they came from.
     await restoreStockForOrder(order, req.app.get('io'), { reason: 'cancellation' });

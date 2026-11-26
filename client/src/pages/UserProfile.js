@@ -188,6 +188,7 @@ const UserProfile = () => {
     { icon: <FiUser />, label: 'Profile', key: 'profile' },
     { icon: <FiMapPin />, label: 'Saved Addresses', key: 'addresses' },
     { icon: <FiPackage />, label: 'My Orders', path: '/orders' },
+    { icon: <FiFileText />, label: 'Invoices', path: '/invoices' },
     { icon: <FiHeart />, label: 'Wishlist', path: '/wishlist' },
     { icon: <FiFileText />, label: 'Prescriptions', path: '/prescription' },
   ];

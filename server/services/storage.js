@@ -296,6 +296,57 @@ export async function saveUpload({ buffer, originalname, mimeType, folder }) {
   return { url: `/uploads/${f}/${filename}`, provider: 'local', publicId: `${f}/${filename}`, bytes, ext };
 }
 
+/*
+ * Generated DOCUMENTS (the platform's own paperwork): tax invoices are not
+ * user uploads - the bytes come FROM our code and the file name is a minted
+ * invoice number. But "who may write bytes to disk" is a one-name answer on
+ * this codebase (the storage guards audit fails every other writer), so the
+ * sanctioned writer writes these too, under the same rules: module-anchored
+ * root, no traversal, bounded size, nothing under the static `/uploads`
+ * tree. `rel` is what rows store; `generatedDocPath(ref)` is the only reader.
+ */
+const GENERATED_ROOT = path.resolve(HERE, '..', 'generated');
+
+export async function writeGeneratedDocument({ name, kind = 'invoices', buffer }) {
+  if (!/^[A-Z]{2}[0-9]{4,}$/.test(String(name || '')))
+    throw new StoragePolicyError('Generated document names must be minted codes (e.g. CI000123).');
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) throw new StoragePolicyError('No document bytes were provided.');
+  if (buffer.length > 8 * 1024 * 1024) throw new StoragePolicyError('Generated document exceeds 8 MB.');
+  if (!/^[a-z]{3,12}$/.test(String(kind || ''))) throw new StoragePolicyError('Unknown generated-document kind.');
+  const dir = path.join(GENERATED_ROOT, kind);
+  await fs.promises.mkdir(dir, { recursive: true });
+  const target = path.join(dir, `${name}.pdf`);
+  if (!target.startsWith(GENERATED_ROOT + path.sep)) throw new Error('Refused to write outside the generated root.');
+  await fs.promises.writeFile(target, buffer);
+  return { abs: target, rel: path.relative(path.resolve(HERE, '..'), target) };
+}
+
+export function generatedDocPath(ref) {
+  const raw = ref ? String(ref).split(/[\/]/).pop() : '';
+  if (!raw) return '';
+  // ref may be a bare name, or a legacy 'invoices-private/…' row; both resolve
+  // inside THIS module's root now.
+  return path.join(GENERATED_ROOT, 'invoices', raw);
+}
+
+export async function generatedDocsStatus() {
+  const kinds = {};
+  try {
+    for (const d of await fs.promises.readdir(GENERATED_ROOT, { withFileTypes: true })) {
+      if (!d.isDirectory()) continue;
+      const files = await fs.promises.readdir(path.join(GENERATED_ROOT, d.name));
+      let bytes = 0;
+      for (const f of files) {
+        try {
+          bytes += (await fs.promises.stat(path.join(GENERATED_ROOT, d.name, f))).size;
+        } catch {}
+      }
+      kinds[d.name] = { count: files.length, bytes };
+    }
+  } catch {}
+  return { root: GENERATED_ROOT, kinds };
+}
+
 /** Best-effort delete. A failure must not strand the caller's own record update. */
 export async function removeUpload(ref) {
   if (!ref) return { removed: false, reason: 'nothing to remove' };

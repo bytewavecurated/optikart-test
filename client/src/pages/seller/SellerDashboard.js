@@ -55,6 +55,8 @@ const SellerDashboard = () => {
     return () => offNewOrder(handleNewOrder);
   }, []);
 
+  // One real navigation target beside the metrics: the invoice desk reads as
+  // a card like everything else here, and links to the shop's tax documents.
   const statCards = [
     {
       label: 'Total Orders',
@@ -63,6 +65,14 @@ const SellerDashboard = () => {
       color: 'var(--brand)',
       bg: 'var(--brand-tint)',
       link: '/seller/orders',
+    },
+    {
+      label: 'Invoices',
+      value: 'Tax docs',
+      icon: <FiFileText />,
+      color: 'var(--warning)',
+      bg: 'var(--warning-soft)',
+      link: '/seller/invoices',
     },
     {
       label: 'Revenue',

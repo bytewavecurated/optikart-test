@@ -1,3 +1,5 @@
+import { generatedDocsStatus, generatedDocPath } from './storage.js';
+import Invoice from '../models/Invoice.js';
 import mongoose from 'mongoose';
 
 /**
@@ -186,6 +188,27 @@ const collectValues = (doc, field) => {
  * disk - an aggregate alone cannot be acted on - without pulling a whole
  * catalogue into memory.
  */
+
+async function generatedDocsReport() {
+  const status = await generatedDocsStatus();
+  let missing = 0;
+  let rows = 0;
+  try {
+    rows = await Invoice.countDocuments({ pdfPath: { $exists: true, $ne: '' } });
+    const present = await Invoice.countDocuments({ pdfPath: '' });
+    for await (const r of Invoice.find({ pdfPath: { $exists: true, $ne: '' } })
+      .select('pdfPath')
+      .lean()) {
+      try {
+        const fs0 = await import('node:fs');
+        if (!fs0.existsSync(generatedDocPath(r.pdfPath))) missing += 1;
+      } catch {}
+    }
+    void present;
+  } catch {}
+  return { root: status.root, kinds: status.kinds, invoiceRows: rows, filesMissing: missing };
+}
+
 export async function storageInventory({ sampleLimit = 3 } = {}) {
   // Same registration hazard as above: import before looking up.
   for (const entry of ASSET_FIELDS) await pathsFor(entry.model);
@@ -251,5 +274,11 @@ export async function storageInventory({ sampleLimit = 3 } = {}) {
       dataUrl: 'bytes embedded in the document - bloats every read and should be moved out',
       suspect: 'value that is not a recognisable reference at all',
     },
+    // Generated documents (the platform's own paperwork) - the ONLY disk
+    // area not reachable by the static /uploads mount; the consistency probe
+    // compares every Invoice row against the store so a lost PDF folder (or a
+    // half-finished backfill run) is one admin glance deep, not a surprise
+    // during a support call about 'download broken'.
+    generatedDocs: await generatedDocsReport(),
   };
 }

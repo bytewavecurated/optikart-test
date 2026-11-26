@@ -80,6 +80,14 @@ router.post('/verify', verifyToken, async (req, res) => {
       order.paymentId = razorpayPaymentId;
       order.orderStatus = order.orderStatus === 'pending' ? 'confirmed' : order.orderStatus;
       await order.save();
+      (async () => {
+        try {
+          const { ensurePaidStamp } = await import('../services/invoiceEngine.js');
+          await ensurePaidStamp(order);
+        } catch (e) {
+          console.error('Paid-stamp invoice refresh skipped:', e.message);
+        }
+      })();
       settled.push(order.orderNumber);
     }
 

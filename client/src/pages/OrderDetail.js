@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { downloadInvoicePdf } from '../components/InvoiceDownload.js';
 import {
   FiPackage,
   FiTruck,
@@ -11,8 +12,9 @@ import {
   FiHome,
   FiBox,
   FiX,
+  FiFileText,
 } from 'react-icons/fi';
-import { orders } from '../services/api';
+import { orders, invoices } from '../services/api';
 import { oneOf } from '../services/apiResponse.js';
 import { toastError } from '../services/errors.js';
 import { useCart } from '../contexts/CartContext';
@@ -92,6 +94,7 @@ const OrderDetail = () => {
   const { isAuthenticated } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [inv, setInv] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
@@ -111,6 +114,20 @@ const OrderDetail = () => {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!order?.orderNumber) return undefined;
+    let live = true;
+    invoices
+      .mine()
+      .then((r) => {
+        if (live) setInv((r.data.invoices || []).find((x) => x.orderNumber === order.orderNumber) || null);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [order?.orderNumber, order?._id]);
 
   const handleCancel = async () => {
     setCancelling(true);
@@ -407,6 +424,45 @@ const OrderDetail = () => {
                 }
               />
               <Row label="Order total" value={`₹${money(order.totalAmount)}`} strong />
+            </Card>
+          </div>
+
+          <div>
+            <Card title="Invoice" icon={<FiFileText size={16} />} style={{ marginBottom: 16 }}>
+              {inv ? (
+                <>
+                  <Row label="Tax invoice" value={<span style={{ fontWeight: 700 }}>{inv.invoiceNumber}</span>} />
+                  <Row label="Amount" value={`₹${(Number(inv.summary?.chargedTotal) || 0).toFixed(2)}`} />
+                  {(Number(inv.summary?.taxTotal) || 0) > 0 && (
+                    <Row label="GST included" value={`₹${money(inv.summary.taxTotal)}`} />
+                  )}
+                  <Row
+                    label="Also mailed"
+                    value={
+                      inv.mail?.delivered ? 'yes - check your inbox' : inv.mail?.ok ? 'queued' : 'email pending/failed'
+                    }
+                  />
+                  {inv.status === 'void' ? (
+                    <div style={{ color: 'var(--danger)', fontSize: 12.5, marginTop: 6 }}>
+                      This document was voided ({inv.reason || 'order cancelled'}). The order page shows the live
+                      amount.
+                    </div>
+                  ) : null}
+                  <button
+                    className="btn btn-outline btn-sm"
+                    style={{ marginTop: 10 }}
+                    onClick={() => downloadInvoicePdf(inv.id, inv.invoiceNumber)}
+                  >
+                    Download PDF
+                  </button>
+                </>
+              ) : (
+                <div style={{ fontSize: 13, color: 'var(--text-light)', padding: '10px 0' }}>
+                  {order.orderStatus === 'cancelled'
+                    ? 'No invoice - this order was cancelled.'
+                    : 'The tax invoice is minted the moment an order is placed and stays available here forever.'}
+                </div>
+              )}
             </Card>
           </div>
 

@@ -100,6 +100,20 @@ export const recordCommission = async (orderId) => {
       },
     });
 
+    // INVOICING: the seller's commission-and-services document for this
+    // order is printed FROM this settlement - the same arithmetic, in the
+    // same second, stored beside the money it describes. Four delivery
+    // paths (seller status, executive, partner complete, shiprocket
+    // webhook) all converge on this function, so there is a single place
+    // where a seller invoice is born: no path can forget, and none needs
+    // to remember.
+    try {
+      const { issueOrderInvoices } = await import('./invoiceEngine.js');
+      await issueOrderInvoices(order._id, { stage: 'settled' });
+    } catch (e) {
+      console.error('Seller invoice mint skipped (settlement stands):', String(e.message).slice(0, 140));
+    }
+
     return {
       success: true,
       message: 'Commission recorded successfully',

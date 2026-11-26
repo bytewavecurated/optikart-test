@@ -63,3 +63,7 @@ client/build/
 # services/storage.js. Untracked at the tip; history left alone pending the
 # authorised purge decision.
 uploads/
+server/invoices-private/
+
+# generated platform paperwork (tax PDFs) - runtime data, never committed
+server/generated/

@@ -706,3 +706,47 @@ export const sendOrderStatusNotification = async (email, order, status) => {
 };
 
 export default transporter;
+
+/*
+ * INVOICING ADDITION (2026-11): invoice mail with the PDF attached. Same
+ * contract every other send in this file follows: it REPORTS, it does not
+ * assume. `{ success, delivered, reason }` - and the caller records that on
+ * the invoice row, so "the invoice was emailed" is a fact with evidence in
+ * the database rather than a sentence in an interface.
+ */
+export const sendInvoiceMail = async ({ to, subject, introLines = [], pdfBuffer, filename, kind }) => {
+  if (!to) return { success: false, delivered: false, reason: 'no-recipient' };
+  if (!pdfBuffer || !pdfBuffer.length) return { success: false, delivered: false, reason: 'no-document' };
+  const transport = mailTransport();
+  if (!transport) {
+    if (isProduction()) {
+      console.error(`Invoice mail impossible: SMTP not configured in production (${kind} to ${to}).`);
+      return { success: false, delivered: false, reason: 'smtp-unconfigured' };
+    }
+    console.warn(`[dev mail] SMTP unconfigured; ${kind} invoice for ${to} NOT sent (generated + stored only).`);
+    return { success: true, delivered: false, reason: 'dev-no-smtp' };
+  }
+  try {
+    const info = await transport.sendMail({
+      from: `"${process.env.MAIL_FROM_NAME || 'OptiKart'}" <${process.env.SMTP_USER}>`,
+      to,
+      subject,
+      attachments: pdfBuffer.length ? [{ filename, content: pdfBuffer, contentType: 'application/pdf' }] : [],
+      html: `
+        <div style="font-family: Arial, sans-serif; color:#20242e; max-width:640px; line-height:1.55">
+          ${introLines.map((l) => `<p style="margin:6px 0">${String(l)}</p>`).join('')}
+          <p style="margin:14px 0 4px;color:#5b6272;font-size:12px">
+            Your document is attached (PDF, ${Math.ceil((pdfBuffer.length / 1024) * 10) / 10} KB). Keep this copy for your records;
+            it is also always available in your ${kind === 'seller' ? 'seller console' : 'account'}.
+          </p>
+          <p style="color:#5b6272;font-size:12px">OptiKart</p>
+        </div>`,
+    });
+    return { success: true, delivered: info.accepted?.length > 0, reason: 'sent' };
+  } catch (error) {
+    console.error(
+      JSON.stringify({ event: 'invoice_mail_failed', to, kind, message: String(error.message).slice(0, 140) })
+    );
+    return { success: false, delivered: false, reason: 'smtp-error' };
+  }
+};

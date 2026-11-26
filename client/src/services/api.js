@@ -516,3 +516,19 @@ export const toast = {
    */
   warn: (message, options) => hotToast(message, { icon: '\u23F1\uFE0F', duration: 6000, ...options }),
 };
+
+export const invoices = {
+  mine: () => api.get('/invoices/mine'),
+  sellerList: () => api.get('/invoices/seller'),
+  get: (id) => api.get(`/invoices/${id}`),
+  // blob download: bearer token cannot ride a bare window.open
+  pdf: (id) => api.get(`/invoices/${id}/pdf`, { responseType: 'blob' }),
+  resend: (id) => api.post(`/invoices/${id}/resend`),
+  adminList: (params) => api.get('/invoices/admin/list', { params }),
+  adminStats: () => api.get('/invoices/admin/stats'),
+  adminByMonth: (params) => api.get('/invoices/admin/bymonth', { params }),
+  ensure: (orderId) => api.post(`/invoices/admin/ensure/${orderId}`),
+  taxRules: () => api.get('/invoices/tax-rules'),
+  saveTaxRule: (body) => api.post('/invoices/tax-rules', body),
+  deleteTaxRule: (id) => api.delete(`/invoices/tax-rules/${id}`),
+};

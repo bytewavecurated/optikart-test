@@ -40,7 +40,15 @@ const BODY_RANDOM = { user: 6, seller: 6, product: 6 };
  * validator that refuses legitimate rows - mine said 6+ for retailers and, if I
  * had left it, every existing shop code would have started failing on save.
  */
-const SEQUENCE_WIDTH = { manufacturer: 5, partner: 5, retailer: 5, executive: 5, returns: 6 };
+const SEQUENCE_WIDTH = {
+  manufacturer: 5,
+  partner: 5,
+  retailer: 5,
+  executive: 5,
+  returns: 6,
+  invoiceCustomer: 6,
+  invoiceSeller: 6,
+};
 
 /**
  * One descriptor per entity: which field holds the code, which prefix it uses,
@@ -60,6 +68,11 @@ export const ID_DESCRIPTORS = {
   executive: { field: 'executiveId', prefix: 'EXEC', style: 'sequence' },
   returns: { field: 'returnId', prefix: 'RET', style: 'sequence' },
   order: { field: 'orderNumber', prefix: 'OK', style: 'order' },
+  // Tax-invoice numbers: running per-type sequences. GST practice wants a
+  // finite, gap-aware series per document type; CI/SI keep them readable on
+  // the face of the document and in support tickets.
+  invoiceCustomer: { field: 'invoiceNumber', prefix: 'CI', style: 'sequence', width: 6 },
+  invoiceSeller: { field: 'invoiceNumber', prefix: 'SI', style: 'sequence', width: 6 },
 };
 
 const bytes = (n) => crypto.randomBytes(n);
@@ -87,6 +100,8 @@ export const ID_PATTERNS = {
   retailer: /^MFRS\d{5,}$/,
   executive: /^EXEC\d{5,}$/,
   returns: /^RET\d{6,}$/,
+  invoiceCustomer: /^CI\d{6,}$/,
+  invoiceSeller: /^SI\d{6,}$/,
   order: /^OK\d{6}[ACDEFGHJKMNPQRTUVWXY34679]{5}$/,
 };
 
