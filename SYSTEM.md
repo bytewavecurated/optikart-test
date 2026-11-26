@@ -938,7 +938,34 @@ in its test's name):
 | Business K179-K200             | capability-URL decides refuse guessed tokens; console price-change propose gate untouched; shipped reviews require delivered-owned order; wishlist boxes stay per-account                                                                                                         | K186/187/190/191/198                                                                                  |
 | Third-party L, I               | shiprocket webhook: header secret + timingSafeEqual + refuse-open if unset (also stops anonymous order-state writes); SSRF storeRemoteImages stays on its own-host/policy rules (already pinned by storage-guards unit); paid AI endpoints behind per-hour identity-or-IP limiter | shiprocket gate, face/speech limiter, payload shape refusal                                           |
 
-### Invoicing (2026-11, the money-paperwork layer)
+##
+
+# Dependabot ledger — the 2026-11-26 sweep
+
+Seven merge-ready PRs taken in dependency order, each with main-CI verified
+green after the merge (verify=the whole harness, containers, restore-drill):
+multer 1.x→2.5 (#11, EOL line + advisories), express-rate-limit→8.7 (#10),
+bcryptjs→3.0 (#8), nodemailer patch (#3), razorpay patch (#5), actions/
+checkout→7 (#2), setup-node→7.1 (#1 — pins re-verified by the runs that
+executed them). #6 rate-limit-redis→6 was peer-blocked on #10; after it
+landed, dependabot re-synced branch CI went fully green and it merged.
+
+Three client bumps that the bot could NOT deliver were landed by hand with
+regenerated, self-consistent lockfiles (the bot's client locks arrived with
+`npm ci` EUSAGE breakage — missing transitive `yaml` entries after partial
+regeneration): socket.io-client 4.8.4, react-hot-toast 2.6.1, and
+react-icons→5.7.0 — the last with an API proof pass: all 115 icon exports
+used in `client/src` were resolved against the installed v5 package before
+pushing. (When dependabot notices the default branch already carries the
+versions, #13/#14/#9 auto-close; no action needed.)
+
+Three majors deliberately held open with recorded decisions in their PR
+threads: react-router-dom→7 (#12), react→19 (#7), framer-motion→14 (#4).
+The sequence when they are taken: #12 first (route semantics), then #7
+(needs the CRA/React-19 tooling conversation), then #4 (last, once the
+stack is settled). None carries an advisory; the holds cost nothing.
+
+# Invoicing (2026-11, the money-paperwork layer)
 
 Two documents, one invariant, minted by the money paths that earn them -
 never trusted from a browser:
