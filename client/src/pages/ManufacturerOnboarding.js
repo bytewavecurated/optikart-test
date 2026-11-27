@@ -61,7 +61,7 @@ const ManufacturerOnboarding = () => {
             <h2 style={{ marginBottom: 8 }}>Invitation not usable</h2>
             <p style={{ color: 'var(--text-secondary)' }}>{view.message}</p>
             <p style={{ marginTop: 16 }}>
-              <Link to="/manufacturer" className="btn btn-outline">
+              <Link to="/manufacturer/login" className="btn btn-outline">
                 Go to manufacturer sign-in
               </Link>
             </p>
@@ -314,7 +314,7 @@ const ManufacturerOnboarding = () => {
         )}
 
         <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-          Manufacturer sign-in lives at <Link to="/manufacturer">/manufacturer</Link>.
+          Manufacturer sign-in lives at <Link to="/manufacturer/login">/manufacturer/login</Link>.
         </p>
       </div>
       <Footer />
