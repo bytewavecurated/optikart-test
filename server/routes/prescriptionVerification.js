@@ -68,6 +68,9 @@ router.get('/user', verifyToken, async (req, res) => {
       res.json({
         success: true,
         data: result.verifications,
+        total: result.total,
+        page: result.page,
+        totalPages: result.totalPages,
       });
     } else {
       res.status(400).json({
@@ -91,7 +94,7 @@ router.get('/user', verifyToken, async (req, res) => {
  */
 router.get('/pending', verifyToken, verifyPrescriptionVerifier, async (req, res) => {
   try {
-    const result = await getPendingVerifications();
+    const result = await getPendingVerifications(req.query);
 
     if (result.success) {
       res.json({

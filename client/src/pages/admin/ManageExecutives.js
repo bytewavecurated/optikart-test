@@ -7,8 +7,9 @@ import { toastError } from '../../services/errors.js';
 
 const ManageExecutives = () => {
   const [executives, setExecutives] = useState([]);
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
+  const [q, setQ] = useState({ search: '', status: '', sort: '', page: 1 });
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExecutive, setEditingExecutive] = useState(null);
   const [formData, setFormData] = useState({
@@ -22,13 +23,21 @@ const ManageExecutives = () => {
   const departments = ['delivery', 'staff', 'users', 'sellers', 'manufacturers', 'orders', 'products'];
 
   useEffect(() => {
-    fetchExecutives();
-  }, []);
+    const t = setTimeout(fetchExecutives, 260);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const fetchExecutives = async () => {
     try {
-      const res = await adminApi.getExecutives();
+      const res = await adminApi.getExecutives({
+        search: q.search || undefined,
+        status: q.status || undefined,
+        sort: q.sort || undefined,
+        page: q.page,
+        limit: 20,
+      });
       setExecutives(listOf(res.data));
+      setMeta({ total: res.data.total ?? 0, page: res.data.page ?? 1, totalPages: res.data.totalPages ?? 1 });
     } catch (error) {
       console.error(error);
       toastError(error, 'Failed to fetch executives');
@@ -82,13 +91,9 @@ const ManageExecutives = () => {
     }
   };
 
-  const filteredExecutives = executives.filter(
-    (exec) =>
-      exec.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      exec.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      exec.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (exec.executiveId && exec.executiveId.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // filtering happens server-side via the toolbar; keeping the symbol name so
+  // the render below stays untouched
+  const filteredExecutives = executives;
 
   if (loading) {
     return (
@@ -102,6 +107,38 @@ const ManageExecutives = () => {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0 }}>Manage Executives</h1>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', margin: '2px 0 14px' }}>
+          <input
+            value={q.search}
+            onChange={(e) => setQ((v) => ({ ...v, search: e.target.value, page: 1 }))}
+            placeholder="Search name, email, ID, phone…"
+            className="input"
+            style={{ flex: 1, minWidth: 180, maxWidth: 320 }}
+          />
+          <select
+            value={q.status}
+            onChange={(e) => setQ((v) => ({ ...v, status: e.target.value, page: 1 }))}
+            className="input"
+            style={{ width: 140 }}
+          >
+            <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+          <select
+            value={q.sort}
+            onChange={(e) => setQ((v) => ({ ...v, sort: e.target.value, page: 1 }))}
+            className="input"
+            style={{ width: 160 }}
+          >
+            <option value="">Newest</option>
+            <option value="name">Name A–Z</option>
+          </select>
+          <span style={{ fontSize: 12.5, color: 'var(--text-light)', marginLeft: 'auto' }}>
+            {meta.total} team member{meta.total === 1 ? '' : 's'}
+          </span>
+        </div>
+
         <button
           onClick={() => setShowAddModal(true)}
           style={{
@@ -119,31 +156,6 @@ const ManageExecutives = () => {
         >
           <FiPlus /> Add Executive
         </button>
-      </div>
-
-      <div style={{ position: 'relative', marginBottom: '20px' }}>
-        <FiSearch
-          style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-light)',
-          }}
-        />
-        <input
-          type="text"
-          placeholder="Search by name, email, department, or ID..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '10px 10px 10px 40px',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '14px',
-          }}
-        />
       </div>
 
       <div
@@ -296,6 +308,27 @@ const ManageExecutives = () => {
             )}
           </tbody>
         </table>
+        {meta.totalPages > 1 && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '14px 0' }}>
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={q.page <= 1}
+              onClick={() => setQ((v) => ({ ...v, page: v.page - 1 }))}
+            >
+              ← Prev
+            </button>
+            <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', alignSelf: 'center' }}>
+              Page {meta.page} / {meta.totalPages}
+            </span>
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={q.page >= meta.totalPages}
+              onClick={() => setQ((v) => ({ ...v, page: v.page + 1 }))}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}

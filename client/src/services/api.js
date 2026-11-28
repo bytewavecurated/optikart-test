@@ -255,7 +255,7 @@ export const admin = {
   getOrders: (params) => api.get('/admin/orders', { params }),
   getRevenue: (params) => api.get('/admin/revenue', { params }),
   createStaff: (data) => api.post('/admin/staff', data),
-  getStaff: () => api.get('/admin/staff'),
+  getStaff: (params) => api.get('/admin/staff', { params }),
   deleteStaff: (id) => api.delete(`/admin/staff/${id}`),
   updateStaffPermissions: (id, permissions) => api.put(`/admin/staff/${id}/permissions`, { permissions }),
   getCoupons: (params) => api.get('/admin/coupons', { params }),
@@ -266,20 +266,21 @@ export const admin = {
   getDelivery: (params) => api.get('/admin/delivery', { params }),
   getPickups: (params) => api.get('/admin/pickups', { params }),
   // Executives
-  getExecutives: () => api.get('/admin/executives'),
+  getExecutives: (params) => api.get('/admin/executives', { params }),
   createExecutive: (data) => api.post('/admin/executives', data),
   updateExecutive: (id, data) => api.put(`/admin/executives/${id}`, data),
-  deleteExecutive: (id) => api.delete(`/admin/executives/${id}`),
+  deleteExecutive: (id, force) => api.delete(`/admin/executives/${id}${force ? '?force=true' : ''}`),
   banExecutive: (id, data) => api.put(`/admin/executives/${id}/ban`, data),
   // Manufacturers
-  getManufacturers: () => api.get('/admin/manufacturers'),
+  getManufacturers: (params) => api.get('/admin/manufacturers', { params }),
   createManufacturer: (data) => api.post('/admin/manufacturers', data),
   getManufacturerUpdateRequests: () => api.get('/admin/manufacturer-update-requests'),
   getSystemMetrics: () => api.get('/admin/system/metrics'),
   recreateManufacturerInvitation: (id) => api.post(`/admin/manufacturers/${id}/recreate-invitation`, {}),
   resendManufacturerConfirmation: (id) => api.post(`/admin/manufacturers/${id}/resend-confirmation`, {}),
   updateManufacturer: (id, data) => api.put(`/admin/manufacturers/${id}`, data),
-  deleteManufacturer: (id) => api.delete(`/admin/manufacturers/${id}`),
+  deleteManufacturer: (id, force) => api.delete(`/admin/manufacturers/${id}${force ? '?force=true' : ''}`),
+  deleteDeliveryPartner: (id, force) => api.delete(`/delivery-partner/${id}${force ? '?force=true' : ''}`),
   banManufacturer: (id, data) => api.put(`/admin/manufacturers/${id}/ban`, data),
   getManufacturerProducts: (id) => api.get(`/admin/manufacturers/${id}/products`),
   getManufacturerSellers: (id) => api.get(`/admin/manufacturers/${id}/sellers`),
@@ -290,7 +291,7 @@ export const admin = {
   getPendingCommissions: () => api.get('/commission/pending'),
   getSellerCommissionDetails: (sellerId, params) => api.get(`/commission/seller/${sellerId}`, { params }),
   // Banners (device upload; server mounts these under /banners)
-  getBanners: () => api.get('/banners'),
+  getBanners: (params) => api.get('/banners', { params }),
   createBanner: (formData) => api.post('/banners', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   updateBanner: (id, formData) =>
     api.put(`/banners/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
@@ -336,7 +337,8 @@ export const notifications = {
 };
 
 export const saleEvents = {
-  getAll: () => api.get('/sale-events'),
+  list: (params) => api.get('/sale-events', { params }),
+  getAll: (params) => api.get('/sale-events', { params }),
   getById: (id) => api.get(`/sale-events/${id}`),
   create: (data) => api.post('/sale-events', data),
   update: (id, data) => api.put(`/sale-events/${id}`, data),
@@ -345,9 +347,10 @@ export const saleEvents = {
 };
 
 export const banners = {
+  // admin console list accepts kit params (search/status/sort/window/page)
   getActive: () => api.get('/banners/active'),
   getBySlug: (slug) => api.get(`/banners/slug/${slug}`),
-  getAll: () => api.get('/banners'),
+  getAll: (params) => api.get('/banners', { params }),
   create: (data) => api.post('/banners', data),
   update: (id, data) => api.put(`/banners/${id}`, data),
   delete: (id) => api.delete(`/banners/${id}`),
@@ -483,7 +486,7 @@ export const manufacturers = {
  * lens to it.
  */
 export const prescriptionVerification = {
-  pending: () => api.get('/prescription-verification/pending'),
+  pending: (params) => api.get('/prescription-verification/pending', { params }),
   all: (params) => api.get('/prescription-verification', { params }),
   approve: (id, notes) => api.post(`/prescription-verification/${id}/approve`, { notes }),
   attachDocument: (id, fileUrl, note) => api.patch(`/prescription-verification/${id}/document`, { fileUrl, note }),

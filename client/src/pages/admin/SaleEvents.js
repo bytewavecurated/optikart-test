@@ -20,6 +20,8 @@ const CATEGORIES = [
 
 const SaleEvents = () => {
   const [events, setEvents] = useState([]);
+  const [q, setQ] = useState({ search: '', status: '', sort: '', page: 1 });
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
@@ -35,15 +37,27 @@ const SaleEvents = () => {
   const [formLoading, setFormLoading] = useState(false);
 
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    const t = setTimeout(fetchEvents, 280);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const fetchEvents = async () => {
     try {
-      const res = await saleEvents.getAll();
+      const res = await saleEvents.getAll({
+        search: q.search || undefined,
+        status: q.status || undefined,
+        sort: q.sort || undefined,
+        page: q.page,
+        limit: 12,
+      });
       // Handle different response structures
       const eventData = res.data?.events || res.data?.data || res.data || [];
       setEvents(Array.isArray(eventData) ? eventData : []);
+      setMeta({
+        total: res.data.total ?? (eventData || []).length,
+        page: res.data.page ?? 1,
+        totalPages: res.data.totalPages ?? 1,
+      });
     } catch (error) {
       console.error('Failed to fetch sale events:', err);
       setEvents([]);
@@ -165,6 +179,40 @@ const SaleEvents = () => {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '2px 0 14px' }}>
+            <input
+              value={q.search}
+              onChange={(e) => setQ((v) => ({ ...v, search: e.target.value, page: 1 }))}
+              placeholder="Search event name, description…"
+              className="input"
+              style={{ flex: 1, minWidth: 170, maxWidth: 320 }}
+            />
+            <select
+              value={q.status}
+              onChange={(e) => setQ((v) => ({ ...v, status: e.target.value, page: 1 }))}
+              className="input"
+              style={{ width: 150 }}
+            >
+              <option value="">All events</option>
+              <option value="active">Live now</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="expired">Expired</option>
+              <option value="off">Paused</option>
+            </select>
+            <select
+              value={q.sort}
+              onChange={(e) => setQ((v) => ({ ...v, sort: e.target.value, page: 1 }))}
+              className="input"
+              style={{ width: 150 }}
+            >
+              <option value="">Newest</option>
+              <option value="ends">Ending soonest</option>
+              <option value="starts">Starting soonest</option>
+            </select>
+            <span style={{ fontSize: 12.5, color: 'var(--text-light)', marginLeft: 'auto' }}>
+              {meta.total} event{meta.total === 1 ? '' : 's'}
+            </span>
+          </div>
           <div
             style={{
               display: 'flex',

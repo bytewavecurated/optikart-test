@@ -23,7 +23,6 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import Logo from '../../components/Logo';
-import BackButton from '../../components/BackButton';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -298,38 +297,6 @@ const AdminLayout = () => {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-            <span
-              onClick={(e) => {
-                e.preventDefault();
-                if (window.history.length > 2) navigate(-1);
-                else navigate('/admin');
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-              title="Go back to where you came from"
-              aria-label="Go back"
-              className="admin-back"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '8px 14px 8px 11px',
-                borderRadius: 999,
-                border: '1px solid var(--border)',
-                background: 'var(--bg-white)',
-                color: 'var(--text-secondary)',
-                fontSize: 12.5,
-                fontWeight: 700,
-                letterSpacing: '.02em',
-                cursor: 'pointer',
-                flexShrink: 0,
-                transition: 'border-color .15s ease, color .15s ease',
-              }}
-            >
-              <FiChevronLeft size={14} />
-              Back
-            </span>
             <span aria-hidden style={{ width: 1, height: 26, background: 'var(--border)', flexShrink: 0 }} />
             <div style={{ minWidth: 0 }}>
               <h1
@@ -385,7 +352,6 @@ const AdminLayout = () => {
         <main style={{ flex: 1, padding: '32px' }}>
           <Outlet />
         </main>
-        <style>{`.admin-back:hover { border-color: var(--primary) !important; color: var(--primary) !important; }`}</style>
       </div>
     </div>
   );

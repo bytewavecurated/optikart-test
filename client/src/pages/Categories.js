@@ -86,7 +86,7 @@ const styles = {
     marginBottom: '40px',
   },
   title: {
-    fontSize: '32px',
+    fontSize: 'clamp(24px, 4vw, 32px)',
     fontWeight: 700,
     color: 'var(--text-primary)',
     marginBottom: '12px',
@@ -173,7 +173,9 @@ export default function Categories() {
       <main style={styles.main}>
         <div style={styles.header}>
           <h1 style={styles.title}>Shop by Category</h1>
-          <p style={styles.subtitle}>Explore our complete range of eyewear categories</p>
+          <p className="rise rise-1" style={styles.subtitle}>
+            Frames, lenses and care — grouped the way people actually shop.
+          </p>
         </div>
 
         <div style={styles.grid}>

@@ -15,8 +15,8 @@ const router = express.Router();
  */
 router.get('/pending', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { manufacturer, brand, category } = req.query;
-    const result = await getPendingProducts({ manufacturer, brand, category });
+    // everything the console filter bar sends is now honoured server-side
+    const result = await getPendingProducts(req.query);
 
     if (result.success) {
       res.json(result);

@@ -3,7 +3,7 @@ import { ListPagination } from '../../components/admin/AdminListKit.jsx';
 import api from '../../services/api';
 import { listOf, oneOf } from '../../services/apiResponse.js';
 import { toastError, toastSuccess } from '../../services/errors.js';
-import { FiPlus, FiSearch, FiTruck, FiSlash, FiCheck, FiX, FiMapPin } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiTruck, FiSlash, FiCheck, FiX, FiMapPin, FiTrash2 } from 'react-icons/fi';
 
 const th = {
   padding: '10px 12px',
@@ -188,6 +188,36 @@ export default function ManageDeliveryPartners() {
     } catch (err) {
       toastError(err, 'Could not update partner');
     }
+  };
+
+  const hardDelete = async (p) => {
+    // Console-delete doctrine: the row goes, the ledger stays, active work
+    // forces an explicit second question. No silent soft-disable anywhere.
+    if (
+      !window.confirm(
+        `Delete ${p.name || 'this partner'}? Their completed deliveries stay in the ledger under a removed partner.`
+      )
+    )
+      return;
+    const run = async (force) => {
+      try {
+        const r = await adminApi.deleteDeliveryPartner(p._id, force);
+        toast.success(r.data?.message || 'Partner deleted.');
+        fetchPartners();
+      } catch (e) {
+        if (e.response && e.response.status === 409) {
+          if (
+            window.confirm(
+              `${(e.response.data && e.response.data.message) || 'Partner has active work.'}\n\nForce delete anyway? History keeps their id.`
+            )
+          )
+            return run(true);
+          return;
+        }
+        toastError(e, 'Delete failed.');
+      }
+    };
+    return run(false);
   };
 
   const label = (text) => (
@@ -454,6 +484,16 @@ export default function ManageDeliveryPartners() {
                               <FiSlash size={14} /> Block
                             </>
                           )}
+                        </button>
+
+                        <button
+                          onClick={() => hardDelete(p)}
+                          title="Delete permanently"
+                          aria-label={`Delete ${p.name || 'partner'}`}
+                          className="btn btn-link"
+                          style={{ color: 'var(--text-light)' }}
+                        >
+                          <FiTrash2 size={14} /> Delete
                         </button>
                       </td>
                     </tr>

@@ -194,25 +194,29 @@ router.post('/', verifyToken, verifyAdmin, couponValidation, async (req, res) =>
 
 router.get('/all', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
-
-    const coupons = await Coupon.find()
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
-
-    const total = await Coupon.countDocuments();
-
-    res.json({
-      success: true,
-      coupons,
-      pagination: {
-        total,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        pages: Math.ceil(total / parseInt(limit)),
+    // Kit table like every other console list; plain page/limit still works.
+    // Status chips are computed server-side from the real clock so the ledger
+    // screen and the redemption door agree on what 'expired' means.
+    const { buildListQuery, listResponse } = await import('../services/adminQuery.js');
+    const nowD = new Date();
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      base: {},
+      fields: ['code', 'description'],
+      statuses: {
+        active: { isActive: true, validFrom: { $lte: nowD }, validUntil: { $gte: nowD } },
+        inactive: { isActive: false },
+        expired: { validUntil: { $lt: nowD } },
+        upcoming: { validFrom: { $gt: nowD } },
+        demo: { dataOrigin: 'demo' },
+        live: { dataOrigin: 'live' },
       },
+      statusField: '_mapped',
+      dateField: 'createdAt',
+      sortable: { newest: { createdAt: -1 }, code: { code: 1 }, used: { usageCount: -1 } },
     });
+    const coupons = await Coupon.find(query).sort(sort).skip(skip).limit(limit);
+    const total = await Coupon.countDocuments(query);
+    return listResponse(res, 'coupons', coupons, total, meta);
   } catch (error) {
     console.error('Get all coupons error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });

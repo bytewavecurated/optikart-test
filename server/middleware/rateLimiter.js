@@ -1,5 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import { recordSecurityEvent } from '../services/securityEvents.js';
+import { ipKeyGenerator } from 'express-rate-limit';
 /*
  * A custom express-rate-limit handler REPLACES the default one - including its
  * "only count failures" behaviour. The site-wide philosophy for the auth doors is
@@ -49,7 +50,11 @@ export const identifyAttempt = (req) => {
   const phone = String(body.phone || '').replace(/[^0-9]/g, '');
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return `id:${email}`;
   if (phone.length >= 8) return `id:ph${phone.slice(-10)}`;
-  return `ip:${req.ip}`;
+  // v8 contract: NEVER raw req.ip in a custom key — IPv6 visitors arrive as
+  // /128s a rotating address bypasses per-hour; ipKeyGenerator buckets the
+  // customer /64 (this is exactly what ERR_ERL_KEY_GEN_IPV6 guards on the
+  // operator's box at boot).
+  return `ip:${ipKeyGenerator(req.ip)}`;
 };
 
 /*
@@ -168,7 +173,7 @@ export const paidAiLimiter = rateLimit({
   // Every one of these calls is bought by the request - face inference,
   // speech transcription. Keyed like the OTP limiter so one shared IP cannot
   // drain the monthly provider quota through anonymous traffic.
-  keyGenerator: (req) => (req.user ? `id:${req.user.id}` : `ip:${req.ip}`),
+  keyGenerator: (req) => (req.user ? `id:${req.user.id}` : `ip:${ipKeyGenerator(req.ip)}`),
   message: { success: false, message: 'Too many requests to this feature. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,

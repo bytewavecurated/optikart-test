@@ -153,6 +153,13 @@ sellerSchema.methods.toJSON = function () {
 };
 installCodes(sellerSchema, 'seller', 'Seller');
 
+// owner rule 2026-11: 'demo' (fixtures) vs 'live' (real signups/uploads). Bulk purge tooling (deprovision/test reset)
+// may only ever remove demo rows - live rows leave the database solely through the per-row admin delete paths in
+// services/accountDelete.js, which refuse while open business references them. Real data is never collateral damage.
+// dataOrigin: 'demo' rows come only from fixtures; 'live' rows are real business. Bulk purge tooling may
+// only remove demo data - a live row leaves the database only through services/accountDelete.js (admin click +
+// open-business guard). Owner rule 2026-11: real data is never collateral damage.
+sellerSchema.add({ dataOrigin: { type: String, enum: ['demo', 'live'], default: 'live', index: true } });
 const Seller = mongoose.model('Seller', sellerSchema);
 
 export default Seller;

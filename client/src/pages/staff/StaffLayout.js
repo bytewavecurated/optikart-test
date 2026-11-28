@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiHome, FiFileText, FiHeadphones, FiPackage, FiShoppingBag, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
-import BackButton from '../../components/BackButton';
 
 const StaffLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -214,7 +213,6 @@ const StaffLayout = () => {
             zIndex: 50,
           }}
         >
-          <BackButton label="Back to dashboard" />
           <h1 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
             {menuItems.find((item) => location.pathname === item.path)?.label || 'Staff Panel'}
           </h1>

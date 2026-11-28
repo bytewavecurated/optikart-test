@@ -17,17 +17,27 @@ const STAFF_ROLES = [
 
 const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
+  const [q, setQ] = useState({ search: '', status: '', sort: '', page: 1 });
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', role: 'blog_manager', password: '' });
 
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    const t = setTimeout(fetchStaff, 280);
+    return () => clearTimeout(t);
+  }, [q]);
   const fetchStaff = async () => {
     try {
-      const res = await adminApi.getStaff();
+      const res = await adminApi.getStaff({
+        search: q.search || undefined,
+        status: q.status || undefined,
+        sort: q.sort || undefined,
+        page: q.page,
+        limit: 20,
+      });
       setStaff(listOf(res.data));
+      setMeta({ total: res.data.total ?? 0, page: res.data.page ?? 1, totalPages: res.data.totalPages ?? 1 });
     } catch (error) {
       console.error(error);
     } finally {
@@ -51,7 +61,7 @@ const StaffManagement = () => {
       setFormData({ name: '', email: '', role: 'blog_manager', password: '' });
       fetchStaff();
     } catch (error) {
-      toast.error(err.response?.data?.message || 'Failed');
+      toastError(error, 'Could not create the staff account.');
     }
   };
 
@@ -70,6 +80,38 @@ const StaffManagement = () => {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', margin: '2px 0 14px' }}>
+            <input
+              value={q.search}
+              onChange={(e) => setQ((v) => ({ ...v, search: e.target.value, page: 1 }))}
+              placeholder="Search name, email or role…"
+              className="input"
+              style={{ flex: 1, minWidth: 180, maxWidth: 320 }}
+            />
+            <select
+              value={q.status}
+              onChange={(e) => setQ((v) => ({ ...v, status: e.target.value, page: 1 }))}
+              className="input"
+              style={{ width: 150 }}
+            >
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <select
+              value={q.sort}
+              onChange={(e) => setQ((v) => ({ ...v, sort: e.target.value, page: 1 }))}
+              className="input"
+              style={{ width: 170 }}
+            >
+              <option value="">Newest first</option>
+              <option value="name">Name A–Z</option>
+              <option value="assignedAt">Recently assigned</option>
+            </select>
+            <span style={{ fontSize: 12.5, color: 'var(--text-light)', marginLeft: 'auto' }}>
+              {meta.total} account{meta.total === 1 ? '' : 's'}
+            </span>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Staff Management ({staff.length})</h1>
             <button onClick={() => setShowForm(true)} className="btn btn-primary">
@@ -178,6 +220,27 @@ const StaffManagement = () => {
                   ))}
                 </tbody>
               </table>
+              {meta.totalPages > 1 && (
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '14px 0' }}>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    disabled={q.page <= 1}
+                    onClick={() => setQ((v) => ({ ...v, page: v.page - 1 }))}
+                  >
+                    ← Prev
+                  </button>
+                  <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', alignSelf: 'center' }}>
+                    Page {meta.page} / {meta.totalPages}
+                  </span>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    disabled={q.page >= meta.totalPages}
+                    onClick={() => setQ((v) => ({ ...v, page: v.page + 1 }))}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

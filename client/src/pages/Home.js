@@ -109,7 +109,10 @@ const FEATURES = [
 
 const sectionHeading = (title, subtitle) => (
   <div>
-    <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.4px' }}>
+    <h2
+      className="rise"
+      style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.4px' }}
+    >
       {title}
     </h2>
     <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{subtitle}</p>

@@ -242,7 +242,7 @@ const SellerOrders = () => {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                       {lines.map((item, idx) => {
-                        const product = item.product || {};
+                        const product = item.product || { title: 'Removed item' };
                         const lineTotal = Number(item.price ?? product.price ?? 0) * Number(item.quantity || 1);
                         const variant = variantSummary(item);
                         return (

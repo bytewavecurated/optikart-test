@@ -485,7 +485,7 @@ const OrderDetail = () => {
             {order.seller && (
               <Card title="Sold by" icon={<FiBox size={16} />} style={{ marginBottom: 16 }}>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
-                  {order.seller.storeName || order.seller.name || '-'}
+                  {order.seller.storeName || order.seller.name || 'Removed shop (record kept)'}
                 </p>
                 {order.seller.sellerId && (
                   <Link

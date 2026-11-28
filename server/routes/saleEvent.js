@@ -7,12 +7,42 @@ const router = express.Router();
 
 router.get('/', async (req, res) => {
   try {
-    const events = await SaleEvent.find().sort({ createdAt: -1 });
+    // Console filters arrive as kit params; a parameterless request still
+    // returns the whole board (the public Offers page + legacy callers).
+    const [buildListQuery, listResponseMod] = await Promise.all([
+      import('../services/adminQuery.js').then((m) => m.buildListQuery),
+      Promise.resolve(null),
+    ]);
+    void listResponseMod;
     const now = new Date();
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      base: {},
+      fields: ['name', 'description', 'categories', 'brands'],
+      statuses: {
+        active: { isActive: true, startDate: { $lte: now }, endDate: { $gte: now } },
+        scheduled: { startDate: { $gt: now } },
+        expired: { endDate: { $lt: now } },
+        off: { isActive: false },
+      },
+      statusField: '_mapped',
+      dateField: 'createdAt',
+      sortable: { newest: { createdAt: -1 }, ends: { endDate: 1 }, starts: { startDate: 1 } },
+    });
+    // default remains "everything": no kit limit unless asked
+    const wide = !req.query.limit;
+    const events = await SaleEvent.find(query)
+      .sort(wide ? { createdAt: -1 } : sort)
+      .skip(wide ? 0 : skip)
+      .limit(wide ? 0 : limit);
     const activeEvents = events.filter((e) => e.isActive && e.startDate <= now && e.endDate >= now);
-    res.json({ success: true, events, activeEvents });
+    res.json({
+      success: true,
+      events,
+      activeEvents,
+      ...(wide ? {} : { total: await SaleEvent.countDocuments(query), page: meta.page, totalPages: meta.totalPages }),
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
+    res.status(500).json({ success: false, message: 'Server error.', error: error.error || error.message });
   }
 });
 

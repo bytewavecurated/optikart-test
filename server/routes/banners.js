@@ -36,11 +36,28 @@ router.get('/slug/:slug', async (req, res) => {
   }
 });
 
-// Admin: all banners
+// Admin: all banners — kit search/status/sort/window/paging (the console list
+// is a data table now; 'show me every dead campaign from August' must be a
+// filter, not a scroll).
 router.get('/', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const banners = await Banner.find().sort({ order: 1, createdAt: -1 });
-    res.json({ success: true, banners });
+    const { buildListQuery, listResponse } = await import('../services/adminQuery.js');
+    const { query, sort, skip, limit, meta } = buildListQuery(req.query, {
+      base: {},
+      fields: ['title', 'subtitle', 'linkUrl', 'slug', 'eyebrow'],
+      statuses: {
+        active: { isActive: true },
+        inactive: { isActive: false },
+        demo: { dataOrigin: 'demo' },
+        live: { dataOrigin: 'live' },
+      },
+      statusField: '_mapped',
+      dateField: 'createdAt',
+      sortable: { order: { order: 1, createdAt: -1 }, newest: { createdAt: -1 }, title: { title: 1 } },
+    });
+    const banners = await Banner.find(query).sort(sort).skip(skip).limit(limit);
+    const total = await Banner.countDocuments(query);
+    return listResponse(res, 'banners', banners, total, meta);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error fetching banners', error: error.message });
   }

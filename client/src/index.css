@@ -482,3 +482,36 @@ h1, h2, h3, h4, h5, h6 {
   .section-title { font-size: 19px; }
 }
 
+
+
+/* ── modern entrance motion (owner pass, 2026-11) ─────────────────────────
+ * One keyframe, class-driven, zero JS: sections/cards glide up 14px and
+ * fade in as they paint; `.rise-N` stagger by 60ms so grids cascade instead
+ * of thudding in as a block. Honours OS 'reduce motion' — accessibility is a
+ * feature, not a style tile, and framer components elsewhere already follow
+ * the same rule via MotionConfig. */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.rise, .rise-1, .rise-2, .rise-3, .rise-4, .rise-5 {
+  animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.rise-1 { animation-delay: 0.04s; }
+.rise-2 { animation-delay: 0.10s; }
+.rise-3 { animation-delay: 0.16s; }
+.rise-4 { animation-delay: 0.22s; }
+.rise-5 { animation-delay: 0.28s; }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .rise-1, .rise-2, .rise-3, .rise-4, .rise-5 { animation: none; }
+}
+.card-flat { transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease; }
+.card-flat:hover { box-shadow: var(--shadow-md, 0 10px 30px rgba(16, 24, 40, 0.08)); }
+a { text-underline-offset: 3px; }
+details.acc { background: var(--bg-white); border: 1px solid var(--border); border-radius: 14px; margin: 10px 0; overflow: hidden; }
+details.acc > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px; font-weight: 700; font-size: 14.5px; }
+details.acc > summary::-webkit-details-marker { display: none; }
+details.acc > summary::after { content: '＋'; color: var(--text-light); font-weight: 800; transition: transform 0.25s ease; }
+details.acc[open] > summary::after { transform: rotate(45deg); }
+details.acc[open] > summary { border-bottom: 1px solid var(--border-light); }
+details.acc .acc-body { padding: 14px 18px 16px; color: var(--text-secondary); font-size: 13.8px; line-height: 1.7; }

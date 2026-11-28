@@ -16,9 +16,32 @@ router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 10, category, tag } = req.query;
 
-    const query = { isPublished: true };
+    // 'status=all' / 'status=draft' only mean anything to a signed-in blog
+    // manager; the public answer stays published-only no matter the query.
+    let canSeeAll = false;
+    const auth = String(req.headers.authorization || '');
+    if (auth.startsWith('Bearer ')) {
+      try {
+        const jwt = (await import('jsonwebtoken')).default;
+        const decoded = jwt.verify(auth.slice(7), process.env.JWT_SECRET, { algorithms: ['HS256'] });
+        const { default: User } = await import('../models/User.js');
+        const me = await User.findById(decoded.id || decoded.userId)
+          .select('role permissions')
+          .lean();
+        canSeeAll =
+          me && (me.role === 'admin' || (me.role === 'staff' && (me.permissions || []).includes('manage_blogs')));
+      } catch {}
+    }
+    const wantAll = canSeeAll && ['all', 'draft'].includes(String(req.query.status || ''));
+
+    const query = wantAll ? (req.query.status === 'draft' ? { isPublished: false } : {}) : { isPublished: true };
     if (category) query.category = category;
     if (tag) query.tags = { $in: [tag] };
+    if (canSeeAll && req.query.search)
+      query.$or = [
+        { title: { $regex: String(req.query.search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } },
+        { slug: new RegExp(String(req.query.search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
+      ];
 
     const blogs = await Blog.find(query)
       .populate('author', 'name avatar')

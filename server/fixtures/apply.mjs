@@ -39,6 +39,40 @@ try {
     console.error('\nnothing was written.');
     process.exitCode = 1;
   } else {
+    /*
+     * Everything this run wrote is demo. Marking the rows (not just trusting the
+     * email allowlist) is what lets the deprovision tooling, the guard and the
+     * admin filters tell demonstration data from the owner's real business,
+     * permanently: a live signup defaults to 'live' and no bulk tool may ever
+     * delete it.
+     */
+    {
+      const stampTargets = [
+        'User',
+        'Seller',
+        'Manufacturer',
+        'Product',
+        'Brand',
+        'Banner',
+        'Blog',
+        'Coupon',
+        'Order',
+        'SaleEvent',
+        'HelpArticle',
+        'StaffRole',
+        'Executive',
+        'DeliveryPartner',
+        'ManufacturerSeller',
+        'SellerStock',
+      ];
+      for (const key of stampTargets) {
+        try {
+          const mod = (await import(`../models/${key}.js`)).default;
+          if (mod && mod.updateMany) await mod.updateMany({}, { dataOrigin: 'demo' });
+        } catch {}
+      }
+    }
+
     const after = await countWipable();
     console.log(
       `\ndemo fixtures applied to "${result.database}" (${after.filter((c) => c.documents).length} collections populated).`

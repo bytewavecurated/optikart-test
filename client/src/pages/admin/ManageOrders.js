@@ -189,11 +189,11 @@ const ManageOrders = () => {
                     </td>
                     <td style={td}>
                       <span style={{ display: 'block', fontWeight: 600 }}>
-                        {o.user?.name || o.address?.fullName || '—'}
+                        {o.user?.name || o.address?.fullName || 'Removed account'}
                       </span>
                       <span style={{ fontSize: 11.5, color: 'var(--text-light)' }}>{o.user?.email || ''}</span>
                     </td>
-                    <td style={{ ...td, maxWidth: 160 }}>{o.seller?.storeName || '—'}</td>
+                    <td style={{ ...td, maxWidth: 160 }}>{o.seller?.storeName || 'Removed shop'}</td>
                     <td style={{ ...td, color: 'var(--text-secondary)' }}>
                       {items.length
                         ? `${items.length} line${items.length === 1 ? '' : 's'} · ${items.reduce((s, i) => s + (i.quantity || 1), 0)} pcs`

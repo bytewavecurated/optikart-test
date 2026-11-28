@@ -26,5 +26,11 @@ const blogSchema = new mongoose.Schema(
   }
 );
 
+// owner rule 2026-11: demo rows (fixtures) vs live rows (real signups/uploads). Bulk tools may
+// only touch demo; live data disappears only through the per-row admin delete paths.
+// dataOrigin: 'demo' rows come only from fixtures; 'live' rows are real business. Bulk purge tooling may
+// only remove demo data - a live row leaves the database only through services/accountDelete.js (admin click +
+// open-business guard). Owner rule 2026-11: real data is never collateral damage.
+blogSchema.add({ dataOrigin: { type: String, enum: ['demo', 'live'], default: 'live', index: true } });
 const Blog = mongoose.model('Blog', blogSchema);
 export default Blog;

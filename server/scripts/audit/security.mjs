@@ -543,6 +543,81 @@ check(
 
 check('the framework banner header is explicitly disabled', /app\.disable\('x-powered-by'\)/u.test(boot));
 
+/* ------------------------------------------------------------------------- */
+/* 12. 2026-11 batch three: rate-limit IPv6, real deletes, no demo fallback   */
+/* ------------------------------------------------------------------------- */
+
+// (12a) express-rate-limit v8 fails CLOSED at boot with ERR_ERL_KEY_GEN_IPV6
+// when a custom keyGenerator reads req.ip raw — IPv6 users rotate addresses
+// through one /64 and each /128 gets its own bucket, which is exactly the
+// bypass the operator box showed. Every custom key path must go through the
+// library's own helper.
+{
+  const rl = fs.readFileSync(path.join(SERVER, 'middleware', 'rateLimiter.js'), 'utf8');
+  const importOk = /import\s*\{[^}]*ipKeyGenerator[^}]*\}\s*from\s*'express-rate-limit'/u.test(rl);
+  // raw = 'req.ip' NOT wrapped by ipKeyGenerator( ... ) — the helper call
+  // always appears immediately before the read.
+  const rawIpInKey = [...rl.matchAll(/(?<!ipKeyGenerator\()\breq\.ip\b/gu)].filter((m) =>
+    /keyGenerator|identifyAttempt|ip:\$\{/u.test(rl.slice(Math.max(0, m.index - 140), m.index + 40))
+  ).length;
+  // ip-only limiter defaults are fine (the library fixes those internally);
+  // the rule bites on OUR custom functions
+  check(
+    'rate limiters normalise IPv6 via ipKeyGenerator (no ERR_ERL_KEY_GEN_IPV6 at boot)',
+    importOk && !rawIpInKey,
+    `import=${importOk} raw-uses=${rawIpInKey}`
+  );
+}
+
+// (12b) a console DELETE must destroy, not deactivate — the owner's audit
+// of July found 'deleted' rows sitting in the database with isActive=false,
+// which is a compliance failure dressed as a feature.
+{
+  const admin = fs.readFileSync(path.join(SERVER, 'routes', 'admin.js'), 'utf8');
+  const blocks = admin.split(/\nrouter\.delete\(/).slice(1);
+  const soft = [];
+  const needed = /(deleteAccount|deleteStaff|deleteProductDoc|findByIdAndDelete|deleteOne|deleteMany)/u;
+  for (const b of blocks) {
+    const head = b.split('\n').slice(0, 40).join('\n');
+    if (
+      /\/api\/admin|\/users\/:id|\/sellers\/:id|\/staff\/:id|\/manufacturers\/:id|\/executives\/:id/u.test(
+        b.split('\n')[0] + head
+      )
+    ) {
+      if (/isActive\s*=\s*false/u.test(head) && !needed.test(head)) soft.push(b.split('\n')[0].trim().slice(0, 40));
+    }
+  }
+  check('console DELETE routes remove rows (no silent soft-deactivate)', soft.length === 0, soft.join(' | '));
+}
+
+// (12c) the hero strip must fall EMPTY, not to fake demo campaigns, when
+// nothing is configured — placeholders belong in design files, not a live
+// storefront the owner has already cleared of demo data.
+{
+  const hero = fs.existsSync(path.join(SERVER, '..', 'client', 'src', 'components', 'HeroCarousel.js'))
+    ? fs.readFileSync(path.join(SERVER, '..', 'client', 'src', 'components', 'HeroCarousel.js'), 'utf8')
+    : fs.readFileSync(path.join(SERVER, '..', 'client', 'src', 'components', 'HeroCarousel.jsx'), 'utf8');
+  check(
+    'hero renders nothing rather than fallback demo banners',
+    !/DEFAULT_BANNERS/u.test(hero) && /bannerList\.length === 0\) return null/u.test(hero)
+  );
+}
+
+// (12d) demo/live segregation columns exist on every principal+content model
+{
+  const names = ['User', 'Seller', 'Manufacturer', 'Product', 'Brand', 'Banner', 'Blog', 'Coupon', 'Order'];
+  const missing = [];
+  for (const n of names) {
+    const f = path.join(SERVER, 'models', `${n}.js`);
+    if (!fs.existsSync(f) || !/dataOrigin/u.test(fs.readFileSync(f, 'utf8'))) missing.push(n);
+  }
+  check(
+    'dataOrigin (demo|live) present on every purge-tracked model',
+    missing.length === 0,
+    `missing: ${missing.join(',')}`
+  );
+}
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} security gate checks passed`);
 if (failed.length) {

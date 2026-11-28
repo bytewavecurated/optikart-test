@@ -805,26 +805,20 @@ router.put('/:id', verifySeller, async (req, res) => {
 
 router.delete('/:id', verifySeller, async (req, res) => {
   try {
-    const product = await Product.findOne({
-      _id: req.params.id,
-      seller: req.seller._id,
-    });
-
-    if (!product) {
+    const { deleteProductDoc } = await import('../services/accountDelete.js');
+    const product = await Product.findOne({ _id: req.params.id, seller: req.seller._id });
+    if (!product)
       return res.status(404).json({ success: false, message: 'Product not found or you do not have permission.' });
-    }
-
-    product.isActive = false;
-    await product.save();
-
-    await Seller.findByIdAndUpdate(req.seller._id, {
-      $inc: { totalProducts: -1 },
-    });
-
-    res.json({
-      success: true,
-      message: 'Product deleted successfully.',
-    });
+    const force = /^(1|true|yes)$/iu.test(String(req.query.force ?? ''));
+    const out = await deleteProductDoc(product._id, { force });
+    if (out.notFound)
+      return res.status(404).json({ success: false, message: 'Product vanished between check and delete.' });
+    if (out.blocked)
+      return res
+        .status(409)
+        .json({ success: false, message: out.message, soldIn: out.soldIn, activeReservations: out.activeReservations });
+    await Seller.findByIdAndUpdate(req.seller._id, { $inc: { totalProducts: -Math.max(1, out.deleted.rows || 1) } });
+    res.json({ success: true, ...out });
   } catch (error) {
     console.error('Delete product error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });

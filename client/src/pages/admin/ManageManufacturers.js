@@ -9,6 +9,10 @@ const ManageManufacturers = () => {
   const [manufacturers, setManufacturers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusF, setStatusF] = useState('');
+  const [sortF, setSortF] = useState('');
+  const [mPage, setMPage] = useState(1);
+  const [mMeta, setMMeta] = useState({ total: 0, page: 1, totalPages: 1 });
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingManufacturer, setEditingManufacturer] = useState(null);
   const [formData, setFormData] = useState({
@@ -42,8 +46,15 @@ const ManageManufacturers = () => {
 
   const fetchManufacturers = async () => {
     try {
-      const res = await adminApi.getManufacturers();
+      const res = await adminApi.getManufacturers({
+        search: searchQuery || undefined,
+        status: statusF || undefined,
+        sort: sortF || undefined,
+        page: mPage,
+        limit: 15,
+      });
       setManufacturers(listOf(res.data));
+      setMMeta({ total: res.data.total ?? 0, page: res.data.page ?? 1, totalPages: res.data.totalPages ?? 1 });
     } catch (error) {
       console.error(error);
       toastError(error, 'Failed to fetch manufacturers');
@@ -128,13 +139,9 @@ const ManageManufacturers = () => {
     }
   };
 
-  const filteredManufacturers = manufacturers.filter(
-    (mfr) =>
-      mfr.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      mfr.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      mfr.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (mfr.manufacturerId && mfr.manufacturerId.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // filtering moved server-side (the kit answers with a true total; a local
+  // filter over one page quietly pretends page two does not exist)
+  const filteredManufacturers = manufacturers;
 
   if (loading) {
     return (
@@ -254,6 +261,38 @@ const ManageManufacturers = () => {
             fontSize: '14px',
           }}
         />
+        <select
+          className="input"
+          style={{ width: 150 }}
+          value={statusF}
+          onChange={(e) => {
+            setStatusF(e.target.value);
+            setMPage(1);
+          }}
+        >
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="banned">Banned</option>
+          <option value="pending_verification">Pending verification</option>
+          <option value="update_requested">Update requested</option>
+          <option value="demo">Demo rows</option>
+          <option value="live">Live rows</option>
+        </select>
+        <select
+          className="input"
+          style={{ width: 150 }}
+          value={sortF}
+          onChange={(e) => {
+            setSortF(e.target.value);
+            setMPage(1);
+          }}
+        >
+          <option value="">Newest</option>
+          <option value="name">Name A–Z</option>
+          <option value="company">Company</option>
+        </select>
+        <span style={{ fontSize: 12.5, color: 'var(--text-light)' }}>{mMeta.total} total</span>
       </div>
 
       <div
@@ -399,6 +438,24 @@ const ManageManufacturers = () => {
             )}
           </tbody>
         </table>
+
+        {mMeta.totalPages > 1 && (
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '12px 0' }}>
+            <button className="btn btn-outline btn-sm" disabled={mPage <= 1} onClick={() => setMPage((v) => v - 1)}>
+              ← Prev
+            </button>
+            <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', alignSelf: 'center' }}>
+              Page {mMeta.page} / {mMeta.totalPages}
+            </span>
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={mPage >= mMeta.totalPages}
+              onClick={() => setMPage((v) => v + 1)}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}

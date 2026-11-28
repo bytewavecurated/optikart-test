@@ -7,6 +7,8 @@ import { toastError } from '../../services/errors.js';
 
 const BlogManagement = () => {
   const [posts, setPosts] = useState([]);
+  const [q, setQ] = useState({ search: '', status: '', page: 1 });
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -20,12 +22,19 @@ const BlogManagement = () => {
   });
 
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    const t = setTimeout(fetchPosts, 280);
+    return () => clearTimeout(t);
+  }, [q]);
   const fetchPosts = async () => {
     try {
-      const res = await blogApi.getAll();
+      const res = await blogApi.getAll({
+        search: q.search || undefined,
+        status: q.status || undefined,
+        page: q.page,
+        limit: 12,
+      });
       setPosts(listOf(res.data));
+      setMeta({ total: res.data.total ?? 0, page: res.data.page ?? 1, totalPages: res.data.totalPages ?? 1 });
     } catch (error) {
       console.error(error);
       toastError(error, 'Failed to load posts');
@@ -84,6 +93,26 @@ const BlogManagement = () => {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <main style={{ flex: 1 }}>
         <div className="container page-wrapper">
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '2px 0 14px' }}>
+            <input
+              value={q.search}
+              onChange={(e) => setQ((v) => ({ ...v, search: e.target.value, page: 1 }))}
+              placeholder="Search post title…"
+              className="input"
+              style={{ flex: 1, minWidth: 160, maxWidth: 300 }}
+            />
+            <select
+              value={q.status}
+              onChange={(e) => setQ((v) => ({ ...v, status: e.target.value, page: 1 }))}
+              className="input"
+              style={{ width: 140 }}
+            >
+              <option value="">Published</option>
+              <option value="all">All (with drafts)</option>
+              <option value="draft">Drafts only</option>
+            </select>
+            <span style={{ fontSize: 12.5, color: 'var(--text-light)', marginLeft: 'auto' }}>{meta.total} shown</span>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Blog Management ({posts.length})</h1>
             <button

@@ -30,6 +30,7 @@ const PartnerPayoutQueue = () => {
   const [refs, setRefs] = useState({});
   const [notes, setNotes] = useState({});
   const [error, setError] = useState('');
+  const [pq, setPq] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -178,6 +179,14 @@ const PartnerPayoutQueue = () => {
       {data.withdrawals.length > 0 && (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
+            <input
+              className="input"
+              placeholder="Search partner, reference…"
+              value={pq}
+              onChange={(e) => setPq(e.target.value)}
+              style={{ maxWidth: 300, marginBottom: 12 }}
+            />
+
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: 'var(--bg-soft, #fafafa)' }}>
@@ -189,72 +198,81 @@ const PartnerPayoutQueue = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.withdrawals.map((row) => (
-                  <tr key={row.withdrawalId}>
-                    <td style={cell}>
-                      <div style={{ fontWeight: 700 }}>{row.partner?.name || 'Partner'}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                        {row.partner?.uniqueId}
-                        {row.partner?.phone ? ` · ${row.partner.phone}` : ''}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-light)' }}>
-                        requested {row.requestedAt ? new Date(row.requestedAt).toLocaleString('en-IN') : 'unknown'}
-                      </div>
-                    </td>
-                    <td style={cell}>
-                      {row.bank?.accountNumber ? (
-                        <>
-                          <div style={{ fontFamily: 'monospace', fontSize: 12.5 }}>
-                            <FiCreditCard size={12} style={{ verticalAlign: 'middle', marginRight: 6 }} />
-                            {row.bank.accountNumber}
-                          </div>
-                          <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                            {row.bank.ifsc}
-                            {row.bank.holder ? ` · ${row.bank.holder}` : ''}
-                          </div>
-                        </>
-                      ) : (
-                        <span style={{ color: 'var(--danger)', fontSize: 12 }}>
-                          No bank details on file - the partner must add them before payment.
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ ...cell, textAlign: 'right' }}>
-                      <div style={{ fontWeight: 700 }}>{inr(row.amount)}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text-light)' }}>
-                        fee {inr(row.platformFee)} · net {inr(row.netPaid)}
-                      </div>
-                    </td>
-                    <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{inr(row.netPaid)}</td>
-                    <td style={cell}>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-                        <input
-                          className="input"
-                          style={{ width: 170 }}
-                          placeholder="Bank reference / UTR"
-                          value={refs[row.withdrawalId] || ''}
-                          onChange={(e) => setRefs((p) => ({ ...p, [row.withdrawalId]: e.target.value }))}
-                        />
-                        <input
-                          className="input"
-                          style={{ width: 150 }}
-                          placeholder="Note (optional)"
-                          value={notes[row.withdrawalId] || ''}
-                          onChange={(e) => setNotes((p) => ({ ...p, [row.withdrawalId]: e.target.value }))}
-                        />
-                        <button
-                          className="btn btn-primary"
-                          style={{ padding: '7px 13px', fontSize: 12.5 }}
-                          disabled={busy === row.withdrawalId || !row.bank?.accountNumber}
-                          onClick={() => settle(row)}
-                        >
-                          <FiCheck style={{ marginRight: 6 }} />
-                          {busy === row.withdrawalId ? 'Settling' : 'Mark settled'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {(data.withdrawals || [])
+                  .filter(
+                    (w) =>
+                      !pq.trim() ||
+                      (w.partnerName || w.partner || '').toLowerCase().includes(pq.toLowerCase()) ||
+                      String(w.reference || '')
+                        .toLowerCase()
+                        .includes(pq.toLowerCase())
+                  )
+                  .map((row) => (
+                    <tr key={row.withdrawalId}>
+                      <td style={cell}>
+                        <div style={{ fontWeight: 700 }}>{row.partner?.name || 'Partner'}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                          {row.partner?.uniqueId}
+                          {row.partner?.phone ? ` · ${row.partner.phone}` : ''}
+                        </div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-light)' }}>
+                          requested {row.requestedAt ? new Date(row.requestedAt).toLocaleString('en-IN') : 'unknown'}
+                        </div>
+                      </td>
+                      <td style={cell}>
+                        {row.bank?.accountNumber ? (
+                          <>
+                            <div style={{ fontFamily: 'monospace', fontSize: 12.5 }}>
+                              <FiCreditCard size={12} style={{ verticalAlign: 'middle', marginRight: 6 }} />
+                              {row.bank.accountNumber}
+                            </div>
+                            <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                              {row.bank.ifsc}
+                              {row.bank.holder ? ` · ${row.bank.holder}` : ''}
+                            </div>
+                          </>
+                        ) : (
+                          <span style={{ color: 'var(--danger)', fontSize: 12 }}>
+                            No bank details on file - the partner must add them before payment.
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ ...cell, textAlign: 'right' }}>
+                        <div style={{ fontWeight: 700 }}>{inr(row.amount)}</div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-light)' }}>
+                          fee {inr(row.platformFee)} · net {inr(row.netPaid)}
+                        </div>
+                      </td>
+                      <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{inr(row.netPaid)}</td>
+                      <td style={cell}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                          <input
+                            className="input"
+                            style={{ width: 170 }}
+                            placeholder="Bank reference / UTR"
+                            value={refs[row.withdrawalId] || ''}
+                            onChange={(e) => setRefs((p) => ({ ...p, [row.withdrawalId]: e.target.value }))}
+                          />
+                          <input
+                            className="input"
+                            style={{ width: 150 }}
+                            placeholder="Note (optional)"
+                            value={notes[row.withdrawalId] || ''}
+                            onChange={(e) => setNotes((p) => ({ ...p, [row.withdrawalId]: e.target.value }))}
+                          />
+                          <button
+                            className="btn btn-primary"
+                            style={{ padding: '7px 13px', fontSize: 12.5 }}
+                            disabled={busy === row.withdrawalId || !row.bank?.accountNumber}
+                            onClick={() => settle(row)}
+                          >
+                            <FiCheck style={{ marginRight: 6 }} />
+                            {busy === row.withdrawalId ? 'Settling' : 'Mark settled'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>

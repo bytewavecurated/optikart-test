@@ -23,6 +23,8 @@ const BannerManagement = () => {
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [q, setQ] = useState({ search: '', status: '', page: 1 });
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
 
   useEffect(() => {
     fetchBanners();
@@ -146,6 +148,30 @@ const BannerManagement = () => {
     return (
       <>
         <div className="container page-wrapper">
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '2px 0 14px' }}>
+            <input
+              value={q.search}
+              onChange={(e) => setQ((v) => ({ ...v, search: e.target.value, page: 1 }))}
+              placeholder="Search campaign title, slug, link…"
+              className="input"
+              style={{ flex: 1, minWidth: 170, maxWidth: 320 }}
+            />
+            <select
+              value={q.status}
+              onChange={(e) => setQ((v) => ({ ...v, status: e.target.value, page: 1 }))}
+              className="input"
+              style={{ width: 150 }}
+            >
+              <option value="">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="demo">Demo</option>
+              <option value="live">Live</option>
+            </select>
+            <span style={{ fontSize: 12.5, color: 'var(--text-light)', marginLeft: 'auto' }}>
+              {meta.total} campaign{meta.total === 1 ? '' : 's'}
+            </span>
+          </div>
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div className="spinner"></div>
           </div>
@@ -427,3 +453,26 @@ const BannerManagement = () => {
 };
 
 export default BannerManagement;
+{
+  meta.totalPages > 1 && (
+    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '12px 0' }}>
+      <button
+        className="btn btn-outline btn-sm"
+        disabled={q.page <= 1}
+        onClick={() => setQ((v) => ({ ...v, page: v.page - 1 }))}
+      >
+        ← Prev
+      </button>
+      <span style={{ fontSize: 12.5, alignSelf: 'center', color: 'var(--text-secondary)' }}>
+        Page {meta.page} / {meta.totalPages}
+      </span>
+      <button
+        className="btn btn-outline btn-sm"
+        disabled={q.page >= meta.totalPages}
+        onClick={() => setQ((v) => ({ ...v, page: v.page + 1 }))}
+      >
+        Next →
+      </button>
+    </div>
+  );
+}

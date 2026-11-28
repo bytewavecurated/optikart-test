@@ -13,25 +13,54 @@ const VERIFICATION_DEADLINE_DAYS = 7;
  */
 export const getPendingProducts = async (filters = {}) => {
   try {
-    const query = { verificationStatus: 'pending' };
+    // status defaults to pending; 'all'/'verified'/'rejected' exist because a
+    // verification queue without its history is trivia, not a worklist.
+    const statusMap = {
+      pending: { verificationStatus: 'pending' },
+      verified: { verificationStatus: 'verified' },
+      rejected: { verificationStatus: 'rejected' },
+      all: {},
+    };
+    const query = { ...(statusMap[filters.status] || statusMap.pending) };
 
     if (filters.manufacturer) {
       query.manufacturer = filters.manufacturer;
     }
     if (filters.brand) {
-      query.brand = { $regex: filters.brand, $options: 'i' };
+      query.brand = { $regex: String(filters.brand).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' };
     }
     if (filters.category) {
       query.category = filters.category;
     }
+    if (filters.search) {
+      const rx = new RegExp(String(filters.search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [{ title: rx }, { name: rx }, { brand: rx }, { itemCode: rx }, { description: rx }];
+    }
+    // window + sort + paging stay optional so the public-facing defaults hold
+    if (filters.dateFrom || filters.dateTo) {
+      const range = {};
+      if (filters.dateFrom) range.$gte = new Date(filters.dateFrom);
+      if (filters.dateTo) range.$lte = new Date(`${filters.dateTo}T23:59:59.999Z`);
+      query.submittedAt = { ...(query.submittedAt || {}), ...range };
+    }
+    const SORTS = { newest: { submittedAt: -1 }, oldest: { submittedAt: 1 }, brand: { brand: 1 } };
+    const page = Math.max(1, parseInt(filters.page || 0, 10) || 1);
+    const limit = Math.min(200, Math.max(1, parseInt(filters.limit || 0, 10) || 0) || 0);
+    const total = await Product.countDocuments(query);
 
     const products = await Product.find(query)
       .populate('manufacturer', 'brandName contactEmail')
-      .sort({ submittedAt: 1 });
+      .sort(SORTS[filters.sort] || { submittedAt: 1 })
+      .skip(limit ? (page - 1) * limit : 0)
+      .limit(limit);
+    const pageCount = limit ? Math.max(1, Math.ceil(total / limit)) : 1;
 
     return {
       success: true,
       count: products.length,
+      total,
+      page,
+      totalPages: pageCount,
       products,
     };
   } catch (error) {

@@ -793,6 +793,7 @@ and re-paste, or wire the CI check.
 | `POST /api/delivery-partner/complete/:orderId` | verifyDeliveryPartner |
 | `POST /api/delivery-partner/withdraw` | verifyDeliveryPartner |
 | `GET /api/delivery-partner/` | verifyToken, verifyAdmin |
+| `DELETE /api/delivery-partner/:id` | verifyToken, verifyAdmin |
 | `PUT /api/delivery-partner/:id/ban` | verifyToken, verifyAdmin |
 | `PUT /api/delivery-partner/availability` | verifyDeliveryPartner |
 | `GET /api/delivery-partner/recommendations/:orderId` | verifyToken, verifyAdmin |
@@ -999,6 +1000,24 @@ env (GSTIN is PRINTED on both documents and demanded before go-live —
 PRODUCTION-CHECKLIST); classification CA sign-off via the admin tax panel's
 `confirmed` flag; `scripts/invoices_backfill.mjs` mints anything history is
 missing (idempotent, `--dry/--delivered-only/--limit=N`).
+
+- **Operations batch (2026-11-27, owner-reported defects)**: console deletes now
+  delete (services/accountDelete.js is the single implementation - staff DELETE
+  destroys role+login, delivery partners gained a real DELETE with active-
+  delivery refusal, sellers/products refuse while open business exists and only
+  move with `?force`, which preserves the ledger and says so in the response).
+  `dataOrigin: demo|live` exists on every principal/content model, stamped by the
+  fixtures at write time and by deprovision when sweeping - bulk tooling can only
+  ever remove 'demo' rows; live rows leave solely through the per-row deletes
+  above (the owner's rule: real data is never collateral damage). Admin console
+  tables (Coupons, Banners, Blogs, SaleEvents, Staff, Executives, Manufacturers,
+  Partners, ProductVerification, PrescriptionQueue) all drive server-side
+  search/status/sort/window/paging through the kit. IPv6 rate-limit buckets were
+  a real production defect (ERR_ERL_KEY_GEN_IPV6 could fail boot on v8; raw
+  `req.ip` allowed /128-address rotation to evade limits) - every custom key is
+  now `ipKeyGenerator(req.ip)`. The hero strip renders zero-real-banner stores
+  as nothing instead of demo placeholders. Ops group `scripts/ops_admin_e2e.mjs`
+  pins all of it (15 checks, runs last so its deletes cannot starve a sibling).
 
 ### Standing recommendations — and what became code in the follow-up batch
 

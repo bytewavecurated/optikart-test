@@ -3,51 +3,6 @@ import { Link } from 'react-router-dom';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { banners } from '../services/api';
 
-const DEFAULT_BANNERS = [
-  {
-    _id: 'default-1',
-    title: 'Summer Edit',
-    eyebrow: 'LIMITED SERIES',
-    subtitle: 'Polarized shades and blue-cut lenses, styled for the season.',
-    ctaText: 'Shop offers',
-
-    images: {
-      desktop: { url: '/assets/banner-1.svg' },
-      tablet: { url: '/assets/banner-1.svg' },
-      mobile: { url: '/assets/banner-1.svg' },
-    },
-    linkUrl: '/products?hasOffer=1',
-  },
-  {
-    _id: 'default-2',
-    title: 'New Arrivals',
-    eyebrow: 'JUST LANDED',
-    subtitle: 'Fresh frames from the brands you trust, added weekly.',
-    ctaText: 'Browse brands',
-
-    images: {
-      desktop: { url: '/assets/banner-2.svg' },
-      tablet: { url: '/assets/banner-2.svg' },
-      mobile: { url: '/assets/banner-2.svg' },
-    },
-    linkUrl: '/brands',
-  },
-  {
-    _id: 'default-3',
-    title: 'Blue Cut Lenses',
-    eyebrow: 'SCREEN READY',
-    subtitle: 'Filter the glare, keep the look - lenses graded for screen time.',
-    ctaText: 'See eligible frames',
-
-    images: {
-      desktop: { url: '/assets/banner-3.svg' },
-      tablet: { url: '/assets/banner-3.svg' },
-      mobile: { url: '/assets/banner-3.svg' },
-    },
-    linkUrl: '/category/eyeglasses',
-  },
-];
-
 const styles = {
   container: {
     position: 'relative',
@@ -140,7 +95,7 @@ const styles = {
 export default function HeroCarousel() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [bannerList, setBannerList] = useState(DEFAULT_BANNERS);
+  const [bannerList, setBannerList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
@@ -218,6 +173,7 @@ export default function HeroCarousel() {
     );
   }
 
+  if (!bannerList || bannerList.length === 0) return null;
   const slideWidth = 100 / cardsToShow;
   const translateValue = -(currentIndex * slideWidth);
 

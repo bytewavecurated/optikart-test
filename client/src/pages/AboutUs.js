@@ -92,7 +92,16 @@ const AboutUs = () => {
               color: 'var(--text-white)',
             }}
           >
-            <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '12px' }}>About OptiKart</h1>
+            <h1
+              style={{
+                fontSize: 'clamp(26px, 4vw, 32px)',
+                fontWeight: 700,
+                marginBottom: '12px',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Eyewear, without the theatre.
+            </h1>
             <p style={{ fontSize: '16px', opacity: 0.9, maxWidth: '600px', margin: '0 auto' }}>
               India's leading online destination for premium eyewear, bringing clarity and style to millions since 2020.
             </p>

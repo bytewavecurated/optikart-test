@@ -65,3 +65,18 @@
     min-width: 0;
   }
 }
+
+/* Cards cascade in when a grid (re)paints — filters remount rows, the motion
+   makes that legible instead of flickery. nth-child stagger caps at 8 so long
+   grids don't delay-the-fold anything; reduced-motion users see none of it. */
+.pgrid > * { animation: riseIn 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.pgrid > *:nth-child(2) { animation-delay: 0.04s; }
+.pgrid > *:nth-child(3) { animation-delay: 0.08s; }
+.pgrid > *:nth-child(4) { animation-delay: 0.12s; }
+.pgrid > *:nth-child(5) { animation-delay: 0.16s; }
+.pgrid > *:nth-child(6) { animation-delay: 0.2s; }
+.pgrid > *:nth-child(7) { animation-delay: 0.24s; }
+.pgrid > *:nth-child(8) { animation-delay: 0.28s; }
+@media (prefers-reduced-motion: reduce) {
+  .pgrid > * { animation: none; }
+}

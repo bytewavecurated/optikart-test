@@ -207,6 +207,33 @@ const Coupons = () => {
             stay listed so the history is not silently rewritten.
           </p>
 
+          <ListToolbar
+            search={list.q.search}
+            onSearch={(v) => list.set({ search: v })}
+            searchPlaceholder="Code or description…"
+            statuses={[
+              { value: '', label: 'All' },
+              { value: 'active', label: 'live now' },
+              { value: 'inactive', label: 'disabled' },
+              { value: 'expired', label: 'expired' },
+              { value: 'upcoming', label: 'scheduled' },
+              { value: 'demo', label: 'demo origin' },
+              { value: 'live', label: 'live origin' },
+            ]}
+            status={list.q.status}
+            onStatus={(v) => list.set({ status: v })}
+            sortOptions={[
+              { value: '', label: 'Newest' },
+              { value: 'code', label: 'Code A–Z' },
+              { value: 'used', label: 'Most used' },
+            ]}
+            sort={list.q.sort}
+            onSort={(v) => list.set({ sort: v })}
+            showWindow
+            windowDays={list.q.windowDays}
+            onWindow={(v) => list.set({ windowDays: v })}
+          />
+
           {showForm && (
             <div className="card-flat" style={{ padding: 20, marginBottom: 20 }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 14px' }}>

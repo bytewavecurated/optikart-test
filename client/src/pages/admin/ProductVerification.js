@@ -8,8 +8,9 @@ const ProductVerification = () => {
   const [products, setProducts] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ brand: '', category: '' });
+  const [filters, setFilters] = useState({ brand: '', category: '', search: '', status: 'pending', sort: '', page: 1 });
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [listMeta, setListMeta] = useState({ total: 0, page: 1, totalPages: 1 });
   const [action, setAction] = useState(null); // 'verify' or 'reject'
   const [notes, setNotes] = useState('');
   const [reason, setReason] = useState('');
@@ -28,6 +29,11 @@ const ProductVerification = () => {
 
       if (productsRes.data.success) {
         setProducts(productsRes.data.products);
+        setListMeta({
+          total: productsRes.data.total ?? 0,
+          page: productsRes.data.page ?? 1,
+          totalPages: productsRes.data.totalPages ?? 1,
+        });
       }
       if (statsRes.data.success) {
         setStats(statsRes.data.stats);
@@ -140,6 +146,25 @@ const ProductVerification = () => {
                 <FiSearch style={{ marginRight: '4px' }} /> Brand
               </label>
               <input
+                className="input"
+                placeholder="Search product, brand, item code…"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                style={{ minWidth: 200 }}
+              />
+              <select
+                className="input"
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value, page: 1 })}
+                style={{ width: 140 }}
+              >
+                <option value="pending">Pending</option>
+                <option value="verified">Verified</option>
+                <option value="rejected">Rejected</option>
+                <option value="all">Everything</option>
+              </select>
+
+              <input
                 type="text"
                 className="input"
                 placeholder="Search by brand..."
@@ -162,6 +187,28 @@ const ProductVerification = () => {
                 <option value="contactlenses">Contact Lenses</option>
               </select>
             </div>
+
+            {listMeta.totalPages > 1 && (
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '12px 0' }}>
+                <button
+                  className="btn btn-outline btn-sm"
+                  disabled={filters.page <= 1}
+                  onClick={() => setFilters((v) => ({ ...v, page: v.page - 1 }))}
+                >
+                  ← Prev
+                </button>
+                <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', alignSelf: 'center' }}>
+                  Page {listMeta.page} / {listMeta.totalPages}
+                </span>
+                <button
+                  className="btn btn-outline btn-sm"
+                  disabled={listMeta.page >= listMeta.totalPages}
+                  onClick={() => setFilters((v) => ({ ...v, page: v.page + 1 }))}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

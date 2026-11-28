@@ -1,4 +1,48 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
+<div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', margin: '4px 0 14px' }}>
+  <input
+    className="input"
+    placeholder="Search patient, doctor, reference…"
+    value={q.search}
+    onChange={(e) => setQ((v) => ({ ...v, search: e.target.value, page: 1 }))}
+    style={{ flex: 1, minWidth: 180, maxWidth: 300 }}
+  />
+  <select
+    className="input"
+    style={{ width: 150 }}
+    value={q.status}
+    onChange={(e) => setQ((v) => ({ ...v, status: e.target.value, page: 1 }))}
+  >
+    {!showAll ? (
+      <>
+        <option value="">Queued (pending)</option>
+        <option value="verified">Recently verified</option>
+        <option value="rejected">Recently rejected</option>
+        <option value="all">Everything</option>
+      </>
+    ) : (
+      <>
+        <option value="">Everything</option>
+        <option value="pending">Pending</option>
+        <option value="needs_review">Needs review</option>
+        <option value="verified">Verified</option>
+        <option value="rejected">Rejected</option>
+      </>
+    )}
+  </select>
+  <select
+    className="input"
+    style={{ width: 150 }}
+    value={q.sort}
+    onChange={(e) => setQ((v) => ({ ...v, sort: e.target.value, page: 1 }))}
+  >
+    <option value="">Oldest first (fair queue)</option>
+    <option value="newest">Newest first</option>
+    <option value="updated">Recently touched</option>
+  </select>
+  <span style={{ fontSize: 12.5, color: 'var(--text-light)', marginLeft: 'auto' }}>{meta.total} in view</span>
+</div>;
 import { prescriptionVerification } from '../../services/api';
 import {
   FiCheckCircle,
@@ -71,6 +115,8 @@ export default function PrescriptionQueue() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [showAll, setShowAll] = useState(false);
+  const [q, setQ] = useState({ search: '', status: '', sort: '', page: 1 });
+  const [meta, setMeta] = useState({ total: 0, page: 1, totalPages: 1 });
   const [busy, setBusy] = useState('');
   const [rejecting, setRejecting] = useState('');
   const [reason, setReason] = useState('');
@@ -82,8 +128,16 @@ export default function PrescriptionQueue() {
     setLoading(true);
     setErr('');
     try {
-      const res = showAll ? await prescriptionVerification.all({}) : await prescriptionVerification.pending();
+      const params = { search: q.search || undefined, sort: q.sort || undefined, page: q.page, limit: 14 };
+      if (showAll) params.status = q.status || 'all';
+      else if (q.status) params.status = q.status;
+      const res = showAll ? await prescriptionVerification.all(params) : await prescriptionVerification.pending(params);
       setRows(listOf(res.data));
+      setMeta({
+        total: res.data.total ?? (listOf(res.data) || []).length,
+        page: res.data.page ?? 1,
+        totalPages: res.data.totalPages ?? 1,
+      });
     } catch (e) {
       const data = e.response?.data;
       setErr(data?.message || 'Could not load the queue');
@@ -94,8 +148,9 @@ export default function PrescriptionQueue() {
   }, [showAll]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const t = setTimeout(() => load(), 300);
+    return () => clearTimeout(t);
+  }, [q, showAll]);
 
   const approve = async (row) => {
     setBusy(row._id);
@@ -472,6 +527,28 @@ export default function PrescriptionQueue() {
               })}
             </tbody>
           </table>
+
+          {meta.meta.totalPages > 1 && (
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '12px 0' }}>
+              <button
+                className="btn btn-outline btn-sm"
+                disabled={q.page <= 1}
+                onClick={() => setQ((v) => ({ ...v, page: v.page - 1 }))}
+              >
+                ← Prev
+              </button>
+              <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', alignSelf: 'center' }}>
+                Page {meta.page} / {meta.totalPages}
+              </span>
+              <button
+                className="btn btn-outline btn-sm"
+                disabled={q.page >= meta.totalPages}
+                onClick={() => setQ((v) => ({ ...v, page: v.page + 1 }))}
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

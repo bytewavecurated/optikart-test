@@ -278,18 +278,49 @@ export const getUserVerifications = async (userId) => {
 /**
  * Get all pending verifications (admin)
  */
-export const getPendingVerifications = async () => {
+export const getPendingVerifications = async (filters = {}) => {
   try {
-    const verifications = await PrescriptionVerification.find({
-      status: { $in: ['pending', 'needs_review'] },
-    })
+    const statusMap = {
+      pending: { status: 'pending' },
+      needs_review: { status: 'needs_review' },
+      verified: { status: 'verified' },
+      rejected: { status: 'rejected' },
+      all: {},
+    };
+    const query = statusMap[filters.status] || { status: { $in: ['pending', 'needs_review'] } };
+    if (filters.search) {
+      const rx = new RegExp(String(filters.search).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      query.$or = [{ patientName: rx }, { 'user.name': rx }, { doctorName: rx }];
+      if (query.$or) delete query.$and; // combined with user populate below via $and
+      if (filters.search) {
+        query.$and = [{ $or: [{ patientName: rx }, { doctorName: rx }] }];
+        delete query.$or;
+      }
+    }
+    if (filters.dateFrom || filters.dateTo) {
+      const range = {};
+      if (filters.dateFrom) range.$gte = new Date(filters.dateFrom);
+      if (filters.dateTo) range.$lte = new Date(`${filters.dateTo}T23:59:59.999Z`);
+      query.createdAt = { ...(query.createdAt || {}), ...range };
+    }
+    const SORTS = { oldest: { createdAt: 1 }, newest: { createdAt: -1 }, updated: { updatedAt: -1 } };
+    const page = Math.max(1, parseInt(filters.page || 0, 10) || 1);
+    const limit = Math.min(200, parseInt(filters.limit || 0, 10) || 0);
+
+    const total = await PrescriptionVerification.countDocuments(query);
+    const verifications = await PrescriptionVerification.find(query)
       .populate('prescription')
       .populate('user', 'name email')
-      .sort({ createdAt: 1 });
+      .sort(SORTS[filters.sort] || { createdAt: 1 })
+      .skip(limit ? (page - 1) * limit : 0)
+      .limit(limit);
 
     return {
       success: true,
       verifications,
+      total,
+      page,
+      totalPages: limit ? Math.max(1, Math.ceil(total / limit)) : 1,
     };
   } catch (error) {
     console.error('Error getting pending verifications:', error);

@@ -58,11 +58,16 @@ router.post('/register', verifyToken, verifyAdmin, async (req, res) => {
         message: 'Email already registered',
       });
     }
+    // like the staff form: if the admin left the password blank the server
+    // mints one and the credentials email carries it — 'undefined' is not a
+    // password, and a partner who cannot ever sign in is worse than a 400.
+    let issuedPassword = password;
+    if (!issuedPassword) issuedPassword = `Partner${Date.now()}@`;
 
     const partner = new DeliveryPartner({
       name,
       email,
-      password,
+      password: issuedPassword,
       phone,
       vehicleType,
       vehicleNumber,
@@ -75,7 +80,7 @@ router.post('/register', verifyToken, verifyAdmin, async (req, res) => {
     await partner.save();
 
     // Send credentials email
-    await sendOTP(email, password, 'credentials');
+    await sendOTP(email, issuedPassword, 'credentials');
 
     res.status(201).json({
       success: true,
@@ -493,6 +498,32 @@ router.get('/', verifyToken, verifyAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error getting all delivery partners:', error);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+router.delete('/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { deleteAccount } = await import('../services/accountDelete.js');
+    const force = /^(1|true|yes)$/iu.test(String(req.query.force ?? ''));
+    const Order = (await import('../models/Order.js')).default;
+    // active jobs outrank the button: a partner mid-delivery is not deletable data
+    const active = await Order.countDocuments({
+      assignedPartner: req.params.id,
+      orderStatus: { $in: ['picked_up', 'out_for_delivery'] },
+    }).catch(async () => 0);
+    if (active && !force) {
+      return res.status(409).json({
+        success: false,
+        activeDeliveries: active,
+        message: `This partner has ${active} delivery in progress. Complete or reassign it first.`,
+      });
+    }
+    const out = await deleteAccount('partner', req.params.id, { reqUser: req.user });
+    if (out.notFound) return res.status(404).json({ success: false, message: 'Delivery partner not found.' });
+    res.json({ success: true, ...out });
+  } catch (error) {
+    console.error('Delete partner error:', error);
+    res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
 

@@ -82,6 +82,84 @@ const main = async () => {
   ];
   removals.forEach(([label, res]) => console.log(`  removed ${res.deletedCount ?? 0} ${label}`));
 
+  /*
+   * ORIGIN SWEEP (2026-11): the emails above are the demo dataset's known ids;
+   * every row fixtures/apply.mjs wrote also carries dataOrigin:'demo'. Sweeping
+   * by that field catches what an email list never could - content posted by a
+   * demo account that has already been renamed or deleted - and it is strictly
+   * demo-only: a row created by a real signup (default 'live') is untouchable
+   * by anything in this file, under any flag combination.
+   */
+  const ORIGIN_MODELS = [
+    ['products', (await import('../models/Product.js')).default],
+    ['brands', Brand],
+    ['banners', (await import('../models/Banner.js')).default],
+    ['sale events', (await import('../models/SaleEvent.js')).default],
+    ['coupons', (await import('../models/Coupon.js')).default],
+    ['blog posts', (await import('../models/Blog.js')).default],
+    ['help articles', (await import('../models/HelpArticle.js')).default],
+    ['seller stock', (await import('../models/SellerStock.js')).default],
+    ['orders (demo-generated)', (await import('../models/Order.js')).default],
+    ['invoices (demo-generated)', (await import('../models/Invoice.js')).default],
+    ['notifications', (await import('../models/Notification.js')).default],
+    ['users', User],
+    ['sellers', Seller],
+    ['manufacturers', Manufacturer],
+    ['manufacturer retailers', ManufacturerSeller],
+    ['delivery partners', DeliveryPartner],
+    ['executives', Executive],
+    ['staff roles', StaffRole],
+  ];
+  let demoTotal = 0;
+  for (const [label, Model] of ORIGIN_MODELS) {
+    if (!Model) continue;
+    try {
+      const r = await Model.deleteMany({ dataOrigin: 'demo' });
+      if (r.deletedCount) console.log(`  origin sweep removed ${r.deletedCount} ${label}`);
+      demoTotal += r.deletedCount || 0;
+    } catch (e) {
+      console.log(`  origin sweep skipped ${label}: ${String(e.message).slice(0, 60)}`);
+    }
+  }
+  console.log(`  demo sweep total: ${demoTotal}`);
+  /* live survival report: proves the guarantee in numbers */
+  for (const [label, Model] of ORIGIN_MODELS) {
+    if (!Model) continue;
+    try {
+      const k = await Model.countDocuments({ dataOrigin: 'live' });
+      if (k) console.log(`  PRESERVED ${k} live ${label}`);
+    } catch {}
+  }
+
+  /*
+   * FULL CONTENT RESET for an owner who says so: REMOVE_ALL_CONTENT=yes deletes
+   * rows that carry NO demo origin as well (legacy unlabelled records). Orders,
+   * invoices, settlements and payouts are never in this bucket - removing a
+   * paid transaction from the books needs its own explicit flag, and even then
+   * nothing deletes live identities.
+   */
+  if (process.env.REMOVE_ALL_CONTENT === 'yes') {
+    const CONTENT_ALL = [
+      ['products', (await import('../models/Product.js')).default],
+      ['brands', Brand],
+      ['banners', (await import('../models/Banner.js')).default],
+      ['sale events', (await import('../models/SaleEvent.js')).default],
+      ['coupons', (await import('../models/Coupon.js')).default],
+      ['blog posts', (await import('../models/Blog.js')).default],
+      ['help articles', (await import('../models/HelpArticle.js')).default],
+      ['seller stock', (await import('../models/SellerStock.js')).default],
+      ['carts', (await import('../models/Cart.js')).default],
+      ['wishlists', (await import('../models/Wishlist.js')).default],
+      ['notifications', null],
+    ];
+    for (const [label, Model] of CONTENT_ALL) {
+      if (!Model) continue;
+      const r = await Model.deleteMany({});
+      console.log(`  REMOVE_ALL_CONTENT cleared ${r.deletedCount ?? 0} ${label}`);
+    }
+    console.log('  NOTE: identities and financial history untouched by a content reset.');
+  }
+
   if (process.env.REMOVE_DEMO_CATALOGUE === 'yes') {
     /*
      * The catalogue reset deletes exactly the CONTENT collections the demo
@@ -122,7 +200,9 @@ const main = async () => {
     const brandRes = await Brand.deleteMany({});
     console.log(`  removed ${brandRes.deletedCount ?? 0} brand records`);
     for (const entry of toClear) {
-      const r = await entry.model.deleteMany({});
+      /* catalogue reset follows origin + demo-identity cascade; live rows survive */
+      const cascadeIds = [];
+      const r = await entry.model.deleteMany({ dataOrigin: 'demo' });
       const left = await entry.model.estimatedDocumentCount();
       console.log(`  cleared ${String(r.deletedCount ?? 0).padStart(4)} x ${entry.label} (now ${left})`);
     }

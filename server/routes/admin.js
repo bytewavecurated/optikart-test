@@ -199,6 +199,8 @@ router.get('/users', verifyToken, verifyAdmin, async (req, res) => {
         // built correctly, and search never gets collateral damage.
         active: { $and: [{ isActive: true }, { isBanned: { $ne: true } }] },
         inactive: { $or: [{ isActive: false }, { isBanned: true }] },
+        demo: { dataOrigin: 'demo' },
+        live: { dataOrigin: 'live' },
       },
       statusField: '_mapped',
       sortable: { createdAt: { createdAt: -1 }, name: { name: 1 }, joined: { createdAt: -1 } },
@@ -213,19 +215,26 @@ router.get('/users', verifyToken, verifyAdmin, async (req, res) => {
 
 router.delete('/users/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
+    const { openOrdersOf } = await import('../services/accountDelete.js');
+    const force = /^(1|true|yes)$/iu.test(String(req.query.force ?? ''));
     const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    if (user.role === 'admin')
+      return res
+        .status(403)
+        .json({ success: false, message: 'Administrator accounts are protected from console deletion.' });
+    const open = await openOrdersOf('user', user._id);
+    if (open && !force) {
+      return res.status(409).json({
+        success: false,
+        openOrders: open,
+        message: `This customer has ${open} open order(s). Delete is refused while business is in flight.`,
+      });
     }
-
-    if (user.role === 'admin') {
-      return res.status(403).json({ success: false, message: 'Cannot delete admin user.' });
-    }
-
-    user.isActive = false;
-    await user.save();
-
-    res.json({ success: true, message: 'User deactivated successfully.' });
+    const out = await (
+      await import('../services/accountDelete.js')
+    ).deleteAccount('user', user._id, { reqUser: req.user });
+    res.json({ success: true, ...out });
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -290,17 +299,20 @@ router.put('/sellers/:id/verify', verifyToken, verifyAdmin, async (req, res) => 
 
 router.delete('/sellers/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
+    const { openOrdersOf, deleteAccount } = await import('../services/accountDelete.js');
+    const force = /^(1|true|yes)$/iu.test(String(req.query.force ?? ''));
     const seller = await Seller.findById(req.params.id);
-    if (!seller) {
-      return res.status(404).json({ success: false, message: 'Seller not found.' });
+    if (!seller) return res.status(404).json({ success: false, message: 'Seller not found.' });
+    const open = await openOrdersOf('seller', seller._id);
+    if (open && !force) {
+      return res.status(409).json({
+        success: false,
+        openOrders: open,
+        message: `This shop has ${open} open order(s) (packed → delivered). Refusing to vanish live business.`,
+      });
     }
-
-    seller.isActive = false;
-    await seller.save();
-
-    await Product.updateMany({ seller: seller._id }, { isActive: false });
-
-    res.json({ success: true, message: 'Seller deactivated successfully.' });
+    const out = await deleteAccount('seller', seller._id, { force, reqUser: req.user });
+    res.json({ success: true, ...out });
   } catch (error) {
     console.error('Delete seller error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -388,6 +400,8 @@ router.get('/revenue', verifyToken, verifyAdmin, async (req, res) => {
           orders: { $sum: 1 },
           platformFees: { $sum: '$platformFee' },
           deliveryCharges: { $sum: '$deliveryCharge' },
+          demo: { dataOrigin: 'demo' },
+          live: { dataOrigin: 'live' },
         },
       },
       { $sort: { _id: 1 } },
@@ -486,17 +500,10 @@ router.get('/staff', verifyToken, verifyAdmin, async (req, res) => {
 
 router.delete('/staff/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const staff = await StaffRole.findById(req.params.id);
-    if (!staff) {
-      return res.status(404).json({ success: false, message: 'Staff not found.' });
-    }
-
-    staff.isActive = false;
-    await staff.save();
-
-    await User.findOneAndUpdate({ email: staff.email }, { isActive: false });
-
-    res.json({ success: true, message: 'Staff deactivated successfully.' });
+    const { deleteStaff } = await import('../services/accountDelete.js');
+    const out = await deleteStaff(req.params.id, req.user);
+    if (out.notFound) return res.status(404).json({ success: false, message: 'Staff not found.' });
+    res.json({ success: true, ...out });
   } catch (error) {
     console.error('Delete staff error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
@@ -533,6 +540,8 @@ router.get('/coupons', verifyToken, verifyAdmin, async (req, res) => {
         active: { isActive: true, startsAt: { $lte: now }, endsAt: { $gte: now } },
         expired: { endsAt: { $lt: now } },
         inactive: { isActive: false },
+        demo: { dataOrigin: 'demo' },
+        live: { dataOrigin: 'live' },
         scheduled: { isActive: true, startsAt: { $gt: now } },
       },
       statusField: '_mapped',
@@ -930,14 +939,12 @@ router.put('/executives/:id', verifyToken, verifyAdmin, async (req, res) => {
 // Delete executive
 router.delete('/executives/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const executive = await Executive.findByIdAndDelete(req.params.id);
-
-    if (!executive) {
-      return res.status(404).json({ success: false, message: 'Executive not found.' });
-    }
-
-    res.json({ success: true, message: 'Executive deleted successfully.' });
+    const { deleteAccount } = await import('../services/accountDelete.js');
+    const out = await deleteAccount('executive', req.params.id, { reqUser: req.user });
+    if (out.notFound) return res.status(404).json({ success: false, message: 'Executive not found.' });
+    res.json({ success: true, ...out });
   } catch (error) {
+    console.error('Delete executive error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
@@ -979,6 +986,8 @@ router.get('/manufacturers', verifyToken, verifyAdmin, async (req, res) => {
         active: { isActive: true, isBanned: { $ne: true } },
         inactive: { isActive: false },
         banned: { isBanned: true },
+        demo: { dataOrigin: 'demo' },
+        live: { dataOrigin: 'live' },
         pending_verification: { 'onboarding.state': 'pending_verification' },
         pending_otp: { 'onboarding.state': 'pending_otp' },
         update_requested: { 'onboarding.state': 'update_requested' },
@@ -1305,17 +1314,12 @@ router.put('/manufacturers/:id', verifyToken, verifyAdmin, async (req, res) => {
 // Delete manufacturer
 router.delete('/manufacturers/:id', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const manufacturer = await Manufacturer.findByIdAndDelete(req.params.id);
-
-    if (!manufacturer) {
-      return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
-    }
-
-    // Optionally delete all products by this manufacturer
-    await Product.deleteMany({ manufacturer: req.params.id });
-
-    res.json({ success: true, message: 'Manufacturer deleted successfully.' });
+    const { deleteAccount } = await import('../services/accountDelete.js');
+    const out = await deleteAccount('manufacturer', req.params.id, { reqUser: req.user });
+    if (out.notFound) return res.status(404).json({ success: false, message: 'Manufacturer not found.' });
+    res.json({ success: true, ...out });
   } catch (error) {
+    console.error('Delete manufacturer error:', error);
     res.status(500).json({ success: false, message: 'Server error.', error: error.message });
   }
 });
